@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-import { useState } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { ShieldQuestion, Check, Lock, X, MessageSquare } from 'lucide-react';
+import { Button, TextField, Flex } from '@radix-ui/themes';
 
 export interface ToolPermissionRequest {
   approvalId: string;
@@ -24,7 +25,7 @@ function formatToolName(raw: string): { name: string; server: string } {
   return { name: raw.replace(/_/g, ' '), server: '' };
 }
 
-export default function ToolPermissionCard({ request, onResolved }: ToolPermissionCardProps) {
+const ToolPermissionCard = memo(function ToolPermissionCard({ request, onResolved }: ToolPermissionCardProps) {
   const [loading, setLoading] = useState(false);
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -32,7 +33,7 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
 
   const { name, server } = formatToolName(request.toolName);
 
-  const resolve = async (action: 'grant' | 'grant_session' | 'reject' | 'reject_reason', reason?: string) => {
+  const resolve = useCallback(async (action: 'grant' | 'grant_session' | 'reject' | 'reject_reason', reason?: string) => {
     setLoading(true);
     try {
       await fetch(`/api/agents/${request.agentId}/tools/approve`, {
@@ -54,11 +55,11 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
     } finally {
       setLoading(false);
     }
-  };
+  }, [request, onResolved]);
 
   if (resolved) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-mission-control-border bg-mission-control-surface/60 text-xs text-mission-control-text-dim">
+      <Flex align="center" gap="2" className="px-3 py-2 rounded-xl border border-mission-control-border bg-mission-control-surface text-xs text-mission-control-text-dim">
         {resolved === 'rejected' ? (
           <>
             <Lock size={13} className="text-error shrink-0" />
@@ -73,12 +74,12 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
             <span className="ml-auto opacity-60">Resend your message to continue</span>
           </>
         )}
-      </div>
+      </Flex>
     );
   }
 
   return (
-    <div className="rounded-lg border border-info/30 bg-info/5 p-3 space-y-2.5 text-sm">
+    <div className="rounded-xl border border-info/30 bg-mission-control-surface p-3 space-y-2.5 text-sm hover:border-mission-control-accent/20 transition-colors">
       {/* Header */}
       <div className="flex items-start gap-2.5">
         <ShieldQuestion size={16} className="text-info mt-0.5 shrink-0" />
@@ -86,10 +87,10 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-mission-control-text">Tool Permission Required</span>
             {server && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-info/10 text-info font-mono">{server}</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-info/10 text-info border border-info/30 font-mono">{server}</span>
             )}
           </div>
-          <p className="text-mission-control-text-dim mt-0.5">
+          <p className="text-xs text-mission-control-text-dim mt-0.5">
             <span className="font-mono text-mission-control-text">{name}</span>
             {request.reason && <> — {request.reason}</>}
           </p>
@@ -98,62 +99,73 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
 
       {/* Reject with reason input */}
       {showRejectInput && (
-        <div className="flex gap-2 items-center">
-          <input
-            className="flex-1 px-2.5 py-1.5 rounded-lg text-xs border border-mission-control-border bg-mission-control-bg focus:outline-none focus:ring-1 focus:ring-error/50"
+        <Flex gap="2" align="center">
+          <TextField.Root
+            className="flex-1"
+            size="1"
             placeholder="Reason for rejection..."
             value={rejectReason}
             onChange={e => setRejectReason(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') resolve('reject_reason', rejectReason); }}
             autoFocus
           />
-          <button
+          <Button
             onClick={() => resolve('reject_reason', rejectReason)}
             disabled={loading}
-            className="px-2.5 py-1.5 rounded-lg text-xs bg-error text-white hover:bg-error/80 transition-colors disabled:opacity-50"
+            variant="solid"
+            color="red"
+            size="1"
           >
             Send
-          </button>
+          </Button>
           <button
+            type="button"
             onClick={() => setShowRejectInput(false)}
-            className="p-1.5 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim"
+            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={12} />
           </button>
-        </div>
+        </Flex>
       )}
 
       {/* Action buttons */}
       {!showRejectInput && (
         <div className="flex items-center gap-2 flex-wrap">
-          <button
+          <Button
             onClick={() => resolve('grant')}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-success text-white hover:bg-success/80 transition-colors disabled:opacity-50"
+            variant="solid"
+            color="green"
+            size="1"
           >
             <Check size={12} />
             Grant
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => resolve('grant_session')}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-info text-white hover:bg-info/80 transition-colors disabled:opacity-50"
+            variant="solid"
+            color="blue"
+            size="1"
           >
             <Check size={12} />
             Grant for Session
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => resolve('reject')}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-error/40 text-error hover:bg-error/10 transition-colors disabled:opacity-50"
+            variant="outline"
+            color="red"
+            size="1"
           >
             <X size={12} />
             Reject
-          </button>
+          </Button>
           <button
+            type="button"
             onClick={() => setShowRejectInput(true)}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <MessageSquare size={12} />
             Reject with Reason
@@ -162,4 +174,6 @@ export default function ToolPermissionCard({ request, onResolved }: ToolPermissi
       )}
     </div>
   );
-}
+});
+
+export default ToolPermissionCard;

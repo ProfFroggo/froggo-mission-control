@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Send, Check, CheckCircle, XCircle, Circle, Loader2, Bot, LayoutTemplate } from 'lucide-react';
+import { Button, Flex, IconButton, TextField } from '@radix-ui/themes';
+import { X, Send, Check, CheckCircle, XCircle, Circle, Loader2, Bot, LayoutTemplate, Upload, Trash2, Sparkles, GitBranch, Zap, Paperclip, ExternalLink, Image as ImageIcon, FileText as FileTextIcon } from 'lucide-react';
 import { projectsApi, agentApi } from '../../lib/api';
 import type { Project } from '../../types/projects';
 import AgentAvatar from '../AgentAvatar';
@@ -19,7 +20,7 @@ const COLOR_OPTIONS = [
   '#06b6d4', '#3b82f6', '#a855f7', '#f43f5e',
 ];
 
-type Phase = 'template' | 'name' | 'goal' | 'identity' | 'agents' | 'confirm' | 'creating' | 'done';
+type Phase = 'discovery' | 'template' | 'name' | 'goal' | 'identity' | 'agents' | 'context-files' | 'confirm' | 'creating' | 'done';
 
 interface ChatMsg {
   id: string;
@@ -40,6 +41,66 @@ interface Agent { id: string; name: string; emoji?: string; status: string; role
 
 interface Props { onClose: () => void; onCreated: (project: Project) => void; }
 
+// GSD inline choice widget
+interface ChoiceWidgetData { q?: string; options: string[] }
+function ChoicesWidget({ data, onChoose, disabled }: { data: ChoiceWidgetData; onChoose: (text: string) => void; disabled?: boolean }) {
+  const [customMode, setCustomMode] = useState(false);
+  const [customText, setCustomText] = useState('');
+  const isOtherOption = (opt: string) => /^(other|tell me|explain|custom|something else|different|describe)/i.test(opt.trim());
+
+  if (customMode) {
+    return (
+      <Flex gap="2" mt="2" className="pl-9">
+        <TextField.Root
+          autoFocus
+          value={customText}
+          onChange={e => setCustomText(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && customText.trim() && !disabled) { onChoose(customText.trim()); setCustomMode(false); setCustomText(''); } }}
+          placeholder="Type your answer..."
+          disabled={disabled}
+          size="1"
+          className="flex-1"
+        />
+        <IconButton variant="solid" size="1" onClick={() => { if (customText.trim() && !disabled) { onChoose(customText.trim()); setCustomMode(false); setCustomText(''); } }} disabled={!customText.trim() || disabled}>
+          <Send size={13} />
+        </IconButton>
+        <button
+          onClick={() => { setCustomMode(false); setCustomText(''); }}
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+        >
+          <X size={13} />
+        </button>
+      </Flex>
+    );
+  }
+
+  return (
+    <div className="mt-2 pl-9 space-y-2">
+      {data.q && <p className="text-xs text-mission-control-text-dim font-medium">{data.q}</p>}
+      <div className="flex flex-wrap gap-2">
+        {data.options.map((opt, i) => {
+          const isOther = isOtherOption(opt);
+          return (
+            <button
+              key={i}
+              type="button"
+              disabled={disabled}
+              onClick={() => isOther ? setCustomMode(true) : onChoose(opt)}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors disabled:opacity-50 ${
+                isOther
+                  ? 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+                  : 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent hover:bg-mission-control-accent/20'
+              }`}
+            >
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // Mission Control avatar
 function MCAvatar() {
   return (
@@ -51,7 +112,7 @@ function MCAvatar() {
 
 export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   const [msgs, setMsgs] = useState<ChatMsg[]>([]);
-  const [phase, setPhase] = useState<Phase>('template');
+  const [phase, setPhase] = useState<Phase>('discovery');
   const [input, setInput] = useState('');
   const [mcTyping, setMcTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -74,6 +135,35 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
 
   // Conversation history for Mission Control agent
   const conversationRef = useRef<{ role: string; content: string }[]>([]);
+
+  // Discovery phase state (AI wizard chat)
+  interface DiscoveryMsg { role: 'user' | 'model'; text: string; widget?: string; widgetData?: ChoiceWidgetData; }
+  const [discoveryMsgs, setDiscoveryMsgs] = useState<DiscoveryMsg[]>([]);
+  const [discoveryInput, setDiscoveryInput] = useState('');
+  const [discoveryLoading, setDiscoveryLoading] = useState(false);
+  const [discoveryReady, setDiscoveryReady] = useState(false);
+  const [discoveryStructuredData, setDiscoveryStructuredData] = useState<{ name?: string; goal?: string; description?: string } | null>(null);
+  const discoveryScrollRef = useRef<HTMLDivElement>(null);
+  const discoveryInitRef = useRef(false);
+
+  // GSD mode
+  const [gsdMode, setGsdMode] = useState(false);
+  interface GsdDocs { projectMd: string; requirementsMd: string; roadmapMd: string; }
+  const [gsdDocs, setGsdDocs] = useState<GsdDocs | null>(null);
+
+  // Discovery context refs (files + URLs to inform the plan)
+  interface DiscoveryRef { type: 'file' | 'url'; name: string; file?: File; url?: string; }
+  const [discoveryRefs, setDiscoveryRefs] = useState<DiscoveryRef[]>([]);
+  const [refUrlInput, setRefUrlInput] = useState('');
+  const [showRefUrlInput, setShowRefUrlInput] = useState(false);
+  const [refsDragging, setRefsDragging] = useState(false);
+  const discoveryFileInputRef = useRef<HTMLInputElement>(null);
+  const mentionedRefsRef = useRef<Set<string>>(new Set());
+
+  // Context files (staged for upload after project creation)
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
+  const [contextFilesDragging, setContextFilesDragging] = useState(false);
+  const contextFilesInputRef = useRef<HTMLInputElement>(null);
 
   const uid = () => `${Date.now()}-${Math.random()}`;
 
@@ -128,6 +218,98 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
       : "Let's set up your new project. What should we call it?");
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const switchMode = (newGsd: boolean) => {
+    setGsdMode(newGsd);
+    setDiscoveryReady(false);
+    setDiscoveryStructuredData(null);
+    setGsdDocs(null);
+    setDiscoveryInput('');
+    mentionedRefsRef.current = new Set();
+    const openingMsg = newGsd
+      ? "Let's plan this properly. Tell me about the project — what are you trying to build and why does it need to exist?"
+      : "Tell me about this project. What are you building or trying to achieve?";
+    setDiscoveryMsgs([{ role: 'model', text: openingMsg }]);
+  };
+
+  // Discovery phase: send initial AI message + preload agents on mount
+  useEffect(() => {
+    if (discoveryInitRef.current) return;
+    discoveryInitRef.current = true;
+    setDiscoveryMsgs([{ role: 'model', text: "Tell me about this project. What are you building or trying to achieve?" }]);
+    // Preload agents so the widget is ready when AI asks about team
+    if (agents.length === 0) {
+      setLoadingAgents(true);
+      agentApi.getAll()
+        .then((data: unknown[]) => setAgents((data as Agent[]).filter(a => a.status !== 'archived')))
+        .catch(() => {})
+        .finally(() => setLoadingAgents(false));
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Scroll discovery chat to bottom
+  useEffect(() => {
+    discoveryScrollRef.current?.scrollTo({ top: discoveryScrollRef.current.scrollHeight, behavior: 'smooth' });
+  }, [discoveryMsgs, discoveryLoading]);
+
+  const sendDiscoveryMessage = async (text: string, baseOverride?: DiscoveryMsg[], modeOverride?: boolean) => {
+    const base = baseOverride ?? discoveryMsgs;
+    const isGsd = modeOverride !== undefined ? modeOverride : gsdMode;
+
+    // Append unmentioned context refs to this message
+    const unmentioned = discoveryRefs.filter(r => !mentionedRefsRef.current.has(r.name));
+    let fullText = text;
+    if (unmentioned.length > 0) {
+      const refLines = unmentioned.map(r => r.type === 'url' ? `URL: ${r.url}` : `File: ${r.name}`).join(', ');
+      fullText = `${text}\n\n[Reference context provided: ${refLines}]`;
+      unmentioned.forEach(r => mentionedRefsRef.current.add(r.name));
+    }
+
+    const newUserMsg: DiscoveryMsg = { role: 'user', text };
+    const newMsgs = [...base, newUserMsg];
+    setDiscoveryMsgs(newMsgs);
+    setDiscoveryLoading(true);
+    try {
+      // Send full text (with refs) to API but display clean text in UI
+      const apiMsgs = [...base.map(m => ({ role: m.role, text: m.text })), { role: 'user' as const, text: fullText }];
+      const res = await fetch('/api/projects/wizard-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: apiMsgs, mode: isGsd ? 'gsd' : 'quick' }),
+      });
+      const data = await res.json();
+      const aiMsg: DiscoveryMsg = {
+        role: 'model',
+        text: data.text || '',
+        widget: data.widget,
+        widgetData: data.widgetData as ChoiceWidgetData | undefined,
+      };
+      setDiscoveryMsgs(prev => [...prev, aiMsg]);
+      if (data.ready && data.isGsd && data.gsdData) {
+        setDiscoveryReady(true);
+        setGsdDocs({ projectMd: data.gsdData.projectMd || '', requirementsMd: data.gsdData.requirementsMd || '', roadmapMd: data.gsdData.roadmapMd || '' });
+        setDiscoveryStructuredData({ name: data.gsdData.name, goal: data.gsdData.goal, description: data.gsdData.description });
+      } else if (data.ready && data.structuredData) {
+        setDiscoveryReady(true);
+        setDiscoveryStructuredData(data.structuredData);
+      }
+    } catch { /* non-critical */ }
+    finally { setDiscoveryLoading(false); }
+  };
+
+  const handleDiscoverySend = async () => {
+    const text = discoveryInput.trim();
+    if (!text || discoveryLoading) return;
+    setDiscoveryInput('');
+    await sendDiscoveryMessage(text);
+  };
+
+  const handleDiscoveryConfirm = () => {
+    if (discoveryStructuredData?.name) setProjName(discoveryStructuredData.name);
+    if (discoveryStructuredData?.goal) setProjGoal(discoveryStructuredData.goal);
+    // GSD mode: skip template/name/goal — we already have everything — go straight to identity
+    setPhase(gsdMode ? 'identity' : 'template');
+  };
+
   // Load agents when entering agents phase
   useEffect(() => {
     if (phase === 'agents' && agents.length === 0) {
@@ -169,8 +351,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
     const userText = names.length > 0 ? `Team: ${names.join(', ')}` : 'No agents yet';
     addMsg({ from: 'user', text: userText });
     conversationRef.current.push({ role: 'user', content: userText });
-    setPhase('confirm');
-    await mcAsk(userText, 'confirm', "Here's what I'll set up:");
+    setPhase('context-files');
   };
 
   const handleConfirm = () => {
@@ -192,9 +373,13 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   };
 
   const runSetup = async () => {
+    const hasContextFiles = stagedFiles.length > 0;
+    const hasGsdDocs = gsdDocs !== null;
     const initialSteps: SetupStep[] = [
       { id: 'create',    label: 'Create project',          detail: 'Register in database',            status: 'pending' },
       { id: 'workspace', label: 'Set up workspace files',  detail: '~/mission-control/projects/{id}/', status: 'pending' },
+      ...(hasGsdDocs ? [{ id: 'gsd-plan', label: 'Save GSD plan', detail: 'PROJECT.md + REQUIREMENTS.md + ROADMAP.md', status: 'pending' as const }] : []),
+      ...(hasContextFiles ? [{ id: 'context', label: 'Upload context files', detail: `${stagedFiles.length} file(s)`, status: 'pending' as const }] : []),
       { id: 'notify',    label: 'Brief Mission Control',   detail: 'Log project to task board',        status: 'pending' },
     ];
     setSteps(initialSteps);
@@ -219,14 +404,60 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
       const goalMd = `# Goal\n\n${projGoal || projName}\n\n## Definition of Done\n\n_Fill in your success criteria here._\n`;
       const contextMd = `# ${projName}\n\n## Overview\n\n${projGoal || ''}\n\n## Agents\n\n${
         selectedAgents.map(aid => `- ${aid}`).join('\n') || '_No agents assigned yet._'
-      }\n\n## Status\n\n🟡 In progress\n`;
+      }\n\n## Status\n\nProject initialised — work not started.\n`;
       await Promise.all([
         projectsApi.uploadFile(id, 'GOAL.md', goalMd),
         projectsApi.uploadFile(id, 'CONTEXT.md', contextMd),
-        projectsApi.uploadFile(id, 'STATUS.md', '# Status\n\n🟡 Project initialised — work not started.\n'),
+        projectsApi.uploadFile(id, 'STATUS.md', '# Status\n\nProject initialised — work not started.\n'),
       ]);
     });
     if (!ok2) { setCreateError('Workspace setup failed.'); return; }
+
+    // Save GSD planning docs if generated
+    if (hasGsdDocs && gsdDocs && project) {
+      await runStep('gsd-plan', async () => {
+        const projectId = (project as Project).id;
+        const saveDoc = async (filename: string, content: string) => {
+          const blob = new Blob([content], { type: 'text/markdown' });
+          const file = new File([blob], filename, { type: 'text/markdown' });
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('entityType', 'project');
+          formData.append('entityId', projectId);
+          await fetch('/api/context-files/upload', { method: 'POST', body: formData });
+        };
+        await saveDoc('GSD-PROJECT.md', gsdDocs.projectMd);
+        await saveDoc('GSD-REQUIREMENTS.md', gsdDocs.requirementsMd);
+        await saveDoc('GSD-ROADMAP.md', gsdDocs.roadmapMd);
+        // Agent guide — auto-injected into every agent session for this project
+        const agentGuide = `# GSD Agent Guide — ${projName}\n\nThis project uses GSD (Get Shit Done) structured planning.\n\n## Planning Files\n- **GSD-PROJECT.md** — Project context, core value, requirements, constraints. Read first.\n- **GSD-REQUIREMENTS.md** — Scoped v1 requirements.\n- **GSD-ROADMAP.md** — Phase execution plan. Your primary navigation tool.\n\n## Workflow\n1. Call \`context_files_get\` at session start to read all GSD files\n2. Find the next unchecked phase in GSD-ROADMAP.md: \`- [ ] Phase N: Name\`\n3. Read the phase Goal and Success Criteria before starting\n4. Work through the phase; mark tasks done: \`- [x] task\`\n5. When all criteria are met, mark phase complete: \`- [x] Phase N: Name\`\n6. Add new requirements to GSD-REQUIREMENTS.md as you discover them\n\n## Rules\n- One phase at a time — complete before moving forward\n- Success Criteria are verifiable — only mark done when truly met\n- Keep planning files current — they must reflect reality\n- Core Value in PROJECT.md drives all trade-off decisions\n- Urgent mid-phase work → insert as decimal phase (e.g. Phase 2.1)\n\n## Project Summary\n${gsdDocs.projectMd.slice(0, 600)}\n`;
+        await saveDoc('GSD-AGENT-GUIDE.md', agentGuide);
+        // Also upload any reference files collected during discovery
+        for (const ref of discoveryRefs) {
+          if (ref.type === 'file' && ref.file) {
+            const formData = new FormData();
+            formData.append('file', ref.file);
+            formData.append('entityType', 'project');
+            formData.append('entityId', projectId);
+            await fetch('/api/context-files/upload', { method: 'POST', body: formData });
+          }
+        }
+      });
+    }
+
+    // Upload context files if any were staged
+    if (hasContextFiles && project) {
+      await runStep('context', async () => {
+        const projectId = (project as Project).id;
+        for (const file of stagedFiles) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('entityType', 'project');
+          formData.append('entityId', projectId);
+          await fetch('/api/context-files/upload', { method: 'POST', body: formData });
+        }
+      });
+    }
 
     await runStep('notify', async () => {
       // no-op — project creation no longer auto-creates a task
@@ -240,24 +471,24 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   // Identity widget rendered inline in chat
   function IdentityWidget() {
     return (
-      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-3">
+      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-xl space-y-3">
         {/* Preview */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
+        <Flex align="center" gap="3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
             <SelectedIconComp size={20} style={{ color }} />
           </div>
           <span className="font-medium text-sm text-mission-control-text">{projName}</span>
-        </div>
+        </Flex>
         {/* Icon grid */}
         <div>
           <p className="text-xs text-mission-control-text-dim mb-2">Icon</p>
           <div className="flex flex-wrap gap-1.5">
             {PROJECT_ICON_OPTIONS.map(({ id, icon: Ic }) => (
-              <button key={id} onClick={() => setIconId(id)}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                  iconId === id ? 'ring-2 ring-mission-control-accent bg-mission-control-accent/20' : 'bg-mission-control-bg hover:bg-mission-control-accent/10'
+              <button key={id} type="button" onClick={() => setIconId(id)}
+                className={`p-1.5 rounded-md border transition-colors ${
+                  iconId === id ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}>
-                <Ic size={14} className={iconId === id ? 'text-mission-control-accent' : 'text-mission-control-text-dim'} />
+                <Ic size={14} />
               </button>
             ))}
           </div>
@@ -267,16 +498,15 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
           <p className="text-xs text-mission-control-text-dim mb-2">Colour</p>
           <div className="flex flex-wrap gap-2">
             {COLOR_OPTIONS.map(c => (
-              <button key={c} onClick={() => setColor(c)}
-                className={`w-6 h-6 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-2 ring-offset-mission-control-surface ring-white scale-110' : 'hover:scale-105'}`}
+              <button type="button" key={c} onClick={() => setColor(c)}
+                className={`w-6 h-6 rounded-full transition-[colors,transform] ${color === c ? 'ring-2 ring-offset-2 ring-offset-mission-control-surface ring-white scale-110' : 'hover:scale-105'}`}
                 style={{ backgroundColor: c }} />
             ))}
           </div>
         </div>
-        <button onClick={handleIdentityConfirm}
-          className="w-full py-2 bg-mission-control-accent text-white text-sm rounded-lg hover:bg-mission-control-accent/90 transition-colors font-medium">
+        <Button variant="solid" size="1" onClick={handleIdentityConfirm} className="w-full justify-center">
           Looks good →
-        </button>
+        </Button>
       </div>
     );
   }
@@ -284,17 +514,17 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   // Agent picker widget
   function AgentsWidget() {
     return (
-      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-2">
+      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-xl space-y-2">
         {loadingAgents ? (
-          <div className="flex justify-center py-4"><Loader2 size={18} className="animate-spin text-mission-control-text-dim" /></div>
+          <Flex justify="center" py="4"><Loader2 size={18} className="animate-spin text-mission-control-text-dim" /></Flex>
         ) : (
           <div className="space-y-1.5 max-h-48 overflow-y-auto">
             {agents.map(agent => {
               const sel = selectedAgents.includes(agent.id);
               return (
-                <button key={agent.id} onClick={() => setSelectedAgents(prev => sel ? prev.filter(x => x !== agent.id) : [...prev, agent.id])}
-                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border transition-all text-left ${
-                    sel ? 'border-mission-control-accent/50 bg-mission-control-accent/10' : 'border-mission-control-border hover:border-mission-control-accent/30'
+                <button key={agent.id} type="button" onClick={() => setSelectedAgents(prev => sel ? prev.filter(x => x !== agent.id) : [...prev, agent.id])}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-colors ${
+                    sel ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'
                   }`}>
                   <AgentAvatar agentId={agent.id} size="sm" fallbackEmoji={agent.emoji} />
                   <div className="flex-1 min-w-0">
@@ -309,10 +539,9 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             })}
           </div>
         )}
-        <button onClick={handleAgentsConfirm}
-          className="w-full py-2 bg-mission-control-accent text-white text-sm rounded-lg hover:bg-mission-control-accent/90 transition-colors font-medium mt-1">
+        <Button variant="solid" size="1" onClick={handleAgentsConfirm} className="w-full justify-center mt-1">
           {selectedAgents.length > 0 ? `Add ${selectedAgents.length} agent${selectedAgents.length !== 1 ? 's' : ''} →` : 'Skip →'}
-        </button>
+        </Button>
       </div>
     );
   }
@@ -320,59 +549,469 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
   // Summary confirm widget
   function ConfirmWidget() {
     return (
-      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
+      <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-border rounded-xl space-y-3">
+        <Flex align="center" gap="3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
             <SelectedIconComp size={20} style={{ color }} />
           </div>
           <div>
             <div className="font-semibold text-mission-control-text">{projName}</div>
             {projGoal && <div className="text-xs text-mission-control-text-dim mt-0.5 line-clamp-2">{projGoal}</div>}
           </div>
-        </div>
+        </Flex>
         {selectedAgents.length > 0 && (
           <div className="text-xs text-mission-control-text-dim">
             Team: {agents.filter(a => selectedAgents.includes(a.id)).map(a => a.name).join(', ')}
           </div>
         )}
-        <div className="flex gap-2">
-          <button onClick={handleConfirm}
-            className="flex-1 py-2 bg-mission-control-accent text-white text-sm rounded-lg hover:bg-mission-control-accent/90 transition-colors font-medium flex items-center justify-center gap-1.5">
+        <Flex gap="2">
+          <Button variant="solid" size="1" onClick={handleConfirm} className="flex-1 justify-center">
             <Check size={14} /> Create project
-          </button>
-          <button onClick={() => { setPhase('name'); setMsgs([]); mcSay("Let's start over. What should we call the project?"); }}
-            className="px-3 py-2 bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim text-sm rounded-lg hover:bg-mission-control-surface transition-colors">
+          </Button>
+          <button
+            onClick={() => { setPhase('name'); setMsgs([]); mcSay("Let's start over. What should we call the project?"); }}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+          >
             Start over
           </button>
-        </div>
+        </Flex>
       </div>
     );
   }
 
   const showInput = phase === 'name' || phase === 'goal';
 
+  // ── Discovery phase (AI conversation) ─────────────────────────────────────
+  if (phase === 'discovery') {
+    const activeWidget = (() => {
+      if (discoveryLoading || discoveryReady) return null;
+      const last = discoveryMsgs[discoveryMsgs.length - 1];
+      return (last?.role === 'model' && last.widget) ? last.widget : null;
+    })();
+    const activeWidgetData = (() => {
+      if (discoveryLoading || discoveryReady) return null;
+      const last = discoveryMsgs[discoveryMsgs.length - 1];
+      return (last?.role === 'model' && last.widgetData) ? last.widgetData : null;
+    })();
+
+    const addRefUrl = () => {
+      const url = refUrlInput.trim();
+      if (!url) return;
+      const label = url.replace(/^https?:\/\//, '').split('/')[0];
+      setDiscoveryRefs(prev => [...prev, { type: 'url', name: label, url }]);
+      setRefUrlInput('');
+      setShowRefUrlInput(false);
+    };
+
+    const addRefFiles = (files: FileList | null) => {
+      if (!files) return;
+      const newRefs: DiscoveryRef[] = Array.from(files).map(f => ({ type: 'file', name: f.name, file: f }));
+      setDiscoveryRefs(prev => [...prev, ...newRefs]);
+    };
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div
+          className={`w-full max-w-2xl bg-mission-control-surface border rounded-2xl shadow-2xl flex flex-col transition-colors max-h-[90vh] ${refsDragging ? 'border-mission-control-accent' : 'border-mission-control-border'}`}
+          onDragOver={e => { e.preventDefault(); setRefsDragging(true); }}
+          onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setRefsDragging(false); }}
+          onDrop={e => { e.preventDefault(); setRefsDragging(false); addRefFiles(e.dataTransfer.files); }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+            <Flex align="center" gap="3">
+              {gsdMode
+                ? <GitBranch size={15} className="text-mission-control-accent" />
+                : <Sparkles size={15} className="text-mission-control-accent" />}
+              <span className="text-base font-semibold text-mission-control-text">New Project</span>
+              {gsdMode && (
+                <span className="text-xs px-2 py-0.5 bg-mission-control-accent/15 text-mission-control-accent rounded-full font-medium">
+                  GSD Planning
+                </span>
+              )}
+            </Flex>
+            <Flex align="center" gap="2">
+              {/* Mode toggle */}
+              <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border text-xs">
+                <button type="button" onClick={() => !gsdMode || switchMode(false)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-medium transition-colors ${
+                    !gsdMode ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}>
+                  <Zap size={11} /> Quick
+                </button>
+                <button type="button" onClick={() => gsdMode || switchMode(true)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-medium transition-colors ${
+                    gsdMode ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}>
+                  <GitBranch size={11} /> GSD Plan
+                </button>
+              </div>
+              <button
+                onClick={() => setPhase('template')}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+              >
+                Skip
+              </button>
+              <button
+                onClick={onClose}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+              >
+                <X size={15} />
+              </button>
+            </Flex>
+          </div>
+
+          {/* GSD mode description bar */}
+          {gsdMode && discoveryMsgs.length <= 1 && (
+            <div className="px-5 py-2.5 bg-mission-control-accent/8 border-b border-mission-control-accent/20 flex-shrink-0">
+              <p className="text-xs text-mission-control-text-dim">
+                GSD asks deep questions to generate <span className="text-mission-control-text font-medium">PROJECT.md · REQUIREMENTS.md · ROADMAP.md</span> — saved automatically to your project. Drop files or add URLs below as reference.
+              </p>
+            </div>
+          )}
+
+          {/* Chat */}
+          <div ref={discoveryScrollRef} className="flex-1 overflow-y-auto p-5 space-y-4 min-h-0" style={{ minHeight: '300px' }}>
+            {discoveryMsgs.map((msg, i) => {
+              const isLastModel = msg.role === 'model' && i === discoveryMsgs.length - 1;
+              return (
+                <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                  <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-2.5'} w-full`}>
+                    {msg.role === 'model' && (
+                      <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        {gsdMode ? <GitBranch size={13} className="text-mission-control-accent" /> : <Bot size={14} className="text-mission-control-accent" />}
+                      </div>
+                    )}
+                    <div className={`max-w-[80%] px-3.5 py-2.5 rounded-xl text-sm leading-relaxed ${
+                      msg.role === 'user'
+                        ? 'bg-mission-control-accent text-white rounded-br-sm'
+                        : 'bg-mission-control-surface text-mission-control-text rounded-bl-sm'
+                    }`}>
+                      {msg.text}
+                    </div>
+                  </div>
+
+                  {/* Choices widget — below last model message */}
+                  {isLastModel && activeWidget === 'choices' && activeWidgetData && (
+                    <ChoicesWidget
+                      data={activeWidgetData}
+                      disabled={discoveryLoading}
+                      onChoose={choice => {
+                        setDiscoveryInput('');
+                        sendDiscoveryMessage(choice);
+                      }}
+                    />
+                  )}
+
+                  {/* Agents widget — below last model message */}
+                  {isLastModel && activeWidget === 'agents' && (
+                    <div className="pl-9 w-full mt-2 space-y-2">
+                      {loadingAgents ? (
+                        <Flex align="center" gap="2" py="2" className="text-xs text-mission-control-text-dim">
+                          <Loader2 size={13} className="animate-spin" /> Loading agents...
+                        </Flex>
+                      ) : (
+                        <div className="space-y-1.5 max-w-sm">
+                          {agents.map(agent => {
+                            const sel = selectedAgents.includes(agent.id);
+                            return (
+                              <button key={agent.id} type="button" onClick={() => setSelectedAgents(prev => sel ? prev.filter(id => id !== agent.id) : [...prev, agent.id])}
+                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-colors ${
+                                  sel ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'
+                                }`}>
+                                <AgentAvatar agentId={agent.id} size="sm" fallbackEmoji={agent.emoji} />
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs font-medium text-mission-control-text">{agent.name}</div>
+                                  {agent.role && <div className="text-xs text-mission-control-text-dim truncate">{agent.role}</div>}
+                                </div>
+                                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${sel ? 'border-mission-control-accent bg-mission-control-accent' : 'border-mission-control-border'}`}>
+                                  {sel && <Check size={9} className="text-white" />}
+                                </div>
+                              </button>
+                            );
+                          })}
+                          <Button
+                            variant="solid"
+                            size="1"
+                            onClick={() => {
+                              const names = agents.filter(a => selectedAgents.includes(a.id)).map(a => a.name);
+                              sendDiscoveryMessage(names.length > 0 ? `Team: ${names.join(', ')}` : 'No specific agents assigned yet');
+                            }}
+                          >
+                            <Check size={12} /> {selectedAgents.length > 0 ? `Assign ${selectedAgents.length} agent${selectedAgents.length > 1 ? 's' : ''}` : 'Continue without agents'}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Typing indicator */}
+            {discoveryLoading && (
+              <Flex gap="3" align="start">
+                <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center flex-shrink-0">
+                  {gsdMode ? <GitBranch size={13} className="text-mission-control-accent" /> : <Bot size={14} className="text-mission-control-accent" />}
+                </div>
+                <div className="bg-mission-control-surface px-4 py-3 rounded-xl rounded-bl-sm">
+                  <Flex gap="1">
+                    <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </Flex>
+                </div>
+              </Flex>
+            )}
+
+            {/* GSD/Ready confirmation card */}
+            {discoveryReady && discoveryStructuredData && (
+              <div className="mt-3 p-4 bg-mission-control-surface border border-mission-control-accent/30 rounded-xl space-y-3">
+                <Flex align="center" gap="2">
+                  {gsdDocs
+                    ? <GitBranch size={14} className="text-mission-control-accent" />
+                    : <CheckCircle size={14} className="text-success" />}
+                  <p className="text-[10px] font-bold text-mission-control-text uppercase tracking-wide">
+                    {gsdDocs ? 'GSD Plan Generated' : 'Ready to Create'}
+                  </p>
+                </Flex>
+                <div>
+                  <p className="text-base font-bold text-mission-control-text">{discoveryStructuredData.name}</p>
+                  {discoveryStructuredData.goal && (
+                    <p className="text-sm text-mission-control-text-dim mt-1 leading-relaxed">{discoveryStructuredData.goal}</p>
+                  )}
+                </div>
+                {gsdDocs && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {['GSD-PROJECT.md', 'GSD-REQUIREMENTS.md', 'GSD-ROADMAP.md'].map(doc => (
+                      <span key={doc} className="text-xs px-2 py-0.5 bg-mission-control-accent/15 text-mission-control-accent rounded-full font-medium">{doc}</span>
+                    ))}
+                  </div>
+                )}
+                {discoveryRefs.length > 0 && (
+                  <div className="text-xs text-mission-control-text-dim">
+                    + {discoveryRefs.length} reference{discoveryRefs.length > 1 ? 's' : ''} will be uploaded as context files
+                  </div>
+                )}
+                <Button variant="solid" size="1" onClick={handleDiscoveryConfirm} className="w-full justify-center">
+                  {gsdDocs ? <><GitBranch size={14} /> Build this project</> : <><Check size={14} /> Create project</>}
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Context references panel */}
+          <div
+            className={`border-t border-mission-control-border px-5 py-3 flex-shrink-0 transition-colors ${refsDragging ? 'bg-mission-control-accent/5' : ''}`}
+          >
+            <input
+              ref={discoveryFileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={e => addRefFiles(e.target.files)}
+            />
+            {/* Chips row */}
+            {discoveryRefs.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {discoveryRefs.map((ref, i) => (
+                  <Flex key={i} align="center" gap="1" className="px-2 py-1 bg-mission-control-surface border border-mission-control-border rounded-xl text-xs group">
+                    {ref.type === 'url'
+                      ? <ExternalLink size={11} className="text-mission-control-accent flex-shrink-0" />
+                      : ref.file?.type.startsWith('image/')
+                        ? <ImageIcon size={11} className="text-mission-control-text-dim flex-shrink-0" />
+                        : <FileTextIcon size={11} className="text-mission-control-text-dim flex-shrink-0" />}
+                    <span className="text-mission-control-text max-w-[140px] truncate">{ref.name}</span>
+                    <button
+                      onClick={() => setDiscoveryRefs(prev => prev.filter((_, j) => j !== i))}
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                    >
+                      <X size={10} />
+                    </button>
+                  </Flex>
+                ))}
+              </div>
+            )}
+
+            {/* URL input (expandable) */}
+            {showRefUrlInput && (
+              <Flex gap="2" mb="2">
+                <TextField.Root
+                  autoFocus
+                  value={refUrlInput}
+                  onChange={e => setRefUrlInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') addRefUrl(); if (e.key === 'Escape') { setShowRefUrlInput(false); setRefUrlInput(''); } }}
+                  placeholder="https://figma.com/... or any reference URL"
+                  size="1"
+                  className="flex-1"
+                />
+                <Button variant="solid" size="1" onClick={addRefUrl} disabled={!refUrlInput.trim()}>
+                  Add
+                </Button>
+                <button
+                  onClick={() => { setShowRefUrlInput(false); setRefUrlInput(''); }}
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                >
+                  <X size={13} />
+                </button>
+              </Flex>
+            )}
+
+            {/* Add buttons row */}
+            <Flex align="center" gap="3">
+              <button
+                onClick={() => discoveryFileInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+              >
+                <Paperclip size={12} /> Add files
+              </button>
+              <button type="button" onClick={() => setShowRefUrlInput(v => !v)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  showRefUrlInput ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}>
+                <ExternalLink size={12} /> Add URL
+              </button>
+              {discoveryRefs.length === 0 && (
+                <span className="text-xs text-mission-control-text-dim ml-auto">
+                  {refsDragging ? 'Drop files here' : 'Drop files or add URLs as reference context'}
+                </span>
+              )}
+            </Flex>
+          </div>
+
+          {/* Input area */}
+          <div className="px-5 py-3.5 border-t border-mission-control-border flex-shrink-0">
+            <Flex gap="2">
+              <TextField.Root
+                size="1"
+                value={discoveryInput}
+                onChange={e => setDiscoveryInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleDiscoverySend()}
+                placeholder={discoveryLoading ? '' : gsdMode ? 'Describe your idea or pick an option above...' : 'Tell me about your project...'}
+                disabled={discoveryLoading || discoveryReady}
+                className="flex-1"
+              />
+              <IconButton variant="solid" size="1" onClick={handleDiscoverySend} disabled={!discoveryInput.trim() || discoveryLoading || discoveryReady}>
+                <Send size={14} />
+              </IconButton>
+            </Flex>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Context files phase ────────────────────────────────────────────────────
+  if (phase === 'context-files') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="w-full max-w-lg bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+            <div>
+              <div className="text-base font-semibold text-mission-control-text">Add Context Files</div>
+              <div className="text-xs text-mission-control-text-dim mt-0.5">Optional — upload files Gemini should use as context</div>
+            </div>
+            <button
+              onClick={onClose}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+            >
+              <X size={15} />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            {/* Drop zone */}
+            <div
+              onDragOver={e => { e.preventDefault(); setContextFilesDragging(true); }}
+              onDragLeave={() => setContextFilesDragging(false)}
+              onDrop={e => {
+                e.preventDefault();
+                setContextFilesDragging(false);
+                if (e.dataTransfer.files) {
+                  setStagedFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)]);
+                }
+              }}
+              onClick={() => contextFilesInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors ${
+                contextFilesDragging
+                  ? 'border-mission-control-accent bg-mission-control-accent/10'
+                  : 'border-mission-control-border hover:border-mission-control-accent/50 hover:bg-mission-control-surface'
+              }`}
+            >
+              <input
+                ref={contextFilesInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={e => {
+                  if (e.target.files) setStagedFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                }}
+              />
+              <Upload size={20} className="mx-auto text-mission-control-text-dim mb-2" />
+              <p className="text-sm text-mission-control-text-dim">Drop files here or click to upload</p>
+              <p className="text-xs text-mission-control-text-dim mt-1">Docs, images, PDFs, briefs — any file</p>
+            </div>
+
+            {/* Staged files list */}
+            {stagedFiles.length > 0 && (
+              <div className="space-y-1.5">
+                {stagedFiles.map((f, i) => (
+                  <Flex key={i} align="center" gap="2" className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-xl">
+                    <span className="flex-1 text-sm text-mission-control-text truncate">{f.name}</span>
+                    <span className="text-xs text-mission-control-text-dim">{(f.size / 1024).toFixed(0)}KB</span>
+                    <button
+                      onClick={() => setStagedFiles(prev => prev.filter((_, idx) => idx !== i))}
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </Flex>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+            <Button variant="solid" size="2" onClick={async () => {
+                setPhase('confirm');
+                const names = agents.filter(a => selectedAgents.includes(a.id)).map(a => a.name);
+                const userText = names.length > 0 ? `Team: ${names.join(', ')}` : 'No agents yet';
+                await mcAsk(userText, 'confirm', "Here's what I'll set up:");
+              }}>
+              {stagedFiles.length > 0 ? `Continue with ${stagedFiles.length} file${stagedFiles.length !== 1 ? 's' : ''}` : 'Continue'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ── Template picker (shown before chat starts) ────────────────────────────
   if (phase === 'template') {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
-          <div className="flex items-center justify-between px-4 py-3.5 border-b border-mission-control-border">
-            <div className="flex items-center gap-2">
+        <div className="w-full max-w-lg bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+            <Flex align="center" gap="2">
               <LayoutTemplate size={16} className="text-mission-control-accent" />
-              <span className="text-sm font-semibold text-mission-control-text">New Project</span>
-            </div>
-            <button onClick={onClose} className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
-              <X size={16} />
+              <span className="text-base font-semibold text-mission-control-text">New Project</span>
+            </Flex>
+            <button
+              onClick={onClose}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+            >
+              <X size={15} />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-5 space-y-3">
-            <p className="text-sm text-mission-control-text-dim mb-4">Start from a template or build from scratch.</p>
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-4">Start from a template or build from scratch</p>
             {/* Blank */}
             <button
+              type="button"
               onClick={() => setPhase('name')}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 transition-all text-left"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 hover:bg-mission-control-accent/5 transition-colors text-left"
             >
-              <div className="w-9 h-9 rounded-lg bg-mission-control-bg border border-mission-control-border flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-mission-control-bg border border-mission-control-border flex items-center justify-center flex-shrink-0">
                 <Bot size={16} className="text-mission-control-text-dim" />
               </div>
               <div>
@@ -385,6 +1024,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
               const TmplIcon = getProjectIcon(tmpl.iconId);
               return (
                 <button
+                  type="button"
                   key={tmpl.id}
                   onClick={() => {
                     setProjName(tmpl.name);
@@ -393,10 +1033,10 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                     setColor(tmpl.color);
                     setPhase('name');
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 transition-all text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 hover:bg-mission-control-accent/5 transition-colors text-left"
                 >
                   <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                     style={{ backgroundColor: `${tmpl.color}20`, border: `1px solid ${tmpl.color}40` }}
                   >
                     <TmplIcon size={16} style={{ color: tmpl.color }} />
@@ -416,18 +1056,21 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+      <div className="w-full max-w-lg bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
 
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-mission-control-border">
-          <div className="w-8 h-8 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center">
-            <Bot size={16} className="text-mission-control-accent" />
-          </div>
-          <div className="flex-1">
-            <div className="text-sm font-semibold text-mission-control-text">New Project Setup</div>
-          </div>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="3">
+            <div className="w-8 h-8 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center">
+              <Bot size={16} className="text-mission-control-accent" />
+            </div>
+            <span className="text-base font-semibold text-mission-control-text">New Project Setup</span>
+          </Flex>
           {phase !== 'creating' && (
-            <button onClick={onClose} className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
+            <button
+              onClick={onClose}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+            >
               <X size={16} />
             </button>
           )}
@@ -440,7 +1083,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
               <div key={msg.id} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start gap-2'}`}>
                 {msg.from === 'mc' && <MCAvatar />}
                 <div className={`max-w-[82%] ${msg.from === 'user' ? 'flex flex-col items-end' : ''}`}>
-                  <div className={`px-3 py-2 rounded-lg text-sm ${
+                  <div className={`px-3 py-2 rounded-xl text-sm ${
                     msg.from === 'user'
                       ? 'bg-mission-control-accent text-white rounded-br-sm'
                       : 'bg-mission-control-surface text-mission-control-text rounded-bl-sm'
@@ -456,16 +1099,16 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             ))}
 
             {mcTyping && (
-              <div className="flex gap-2 items-start">
+              <Flex gap="2" align="start">
                 <MCAvatar />
-                <div className="bg-mission-control-surface px-4 py-3 rounded-lg rounded-bl-sm">
-                  <div className="flex gap-1">
+                <div className="bg-mission-control-surface px-4 py-3 rounded-xl rounded-bl-sm">
+                  <Flex gap="1">
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                     <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
+                  </Flex>
                 </div>
-              </div>
+              </Flex>
             )}
           </div>
         )}
@@ -473,8 +1116,8 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
         {/* Creating stage */}
         {phase === 'creating' && (
           <div className="flex-1 overflow-y-auto p-4 min-h-[280px]">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
+            <Flex align="center" gap="3" mb="4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}20`, border: `2px solid ${color}60` }}>
                 <SelectedIconComp size={20} style={{ color }} />
               </div>
               <div>
@@ -482,25 +1125,25 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
                 <div className="text-xs text-mission-control-text-dim">Setting up your project...</div>
               </div>
               {!createError && <Loader2 size={16} className="ml-auto text-mission-control-accent animate-spin" />}
-            </div>
+            </Flex>
 
             <div className="space-y-2">
               {steps.map(s => (
-                <div key={s.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
+                <div key={s.id} className={`flex items-start gap-3 p-3 rounded-xl border transition-colors ${
                   s.status === 'running' ? 'bg-mission-control-accent/5 border-mission-control-accent/30' :
-                  s.status === 'done'    ? 'bg-green-500/5 border-green-500/20' :
-                  s.status === 'error'   ? 'bg-red-500/5 border-red-500/20' :
+                  s.status === 'done'    ? 'bg-success/10 border-success/30' :
+                  s.status === 'error'   ? 'bg-error/10 border-error/30' :
                   'bg-mission-control-surface border-mission-control-border'
                 }`}>
                   <div className="flex-shrink-0 mt-0.5">
                     {s.status === 'running' && <Loader2 size={16} className="text-mission-control-accent animate-spin" />}
-                    {s.status === 'done'    && <CheckCircle size={16} className="text-green-400" />}
-                    {s.status === 'error'   && <XCircle size={16} className="text-red-400" />}
+                    {s.status === 'done'    && <CheckCircle size={16} className="text-success" />}
+                    {s.status === 'error'   && <XCircle size={16} className="text-error" />}
                     {s.status === 'pending' && <Circle size={16} className="text-mission-control-border" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className={`text-sm font-medium ${
-                      s.status === 'done' ? 'text-green-400' : s.status === 'error' ? 'text-red-400' :
+                      s.status === 'done' ? 'text-success' : s.status === 'error' ? 'text-error' :
                       s.status === 'running' ? 'text-mission-control-accent' : 'text-mission-control-text-dim'
                     }`}>{s.label}</div>
                     <div className="text-xs text-mission-control-text-dim mt-0.5">{s.errorMsg || s.detail}</div>
@@ -510,8 +1153,8 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
             </div>
 
             {createError && (
-              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <div className="text-sm text-red-400 font-medium">Setup failed</div>
+              <div className="mt-4 p-3 bg-error/10 border border-error/30 rounded-xl">
+                <div className="text-sm text-error font-medium">Setup failed</div>
                 <div className="text-xs text-mission-control-text-dim mt-1">{createError}</div>
               </div>
             )}
@@ -537,43 +1180,42 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
         {/* Input bar */}
         <div className="p-3 border-t border-mission-control-border">
           {phase === 'done' && created ? (
-            <div className="flex gap-2">
-              <button onClick={() => onCreated(created)}
-                className="flex-1 py-2.5 bg-mission-control-accent text-white text-sm font-medium rounded-lg hover:bg-mission-control-accent/90 transition-colors flex items-center justify-center gap-2">
+            <Flex gap="2">
+              <Button variant="solid" size="1" onClick={() => onCreated(created)} className="flex-1 justify-center">
                 <Check size={15} /> Open Project
-              </button>
-              <button onClick={onClose}
-                className="px-4 py-2.5 border border-mission-control-border text-mission-control-text-dim text-sm rounded-lg hover:bg-mission-control-surface transition-colors">
+              </Button>
+              <button type="button" onClick={onClose} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                 Close
               </button>
-            </div>
+            </Flex>
           ) : phase === 'creating' && createError ? (
-            <div className="flex gap-2">
-              <button onClick={() => { setPhase('confirm'); setSteps([]); setCreateError(null); setMsgs(prev => [...prev.slice(0, -1)]); mcSay("Let me show the summary again.", 'confirm'); }}
-                className="flex-1 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50">Retry</button>
-            </div>
+            <Flex gap="2">
+              <button
+                onClick={() => { setPhase('confirm'); setSteps([]); setCreateError(null); setMsgs(prev => [...prev.slice(0, -1)]); mcSay("Let me show the summary again.", 'confirm'); }}
+                className="inline-flex items-center justify-center flex-1 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+              >Retry</button>
+            </Flex>
           ) : phase === 'creating' ? (
-            <div className="flex items-center justify-center gap-2 py-2 text-sm text-mission-control-text-dim">
+            <Flex align="center" justify="center" gap="2" py="2" className="text-sm text-mission-control-text-dim">
               <Loader2 size={14} className="animate-spin text-mission-control-accent" />
               Mission Control is setting up your workspace...
-            </div>
+            </Flex>
           ) : showInput ? (
-            <div className="flex gap-2">
-              <input
-                type="text"
+            <Flex gap="2">
+              <TextField.Root
+                size="1"
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 disabled={mcTyping}
                 placeholder={phase === 'name' ? 'Project name...' : 'Describe the goal...'}
-                className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50 disabled:opacity-50"
                 autoFocus
+                className="flex-1"
               />
-              <button onClick={handleSend} disabled={!input.trim() || mcTyping}
-                className="p-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+              <IconButton variant="solid" size="1" onClick={handleSend} disabled={!input.trim() || mcTyping}>
                 <Send size={18} />
-              </button>
-            </div>
+              </IconButton>
+            </Flex>
           ) : null}
         </div>
       </div>

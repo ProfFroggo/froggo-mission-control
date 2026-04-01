@@ -6,25 +6,15 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Button, TextField, Flex } from '@radix-ui/themes';
 import {
   Mic, MicOff, Play, Square, Download, Trash2, Clock,
   Users, Calendar, ChevronDown, ChevronUp, FileText, Upload,
-  Loader2, Sparkles
+  Loader2, Sparkles, CheckCircle,
 } from 'lucide-react';
 import { MeetingTranscriber, Meeting, MeetingTranscript, MeetingSummary } from '../lib/meetingTranscribe';
-import { GeminiTranscriptionService } from '../lib/multiAgentVoice';
 import MarkdownMessage from './MarkdownMessage';
 import { showToast } from './Toast';
-
-async function getGeminiKey(): Promise<string | null> {
-  try {
-    const { settingsApi } = await import('../lib/api');
-    const result = await settingsApi.get('gemini_api_key');
-    return result?.value ?? null;
-  } catch {
-    return null;
-  }
-}
 
 // Singleton transcriber — no API key required for recording
 const transcriber = new MeetingTranscriber();
@@ -142,15 +132,26 @@ export default function MeetingTranscribe() {
     setActiveMeeting(null);
     await loadMeetings();
 
-    // Summarise with Gemini REST if key is available
+    // Summarise via server-side Gemini proxy (API key never leaves server)
     if (rows.length > 0) {
       setSummarising(true);
       try {
-        const key = await getGeminiKey();
-        if (key) {
-          transcriber.setApiKey(key);
-          const result = await transcriber.summariseMeeting(activeMeeting.id);
-          setSummary(result);
+        const transcriptText = rows
+          .map(t => `[${new Date(t.timestamp).toLocaleTimeString()}] ${t.speaker}: ${t.text}`)
+          .join('\n');
+        const res = await fetch('/api/gemini/summarize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transcript: transcriptText, meetingTitle: activeMeeting.title }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSummary({
+            summary: data.summary || '',
+            actionItems: data.actionItems || [],
+            decisions: data.decisions || [],
+            keyTopics: data.keyTopics || [],
+          });
         }
       } catch { /* summarisation is optional */ }
       finally { setSummarising(false); }
@@ -205,10 +206,16 @@ export default function MeetingTranscribe() {
     setIsUploading(true);
 
     try {
-      const key = await getGeminiKey();
-      if (!key) throw new Error('Gemini API key not set. Add it in Settings > API Keys.');
-      const service = new GeminiTranscriptionService(key);
-      const transcript = await service.transcribeAudio(file, file.type || 'audio/webm');
+      // Transcribe via server-side proxy (API key never leaves server)
+      const formData = new FormData();
+      formData.append('audio', file);
+      formData.append('mimeType', file.type || 'audio/webm');
+      const res = await fetch('/api/gemini/transcribe', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({ error: 'Transcription failed' }));
+        throw new Error(errBody.error || `Server error: ${res.status}`);
+      }
+      const { transcript } = await res.json();
 
       const meeting = await transcriber.startMeeting(`Upload: ${file.name}`, []);
       await transcriber.saveTranscript(meeting.id, 'Transcript', transcript);
@@ -231,24 +238,24 @@ export default function MeetingTranscribe() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg text-white">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg text-mission-control-text">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between">
+          <Flex align="center" gap="3">
             <FileText className="w-5 h-5 text-review" />
             <h2 className="text-lg font-semibold">Meeting Transcription</h2>
             <span className="text-xs text-mission-control-text-dim px-2 py-0.5 bg-mission-control-surface rounded-full border border-mission-control-border">
               Web Speech API
             </span>
-          </div>
+          </Flex>
           {activeMeeting && (
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            <Flex align="center" gap="2">
+              <span className="w-2 h-2 bg-error rounded-full animate-pulse" />
               <span className="text-sm text-error font-medium">Recording</span>
-            </div>
+            </Flex>
           )}
-        </div>
+        </Flex>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -256,34 +263,32 @@ export default function MeetingTranscribe() {
         <div className="w-72 flex-shrink-0 border-r border-mission-control-border flex flex-col">
           {/* New Meeting Form */}
           <div className="p-4 border-b border-mission-control-border space-y-2">
-            <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide mb-2">New Meeting</h3>
-            <input
-              type="text"
+            <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wide mb-2">New Meeting</h3>
+            <TextField.Root
+              size="1"
               placeholder="Meeting title"
               value={newMeetingTitle}
               onChange={e => setNewMeetingTitle(e.target.value)}
               disabled={!!activeMeeting}
               onKeyDown={e => e.key === 'Enter' && !activeMeeting && startNewMeeting()}
-              className="w-full px-3 py-2 bg-mission-control-surface rounded-lg border border-mission-control-border focus:border-review-border outline-none text-sm disabled:opacity-50"
+              className="w-full"
             />
-            <input
-              type="text"
+            <TextField.Root
+              size="1"
               placeholder="Participants (comma-separated)"
               value={newMeetingParticipants}
               onChange={e => setNewMeetingParticipants(e.target.value)}
               disabled={!!activeMeeting}
-              className="w-full px-3 py-2 bg-mission-control-surface rounded-lg border border-mission-control-border focus:border-review-border outline-none text-sm disabled:opacity-50"
+              className="w-full"
             />
             {!activeMeeting ? (
-              <button onClick={startNewMeeting}
-                className="w-full py-2 bg-review hover:bg-review/80 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+              <Button variant="solid" size="1" onClick={startNewMeeting} className="w-full justify-center">
                 <Play className="w-4 h-4" /> Start Meeting
-              </button>
+              </Button>
             ) : (
-              <button onClick={endActiveMeeting}
-                className="w-full py-2 bg-error hover:bg-error/80 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+              <Button variant="soft" color="red" size="1" onClick={endActiveMeeting} className="w-full justify-center">
                 <Square className="w-4 h-4" /> End Meeting
-              </button>
+              </Button>
             )}
           </div>
 
@@ -291,19 +296,20 @@ export default function MeetingTranscribe() {
           <div className="p-4 border-b border-mission-control-border">
             <input ref={fileInputRef} type="file" accept="audio/*,video/*" onChange={handleFileUpload} className="hidden" />
             <button
+              type="button"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors w-full justify-center"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading || !!activeMeeting}
-              className="w-full py-2 bg-success hover:bg-success/80 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isUploading ? <><Loader2 className="w-4 h-4 animate-spin" />Transcribing…</> : <><Upload className="w-4 h-4" />Upload Recording</>}
             </button>
-            <p className="text-[11px] text-mission-control-text-dim mt-1 text-center">Requires Gemini API key · MP3, WAV, WebM, M4A</p>
-            {uploadError && <div className="mt-2 p-2 bg-error-subtle text-error rounded-lg text-xs">{uploadError}</div>}
+            <p className="text-xs text-mission-control-text-dim mt-1 text-center">Requires Gemini API key · MP3, WAV, WebM, M4A</p>
+            {uploadError && <div className="mt-2 p-2 bg-error/10 text-error rounded-lg text-xs">{uploadError}</div>}
           </div>
 
           {/* Meeting List */}
           <div className="flex-1 overflow-y-auto p-2">
-            <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide px-2 mb-2">Past Meetings</h3>
+            <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wide px-2 mb-2">Past Meetings</h3>
             {meetings.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-mission-control-text-dim">
                 <FileText className="w-8 h-8 mb-2 opacity-30" />
@@ -318,38 +324,35 @@ export default function MeetingTranscribe() {
                     <div key={meeting.id}
                       className={`rounded-lg border transition-colors ${selectedMeeting?.id === meeting.id ? 'bg-review-subtle border-review-border' : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-border/80'}`}>
                       <button type="button" onClick={() => viewMeeting(meeting)} className="w-full p-3 text-left">
-                        <div className="flex items-start justify-between">
+                        <Flex align="start" justify="between">
                           <div className="flex-1 min-w-0 mr-2">
                             <p className="font-medium text-sm truncate">{meeting.title}</p>
-                            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim mt-1">
+                            <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mt-1">
                               <Calendar className="w-3 h-3" />
                               <span>{new Date(meeting.started_at).toLocaleDateString()}</span>
                               <Clock className="w-3 h-3" />
                               <span>{formatDuration(duration)}</span>
-                            </div>
+                            </Flex>
                           </div>
-                          <button type="button" onClick={e => { e.stopPropagation(); toggleExpanded(meeting.id); }}
-                            className="p-1 hover:bg-mission-control-border rounded flex-shrink-0">
+                          <button type="button" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={e => { e.stopPropagation(); toggleExpanded(meeting.id); }}>
                             {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                           </button>
-                        </div>
+                        </Flex>
                         {meeting.status === 'active' && (
-                          <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 bg-error-subtle text-error rounded-full">Live</span>
+                          <span className="inline-block mt-1 text-xs px-1.5 py-0.5 bg-error/10 text-error rounded-full">Live</span>
                         )}
                       </button>
                       {isExpanded && (
-                        <div className="px-3 pb-3 flex gap-2 border-t border-mission-control-border pt-2">
-                          <button type="button" onClick={e => { e.stopPropagation(); downloadTranscript(meeting.id); }}
-                            className="flex-1 py-1 bg-mission-control-border hover:bg-mission-control-border/80 rounded text-xs font-medium flex items-center justify-center gap-1">
+                        <Flex gap="2" className="px-3 pb-3 border-t border-mission-control-border pt-2">
+                          <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={e => { e.stopPropagation(); downloadTranscript(meeting.id); }} style={{ flex: 1, justifyContent: 'center' }}>
                             <Download className="w-3 h-3" /> Export
                           </button>
                           {meeting.status === 'ended' && (
-                            <button type="button" onClick={e => { e.stopPropagation(); deleteMeeting(meeting.id); }}
-                              className="flex-1 py-1 bg-error-subtle text-error hover:brightness-110 rounded text-xs font-medium flex items-center justify-center gap-1">
+                            <Button variant="soft" color="red" size="1" onClick={e => { e.stopPropagation(); deleteMeeting(meeting.id); }} style={{ flex: 1, justifyContent: 'center' }}>
                               <Trash2 className="w-3 h-3" /> Delete
-                            </button>
+                            </Button>
                           )}
-                        </div>
+                        </Flex>
                       )}
                     </div>
                   );
@@ -364,39 +367,39 @@ export default function MeetingTranscribe() {
           {selectedMeeting ? (
             <>
               {/* Meeting header */}
-              <div className="p-4 border-b border-mission-control-border flex items-start justify-between">
+              <Flex align="start" justify="between" className="p-4 border-b border-mission-control-border">
                 <div>
                   <h3 className="font-semibold text-base">{selectedMeeting.title}</h3>
-                  <div className="flex items-center gap-4 text-xs text-mission-control-text-dim mt-1">
+                  <Flex align="center" gap="4" className="text-xs text-mission-control-text-dim mt-1">
                     <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(selectedMeeting.started_at).toLocaleString()}</span>
                     {selectedMeeting.ended_at && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatDuration(selectedMeeting.ended_at - selectedMeeting.started_at)}</span>}
                     {selectedMeeting.participants.length > 0 && <span className="flex items-center gap-1"><Users className="w-3 h-3" />{selectedMeeting.participants.join(', ')}</span>}
-                  </div>
+                  </Flex>
                 </div>
                 {selectedMeeting.status === 'active' && (
-                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${isRecording ? 'bg-error-subtle text-error' : 'bg-mission-control-border text-mission-control-text-dim'}`}>
+                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${isRecording ? 'bg-error/10 text-error' : 'bg-mission-control-border text-mission-control-text-dim'}`}>
                     {isRecording ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
                     {isRecording ? 'Listening' : 'Paused'}
                   </div>
                 )}
-              </div>
+              </Flex>
 
               {/* AI Summary (shown after meeting ends) */}
               {summarising && (
-                <div className="mx-4 mt-4 p-4 rounded-lg bg-review-subtle border border-review-border flex items-center gap-3 text-sm text-review">
+                <Flex align="center" gap="3" className="mx-4 mt-4 p-4 rounded-lg bg-review-subtle border border-review-border text-sm text-review">
                   <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
                   Generating meeting notes with Gemini…
-                </div>
+                </Flex>
               )}
               {summary && !summarising && (
                 <div className="mx-4 mt-4 p-4 rounded-lg bg-review-subtle border border-review-border space-y-3">
-                  <div className="flex items-center gap-2 text-review font-semibold text-sm">
+                  <Flex align="center" gap="2" className="text-review font-semibold text-sm">
                     <Sparkles className="w-4 h-4" /> Meeting Notes
-                  </div>
+                  </Flex>
                   <p className="text-sm text-mission-control-text">{summary.summary}</p>
                   {summary.actionItems.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide mb-1">Action Items</p>
+                      <p className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wide mb-1">Action Items</p>
                       <ul className="space-y-1">
                         {summary.actionItems.map((item, i) => (
                           <li key={i} className="text-sm flex items-start gap-2">
@@ -408,11 +411,11 @@ export default function MeetingTranscribe() {
                   )}
                   {summary.decisions.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide mb-1">Decisions</p>
+                      <p className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wide mb-1">Decisions</p>
                       <ul className="space-y-1">
                         {summary.decisions.map((d, i) => (
                           <li key={i} className="text-sm flex items-start gap-2">
-                            <span className="text-success mt-0.5">✓</span>{d}
+                            <CheckCircle size={12} className="text-success mt-0.5 shrink-0" />{d}
                           </li>
                         ))}
                       </ul>
@@ -432,35 +435,35 @@ export default function MeetingTranscribe() {
                 ) : (
                   <div className="space-y-3">
                     {transcripts.map((t, idx) => (
-                      <div key={t.id ?? idx} className="flex gap-3">
+                      <Flex key={t.id ?? idx} gap="3">
                         <div className="flex-shrink-0 w-7 h-7 rounded-full bg-review-subtle flex items-center justify-center">
                           <Users className="w-3.5 h-3.5 text-review" />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 text-[11px] text-mission-control-text-dim mb-1">
+                          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mb-1">
                             <span className="font-medium">{t.speaker}</span>
                             <span>·</span>
                             <span>{new Date(t.timestamp).toLocaleTimeString()}</span>
-                          </div>
+                          </Flex>
                           <div className="bg-mission-control-surface rounded-lg px-3 py-2 text-sm">
                             <MarkdownMessage content={t.text} />
                           </div>
                         </div>
-                      </div>
+                      </Flex>
                     ))}
                     {/* Interim typing indicator */}
                     {interimText && (
-                      <div className="flex gap-3 opacity-50">
+                      <Flex gap="3" className="opacity-50">
                         <div className="flex-shrink-0 w-7 h-7 rounded-full bg-review-subtle flex items-center justify-center">
                           <Mic className="w-3.5 h-3.5 text-review animate-pulse" />
                         </div>
                         <div className="flex-1">
-                          <div className="text-[11px] text-mission-control-text-dim mb-1">You · now</div>
+                          <div className="text-xs text-mission-control-text-dim mb-1">You · now</div>
                           <div className="bg-mission-control-surface rounded-lg px-3 py-2 text-sm italic text-mission-control-text-dim">
                             {interimText}
                           </div>
                         </div>
-                      </div>
+                      </Flex>
                     )}
                     <div ref={transcriptsEndRef} />
                   </div>
@@ -476,6 +479,6 @@ export default function MeetingTranscribe() {
           )}
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

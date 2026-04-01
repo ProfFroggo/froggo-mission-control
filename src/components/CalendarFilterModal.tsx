@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { X, Eye, EyeOff, Calendar, RefreshCw, CheckSquare } from 'lucide-react';
+import { Button, Flex } from '@radix-ui/themes';
 import { useUserSettings } from '../store/userSettings';
 
 interface CalendarSource {
@@ -231,68 +232,65 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
 
   return (
     <div 
-      className="fixed inset-0 modal-backdrop backdrop-blur-md modal-backdrop-enter flex items-center justify-center z-50 p-4" 
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 modal-backdrop-enter" 
       onClick={handleBackdropClick}
       onKeyDown={handleBackdropClick}
       role="button"
       tabIndex={0}
       aria-label="Close calendar filter"
     >
-      <div 
-        className="glass-modal rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-content-enter"
+      <div
+        className="bg-mission-control-surface rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-content-enter border border-mission-control-border"
         onClick={handleInnerClick}
         onKeyDown={handleInnerClick}
         role="presentation"
       >
         {/* Header */}
-        <div className="p-6 border-b border-mission-control-border flex items-center justify-between bg-mission-control-surface sticky top-0 z-10">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-info-subtle rounded-lg">
+            <div className="p-2 bg-info/10 rounded-lg">
               <Calendar size={20} className="text-info" />
             </div>
             <div>
-              <h3 className="font-semibold text-lg">Calendar Sources</h3>
-              <p className="text-sm text-mission-control-text-dim">
+              <h3 className="text-base font-semibold">Calendar Sources</h3>
+              <p className="text-xs text-mission-control-text-dim">
                 {sources.filter(s => s.enabled).length} of {sources.length} enabled
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <button
+              type="button"
               onClick={loadSources}
               disabled={refreshing}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               title="Refresh sources"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-50"
             >
               <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
             </button>
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+              aria-label="Close"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <X size={16} />
             </button>
-          </div>
+          </Flex>
         </div>
 
         {/* Quick Actions */}
-        <div className="px-6 py-3 border-b border-mission-control-border bg-mission-control-bg/50 flex items-center gap-2">
-          <button
-            onClick={selectAll}
-            className="text-sm px-3 py-1.5 bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
-          >
+        <div className="px-6 py-3 border-b border-mission-control-border flex items-center gap-2">
+          <Button variant="ghost" size="2" onClick={selectAll}>
             Select All
-          </button>
-          <button
-            onClick={deselectAll}
-            className="text-sm px-3 py-1.5 bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
-          >
+          </Button>
+          <Button variant="ghost" size="2" onClick={deselectAll}>
             Deselect All
-          </button>
+          </Button>
         </div>
 
         {/* Sources List */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
             <div className="text-center py-8 text-mission-control-text-dim">
               <RefreshCw size={32} className="mx-auto mb-4 animate-spin" />
@@ -302,20 +300,18 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
             <div className="space-y-6">
               {Object.entries(groupedSources).map(([type, typeSources]) => (
                 <div key={type}>
-                  <h4 className="text-sm font-medium text-mission-control-text-dim mb-3 flex items-center gap-2">
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-2">
                     {typeIcons[type]}
                     {typeLabels[type]}
                   </h4>
                   <div className="space-y-2">
                     {typeSources.map((source) => (
                       <button
+                        type="button"
                         key={source.id}
                         onClick={() => toggleSource(source.id)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                          source.enabled
-                            ? 'border-mission-control-border bg-mission-control-bg/50 hover:bg-mission-control-bg'
-                            : 'border-mission-control-border/50 opacity-50 hover:opacity-75'
-                        }`}
+                        className="inline-flex items-center gap-2 w-full px-2.5 py-2 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                        style={{ opacity: source.enabled ? 1 : 0.5 }}
                       >
                         {/* Toggle Indicator */}
                         <div className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
@@ -327,7 +323,7 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
                         </div>
 
                         {/* Color Indicator */}
-                        <div 
+                        <div
                           className="w-3 h-3 rounded-full flex-shrink-0"
                           style={{ backgroundColor: source.color }}
                         />
@@ -356,20 +352,18 @@ export default function CalendarFilterModal({ onClose, onFilterChange }: Calenda
         </div>
 
         {/* Footer Actions */}
-        <div className="p-6 border-t border-mission-control-border flex justify-end gap-2 bg-mission-control-surface">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-mission-control-border rounded-lg hover:bg-mission-control-border/80 transition-colors"
-          >
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+          <Button variant="ghost" size="2" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSave}
-            className="flex items-center gap-2 px-6 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+            size="2"
+            variant="solid"
           >
             <Calendar size={16} />
             Apply Filters
-          </button>
+          </Button>
         </div>
       </div>
     </div>

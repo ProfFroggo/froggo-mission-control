@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, Mail, MessageSquare, CheckSquare, Brain, Calendar, Filter, Clock, ChevronRight, Hash, User, Zap, Compass } from 'lucide-react';
 import Fuse from 'fuse.js';
+import { TextField, Box, Flex, Text } from '@radix-ui/themes';
 import { SkeletonList } from './Skeleton';
 import { gateway } from '../lib/gateway';
 import { sanitizeSearchSnippet } from '../utils/sanitize';
@@ -64,12 +65,12 @@ const typeIcons = {
 };
 
 const typeColors = {
-  task: 'text-info bg-info-subtle',
+  task: 'text-info bg-info/10',
   fact: 'text-review bg-review-subtle',
-  message: 'text-success bg-success-subtle',
-  email: 'text-warning bg-warning-subtle',
+  message: 'text-success bg-success/10',
+  email: 'text-warning bg-warning/10',
   session: 'text-cyan-400 bg-cyan-500/10',
-  calendar: 'text-warning bg-warning-subtle',
+  calendar: 'text-warning bg-warning/10',
   tweet: 'text-sky-400 bg-sky-500/10',
   agent: 'text-pink-400 bg-pink-500/10',
   automation: 'text-violet-400 bg-violet-500/10',
@@ -407,24 +408,26 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
   const activeFilters = [typeFilter, dateFilter, statusFilter].filter(f => f !== 'all').length;
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/60 backdrop-blur-sm"
+    <Flex
+      align="start"
+      justify="center"
+      className="fixed inset-0 z-50 pt-20 bg-black/60 backdrop-blur-sm"
       onClick={onClose}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
       role="button"
       tabIndex={0}
       aria-label="Close search"
     >
-      <div 
+      <Box
         className="w-full max-w-3xl bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-200"
         onClick={e => e.stopPropagation()}
         onKeyDown={e => e.stopPropagation()}
         role="presentation"
       >
         {/* Search Input */}
-        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
-          <Search size={20} className="text-mission-control-accent flex-shrink-0" />
-          <input
+        <Flex align="center" gap="3" p="4" className="border-b border-mission-control-border">
+          <Search size={16} className="text-mission-control-text-dim flex-shrink-0" />
+          <TextField.Root
             ref={inputRef}
             type="text"
             value={query}
@@ -432,164 +435,167 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
             onKeyDown={handleKeyDown}
             placeholder="Search everything... (⌘K or ⌘F)"
             aria-label="Search input"
-            className="flex-1 bg-transparent text-lg outline-none placeholder-mission-control-text-dim"
+            variant="soft"
+            size="2"
+            className="flex-1 bg-transparent border-none shadow-none text-sm placeholder:text-mission-control-text-dim focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
           />
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             {loading && (
-              <div className="w-5 h-5 border-2 border-mission-control-accent border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-[var(--mission-control-accent)] border-t-transparent rounded-full animate-spin" />
             )}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`p-1.5 hover:bg-mission-control-border rounded-lg transition-colors relative ${
-                showFilters ? 'bg-mission-control-border' : ''
-              }`}
-              title="Toggle filters (Tab)"
-            >
-              <Filter size={16} className={activeFilters > 0 ? 'text-mission-control-accent' : 'text-mission-control-text-dim'} />
+            <div className="relative">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                title="Toggle filters (Tab)"
+                className={`inline-flex items-center justify-center w-8 h-8 rounded border text-xs transition-colors ${
+                  showFilters || activeFilters > 0
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+                }`}
+              >
+                <Filter size={16} className={activeFilters > 0 ? 'text-[var(--mission-control-accent)]' : ''} />
+              </button>
               {activeFilters > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-mission-control-accent text-mission-control-bg text-xs rounded-full flex items-center justify-center font-bold">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--mission-control-accent)] text-[var(--mission-control-bg)] text-xs rounded-full flex items-center justify-center font-bold pointer-events-none">
                   {activeFilters}
                 </span>
               )}
-            </button>
+            </div>
             <button
               onClick={onClose}
-              className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
-              <X size={16} className="text-mission-control-text-dim" />
+              <X size={16} />
             </button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="p-4 border-b border-mission-control-border bg-mission-control-bg/50 space-y-3">
-            <div className="flex items-center gap-2">
+          <Box p="4" className="border-b border-mission-control-border bg-mission-control-surface space-y-3">
+            <Flex align="center" gap="2">
               <Hash size={14} className="text-mission-control-text-dim" />
-              <span className="text-sm text-mission-control-text-dim font-medium">Type:</span>
-              <div className="flex gap-1 flex-wrap">
+              <Text size="2" weight="medium" className="text-mission-control-text-dim">Type:</Text>
+              <Flex gap="1" wrap="wrap">
                 {(['all', 'task', 'fact', 'message', 'email', 'session', 'agent', 'calendar'] as FilterType[]).map(type => (
                   <button
                     key={type}
+                    type="button"
                     onClick={() => setTypeFilter(type)}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      typeFilter === type
-                        ? 'bg-mission-control-accent text-mission-control-bg font-medium'
-                        : 'bg-mission-control-border hover:bg-mission-control-border/70 text-mission-control-text-dim'
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                      typeFilter === type ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                     }`}
                   >
                     {type === 'all' ? 'All' : typeLabels[type as keyof typeof typeLabels]}
                   </button>
                 ))}
-              </div>
-            </div>
+              </Flex>
+            </Flex>
 
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <Clock size={14} className="text-mission-control-text-dim" />
-              <span className="text-sm text-mission-control-text-dim font-medium">Date:</span>
-              <div className="flex gap-1">
+              <Text size="2" weight="medium" className="text-mission-control-text-dim">Date:</Text>
+              <Flex gap="1">
                 {(['all', 'today', 'week', 'month'] as DateFilter[]).map(date => (
                   <button
                     key={date}
+                    type="button"
                     onClick={() => setDateFilter(date)}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      dateFilter === date
-                        ? 'bg-mission-control-accent text-mission-control-bg font-medium'
-                        : 'bg-mission-control-border hover:bg-mission-control-border/70 text-mission-control-text-dim'
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                      dateFilter === date ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                     }`}
                   >
                     {date.charAt(0).toUpperCase() + date.slice(1)}
                   </button>
                 ))}
-              </div>
-            </div>
+              </Flex>
+            </Flex>
 
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <Zap size={14} className="text-mission-control-text-dim" />
-              <span className="text-sm text-mission-control-text-dim font-medium">Status:</span>
-              <div className="flex gap-1">
+              <Text size="2" weight="medium" className="text-mission-control-text-dim">Status:</Text>
+              <Flex gap="1">
                 {(['all', 'todo', 'internal-review', 'in-progress', 'review', 'human-review', 'done'] as StatusFilter[]).map(status => (
                   <button
                     key={status}
+                    type="button"
                     onClick={() => setStatusFilter(status)}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      statusFilter === status
-                        ? 'bg-mission-control-accent text-mission-control-bg font-medium'
-                        : 'bg-mission-control-border hover:bg-mission-control-border/70 text-mission-control-text-dim'
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                      statusFilter === status ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                     }`}
                   >
                     {status === 'all' ? 'All' : status.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                   </button>
                 ))}
-              </div>
-            </div>
-          </div>
+              </Flex>
+            </Flex>
+          </Box>
         )}
 
         {/* Results */}
         <div ref={resultsRef} className="max-h-[28rem] overflow-y-auto">
           {/* Search History */}
           {showHistory && searchHistory.length > 0 && (
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Clock size={16} className="text-mission-control-text-dim" />
-                  <span className="text-sm font-medium text-mission-control-text-dim">Recent Searches</span>
-                </div>
+            <Box p="4">
+              <Flex align="center" justify="between" mb="3">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Recent Searches</span>
                 <button
                   onClick={clearHistory}
-                  className="text-xs text-mission-control-text-dim hover:text-mission-control-accent transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors"
                 >
                   Clear
                 </button>
-              </div>
-              <div className="space-y-1">
+              </Flex>
+              <Flex wrap="wrap" gap="1">
                 {searchHistory.map((item, index) => (
-                  <div
+                  <button
                     key={`${item}-${index}`}
+                    type="button"
                     onClick={() => {
                       setQuery(item);
                       setShowHistory(false);
                     }}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setQuery(item); setShowHistory(false); } }}
-                    role="button"
-                    tabIndex={0}
-                    className={`p-2 rounded-lg cursor-pointer transition-colors flex items-center gap-2 ${
-                      index === selectedIndex ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'hover:bg-mission-control-bg/50'
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs border transition-colors ${
+                      index === selectedIndex
+                        ? 'bg-mission-control-accent/12 text-mission-control-accent border-mission-control-accent/30'
+                        : 'border-mission-control-border text-mission-control-text/70 hover:text-mission-control-text hover:bg-mission-control-border/30 hover:border-mission-control-accent/20'
                     }`}
                   >
-                    <Clock size={14} className="text-mission-control-text-dim" />
-                    <span className="text-sm">{item}</span>
-                  </div>
+                    <Clock size={12} className="flex-shrink-0" />
+                    {item}
+                  </button>
                 ))}
-              </div>
-            </div>
+              </Flex>
+            </Box>
           )}
 
           {/* Loading State */}
           {loading && query.length >= 2 && !showHistory && (
-            <div className="p-4">
+            <Box p="4">
               <SkeletonList count={4} />
-            </div>
+            </Box>
           )}
 
           {/* No Results */}
           {filteredResults.length === 0 && panelResults.length === 0 && query.length >= 2 && !loading && !showHistory && (
-            <div className="p-12 text-center text-mission-control-text-dim">
-              <Search size={40} className="mx-auto mb-3 opacity-50" />
-              <p className="text-lg mb-2">No results found</p>
-              <p className="text-sm">Try adjusting your search or filters</p>
-            </div>
+            <Flex direction="column" align="center" py="8" px="6" gap="2">
+              <div className="w-10 h-10 rounded-xl bg-mission-control-border/30 flex items-center justify-center mb-1">
+                <Search size={20} className="text-mission-control-text-dim opacity-60" />
+              </div>
+              <Text size="3" weight="medium" className="text-mission-control-text/70" as="p">No results found</Text>
+              <Text size="2" className="text-mission-control-text-dim text-center" as="p">
+                Try adjusting your search or filters
+              </Text>
+            </Flex>
           )}
 
           {/* Quick Navigation — shown when query is empty (with or without history) */}
           {query.length === 0 && (
-            <div className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Compass size={16} className="text-mission-control-text-dim" />
-                <span className="text-sm font-medium text-mission-control-text-dim">Quick Navigation</span>
-              </div>
-              <div className="space-y-1">
+            <Box p="4">
+              <Flex align="center" gap="2" mb="3">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Quick Navigation</span>
+              </Flex>
+              <Flex direction="column" gap="1">
                 {PANEL_NAV.slice(0, 5).map(panel => (
                   <div
                     key={panel.id}
@@ -600,34 +606,35 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                     className="p-2 rounded-lg cursor-pointer transition-colors flex items-center gap-2 hover:bg-mission-control-bg/50"
                   >
                     <Compass size={14} className="text-mission-control-accent" />
-                    <span className="text-sm">Go to {panel.label}</span>
+                    <Text size="2">Go to {panel.label}</Text>
                   </div>
                 ))}
-              </div>
-            </div>
+              </Flex>
+            </Box>
           )}
 
           {/* Empty State — shown when there is a short query but no history */}
           {filteredResults.length === 0 && panelResults.length === 0 && query.length >= 1 && query.length < 2 && !showHistory && (
-            <div className="p-12 text-center text-mission-control-text-dim">
-              <Search size={40} className="mx-auto mb-3 opacity-50" />
-              <p className="text-sm mb-4">Type at least 2 characters to search</p>
-              <div className="flex flex-wrap gap-2 justify-center">
+            <Flex direction="column" align="center" py="8" px="6" gap="2">
+              <div className="w-10 h-10 rounded-xl bg-mission-control-border/30 flex items-center justify-center mb-1">
+                <Search size={20} className="text-mission-control-text-dim opacity-60" />
+              </div>
+              <Text size="2" className="text-mission-control-text/70" as="p">Type at least 2 characters to search</Text>
+              <Flex wrap="wrap" gap="1.5" justify="center" mt="2">
                 {Object.entries(typeLabels).map(([key, label]) => (
-                  <span key={key} className="px-3 py-1.5 bg-mission-control-border rounded-lg text-xs">
+                  <span key={key} className="px-2.5 py-1 bg-mission-control-border/40 rounded-full text-xs text-mission-control-text-dim border border-mission-control-border">
                     {label}
                   </span>
                 ))}
-              </div>
-            </div>
+              </Flex>
+            </Flex>
           )}
 
           {/* Panel Navigation Results — shown at the top when query matches a panel */}
           {panelResults.length > 0 && (
-            <div className="border-b border-mission-control-border">
-              <div className="flex items-center gap-2 px-4 pt-3 pb-1">
-                <Compass size={14} className="text-mission-control-text-dim" />
-                <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Navigate to</span>
+            <Box className="border-b border-mission-control-border">
+              <div className="px-4 pt-3 pb-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Navigate to</span>
               </div>
               {panelResults.map(panel => (
                 <div
@@ -645,14 +652,14 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                   <ChevronRight size={14} className="text-mission-control-text-dim ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               ))}
-            </div>
+            </Box>
           )}
 
           {/* Results List */}
           {filteredResults.map((result, index) => {
             const Icon = typeIcons[result.type];
             const colorClass = typeColors[result.type];
-            
+
             return (
               <div
                 key={`${result.type}-${result.id}-${index}`}
@@ -660,19 +667,19 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelect(result); } }}
                 role="button"
                 tabIndex={0}
-                className={`p-4 border-b border-mission-control-border cursor-pointer transition-all group ${
-                  index === selectedIndex 
-                    ? 'bg-mission-control-accent/10 border-l-2 border-l-mission-control-accent' 
-                    : 'hover:bg-mission-control-bg/50 border-l-2 border-l-transparent'
+                className={`px-4 py-2.5 cursor-pointer transition-colors group ${
+                  index === selectedIndex
+                    ? 'bg-mission-control-accent/12 text-mission-control-accent'
+                    : 'hover:bg-mission-control-border/30'
                 }`}
               >
-                <div className="flex items-start gap-3">
-                  <div className={`p-2 rounded-lg ${colorClass} flex-shrink-0`}>
+                <Flex align="start" gap="3">
+                  <Box p="2" flexShrink="0" className={`rounded-lg ${colorClass}`}>
                     <Icon size={16} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium truncate">{result.title}</span>
+                  </Box>
+                  <Box flexGrow="1" minWidth="0">
+                    <Flex align="center" gap="2" mb="1">
+                      <span className="text-sm font-medium text-mission-control-text truncate">{result.title}</span>
                       <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${colorClass}`}>
                         {typeLabels[result.type]}
                       </span>
@@ -681,7 +688,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                           • {result.status}
                         </span>
                       )}
-                    </div>
+                    </Flex>
                     {/* Render snippet with HTML highlighting if it contains <mark> tags */}
                     {/* SECURITY: sanitizeSearchSnippet (DOMPurify) allows only <mark> tags; all other HTML stripped */}
                     {result.snippet?.includes('<mark>') ? (
@@ -692,11 +699,11 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                         }}
                       />
                     ) : (
-                      <p className="text-sm text-mission-control-text-dim truncate">
+                      <Text size="2" className="text-mission-control-text-dim truncate" as="p">
                         {result.snippet}
-                      </p>
+                      </Text>
                     )}
-                    <div className="flex items-center gap-2 mt-1 text-xs text-mission-control-text-dim">
+                    <Flex align="center" gap="2" mt="1" className="text-xs text-mission-control-text-dim">
                       {result.source && <span>{result.source}</span>}
                       {result.timestamp && (
                         <>
@@ -712,48 +719,48 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
                           </span>
                         </>
                       )}
-                    </div>
-                  </div>
-                  <ChevronRight 
-                    size={16} 
+                    </Flex>
+                  </Box>
+                  <ChevronRight
+                    size={16}
                     className={`text-mission-control-text-dim flex-shrink-0 transition-transform ${
                       index === selectedIndex ? 'translate-x-1 text-mission-control-accent' : 'opacity-0 group-hover:opacity-100'
                     }`}
                   />
-                </div>
+                </Flex>
               </div>
             );
           })}
         </div>
 
         {/* Footer */}
-        <div className="p-3 border-t border-mission-control-border bg-mission-control-bg/50 flex items-center justify-between text-xs text-mission-control-text-dim">
-          <div className="flex gap-4">
+        <Flex align="center" justify="between" p="3" className="border-t border-mission-control-border bg-mission-control-surface/80 text-[10px] text-mission-control-text-dim">
+          <Flex gap="4">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">↑↓</kbd>
+              <kbd className="text-[11px] font-mono px-1.5 py-0.5 rounded border border-mission-control-border bg-mission-control-border/60 text-mission-control-text">↑↓</kbd>
               Navigate
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">↵</kbd>
+              <kbd className="text-[11px] font-mono px-1.5 py-0.5 rounded border border-mission-control-border bg-mission-control-border/60 text-mission-control-text">↵</kbd>
               Select
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Tab</kbd>
+              <kbd className="text-[11px] font-mono px-1.5 py-0.5 rounded border border-mission-control-border bg-mission-control-border/60 text-mission-control-text">Tab</kbd>
               Filters
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Esc</kbd>
+              <kbd className="text-[11px] font-mono px-1.5 py-0.5 rounded border border-mission-control-border bg-mission-control-border/60 text-mission-control-text">Esc</kbd>
               Close
             </span>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             {filteredResults.length > 0 && (
               <span>{filteredResults.length} result{filteredResults.length !== 1 ? 's' : ''}</span>
             )}
             <span>⌘K • ⌘F</span>
-          </div>
-        </div>
-      </div>
-    </div>
+          </Flex>
+        </Flex>
+      </Box>
+    </Flex>
   );
 }

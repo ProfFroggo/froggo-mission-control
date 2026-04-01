@@ -101,7 +101,7 @@
 
 /* Selection highlight for blurred editor (TipTap Selection extension) */
 .writing-editor .ProseMirror .selection {
-  background-color: rgba(34, 197, 94, 0.15);
+  background-color: color-mix(in srgb, var(--mission-control-accent) 15%, transparent);
   border-radius: 2px;
 }
 

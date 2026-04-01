@@ -7,7 +7,8 @@
 // Review: 2026-02-17 - suppression retained, fixed ESC handler dep
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Bot, MessageSquare, Edit3, Send, Loader2, Sparkles, Zap, CheckCircle } from 'lucide-react';
+import { X, Bot, MessageSquare, Edit3, Send, Sparkles, Zap, CheckCircle } from 'lucide-react';
+import { Button, Flex, IconButton, Spinner, TextArea, TextField } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 import { useStore } from '../store/store';
 import { showToast } from './Toast';
@@ -45,7 +46,7 @@ export default function WorkerModal({ isOpen, onClose }: WorkerModalProps) {
 
   // Animation state
   const [isClosing, setIsClosing] = useState(false);
-  
+
   // Mode selection
   const [mode, setMode] = useState<ModalMode>('chat');
 
@@ -98,7 +99,7 @@ export default function WorkerModal({ isOpen, onClose }: WorkerModalProps) {
             id: `msg-${Date.now()}`,
             role: 'assistant',
             content:
-              "Hey! 🐸 Let's create a new worker agent together. Tell me what you need this agent to do, and I'll help you design it. What's the task?",
+              "Hey! Let's create a new worker agent together. Tell me what you need this agent to do, and I'll help you design it. What's the task?",
             timestamp: Date.now(),
           },
         ]);
@@ -169,7 +170,7 @@ export default function WorkerModal({ isOpen, onClose }: WorkerModalProps) {
 
     try {
       const conversationHistory = chatMessages.map((m) => `${m.role}: ${m.content}`).join('\n');
-      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Mission Control 🐸, helping create a worker agent in the mission-control agent system. Have a natural conversation to gather:
+      const prompt = `${conversationHistory}\nuser: ${userMessage.content}\n\n---\n\nYou are Mission Control, helping create a worker agent in the mission-control agent system. Have a natural conversation to gather:
 
 - Worker name (clear, descriptive, e.g., "Twitter Content Scheduler", "Database Migration Helper")
 - Role/title (what they specialize in)
@@ -324,47 +325,41 @@ Be conversational, friendly, and help design an effective agent.`;
   };
 
   return (
-    <div 
-      className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 ${
+    <div
+      className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 ${
         isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
-      }`} 
+      }`}
       onClick={handleClose}
       aria-hidden="true"
     >
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
-      <div 
-        className={`glass-modal rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col ${
+      <div
+        className={`bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
-        }`} 
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 border-b border-mission-control-border">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Bot className="text-mission-control-accent" size={24} />
-              <h2 className="text-xl font-semibold">Create Worker Agent</h2>
-            </div>
-            <button 
-              onClick={handleClose} 
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
-              aria-label="Close modal"
-            >
-              <X size={16} />
-            </button>
-          </div>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="3">
+            <Bot className="text-[--accent-11]" size={20} />
+            <span className="text-base font-semibold">Create Worker Agent</span>
+          </Flex>
+          <button type="button" onClick={handleClose} aria-label="Close modal" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
 
-          {/* Mode Selector */}
-          <div className="flex gap-2">
+        {/* Mode Selector */}
+        <div className="px-6 py-3 border-b border-mission-control-border flex-shrink-0">
+          <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
             <button
-              onClick={() => setMode('chat')}
               type="button"
               aria-pressed={mode === 'chat'}
               aria-label="Chat with Mission Control mode"
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
-                mode === 'chat'
-                  ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
-                  : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
+              onClick={() => setMode('chat')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
+                mode === 'chat' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               <MessageSquare size={16} />
@@ -372,14 +367,12 @@ Be conversational, friendly, and help design an effective agent.`;
               <Sparkles size={14} className={mode === 'chat' ? 'animate-pulse' : 'opacity-50'} />
             </button>
             <button
-              onClick={() => setMode('manual')}
               type="button"
               aria-pressed={mode === 'manual'}
               aria-label="Manual entry mode"
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all ${
-                mode === 'manual'
-                  ? 'bg-mission-control-accent text-white border-mission-control-accent shadow-lg shadow-mission-control-accent/20'
-                  : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/50'
+              onClick={() => setMode('manual')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
+                mode === 'manual' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               <Edit3 size={16} />
@@ -396,45 +389,45 @@ Be conversational, friendly, and help design an effective agent.`;
               {/* Chat Messages */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {chatMessages.map((msg) => (
-                  <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <Flex key={msg.id} justify={msg.role === 'user' ? 'end' : 'start'}>
                     <div
                       className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                         msg.role === 'user'
-                          ? 'bg-mission-control-accent text-white'
+                          ? 'bg-[--accent-9] text-[--accent-1]'
                           : 'bg-mission-control-surface border border-mission-control-border'
                       }`}
                     >
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</div>
-                      <div className={`text-xs mt-1 ${msg.role === 'user' ? 'text-white/60' : 'text-mission-control-text-dim'}`}>
+                      <div className={`text-xs mt-1 ${msg.role === 'user' ? 'text-[--accent-1]/60' : 'text-mission-control-text-dim'}`}>
                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
-                  </div>
+                  </Flex>
                 ))}
 
                 {/* Streaming message */}
                 {isStreaming && streamingContent && (
-                  <div className="flex justify-start">
+                  <Flex justify="start">
                     <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">{streamingContent}</div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Loader2 size={14} className="animate-spin text-mission-control-accent" />
+                      <Flex align="center" gap="2" className="mt-2">
+                        <Spinner size="1" />
                         <span className="text-xs text-mission-control-text-dim">Mission Control is typing...</span>
-                      </div>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 )}
 
                 {/* Loading indicator */}
                 {isStreaming && !streamingContent && (
-                  <div className="flex justify-start">
+                  <Flex justify="start">
                     <div className="rounded-2xl px-4 py-3 bg-mission-control-surface border border-mission-control-border">
-                      <div className="flex items-center gap-2">
-                        <Loader2 size={16} className="animate-spin text-mission-control-accent" />
+                      <Flex align="center" gap="2">
+                        <Spinner size="2" />
                         <span className="text-sm text-mission-control-text-dim">Mission Control is thinking...</span>
-                      </div>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 )}
 
                 <div ref={chatEndRef} />
@@ -443,19 +436,19 @@ Be conversational, friendly, and help design an effective agent.`;
               {/* Extracted Worker Preview */}
               {conversationComplete && extractedData.name && (
                 <div className="px-6 pb-4">
-                  <div className="bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Sparkles size={16} className="text-mission-control-accent" />
+                  <div className="bg-[--accent-3] border border-[--accent-6] rounded-lg p-4">
+                    <Flex align="center" gap="2" className="mb-3">
+                      <Sparkles size={16} className="text-[--accent-11]" />
                       <span className="font-semibold text-sm">Worker Agent Ready!</span>
-                    </div>
+                    </Flex>
                     <div className="space-y-2 text-sm mb-4">
-                      <div className="flex items-center gap-2">
+                      <Flex align="center" gap="2">
                         <strong>Name:</strong> {extractedData.name}
-                      </div>
+                      </Flex>
                       {extractedData.role && (
-                        <div className="flex items-center gap-2">
+                        <Flex align="center" gap="2">
                           <strong>Role:</strong> {extractedData.role}
-                        </div>
+                        </Flex>
                       )}
                       {extractedData.taskDescription && (
                         <div>
@@ -469,36 +462,39 @@ Be conversational, friendly, and help design an effective agent.`;
                         <div className="flex items-center gap-2 flex-wrap">
                           <strong>Capabilities:</strong>
                           {extractedData.capabilities.map((cap, i) => (
-                            <span key={i} className="px-2 py-0.5 bg-mission-control-accent/20 rounded-full text-xs">
+                            <span key={i} className="px-2 py-0.5 bg-[--accent-3] rounded-full text-xs">
                               {cap}
                             </span>
                           ))}
                         </div>
                       )}
-                      <div className="flex items-center gap-2">
+                      <Flex align="center" gap="2">
                         <strong>Model:</strong>
-                        <span className="px-2 py-0.5 bg-info-subtle text-info rounded text-xs font-medium">
-                          {extractedData.model === 'opus' ? 'Claude Opus 4 🚀' : 'Claude Sonnet 4.5 ⚡'}
+                        <span className="px-2 py-0.5 bg-info/10 text-info rounded text-xs font-medium">
+                          {extractedData.model === 'opus' ? 'Claude Opus 4' : 'Claude Sonnet 4.5'}
                         </span>
-                      </div>
+                      </Flex>
                     </div>
-                    <button
+                    <Button
                       onClick={handleCreateFromChat}
+                      variant="solid"
+                      size="2"
+                      className="w-full"
                       aria-label="Create and start worker agent"
-                      className="w-full px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors font-medium flex items-center justify-center gap-2"
                     >
                       <Zap size={16} />
-                      Create & Start Worker
-                    </button>
+                      Create &amp; Start Worker
+                    </Button>
                   </div>
                 </div>
               )}
 
               {/* Chat Input */}
               <div className="p-6 border-t border-mission-control-border">
-                <div className="flex gap-3">
-                  <textarea
+                <Flex gap="3">
+                  <TextArea
                     ref={inputRef}
+                    variant="soft"
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -510,16 +506,18 @@ Be conversational, friendly, and help design an effective agent.`;
                     placeholder="Describe what you need this worker to do..."
                     rows={2}
                     disabled={isStreaming || conversationComplete}
-                    className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none disabled:opacity-50"
+                    className="flex-1 resize-none"
                   />
-                  <button
+                  <IconButton
                     onClick={handleChatSubmit}
                     disabled={!chatInput.trim() || isStreaming || conversationComplete}
-                    className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    variant="solid"
+                    size="3"
+                    aria-label="Send message"
                   >
-                    {isStreaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                  </button>
-                </div>
+                    {isStreaming ? <Spinner size="2" /> : <Send size={16} />}
+                  </IconButton>
+                </Flex>
                 <div className="text-xs text-mission-control-text-dim mt-2">
                   Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Enter</kbd> to send,{' '}
                   <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded">Shift+Enter</kbd> for new line
@@ -528,64 +526,67 @@ Be conversational, friendly, and help design an effective agent.`;
             </div>
           ) : (
             // Manual Mode
-            <form onSubmit={handleManualSubmit} className="p-6 space-y-4 overflow-y-auto h-full">
+            <form onSubmit={handleManualSubmit} className="px-6 py-4 space-y-4 overflow-y-auto h-full">
               {/* Name & Role */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="worker-name" className="block text-sm text-mission-control-text-dim mb-1">Worker Name *</label>
-                  <input
+                <div className="space-y-1">
+                  <label htmlFor="worker-name" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Worker Name *</label>
+                  <TextField.Root
                     id="worker-name"
+                    size="2"
+                    className="w-full"
                     type="text"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                     placeholder="e.g., Twitter Content Scheduler"
-                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
-                    /* autoFocus removed for accessibility */
                   />
                 </div>
-                <div>
-                  <label htmlFor="worker-role" className="block text-sm text-mission-control-text-dim mb-1">Role/Title</label>
-                  <input
+                <div className="space-y-1">
+                  <label htmlFor="worker-role" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Role/Title</label>
+                  <TextField.Root
                     id="worker-role"
+                    size="2"
+                    className="w-full"
                     type="text"
                     value={role}
-                    onChange={(e) => setRole(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRole(e.target.value)}
                     placeholder="e.g., Social Media Automation"
-                    className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                   />
                 </div>
               </div>
 
               {/* Task Description */}
-              <div>
-                <label htmlFor="worker-task-description" className="block text-sm text-mission-control-text-dim mb-1">Task Description *</label>
-                <textarea
+              <div className="space-y-1">
+                <label htmlFor="worker-task-description" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Task Description *</label>
+                <TextArea
                   id="worker-task-description"
+                  variant="soft"
                   value={taskDescription}
                   onChange={(e) => setTaskDescription(e.target.value)}
                   placeholder="What does this worker do? What workflows will they handle?"
                   rows={4}
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
+                  className="w-full resize-none"
                 />
               </div>
 
               {/* Capabilities */}
-              <div>
-                <label htmlFor="worker-capabilities" className="block text-sm text-mission-control-text-dim mb-1">Capabilities</label>
-                <input
+              <div className="space-y-1">
+                <label htmlFor="worker-capabilities" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Capabilities</label>
+                <TextField.Root
                   id="worker-capabilities"
+                  size="2"
+                  className="w-full"
                   type="text"
                   value={capabilities}
-                  onChange={(e) => setCapabilities(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCapabilities(e.target.value)}
                   placeholder="code, research, twitter, database (comma-separated)"
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
                 />
                 <div className="text-xs text-mission-control-text-dim mt-1">Comma-separated list of skills/tools needed</div>
               </div>
 
               {/* Model Selection */}
-              <div>
-                <span className="block text-sm text-mission-control-text-dim mb-1">Model</span>
+              <div className="space-y-1">
+                <span className="text-xs font-medium text-mission-control-text-dim mb-1 block">Model</span>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {MODEL_OPTIONS.map((opt) => (
                     <button
@@ -593,39 +594,40 @@ Be conversational, friendly, and help design an effective agent.`;
                       type="button"
                       onClick={() => setModel(opt.id as 'sonnet' | 'opus')}
                       aria-pressed={model === opt.id}
-                      className={`p-3 rounded-lg border text-left transition-all ${
+                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg border text-left transition-colors outline-none ${
                         model === opt.id
-                          ? 'border-mission-control-accent bg-mission-control-accent/10'
-                          : 'border-mission-control-border hover:border-mission-control-accent/50'
+                          ? 'bg-mission-control-accent/10 border-mission-control-accent ring-1 ring-mission-control-accent/40'
+                          : 'border-mission-control-border hover:border-mission-control-accent/30 hover:bg-mission-control-border/10'
                       }`}
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        {model === opt.id && <CheckCircle size={16} className="text-mission-control-accent" />}
-                        <span className="font-medium text-sm">{opt.label}</span>
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        model === opt.id ? 'border-mission-control-accent' : 'border-mission-control-border'
+                      }`}>
+                        {model === opt.id && <div className="w-2 h-2 rounded-full bg-mission-control-accent" />}
                       </div>
-                      <p className="text-xs text-mission-control-text-dim">{opt.description}</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-mission-control-text">{opt.label}</div>
+                        <p className="text-xs text-mission-control-text-dim/70 mt-0.5">{opt.description}</p>
+                      </div>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Submit */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-mission-control-border">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="px-4 py-2 rounded-lg border border-mission-control-border hover:bg-mission-control-border transition-colors"
-                >
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-mission-control-border">
+                <Button type="button" onClick={handleClose} variant="ghost" color="gray" size="2">
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={!name.trim() || !taskDescription.trim()}
-                  className="px-4 py-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  variant="solid"
+                  size="2"
                 >
                   <Zap size={16} />
-                  Create & Start
-                </button>
+                  Create &amp; Start
+                </Button>
               </div>
             </form>
           )}

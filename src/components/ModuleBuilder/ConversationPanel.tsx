@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Play } from 'lucide-react';
+import MarkdownMessage from '../MarkdownMessage';
+import { Send, Bot, User, Play, CheckCircle } from 'lucide-react';
+import { Button, IconButton, TextField, Flex } from '@radix-ui/themes';
 import type { ConversationMessage, SectionProgress, SectionId } from './types';
 import { SECTION_ORDER, SECTION_LABELS } from './types';
 
@@ -11,6 +13,7 @@ interface Props {
   isStarted: boolean;
   isFinished: boolean;
   isStreaming: boolean;
+  streamingContent?: string;
   onSend: (content: string) => void;
   onStart: () => void;
   onJumpToSection: (sectionId: SectionId) => void;
@@ -24,6 +27,7 @@ export default function ConversationPanel({
   isStarted,
   isFinished,
   isStreaming,
+  streamingContent,
   onSend,
   onStart,
   onJumpToSection,
@@ -33,7 +37,7 @@ export default function ConversationPanel({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, streamingContent]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,20 +52,20 @@ export default function ConversationPanel({
   const totalSections = SECTION_ORDER.length;
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg border-r border-mission-control-border">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg border-r border-mission-control-border">
       {/* Progress bar */}
       <div className="px-4 py-3 border-b border-mission-control-border">
-        <div className="flex items-center justify-between mb-2">
+        <Flex align="center" justify="between" className="mb-2">
           <span className="text-sm font-medium text-mission-control-text">
             {currentLabel}
           </span>
           <span className="text-xs text-mission-control-text-dim">
             {completedCount}/{totalSections} sections · {overallProgress}%
           </span>
-        </div>
+        </Flex>
         <div className="w-full h-2 bg-mission-control-border rounded-full overflow-hidden">
           <div
-            className="h-full bg-mission-control-accent rounded-full transition-all duration-500"
+            className="h-full bg-mission-control-accent rounded-full transition-colors duration-500"
             style={{ width: `${overallProgress}%` }}
           />
         </div>
@@ -70,16 +74,17 @@ export default function ConversationPanel({
           {sectionProgress.map(s => (
             <button
               key={s.id}
+              type="button"
               onClick={() => onJumpToSection(s.id)}
-              className={`text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors ${
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                 s.complete
-                  ? 'bg-success-subtle text-success'
+                  ? 'bg-success/10 border-success/30 text-success'
                   : s.id === currentSection
-                    ? 'bg-mission-control-accent/20 text-mission-control-accent'
-                    : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
               }`}
             >
-              {s.complete ? '✓ ' : ''}{s.label}
+              {s.complete && <CheckCircle size={10} />}{s.label}
             </button>
           ))}
         </div>
@@ -94,17 +99,14 @@ export default function ConversationPanel({
             <p className="text-sm text-mission-control-text-dim mb-6 max-w-xs">
               I'll walk you through a series of questions to design your module spec. Ready?
             </p>
-            <button
-              onClick={onStart}
-              className="flex items-center gap-2 px-5 py-2.5 bg-mission-control-accent hover:opacity-90 text-white text-sm font-medium rounded-lg transition-opacity"
-            >
+            <Button size="3" variant="solid" onClick={onStart}>
               <Play size={16} /> Start Interview
-            </button>
+            </Button>
           </div>
         )}
 
         {messages.map(msg => (
-          <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+          <Flex key={msg.id} gap="3" justify={msg.role === 'user' ? 'end' : 'start'}>
             {msg.role === 'assistant' && (
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-mission-control-accent/20 flex items-center justify-center">
                 <Bot size={16} className="text-mission-control-accent" />
@@ -117,28 +119,32 @@ export default function ConversationPanel({
                   : 'bg-mission-control-surface text-mission-control-text'
               }`}
             >
-              {msg.content}
+              {msg.role === 'user' ? msg.content : <MarkdownMessage content={msg.content} />}
             </div>
             {msg.role === 'user' && (
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-mission-control-border flex items-center justify-center">
                 <User size={16} className="text-mission-control-text-dim" />
               </div>
             )}
-          </div>
+          </Flex>
         ))}
         {isStreaming && (
-          <div className="flex gap-3">
+          <Flex gap="3">
             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-mission-control-accent/20 flex items-center justify-center">
               <Bot size={16} className="text-mission-control-accent animate-pulse" />
             </div>
-            <div className="max-w-[80%] rounded-lg px-4 py-2.5 text-sm bg-mission-control-surface">
-              <span className="inline-flex gap-1 text-mission-control-text-dim">
-                <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
-                <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
-                <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
-              </span>
+            <div className="max-w-[80%] rounded-lg px-4 py-2.5 text-sm bg-mission-control-surface text-mission-control-text">
+              {streamingContent ? (
+                <MarkdownMessage content={streamingContent} streaming={true} />
+              ) : (
+                <span className="inline-flex gap-1 text-mission-control-text-dim">
+                  <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
+                  <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
+                  <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
+                </span>
+              )}
             </div>
-          </div>
+          </Flex>
         )}
         <div ref={bottomRef} />
       </div>
@@ -146,24 +152,27 @@ export default function ConversationPanel({
       {/* Input */}
       {isStarted && (
         <form onSubmit={handleSubmit} className="px-4 py-3 border-t border-mission-control-border">
-          <div className="flex gap-2">
-            <input
+          <Flex gap="2">
+            <TextField.Root
+              size="2"
+              className="flex-1"
               value={input}
               onChange={e => setInput(e.target.value)}
               placeholder={isFinished ? 'Interview complete! Review your spec →' : isStreaming ? 'Thinking...' : 'Type your answer...'}
               disabled={isFinished || isStreaming}
-              className="flex-1 px-4 py-2 rounded-lg border border-mission-control-border bg-mission-control-surface text-mission-control-text text-sm focus:outline-none focus:ring-2 focus:ring-mission-control-accent disabled:opacity-50"
             />
-            <button
+            <IconButton
               type="submit"
+              size="2"
+              variant="solid"
+             
               disabled={!input.trim() || isFinished || isStreaming}
-              className="px-3 py-2 bg-mission-control-accent hover:opacity-90 disabled:opacity-50 text-white rounded-lg transition-opacity"
             >
               <Send size={16} />
-            </button>
-          </div>
+            </IconButton>
+          </Flex>
         </form>
       )}
-    </div>
+    </Flex>
   );
 }

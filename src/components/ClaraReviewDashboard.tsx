@@ -21,6 +21,7 @@ import {
 import AgentAvatar from './AgentAvatar';
 import { showToast } from './Toast';
 import { useEventBus } from '../lib/useEventBus';
+import { Button, TextArea, Flex } from '@radix-ui/themes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -68,7 +69,7 @@ function PriorityBadge({ priority }: { priority?: string }) {
 
 function GateRow({ passed, label }: { passed: boolean; label: string }) {
   return (
-    <div className="flex items-center gap-2 text-sm">
+    <Flex align="center" gap="2" className="text-sm">
       {passed ? (
         <CheckCircle2 size={14} className="text-success flex-shrink-0" />
       ) : (
@@ -77,7 +78,7 @@ function GateRow({ passed, label }: { passed: boolean; label: string }) {
       <span className={passed ? 'text-mission-control-text' : 'text-mission-control-text-dim line-through'}>
         {label}
       </span>
-    </div>
+    </Flex>
   );
 }
 
@@ -113,10 +114,10 @@ function StatCard({
 }) {
   return (
     <div className="rounded-lg border border-mission-control-border bg-mission-control-surface p-3">
-      <div className="flex items-center gap-2 text-mission-control-text-dim mb-1">
+      <Flex align="center" gap="2" className="text-mission-control-text-dim mb-1">
         {icon}
         <span className="text-xs">{label}</span>
-      </div>
+      </Flex>
       <div className={`text-xl font-semibold ${accent}`}>{value}</div>
     </div>
   );
@@ -179,47 +180,48 @@ function ReviewCard({
   return (
     <div className="rounded-lg border border-mission-control-border bg-mission-control-surface overflow-hidden">
       {/* Card header */}
-      <div className="flex items-start gap-3 p-4">
+      <Flex align="start" gap="3" className="p-4">
         <div className="flex-shrink-0 mt-0.5">
           {task.assignedTo ? (
             <AgentAvatar agentId={task.assignedTo} size="sm" />
           ) : (
-            <div className="w-7 h-7 rounded-full bg-mission-control-bg2 flex items-center justify-center text-mission-control-text-dim text-xs font-bold">
+            <div className="w-7 h-7 rounded-full bg-mission-control-surface flex items-center justify-center text-mission-control-text-dim text-xs font-bold">
               ?
             </div>
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
+          <Flex align="start" justify="between" gap="2">
             <h3 className="text-sm font-medium text-mission-control-text leading-snug">
               {task.title}
             </h3>
             <PriorityBadge priority={task.priority} />
-          </div>
+          </Flex>
           {task.description && (
             <p className="text-xs text-mission-control-text-dim mt-1 line-clamp-2">
               {task.description}
             </p>
           )}
-          <div className="flex items-center gap-3 mt-2 text-xs text-mission-control-text-dim">
+          <Flex align="center" gap="3" className="mt-2 text-xs text-mission-control-text-dim">
             <span>{task.assignedTo ?? 'Unassigned'}</span>
             <span>·</span>
             <span>{task.subtaskCount} subtask{task.subtaskCount !== 1 ? 's' : ''}</span>
             <span>·</span>
             <span>{timeAgo}</span>
-          </div>
+          </Flex>
         </div>
         <button
+          type="button"
           onClick={() => setExpanded(e => !e)}
-          className="flex-shrink-0 p-1 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg2 transition-colors"
           aria-label={expanded ? 'Collapse' : 'Expand'}
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
           {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
-      </div>
+      </Flex>
 
       {/* Gate checklist — always visible */}
-      <div className="border-t border-mission-control-border px-4 py-3 bg-mission-control-bg0/40 space-y-1.5">
+      <div className="border-t border-mission-control-border px-4 py-3 bg-mission-control-surface/40 space-y-1.5">
         <GateRow passed={gate1} label="Gate 1: Agent assigned" />
         <GateRow passed={gate2} label="Gate 2: Planning notes present" />
         <GateRow passed={gate3} label="Gate 3: At least 1 subtask" />
@@ -227,10 +229,10 @@ function ReviewCard({
 
       {/* Expanded details */}
       {expanded && (
-        <div className="border-t border-mission-control-border px-4 py-3 bg-mission-control-bg0/20">
+        <div className="border-t border-mission-control-border px-4 py-3 bg-mission-control-surface/20">
           {task.planningNotes ? (
             <div>
-              <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-1">
+              <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">
                 Planning Notes
               </div>
               <p className="text-xs text-mission-control-text whitespace-pre-wrap line-clamp-6">
@@ -249,12 +251,14 @@ function ReviewCard({
           <label className="block text-xs font-medium text-mission-control-text-dim mb-1">
             Rejection reason
           </label>
-          <textarea
+          <TextArea
             value={reason}
             onChange={e => setReason(e.target.value)}
             rows={3}
             placeholder="Explain what needs to be fixed before this task can proceed..."
-            className="w-full text-sm resize-none"
+            size="2"
+            resize="none"
+            className="w-full"
           />
         </div>
       )}
@@ -263,38 +267,47 @@ function ReviewCard({
       <div className="border-t border-mission-control-border px-4 py-3 flex items-center gap-2">
         {rejecting ? (
           <>
-            <button
+            <Button
               onClick={handleReject}
               disabled={loading || !reason.trim()}
-              className="flex-1 py-1.5 rounded text-sm font-medium bg-error text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              variant="solid"
+              color="red"
+              size="2"
+              className="flex-1"
             >
               {loading ? 'Rejecting...' : 'Confirm Reject'}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => { setRejecting(false); setReason(''); }}
               disabled={loading}
-              className="py-1.5 px-3 rounded text-sm text-mission-control-text-dim border border-mission-control-border hover:bg-mission-control-bg2 transition-colors"
+              variant="outline"
+              size="2"
             >
               Cancel
-            </button>
+            </Button>
           </>
         ) : (
           <>
-            <button
+            <Button
               onClick={handleApprove}
               disabled={loading || !allGatesPass}
               title={!allGatesPass ? 'All 3 gates must pass before approving' : 'Approve and dispatch agent'}
-              className="flex-1 py-1.5 rounded text-sm font-medium bg-success text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+              variant="solid"
+              color="green"
+              size="2"
+              className="flex-1"
             >
               {loading ? 'Approving...' : 'Approve'}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setRejecting(true)}
               disabled={loading}
-              className="py-1.5 px-3 rounded text-sm font-medium border border-error text-error hover:bg-error/10 disabled:opacity-50 transition-colors"
+              variant="outline"
+              color="red"
+              size="2"
             >
               Reject
-            </button>
+            </Button>
           </>
         )}
       </div>
@@ -409,32 +422,33 @@ export default function ClaraReviewDashboard() {
   }
 
   return (
-    <div className="flex flex-col gap-6 h-full overflow-auto p-4">
+    <Flex direction="column" gap="5" height="100%" p="4" className="overflow-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <div>
           <h2 className="text-lg font-semibold text-mission-control-text">Clara Review Queue</h2>
           <p className="text-sm text-mission-control-text-dim">Pre-work gate — approve or reject tasks before agents start</p>
         </div>
-        <button
+        <Button
           onClick={() => refresh(true)}
           disabled={refreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-sm border border-mission-control-border text-mission-control-text-dim hover:bg-mission-control-bg2 hover:text-mission-control-text transition-colors disabled:opacity-50"
+          variant="outline"
+          size="2"
         >
           <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
           Refresh
-        </button>
-      </div>
+        </Button>
+      </Flex>
 
       {/* Stats bar */}
       <StatsBar insights={insights} />
 
       {/* Review queue */}
       {loading ? (
-        <div className="flex items-center justify-center py-16 text-mission-control-text-dim text-sm">
+        <Flex align="center" justify="center" className="py-16 text-mission-control-text-dim text-sm">
           <RefreshCw size={16} className="animate-spin mr-2" />
           Loading review queue...
-        </div>
+        </Flex>
       ) : tasks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-mission-control-text-dim gap-3">
           <Inbox size={32} className="opacity-40" />
@@ -456,18 +470,18 @@ export default function ClaraReviewDashboard() {
 
       {/* Agents needing support */}
       {insights && insights.agentsNeedingSupport.length > 0 && (
-        <div className="rounded-lg border border-warning/30 bg-warning-subtle p-4">
-          <div className="flex items-center gap-2 mb-3">
+        <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
+          <Flex align="center" gap="2" className="mb-3">
             <AlertTriangle size={14} className="text-warning flex-shrink-0" />
             <h3 className="text-sm font-medium text-warning">Agents with repeated rejections (last 7d)</h3>
-          </div>
+          </Flex>
           <div className="flex flex-wrap gap-2">
             {insights.agentsNeedingSupport.map(agent => (
-              <div key={agent.agentId} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-mission-control-surface border border-mission-control-border text-xs">
+              <Flex key={agent.agentId} align="center" gap="2" className="px-3 py-1.5 rounded-full bg-mission-control-surface border border-mission-control-border text-xs">
                 <AgentAvatar agentId={agent.agentId} size="xs" />
                 <span className="text-mission-control-text">{agent.name}</span>
                 <span className="text-error font-medium">{agent.rejectionCount}x rejected</span>
-              </div>
+              </Flex>
             ))}
           </div>
         </div>
@@ -479,16 +493,16 @@ export default function ClaraReviewDashboard() {
           <h3 className="text-sm font-medium text-mission-control-text mb-3">Top rejection reasons (last 30d)</h3>
           <div className="space-y-2">
             {insights.topRejectionReasons.map((r, i) => (
-              <div key={i} className="flex items-start gap-3 text-xs">
+              <Flex key={i} align="start" gap="3" className="text-xs">
                 <span className="flex-shrink-0 w-5 h-5 rounded-full bg-error/20 text-error font-bold flex items-center justify-center">
                   {r.count}
                 </span>
                 <span className="text-mission-control-text-dim leading-snug">{r.reason}</span>
-              </div>
+              </Flex>
             ))}
           </div>
         </div>
       )}
-    </div>
+    </Flex>
   );
 }

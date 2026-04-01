@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MessageCircle, ChevronDown, ChevronUp, Star, Mail, Check, User, Paperclip } from 'lucide-react';
+import { Button, IconButton, TextArea, Flex } from '@radix-ui/themes';
 import { useUserSettings } from '../store/userSettings';
 import { inboxApi } from '../lib/api';
 
@@ -79,11 +80,11 @@ function ThreadMessage({
       {/* Avatar */}
       <div className="flex-shrink-0 w-8">
         {isMe ? (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-mission-control-accent to-purple-500 flex items-center justify-center text-white text-xs font-semibold shadow-sm ring-2 ring-white/10 dark:ring-white/20">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-mission-control-accent to-[var(--color-review)] flex items-center justify-center text-white text-xs font-semibold shadow-sm ring-2 ring-white/10 dark:ring-white/20">
             K
           </div>
         ) : (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shadow-sm ring-2 ring-white/10 dark:ring-white/20">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--color-info)] to-[var(--color-review)] flex items-center justify-center shadow-sm ring-2 ring-white/10 dark:ring-white/20">
             <User size={14} className="text-white" />
           </div>
         )}
@@ -100,44 +101,46 @@ function ThreadMessage({
             {formatMessageTime(message.timestamp)}
           </span>
           {message.is_starred && (
-            <Star size={10} className="text-warning fill-yellow-500" />
+            <Star size={10} className="text-warning fill-current" />
           )}
         </div>
 
         {/* Message bubble with actions */}
         <div className="relative w-full">
           {/* Message actions bar */}
-          <div className={`absolute ${isMe ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200`}>
+          <div className={`absolute ${isMe ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'} top-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-colors duration-200`}>
             {onToggleStar && (
-              <button
+              <IconButton
                 onClick={() => onToggleStar(message.id)}
-                className={`p-1.5 rounded-lg transition-all ${
-                  message.is_starred
-                    ? 'bg-yellow-100 text-warning shadow-sm'
-                    : 'bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-warning hover:bg-yellow-50 border border-mission-control-border'
-                }`}
-                title={message.is_starred ? 'Unstar' : 'Star'}
+                aria-label={message.is_starred ? 'Unstar' : 'Star'}
+                variant={message.is_starred ? 'solid' : 'outline'}
+                color={message.is_starred ? 'amber' : 'gray'}
+                size="2"
+               
               >
                 <Star size={14} fill={message.is_starred ? 'currentColor' : 'none'} />
-              </button>
+              </IconButton>
             )}
             {!isMe && onMarkRead && (
-              <button
+              <IconButton
                 onClick={() => onMarkRead(message.id, !message.is_read)}
-                className="p-1.5 rounded-lg bg-mission-control-surface/90 backdrop-blur-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border border border-mission-control-border transition-all"
-                title={message.is_read ? 'Mark unread' : 'Mark read'}
+                aria-label={message.is_read ? 'Mark unread' : 'Mark read'}
+                variant="outline"
+                color="gray"
+                size="2"
+               
               >
                 {message.is_read ? <Mail size={14} /> : <Check size={14} />}
-              </button>
+              </IconButton>
             )}
           </div>
 
           {/* Message bubble */}
           <div
-            className={`px-4 py-3 transition-all ${
+            className={`px-4 py-3 transition-colors ${
               isMe
-                ? 'bg-gradient-to-br from-mission-control-accent to-purple-500 text-white shadow-md rounded-2xl rounded-tr-sm'
-                : 'bg-mission-control-surface/90 backdrop-blur-sm border border-mission-control-border/60 shadow-sm hover:shadow-md rounded-2xl rounded-tl-sm'
+                ? 'bg-gradient-to-br from-mission-control-accent to-[var(--color-review)] text-white shadow-md rounded-2xl rounded-tr-sm'
+                : 'bg-mission-control-surface border border-mission-control-border/60 shadow-sm hover:shadow-md rounded-2xl rounded-tl-sm'
             } ${!message.is_read && !isMe ? 'ring-2 ring-mission-control-accent/30' : ''}`}
           >
             {/* Subject (for thread root) */}
@@ -162,9 +165,7 @@ function ThreadMessage({
             {hasFullContent && (
               <button
                 onClick={() => setExpanded(!expanded)}
-                className={`text-xs mt-3 flex items-center gap-1 transition-opacity ${
-                  isMe ? 'opacity-80 hover:opacity-100' : 'text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors mt-3"
               >
                 {expanded ? (
                   <>
@@ -246,11 +247,11 @@ export default function ThreadView({
   const { email: myEmail, phone: myPhone } = useUserSettings();
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Thread header */}
       <div className="p-4 border-b border-mission-control-border bg-mission-control-surface flex items-center justify-between">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <Flex align="center" gap="2" className="mb-1">
             <MessageCircle size={16} className="text-mission-control-accent flex-shrink-0" />
             <h3 className="font-semibold text-sm truncate">
               {metadata?.subject || `Thread on ${metadata?.platform}`}
@@ -260,8 +261,8 @@ export default function ThreadView({
                 {metadata?.unread_count} new
               </span>
             )}
-          </div>
-          <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+          </Flex>
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
             <span>{metadata?.message_count} messages</span>
             {metadata?.participants && (
               <>
@@ -269,12 +270,12 @@ export default function ThreadView({
                 <span>{metadata.participants.length} participants</span>
               </>
             )}
-          </div>
+          </Flex>
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="ml-2 px-3 py-1 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors ml-2"
           >
             Close
           </button>
@@ -313,8 +314,8 @@ export default function ThreadView({
       {/* Reply input */}
       {onReply && (
         <div className="p-4 border-t border-mission-control-border bg-mission-control-surface">
-          <div className="flex gap-2">
-            <textarea
+          <Flex gap="2">
+            <TextArea
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
               onKeyDown={(e) => {
@@ -323,22 +324,25 @@ export default function ThreadView({
                 }
               }}
               placeholder="Type your reply... (⌘↵ to send)"
-              className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
               rows={3}
+              size="2"
+              className="flex-1"
             />
-            <button
+            <Button
               onClick={handleReply}
               disabled={!replyText.trim() || sending}
-              className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium self-end"
+              variant="solid"
+              size="2"
+              className="self-end"
             >
               {sending ? 'Sending...' : 'Send'}
-            </button>
-          </div>
+            </Button>
+          </Flex>
           <div className="text-xs text-mission-control-text-dim mt-2">
             Press ⌘+Enter to send
           </div>
         </div>
       )}
-    </div>
+    </Flex>
   );
 }

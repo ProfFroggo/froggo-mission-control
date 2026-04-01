@@ -1,20 +1,21 @@
-import { useState, useEffect, memo, useRef } from 'react';
+import { useState, useEffect, memo, useRef, useMemo, useCallback } from 'react';
 import { MessageSquare, RefreshCw, MessageCircle, Send, Gamepad2, Globe, Lock, Briefcase, Mic, Clock, Settings, WifiOff, Inbox, Bot } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import { SkeletonList } from './Skeleton';
 import { gateway } from '../lib/gateway';
 import type { LucideIcon } from 'lucide-react';
 
 // Channel icons and colors
 const channelConfig: Record<string, { icon: LucideIcon; color: string; label: string }> = {
-  whatsapp: { icon: MessageCircle, color: 'bg-success-subtle text-success border-success-border', label: 'WhatsApp' },
-  telegram: { icon: Send, color: 'bg-info-subtle text-info border-info-border', label: 'Telegram' },
-  discord: { icon: Gamepad2, color: 'bg-info-subtle text-info border-info-border', label: 'Discord' },
+  whatsapp: { icon: MessageCircle, color: 'bg-success/10 text-success border-success/30', label: 'WhatsApp' },
+  telegram: { icon: Send, color: 'bg-info/10 text-info border-info/30', label: 'Telegram' },
+  discord: { icon: Gamepad2, color: 'bg-info/10 text-info border-info/30', label: 'Discord' },
   webchat: { icon: Globe, color: 'bg-review-subtle text-review border-review-border', label: 'Webchat' },
-  signal: { icon: Lock, color: 'bg-info-subtle text-info border-info-border', label: 'Signal' },
-  imessage: { icon: MessageCircle, color: 'bg-info-subtle text-info border-info-border', label: 'iMessage' },
+  signal: { icon: Lock, color: 'bg-info/10 text-info border-info/30', label: 'Signal' },
+  imessage: { icon: MessageCircle, color: 'bg-info/10 text-info border-info/30', label: 'iMessage' },
   slack: { icon: Briefcase, color: 'bg-review-subtle text-review border-review-border', label: 'Slack' },
-  voice: { icon: Mic, color: 'bg-warning-subtle text-warning border-warning-border', label: 'Voice' },
-  cron: { icon: Clock, color: 'bg-warning-subtle text-warning border-warning-border', label: 'Scheduled' },
+  voice: { icon: Mic, color: 'bg-warning/10 text-warning border-warning/30', label: 'Voice' },
+  cron: { icon: Clock, color: 'bg-warning/10 text-warning border-warning/30', label: 'Scheduled' },
   system: { icon: Settings, color: 'bg-muted-subtle text-muted border-muted-border', label: 'System' },
 };
 
@@ -104,55 +105,62 @@ const ActivityFeed = memo(function ActivityFeed() {
     };
   }, []);
 
-  const filteredActivities = filter 
-    ? activities.filter(a => a.channel === filter)
-    : activities;
+  const filteredActivities = useMemo(
+    () => filter ? activities.filter(a => a.channel === filter) : activities,
+    [activities, filter]
+  );
 
-  const channels = [...new Set(activities.map(a => a.channel))];
+  const channels = useMemo(
+    () => [...new Set(activities.map(a => a.channel))],
+    [activities]
+  );
 
-  const getChannelInfo = (channel: string) => {
+  const getChannelInfo = useCallback((channel: string) => {
     return channelConfig[channel] || channelConfig.system;
-  };
+  }, []);
 
-  const formatTime = (ts: number) => {
+  const formatTime = useCallback((ts: number) => {
     const diff = Date.now() - ts;
     if (diff < 60000) return 'just now';
     if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
     return new Date(ts).toLocaleDateString();
-  };
+  }, []);
 
   return (
-    <div className="h-full flex flex-col">
+    <Flex direction="column" height="100%">
       {/* Header */}
-      <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="2">
           <MessageSquare size={16} />
           <span className="font-medium">Activity Feed</span>
           <span className="text-xs text-mission-control-text-dim">
             {activities.length} sessions
           </span>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           <button
+            type="button"
             onClick={fetchSessions}
             disabled={loading || !connected}
-            className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors disabled:opacity-50"
             title="Refresh"
+            aria-label="Refresh activity feed"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Filters */}
       {channels.length > 1 && (
         <div className="p-2 border-b border-mission-control-border flex gap-1 overflow-x-auto">
           <button
-            onClick={() => setFilter(null)}
-            className={`px-2 py-1 text-xs rounded-lg whitespace-nowrap transition-colors ${
-              !filter ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            type="button"
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors whitespace-nowrap ${
+              !filter ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
+            onClick={() => setFilter(null)}
           >
             All
           </button>
@@ -162,10 +170,11 @@ const ActivityFeed = memo(function ActivityFeed() {
             return (
               <button
                 key={ch}
-                onClick={() => setFilter(ch)}
-                className={`flex items-center gap-1 px-2 py-1 text-xs rounded-lg whitespace-nowrap transition-colors ${
-                  filter === ch ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                type="button"
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors whitespace-nowrap ${
+                  filter === ch ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
+                onClick={() => setFilter(ch)}
               >
                 <ChannelIcon size={12} /> {info.label}
               </button>
@@ -177,45 +186,40 @@ const ActivityFeed = memo(function ActivityFeed() {
       {/* Activity List */}
       <div className="flex-1 overflow-y-auto">
         {!connected ? (
-          <div className="p-8 text-center text-mission-control-text-dim">
-            <div className="flex justify-center mb-2">
-              <WifiOff size={28} className="text-mission-control-text-dim" />
-            </div>
-            <p>Connecting to gateway...</p>
+          <div className="text-xs text-mission-control-text-dim text-center py-6">
+            <WifiOff size={24} className="mx-auto mb-2 opacity-40" />
+            Connecting to gateway...
           </div>
         ) : loading && activities.length === 0 ? (
           <div className="p-3">
             <SkeletonList count={4} />
           </div>
         ) : filteredActivities.length === 0 ? (
-          <div className="p-8 text-center text-mission-control-text-dim">
-            <div className="flex justify-center mb-2">
-              <Inbox size={28} className="text-mission-control-text-dim" />
-            </div>
-            <p>{filter ? `No ${filter} activity` : 'No activity yet'}</p>
+          <div className="text-xs text-mission-control-text-dim text-center py-6">
+            <Inbox size={24} className="mx-auto mb-2 opacity-40" />
+            {filter ? `No ${filter} activity` : 'No activity yet'}
           </div>
         ) : (
-          <div className="divide-y divide-mission-control-border">
+          <div>
             {filteredActivities.map((activity) => {
               const info = getChannelInfo(activity.channel);
               return (
                 <div
                   key={activity.id}
-                  className={`p-3 hover:bg-mission-control-surface/50 transition-colors cursor-pointer ${
+                  className={`flex items-start gap-3 py-2.5 px-3 border-b border-mission-control-border/40 last:border-0 hover:bg-mission-control-border/30 transition-colors cursor-pointer ${
                     activity.unread ? 'bg-mission-control-accent/5' : ''
                   }`}
                 >
-                  <div className="flex items-start gap-3">
                     {/* Channel Badge */}
                     {(() => { const ChannelIcon = info.icon; return (
-                    <div className={`px-2 py-1 text-xs rounded-lg border flex items-center ${info.color}`}>
+                    <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 border ${info.color}`}>
                       <ChannelIcon size={12} />
                     </div>
                     ); })()}
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
+                      <Flex align="center" gap="2" className="mb-0.5">
                         <span className="font-medium text-sm truncate">
                           {activity.participant || info.label}
                         </span>
@@ -225,7 +229,7 @@ const ActivityFeed = memo(function ActivityFeed() {
                         {activity.unread && (
                           <span className="w-2 h-2 bg-mission-control-accent rounded-full" />
                         )}
-                      </div>
+                      </Flex>
                       {activity.lastMessage && (
                         <p className="text-xs text-mission-control-text-dim truncate flex items-center gap-1">
                           {activity.lastMessageRole === 'assistant' && <Bot size={10} className="text-mission-control-text-dim flex-shrink-0" />}
@@ -235,17 +239,16 @@ const ActivityFeed = memo(function ActivityFeed() {
                     </div>
 
                     {/* Time */}
-                    <span className="text-[10px] text-mission-control-text-dim whitespace-nowrap">
+                    <span className="text-[10px] tabular-nums text-mission-control-text-dim whitespace-nowrap">
                       {formatTime(activity.timestamp)}
                     </span>
-                  </div>
                 </div>
               );
             })}
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 });
 

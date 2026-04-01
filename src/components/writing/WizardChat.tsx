@@ -1,5 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { AlertCircle, Loader2, CheckCircle } from 'lucide-react';
+import { IconButton, TextArea, Flex } from '@radix-ui/themes';
 import { gateway } from '../../lib/gateway';
 import {
   buildConversationPrompt,
@@ -39,7 +40,7 @@ function ExtractionProgress() {
           const done = i < activeStep;
           const active = i === activeStep;
           return (
-            <div key={label} className="flex items-center gap-3">
+            <Flex key={label} align="center" gap="3">
               {done ? (
                 <CheckCircle size={16} className="text-success flex-shrink-0" />
               ) : active ? (
@@ -50,7 +51,7 @@ function ExtractionProgress() {
               <span className={`text-sm ${done ? 'text-success' : active ? 'text-mission-control-text' : 'text-mission-control-text-dim'}`}>
                 {label}{active ? '...' : ''}
               </span>
-            </div>
+            </Flex>
           );
         })}
       </div>
@@ -257,15 +258,15 @@ export default function WizardChat() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-surface">
+    <Flex direction="column" height="100%" className="bg-mission-control-surface">
       {/* Error banners */}
       {(extractionError || error) && (
-        <div className="px-4 py-2 bg-error-subtle border-b border-error-border flex items-center gap-2">
+        <div className="px-4 py-2 bg-error/10 border-b border-error/30 flex items-center gap-2">
           <AlertCircle size={14} className="text-error flex-shrink-0" />
           <span className="text-xs text-error">{extractionError || error}</span>
           <button
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors ml-auto"
             onClick={() => { setExtractionError(null); setError(null); }}
-            className="ml-auto text-xs text-error/60 hover:text-error"
           >
             Dismiss
           </button>
@@ -274,7 +275,7 @@ export default function WizardChat() {
 
       {/* Extraction overlay with progress checklist */}
       {step === 'extracting' && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-mission-control-bg/80 backdrop-blur-sm">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-mission-control-bg/90">
           <ExtractionProgress />
         </div>
       )}
@@ -311,28 +312,31 @@ export default function WizardChat() {
 
       {/* Simple input (no agent picker -- agent is already chosen) */}
       <div className="bg-mission-control-surface border-t border-mission-control-border p-3">
-        <div className="flex items-end gap-2">
-          <textarea
+        <Flex align="end" gap="2">
+          <TextArea
             ref={inputRef}
             onKeyDown={handleKeyDown}
             placeholder={step === 'extracting' ? 'Generating plan...' : 'Continue the conversation...'}
             rows={1}
             disabled={streaming || step === 'extracting'}
-            className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3 text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors disabled:opacity-50"
+            className="flex-1"
+            style={{ resize: 'none' }}
           />
-          <button
+          <IconButton
+            size="3"
+            variant="solid"
+           
             onClick={handleSendClick}
             disabled={streaming || step === 'extracting'}
-            className="p-3 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
             title="Send message"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="22" y1="2" x2="11" y2="13" />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
-          </button>
-        </div>
+          </IconButton>
+        </Flex>
       </div>
-    </div>
+    </Flex>
   );
 }

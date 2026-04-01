@@ -10,6 +10,9 @@ import ArticleRevisionHistory from './ArticleRevisionHistory';
 import KnowledgeGraphPanel from './KnowledgeGraphPanel';
 import BrandAssetsPanel from './BrandAssetsPanel';
 import MarkdownMessage from './MarkdownMessage';
+// eslint-disable-next-line import/order
+import { Button, Flex, TextField, Select, TextArea, Checkbox } from '@radix-ui/themes';
+import { humanizeFilename } from '@/utils/formatting';
 
 const SCOPE_OPTIONS = [
   { value: 'all', label: 'Public' },
@@ -214,7 +217,7 @@ function highlightText(text: string, term: string): React.ReactNode {
           <mark
             key={i}
             className="bg-warning/20 text-warning rounded-sm"
-            style={{ background: 'var(--color-warning, #f59e0b33)', color: 'var(--color-warning, #f59e0b)' }}
+            style={{ background: 'var(--color-warning)', color: 'var(--color-warning)' }}
           >
             {part}
           </mark>
@@ -391,11 +394,13 @@ function renderInline(text: string, allArticles: KBArticle[], onNavigate: (artic
         parts.push(
           <button
             key={key++}
+            type="button"
             onClick={() => onNavigate(target)}
-            className="text-blue-400 hover:underline inline font-medium"
             title={`View article: ${target.title}`}
+            className="inline-flex items-center gap-0.5 px-0.5 text-mission-control-accent hover:underline transition-colors"
+            style={{ fontSize: 'inherit', lineHeight: 'inherit' }}
           >
-            <Link size={10} className="inline mr-0.5 opacity-70" />
+            <Link size={10} className="inline opacity-70" />
             {articleTitle}
           </button>
         );
@@ -423,7 +428,7 @@ function renderInline(text: string, allArticles: KBArticle[], onNavigate: (artic
           href={first.match[3]}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-400 hover:underline"
+          className="text-info hover:underline"
         >
           {first.match[2]}
         </a>
@@ -847,60 +852,68 @@ export default function KnowledgeBase() {
 
         {/* Reader */}
         <div className="flex flex-col flex-1 min-w-0 h-full">
-          <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
+          <Flex align="center" gap="3" p="4" className="border-b border-mission-control-border">
             <button
+              type="button"
               onClick={() => setViewing(null)}
-              className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text"
               aria-label="Back to list"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <ChevronLeft size={16} />
             </button>
             <div className="flex-1 min-w-0">
+              {/* Breadcrumb */}
+              <div className="flex items-center gap-1 text-[11px] text-mission-control-text-dim/70 mb-1">
+                <span>Knowledge Base</span>
+                <span>/</span>
+                <span className="text-[10px] uppercase font-bold tracking-wider bg-mission-control-border/40 rounded-full px-2 py-0.5 capitalize">{viewing.category}</span>
+                <span>/</span>
+                <span className="text-mission-control-text/70 truncate max-w-[160px]">{viewing.title}</span>
+              </div>
               <h2 className="font-semibold text-mission-control-text truncate">{viewing.title}</h2>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <span className="text-xs text-mission-control-text-dim capitalize flex items-center gap-1">
-                  <Tag size={10} />
-                  {viewing.category}
-                </span>
                 {viewing.scope && viewing.scope !== 'all' && (
-                  <span className="text-xs text-mission-control-text-dim">· {viewing.scope}</span>
+                  <span className="text-[11px] text-mission-control-text-dim/70">{viewing.scope}</span>
                 )}
                 {viewing.updatedAt && (
-                  <span className="text-xs text-mission-control-text-dim">
-                    · Updated {new Date(viewing.updatedAt).toLocaleDateString()}
+                  <span className="text-[11px] text-mission-control-text-dim/70">
+                    Updated {new Date(viewing.updatedAt).toLocaleDateString()}
                   </span>
                 )}
                 {viewing.createdBy && (
-                  <span className="text-xs text-mission-control-text-dim">· by {viewing.createdBy}</span>
+                  <span className="text-[11px] text-mission-control-text-dim/70">by {viewing.createdBy}</span>
                 )}
               </div>
             </div>
             <button
+              type="button"
               onClick={() => setVersionsArticleId(viewing.id)}
-              className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text"
               aria-label="Version history"
               title="Version history"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <History size={14} />
             </button>
             <button
+              type="button"
               onClick={() => toggleStar(viewing.id)}
-              className={`p-1.5 rounded hover:bg-mission-control-border transition-colors ${isStarred ? 'text-amber-400' : 'text-mission-control-text-dim hover:text-amber-400'}`}
               aria-label={isStarred ? 'Unstar article' : 'Star article'}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
-              <Star size={14} fill={isStarred ? 'currentColor' : 'none'} />
+              <Star size={14} fill={isStarred ? 'currentColor' : 'none'} className={isStarred ? 'text-warning' : ''} />
             </button>
             <button
+              type="button"
               onClick={() => {
                 setEditing({ ...viewing, tags: viewing.tags.join(', ') });
                 setViewing(null);
               }}
-              className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text"
               aria-label="Edit article"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <Edit2 size={14} />
             </button>
-          </div>
+          </Flex>
 
           <div className="flex-1 overflow-y-auto p-5">
             <div className="max-w-2xl prose-sm">
@@ -915,7 +928,7 @@ export default function KnowledgeBase() {
                       href={l.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block text-sm text-blue-400 hover:underline mb-1"
+                      className="block text-sm text-info hover:underline mb-1"
                     >
                       {l.title || l.url}
                     </a>
@@ -924,9 +937,9 @@ export default function KnowledgeBase() {
               )}
 
               {viewing.tags.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-1">
+                <div className="mt-4 flex flex-wrap gap-1.5">
                   {viewing.tags.map(t => (
-                    <span key={t} className="px-2 py-0.5 rounded-full bg-mission-control-surface text-xs text-mission-control-text-dim">
+                    <span key={t} className="text-[10px] uppercase font-bold tracking-wider bg-mission-control-border/40 rounded-full px-2 py-0.5 text-mission-control-text-dim/70">
                       {t}
                     </span>
                   ))}
@@ -940,8 +953,9 @@ export default function KnowledgeBase() {
                     {related.map(r => (
                       <button
                         key={r.id}
+                        type="button"
                         onClick={() => setViewing(r)}
-                        className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg bg-mission-control-surface hover:border-blue-500/40 border border-mission-control-border transition-colors"
+                        className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <BookOpen size={12} className="text-mission-control-text-dim shrink-0" />
                         <span className="text-sm text-mission-control-text truncate">{r.title}</span>
@@ -984,74 +998,79 @@ export default function KnowledgeBase() {
   if (editing !== null) {
     return (
       <div className="flex flex-col h-full">
-        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="3" p="4" className="border-b border-mission-control-border">
           <span className="font-semibold text-mission-control-text flex-1">
             {editing.id ? 'Edit Article' : 'New Article'}
           </span>
           <button
+            type="button"
             onClick={() => setEditing(null)}
-            className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim"
             aria-label="Cancel"
+            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={14} />
           </button>
-          <button
+          <Button
             onClick={save}
-            className="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-sm flex items-center gap-1.5"
+            size="2"
           >
             <Check size={13} />
             Save
-          </button>
-        </div>
+          </Button>
+        </Flex>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          <input
+          <TextField.Root
             value={editing.title || ''}
             onChange={e => setEditing(v => ({ ...v, title: e.target.value }))}
             placeholder="Article title..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-blue-500"
+            size="2"
           />
-          <div className="flex gap-2">
-            <select
+          <Flex gap="2">
+            <Select.Root
               value={editing.category || 'reference'}
-              onChange={e => setEditing(v => ({ ...v, category: e.target.value }))}
-              className="flex-1 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent"
+              onValueChange={v => setEditing(prev => ({ ...prev, category: v }))}
+              size="2"
             >
-              {allCategories.map(c => (
-                <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
-              ))}
-            </select>
-            <select
+              <Select.Trigger className="flex-1" />
+              <Select.Content>
+                {allCategories.map(c => (
+                  <Select.Item key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
+            <Select.Root
               value={editing.scope || 'all'}
-              onChange={e => setEditing(v => ({ ...v, scope: e.target.value }))}
-              className="flex-1 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent"
+              onValueChange={v => setEditing(prev => ({ ...prev, scope: v }))}
+              size="2"
             >
-              {SCOPE_OPTIONS.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
+              <Select.Trigger className="flex-1" />
+              <Select.Content>
+                {SCOPE_OPTIONS.map(s => (
+                  <Select.Item key={s.value} value={s.value}>{s.label}</Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
             <label className="flex items-center gap-2 px-3 py-2 rounded bg-mission-control-surface border border-mission-control-border text-sm text-mission-control-text cursor-pointer select-none">
-              <Pin size={13} className={editing.pinned ? 'text-amber-400' : 'text-mission-control-text-dim'} />
-              <input
-                type="checkbox"
+              <Pin size={13} className={editing.pinned ? 'text-warning' : 'text-mission-control-text-dim'} />
+              <Checkbox
                 checked={!!editing.pinned}
-                onChange={e => setEditing(v => ({ ...v, pinned: e.target.checked }))}
-                className="sr-only"
+                onCheckedChange={v => setEditing(prev => ({ ...prev, pinned: !!v }))}
               />
               Always inject
             </label>
-          </div>
-          <input
+          </Flex>
+          <TextField.Root
             value={typeof editing.tags === 'string' ? editing.tags : (editing.tags || []).join(', ')}
             onChange={e => setEditing(v => ({ ...v, tags: e.target.value }))}
             placeholder="Tags: brand, design, tone (comma-separated)..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-blue-500"
+            size="2"
           />
-          <textarea
+          <TextArea
             value={editing.content || ''}
             onChange={e => setEditing(v => ({ ...v, content: e.target.value }))}
             placeholder="Write your guidelines in Markdown..."
             rows={18}
-            className="w-full px-3 py-2 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-mono focus:outline-none focus:border-blue-500 resize-none"
+            className="font-mono resize-none"
           />
           <p className="text-xs text-mission-control-text-dim">
             Markdown supported. Pinned articles are always injected into agent context. Use [[Article Title]] to link to other articles.
@@ -1102,14 +1121,14 @@ export default function KnowledgeBase() {
       {/* Ingest progress */}
       {(ingesting || ingestError) && !ingestResult && (
         <div className="absolute top-4 right-4 z-50 bg-mission-control-surface border border-mission-control-border rounded-xl px-5 py-4 shadow-xl w-80">
-          <div className="flex items-center gap-2 mb-3">
+          <Flex align="center" gap="2" mb="3">
             {ingestError ? (
               <XCircle size={16} className="text-error shrink-0" />
             ) : (
               <RefreshCw size={16} className="text-mission-control-accent animate-spin shrink-0" />
             )}
-            <span className="text-sm font-medium text-mission-control-text truncate">{ingestFileName}</span>
-          </div>
+            <span className="text-sm font-medium text-mission-control-text truncate">{humanizeFilename(ingestFileName)}</span>
+          </Flex>
 
           {ingestError ? (
             <p className="text-xs text-error">{ingestError}</p>
@@ -1130,7 +1149,7 @@ export default function KnowledgeBase() {
                       {isDone ? (
                         <Check size={11} className="text-white" />
                       ) : isActive ? (
-                        <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                        <div className="w-2 h-2 bg-mission-control-surface rounded-full animate-pulse" />
                       ) : (
                         <div className="w-2 h-2 bg-mission-control-text-dim/30 rounded-full" />
                       )}
@@ -1148,8 +1167,8 @@ export default function KnowledgeBase() {
 
       {/* Ingest result toast */}
       {ingestResult && (
-        <div className="absolute top-4 right-4 z-50 bg-mission-control-surface border border-success-border rounded-lg px-4 py-3 shadow-lg max-w-sm">
-          <div className="flex items-start gap-2">
+        <div className="absolute top-4 right-4 z-50 bg-mission-control-surface border border-success/30 rounded-lg px-4 py-3 shadow-lg max-w-sm">
+          <Flex align="start" gap="2">
             <CheckCircle size={16} className="text-success mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-mission-control-text">{ingestResult.title}</p>
@@ -1160,10 +1179,10 @@ export default function KnowledgeBase() {
                 ))}
               </div>
             </div>
-            <button onClick={() => setIngestResult(null)} className="text-mission-control-text-dim hover:text-mission-control-text flex-shrink-0">
+            <button type="button" onClick={() => setIngestResult(null)} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0">
               <X size={14} />
             </button>
-          </div>
+          </Flex>
         </div>
       )}
 
@@ -1180,30 +1199,36 @@ export default function KnowledgeBase() {
       {/* Main content */}
       <div className="flex flex-col flex-1 min-w-0 h-full">
         <div className="p-4 border-b border-mission-control-border space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 shrink-0">
-              <BookOpen size={16} className="text-mission-control-text-dim" />
-              <span className="font-semibold text-mission-control-text text-sm">Knowledge Base</span>
+          <Flex align="center" justify="between" gap="2">
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="p-1.5 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+                <BookOpen size={16} className="text-mission-control-accent" />
+              </div>
+              <span className="font-semibold text-mission-control-text">Knowledge Base</span>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap justify-end">
-              <button
+              <Button
                 onClick={() => setShowGraph(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text text-xs transition-colors"
+                variant="outline"
+                color="gray"
+                size="1"
                 title="Graph view"
               >
                 <Network size={12} />
                 Graph
-              </button>
+              </Button>
               <div className="relative" ref={templateDropdownRef}>
-                <button
+                <Button
+                  variant="outline"
+                  color="gray"
+                  size="1"
                   onClick={() => setShowTemplateDropdown(v => !v)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text text-xs transition-colors"
                   title="New from template"
                 >
                   <FileText size={12} />
                   Template
                   <ChevronDown size={10} />
-                </button>
+                </Button>
                 {showTemplateDropdown && (
                   <div className="absolute right-0 top-full mt-1 w-48 rounded-lg bg-mission-control-surface border border-mission-control-border shadow-xl z-20 overflow-hidden">
                     {apiTemplates.length === 0 ? (
@@ -1212,8 +1237,9 @@ export default function KnowledgeBase() {
                       apiTemplates.map(t => (
                         <button
                           key={t.id}
+                          type="button"
                           onClick={() => createFromTemplate(t.id)}
-                          className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-xs text-mission-control-text hover:bg-mission-control-border transition-colors"
+                          className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         >
                           <FileText size={11} className="text-mission-control-text-dim shrink-0" />
                           {t.label}
@@ -1223,19 +1249,18 @@ export default function KnowledgeBase() {
                   </div>
                 )}
               </div>
-              <button
+              <Button
                 onClick={() => setQuickCreate(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs"
+                size="1"
               >
                 <Plus size={12} />
                 New Article
-              </button>
+              </Button>
             </div>
-          </div>
+          </Flex>
 
           <div className="relative">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
+            <TextField.Root
               ref={searchInputRef}
               aria-label="Search knowledge base"
               value={search}
@@ -1244,35 +1269,33 @@ export default function KnowledgeBase() {
               onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
               onKeyDown={handleSearchKeyDown}
               placeholder="Search guidelines, brand voice, context..."
-              className="w-full pl-8 pr-8 py-1.5 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-blue-500"
-            />
-            {search && (
-              <button
-                onClick={() => { setSearch(''); setSearchCursor(-1); }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim hover:text-mission-control-text"
-                aria-label="Clear search"
-              >
-                <X size={12} />
-              </button>
-            )}
-          </div>
-
-          {/* Filter pills */}
-          <div className="flex gap-1 flex-wrap">
-            <button
-              onClick={() => setShowStarred(v => !v)}
-              className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-full text-xs transition-colors ${
-                showStarred
-                  ? 'bg-amber-500/20 text-amber-400'
-                  : 'bg-mission-control-surface text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
+              size="2"
             >
-              <Star size={10} fill={showStarred ? 'currentColor' : 'none'} />
-              Starred
-              {starred.size > 0 && (
-                <span className="ml-0.5 opacity-70">{starred.size}</span>
-              )}
-            </button>
+              <TextField.Slot>
+                <Search size={13} />
+              </TextField.Slot>
+              <TextField.Slot side="right">
+                <button
+                  type="button"
+                  onClick={() => setShowStarred(v => !v)}
+                  aria-label={showStarred ? 'Show all articles' : 'Show starred only'}
+                  title={showStarred ? 'Showing starred only' : 'Filter by starred'}
+                  className={`inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-mission-control-border/40 transition-colors ${showStarred ? 'text-mission-control-text' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+                >
+                  <Star size={12} fill={showStarred ? 'currentColor' : 'none'} />
+                </button>
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => { setSearch(''); setSearchCursor(-1); }}
+                    aria-label="Clear search"
+                    className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </TextField.Slot>
+            </TextField.Root>
           </div>
         </div>
 
@@ -1401,11 +1424,12 @@ function CategorySidebar({ categories, counts, selected, total, onSelect, onAddC
   return (
     <nav className="w-36 shrink-0 border-r border-mission-control-border flex flex-col h-full overflow-y-auto py-3 px-2 space-y-0.5">
       <button
+        type="button"
         onClick={() => onSelect('all')}
-        className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors ${
+        className={`flex items-center justify-between w-full px-2 py-1.5 rounded text-xs font-medium transition-colors ${
           selected === 'all'
-            ? 'bg-blue-600/20 text-blue-400 font-medium'
-            : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
+            ? 'bg-mission-control-accent/10 text-mission-control-accent'
+            : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/50'
         }`}
       >
         <span>All</span>
@@ -1414,11 +1438,12 @@ function CategorySidebar({ categories, counts, selected, total, onSelect, onAddC
       {categories.map(cat => (
         <button
           key={cat}
+          type="button"
           onClick={() => onSelect(cat)}
-          className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded text-xs transition-colors ${
+          className={`flex items-center justify-between w-full px-2 py-1.5 rounded text-xs font-medium transition-colors ${
             selected === cat
-              ? 'bg-blue-600/20 text-blue-400 font-medium'
-              : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
+              ? 'bg-mission-control-accent/10 text-mission-control-accent'
+              : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/50'
           }`}
         >
           <span className="capitalize truncate">{cat}</span>
@@ -1431,7 +1456,7 @@ function CategorySidebar({ categories, counts, selected, total, onSelect, onAddC
       {/* Add category */}
       {adding ? (
         <div className="px-1 pt-1">
-          <input
+          <TextField.Root
             ref={inputRef}
             value={newCat}
             onChange={e => setNewCat(e.target.value)}
@@ -1447,26 +1472,28 @@ function CategorySidebar({ categories, counts, selected, total, onSelect, onAddC
             }}
             onBlur={() => { if (!newCat.trim()) setAdding(false); }}
             placeholder="category name"
-            className="w-full px-2 py-1 rounded bg-mission-control-surface border border-mission-control-border text-xs focus:outline-none focus:border-mission-control-accent"
+            size="1"
           />
         </div>
       ) : (
         <button
+          type="button"
           onClick={() => setAdding(true)}
-          className="w-full text-left px-2.5 py-1.5 rounded text-xs text-mission-control-text-dim hover:text-mission-control-accent hover:bg-mission-control-surface transition-colors flex items-center gap-1"
+          className="flex items-center justify-between w-full px-2 py-1.5 rounded text-xs transition-colors text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/50"
         >
-          <Plus size={11} /> Add Category
+          <span className="flex items-center gap-1"><Plus size={11} /> Add Category</span>
         </button>
       )}
 
       {/* Brand Assets section — separator */}
       <div className="border-t border-mission-control-border my-1.5 pt-1.5">
         <button
+          type="button"
           onClick={() => onSelect('brand-assets')}
-          className={`w-full text-left flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs transition-colors ${
+          className={`flex items-center justify-between w-full px-2 py-1.5 rounded text-xs font-medium transition-colors ${
             selected === 'brand-assets'
-              ? 'bg-blue-600/20 text-blue-400 font-medium'
-              : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
+              ? 'bg-mission-control-accent/10 text-mission-control-accent'
+              : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/50'
           }`}
         >
           <span className="truncate">Brand Assets</span>
@@ -1498,80 +1525,84 @@ function ArticleCard({
 
   return (
     <div
-      className={`group rounded-lg bg-mission-control-surface border transition-colors cursor-pointer ${
+      className={`group rounded-xl bg-mission-control-surface border transition-colors cursor-pointer p-4 ${
         isKeyboardFocused
-          ? 'border-blue-500/70 ring-1 ring-blue-500/30'
-          : 'border-mission-control-border hover:border-blue-500/40'
+          ? 'border-[var(--mission-control-accent)]/60 ring-1 ring-[var(--mission-control-accent)]/20'
+          : 'border-mission-control-border hover:border-[var(--mission-control-accent)]/30'
       }`}
-      style={{ padding: '0.75rem' }}
       onClick={onView}
     >
-      <div className="flex items-start justify-between gap-2 mb-1.5">
-        <div className="flex items-center gap-2 min-w-0">
-          {article.pinned && <Pin size={11} className="text-amber-400 shrink-0" />}
-          <span className="font-medium text-mission-control-text text-sm truncate">
+      <Flex align="start" justify="between" gap="2" className="mb-2">
+        <Flex align="center" gap="2" className="min-w-0">
+          {article.pinned && <Pin size={11} className="text-warning shrink-0" />}
+          <span className="text-sm font-semibold text-mission-control-text truncate">
             {highlightText(article.title, searchTerm)}
           </span>
-        </div>
+        </Flex>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <button
+            type="button"
             onClick={e => { e.stopPropagation(); onToggleStar(); }}
-            className={`p-1 rounded hover:bg-mission-control-border transition-colors ${isStarred ? 'text-amber-400' : 'text-mission-control-text-dim hover:text-amber-400'}`}
             aria-label={isStarred ? 'Unstar article' : 'Star article'}
+            className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors hover:bg-mission-control-border/40 ${isStarred ? 'text-warning' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
           >
             <Star size={12} fill={isStarred ? 'currentColor' : 'none'} />
           </button>
           <button
+            type="button"
             onClick={e => { e.stopPropagation(); onVersionHistory(); }}
-            className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text"
             aria-label="Version history"
             title="Version history"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <History size={12} />
           </button>
           <button
+            type="button"
             onClick={e => { e.stopPropagation(); onTogglePin(); }}
-            className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-amber-400"
             aria-label={article.pinned ? 'Unpin article' : 'Pin article'}
             title={article.pinned ? 'Unpin' : 'Pin — always inject into agent context'}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Pin size={12} />
           </button>
           <button
+            type="button"
             onClick={e => { e.stopPropagation(); onEdit(); }}
-            className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim"
             aria-label="Edit article"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Edit2 size={12} />
           </button>
           <button
+            type="button"
             onClick={e => { e.stopPropagation(); onDelete(); }}
-            className="p-1 rounded hover:bg-mission-control-border text-red-400"
             aria-label="Delete article"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Trash2 size={12} />
           </button>
         </div>
-      </div>
-      <p className="text-xs text-mission-control-text-dim line-clamp-2 mb-2">
+      </Flex>
+      <p className="text-xs text-mission-control-text-dim/70 line-clamp-2 mb-3 leading-relaxed">
         {highlightText(excerpt, searchTerm)}
       </p>
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="px-1.5 py-0.5 rounded text-xs bg-mission-control-border text-mission-control-text-dim capitalize">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className="text-[10px] uppercase font-bold tracking-wider bg-mission-control-border/40 rounded-full px-2 py-0.5 text-mission-control-text-dim/70 capitalize">
           {article.category}
         </span>
         {isStarred && (
-          <span className="px-1.5 py-0.5 rounded text-xs bg-amber-500/10 text-amber-400 flex items-center gap-1">
+          <span className="px-2 py-0.5 rounded-full text-[10px] bg-warning/10 text-warning flex items-center gap-1">
             <Star size={9} fill="currentColor" />
             Starred
           </span>
         )}
         {article.tags.slice(0, 3).map(t => (
-          <span key={t} className="px-1.5 py-0.5 rounded-full bg-mission-control-border text-xs text-mission-control-text-dim">
+          <span key={t} className="text-[10px] uppercase font-bold tracking-wider bg-mission-control-border/40 rounded-full px-2 py-0.5 text-mission-control-text-dim/70">
             {t}
           </span>
         ))}
-        <span className="ml-auto flex items-center gap-2 text-xs text-mission-control-text-dim">
+        <span className="ml-auto flex items-center gap-2 text-[10px] text-mission-control-text-dim/70">
           <span className="flex items-center gap-0.5">
             <AlignLeft size={9} />
             {wc}w
@@ -1621,76 +1652,86 @@ function QuickCreateModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="relative w-full max-w-lg mx-4 rounded-lg bg-mission-control-surface border border-mission-control-border shadow-2xl flex flex-col"
-        style={{ maxHeight: '90vh' }}
+        className="relative w-full max-w-lg mx-4 rounded-2xl bg-mission-control-surface border border-mission-control-border shadow-2xl flex flex-col max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="3" p="4" className="border-b border-mission-control-border">
           <BookOpen size={16} className="text-mission-control-text-dim" />
           <span className="font-semibold text-mission-control-text flex-1 text-sm">New Article</span>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim"
             aria-label="Close"
+            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={14} />
           </button>
-        </div>
+        </Flex>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          <input
+          <TextField.Root
             autoFocus
             value={title}
             onChange={e => onChangeTitle(e.target.value)}
             placeholder="Article title (required)..."
-            className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-blue-500"
+            size="2"
           />
 
-          <div className="flex gap-2">
+          <Flex gap="2">
             <div className="flex-1">
-              <select
+              <Select.Root
                 value={category}
-                onChange={e => onChangeCategory(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent"
+                onValueChange={onChangeCategory}
+                size="2"
               >
-                {categories.map(c => (
-                  <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
-                ))}
-                <option value="__custom__">New category...</option>
-              </select>
+                <Select.Trigger className="w-full" />
+                <Select.Content>
+                  {categories.map(c => (
+                    <Select.Item key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</Select.Item>
+                  ))}
+                  <Select.Item value="__custom__">New category...</Select.Item>
+                </Select.Content>
+              </Select.Root>
               {category === '__custom__' && (
-                <input
+                <TextField.Root
                   value={categoryCustom}
                   onChange={e => onChangeCategoryCustom(e.target.value)}
                   placeholder="Category name..."
-                  className="mt-1.5 w-full px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent focus:border-blue-500"
+                  size="2"
+                  className="mt-1.5"
                 />
               )}
             </div>
 
-            <select
+            <Select.Root
               value={scope}
-              onChange={e => onChangeScope(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent"
+              onValueChange={onChangeScope}
+              size="2"
             >
-              {SCOPE_OPTIONS.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          </div>
+              <Select.Trigger />
+              <Select.Content>
+                {SCOPE_OPTIONS.map(s => (
+                  <Select.Item key={s.value} value={s.value}>{s.label}</Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
+          </Flex>
 
           {/* Template / AI generation row */}
-          <div className="flex gap-2">
+          <Flex gap="2">
             <div className="relative flex-1">
-              <button
+              <Button
+                variant="outline"
+                color="gray"
+                size="1"
                 onClick={() => setShowTemplates(v => !v)}
-                className="w-full flex items-center gap-1.5 px-3 py-2 rounded bg-mission-control-border/30 border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text text-xs transition-colors"
+                className="w-full"
               >
                 <FileText size={12} />
                 Use template
-              </button>
+              </Button>
               {showTemplates && (
                 <div className="absolute top-full left-0 right-0 mt-1 rounded-lg bg-mission-control-surface border border-mission-control-border shadow-xl z-10 overflow-hidden">
                   {ARTICLE_TEMPLATES.map(tmpl => {
@@ -1698,8 +1739,9 @@ function QuickCreateModal({
                     return (
                       <button
                         key={tmpl.id}
+                        type="button"
                         onClick={() => applyTemplate(tmpl)}
-                        className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-xs text-mission-control-text hover:bg-mission-control-border transition-colors"
+                        className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <Icon size={12} className="text-mission-control-text-dim shrink-0" />
                         {tmpl.label}
@@ -1709,42 +1751,45 @@ function QuickCreateModal({
                 </div>
               )}
             </div>
-            <button
+            <Button
+              variant="outline"
+              color="gray"
+              size="1"
               onClick={onGenerate}
               disabled={!title.trim() || generating}
               title={title.trim() ? `Generate content for "${title}"` : 'Enter a title first'}
-              className="flex items-center gap-1.5 px-3 py-2 rounded bg-mission-control-border/30 border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text disabled:opacity-40 disabled:cursor-not-allowed text-xs transition-colors"
             >
               <Wand2 size={12} />
               {generating ? 'Generating...' : 'Generate with AI'}
-            </button>
-          </div>
+            </Button>
+          </Flex>
 
-          <textarea
+          <TextArea
             value={content}
             onChange={e => onChangeContent(e.target.value)}
             placeholder="Article content (required)..."
             rows={10}
-            className="w-full px-3 py-2 rounded bg-mission-control-border/30 border border-mission-control-border text-mission-control-text text-sm font-mono focus:outline-none focus:border-blue-500 resize-none"
+            className="font-mono resize-none"
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2 p-4 border-t border-mission-control-border">
+        <Flex align="center" justify="end" gap="2" p="4" className="border-t border-mission-control-border">
           <button
+            type="button"
             onClick={onClose}
-            className="px-3 py-1.5 rounded text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             Cancel
           </button>
-          <button
+          <Button
             onClick={onSave}
             disabled={!canSave}
-            className="px-4 py-1.5 rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm flex items-center gap-1.5"
+            size="2"
           >
             <Check size={13} />
             {saving ? 'Saving...' : 'Save Article'}
-          </button>
-        </div>
+          </Button>
+        </Flex>
       </div>
     </div>
   );
@@ -1767,42 +1812,45 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
 
   return (
     <div className="w-80 shrink-0 border-l border-mission-control-border flex flex-col h-full bg-mission-control-surface">
-      <div className="flex items-center gap-2 p-3 border-b border-mission-control-border">
+      <Flex align="center" gap="2" p="3" className="border-b border-mission-control-border">
         <History size={14} className="text-mission-control-text-dim" />
         <span className="text-sm font-medium text-mission-control-text flex-1">Version History</span>
         <button
+          type="button"
           onClick={onClose}
-          className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim"
           aria-label="Close version history"
+          className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
           <X size={13} />
         </button>
-      </div>
+      </Flex>
 
       {/* Content preview pane */}
       {previewVersion && (
         <div className="border-b border-mission-control-border bg-mission-control-border/20 p-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
+          <Flex align="center" justify="between" gap="2">
             <span className="text-xs text-mission-control-text-dim">
               Preview — {new Date(previewVersion.editedAt).toLocaleString()}
             </span>
             <button
+              type="button"
               onClick={() => onPreview(null)}
-              className="text-xs text-mission-control-text-dim hover:text-mission-control-text"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               Close preview
             </button>
-          </div>
+          </Flex>
           <div className="max-h-48 overflow-y-auto rounded bg-mission-control-surface border border-mission-control-border p-2 text-xs font-mono text-mission-control-text whitespace-pre-wrap">
             {displayContent.slice(0, 600)}{displayContent.length > 600 ? '...' : ''}
           </div>
-          <button
+          <Button
             onClick={() => onRestore(previewVersion)}
-            className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs"
+            size="1"
+            className="w-full justify-center"
           >
             <History size={11} />
             Restore this version
-          </button>
+          </Button>
         </div>
       )}
 
@@ -1825,13 +1873,13 @@ function VersionDrawer({ versions, loading, previewVersion, currentContent, onPr
               <button
                 key={v.id}
                 onClick={() => onPreview(previewVersion?.id === v.id ? null : v)}
-                className={`w-full text-left px-3 py-2.5 rounded transition-colors ${
+                className={`w-full flex flex-col items-start gap-0.5 px-3 py-2 rounded-md text-left transition-colors ${
                   previewVersion?.id === v.id
-                    ? 'bg-blue-600/20 border border-blue-500/40'
-                    : 'hover:bg-mission-control-border border border-transparent'
+                    ? 'bg-mission-control-surface text-mission-control-accent shadow-sm'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
                 }`}
               >
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 w-full">
                   <span className="text-xs font-medium text-mission-control-text">
                     {new Date(v.editedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>

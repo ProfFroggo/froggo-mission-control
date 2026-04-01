@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Save, Trash2, ExternalLink, MessageCircle, User, Hash, Loader2, Check, Send, Lightbulb } from 'lucide-react';
-import { Spinner } from './LoadingStates';
+import { Search, Save, Trash2, ExternalLink, MessageCircle, User, Hash, Check, Send, Lightbulb } from 'lucide-react';
+import { Button, Spinner, TextField, Flex } from '@radix-ui/themes';
 import { scheduleApi } from '../lib/api';
 import { showToast } from './Toast';
 
@@ -185,10 +185,10 @@ export function XResearchView() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
-      <div className="p-4 border-b border-mission-control-border">
-        <div className="flex items-center justify-between mb-4">
+      <div className="px-4 py-3 border-b border-mission-control-border flex-shrink-0">
+        <Flex align="center" justify="between" className="mb-4">
           <div>
             <h1 className="text-lg font-semibold text-mission-control-text flex items-center gap-2">
               <Search size={20} className="text-mission-control-accent" />
@@ -198,41 +198,42 @@ export function XResearchView() {
               Search social media for content inspiration and competitive insights
             </p>
           </div>
-          <button
+          <Button
             onClick={() => setShowLibrary(!showLibrary)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              showLibrary
-                ? 'bg-mission-control-accent text-white'
-                : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text hover:border-mission-control-accent/50'
-            }`}
+            variant={showLibrary ? 'solid' : 'outline'}
+            color={showLibrary ? 'violet' : 'gray'}
+            size="2"
           >
             <Save size={16} />
             {showLibrary ? 'Back to Results' : `Library (${savedItems.length})`}
-          </button>
-        </div>
+          </Button>
+        </Flex>
 
         {/* Search Input */}
-        <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
+        <Flex gap="2">
+          <div className="flex-1">
+            <TextField.Root
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && performSearch()}
               placeholder="Search tweets, users, topics..."
-              className="w-full pl-10 pr-4 py-3 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
-            />
+              className="w-full"
+            >
+              <TextField.Slot>
+                <Search size={16} />
+              </TextField.Slot>
+            </TextField.Root>
           </div>
-          <button
+          <Button
             onClick={performSearch}
             disabled={loading || !query.trim()}
-            className="flex items-center gap-2 px-6 py-3 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            variant="solid"
+            color="violet"
+            size="3"
           >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-            {loading ? 'Searching...' : 'Start Research'}
-          </button>
-        </div>
+            {loading ? <><Spinner size="1" /> Searching...</> : <><Send size={16} /> Start Research</>}
+          </Button>
+        </Flex>
       </div>
 
       {/* Content */}
@@ -240,7 +241,7 @@ export function XResearchView() {
         {showLibrary ? (
           /* Library View */
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-mission-control-text">Research Library</h2>
+            <h2 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Research Library</h2>
             {savedItems.length === 0 ? (
               <div className="text-center py-12 text-mission-control-text-dim">
                 <Save size={32} className="mx-auto mb-3 opacity-30" />
@@ -252,32 +253,32 @@ export function XResearchView() {
                 {savedItems.map((saved) => (
                   <div
                     key={saved.id}
-                    className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4"
+                    className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 hover:border-mission-control-accent/30 transition-colors"
                   >
-                    <div className="flex items-center justify-between mb-3">
+                    <Flex align="center" justify="between" className="mb-3">
                       <div>
                         <div className="font-medium text-mission-control-text">{saved.query}</div>
                         <div className="text-sm text-mission-control-text-dim">
                           {saved.results.length} items • Saved {new Date(saved.savedAt).toLocaleDateString()}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <Flex align="center" gap="2">
                         <button
                           onClick={() => loadSavedResults(saved)}
-                          className="p-2 hover:bg-mission-control-bg rounded-lg text-mission-control-text-dim hover:text-mission-control-text transition-colors"
                           title="Load results"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         >
                           <ExternalLink size={16} />
                         </button>
                         <button
                           onClick={() => deleteSaved(saved.id)}
-                          className="p-2 hover:bg-mission-control-bg rounded-lg text-mission-control-text-dim hover:text-review transition-colors"
                           title="Delete"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         >
                           <Trash2 size={16} />
                         </button>
-                      </div>
-                    </div>
+                      </Flex>
+                    </Flex>
                     <div className="flex flex-wrap gap-2">
                       {saved.results.slice(0, 5).map((r) => (
                         <span
@@ -301,7 +302,7 @@ export function XResearchView() {
         ) : loading ? (
           /* Loading State */
           <div className="flex flex-col items-center justify-center py-16">
-            <Spinner size={40} />
+            <Spinner size="3" />
             <p className="text-mission-control-text-dim mt-4">Searching...</p>
           </div>
         ) : !searched ? (
@@ -326,19 +327,21 @@ export function XResearchView() {
           <div className="space-y-4">
             {/* Selection Actions */}
             {selectedIds.size > 0 && (
-              <div className="flex items-center justify-between bg-mission-control-surface border border-mission-control-accent/50 rounded-lg p-3">
+              <Flex align="center" justify="between" className="bg-mission-control-surface border border-mission-control-accent/50 rounded-lg p-3">
                 <span className="text-sm text-mission-control-text">
                   <Check size={16} className="inline mr-1" />
                   {selectedIds.size} selected
                 </span>
-                <button
+                <Button
                   onClick={saveToLibrary}
-                  className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-sm font-medium"
+                  variant="solid"
+                  color="violet"
+                  size="2"
                 >
                   <Save size={16} />
                   Save to Library
-                </button>
-              </div>
+                </Button>
+              </Flex>
             )}
 
             {/* Results Grid */}
@@ -348,7 +351,7 @@ export function XResearchView() {
                   key={result.id}
                   role="button"
                   tabIndex={0}
-                  className={`bg-mission-control-surface border rounded-lg p-4 cursor-pointer transition-all hover:border-mission-control-accent/50 ${
+                  className={`bg-mission-control-surface border rounded-xl p-4 cursor-pointer transition-colors hover:border-mission-control-accent/30 ${
                     selectedIds.has(result.id)
                       ? 'border-mission-control-accent bg-mission-control-accent/5'
                       : 'border-mission-control-border'
@@ -356,7 +359,7 @@ export function XResearchView() {
                   onClick={() => toggleSelection(result.id)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSelection(result.id); }}
                 >
-                  <div className="flex items-start gap-3">
+                  <Flex align="start" gap="3">
                     {/* Selection Checkbox */}
                     <div className={`shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                       selectedIds.has(result.id)
@@ -369,30 +372,30 @@ export function XResearchView() {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       {/* Type Badge */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                          result.type === 'tweet' ? 'bg-info-subtle text-info' :
-                          result.type === 'thread' ? 'bg-success-subtle text-success' :
-                          result.type === 'user' ? 'bg-purple-subtle text-purple-500' :
-                          'bg-mission-control-accent/20 text-mission-control-accent'
+                      <Flex align="center" gap="2" className="mb-2">
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                          result.type === 'tweet' ? 'bg-info/10 text-info' :
+                          result.type === 'thread' ? 'bg-success/10 text-success' :
+                          result.type === 'user' ? 'bg-mission-control-border/50 text-mission-control-text-dim' :
+                          'bg-mission-control-accent/10 text-mission-control-accent'
                         }`}>
                           {getTypeIcon(result.type)} {getTypeLabel(result.type)}
                         </span>
                         {result.username && (
-                          <span className="text-sm text-mission-control-text-dim">{result.username}</span>
+                          <span className="text-xs text-mission-control-text-dim">{result.username}</span>
                         )}
-                      </div>
+                      </Flex>
 
                       {/* Tweet Content */}
                       {result.content && (
-                        <p className="text-sm text-mission-control-text mb-3 line-clamp-3">
+                        <p className="text-sm text-mission-control-text leading-relaxed mt-2 mb-3 line-clamp-3">
                           {result.content}
                         </p>
                       )}
 
                       {/* Metrics */}
                       {(result.likes || result.retweets || result.replies || result.followers) && (
-                        <div className="flex items-center gap-4 text-xs text-mission-control-text-dim">
+                        <Flex align="center" gap="4" className="text-[10px] text-mission-control-text-dim tabular-nums">
                           {result.followers !== undefined && (
                             <span className="flex items-center gap-1">
                               <User size={12} />
@@ -411,31 +414,31 @@ export function XResearchView() {
                           {result.impressions !== undefined && (
                             <span>{formatNumber(result.impressions)} views</span>
                           )}
-                        </div>
+                        </Flex>
                       )}
 
                       {/* Topic/Thread Count */}
                       {(result.tweetCount || result.engagement) && (
-                        <div className="flex items-center gap-4 text-xs text-mission-control-text-dim mt-2">
+                        <Flex align="center" gap="4" className="text-[10px] text-mission-control-text-dim tabular-nums mt-2">
                           {result.tweetCount !== undefined && (
                             <span>{result.tweetCount.toLocaleString()} tweets</span>
                           )}
                           {result.engagement !== undefined && (
                             <span>{result.engagement}% engagement</span>
                           )}
-                        </div>
+                        </Flex>
                       )}
 
                       {/* Date & Link & Save as Idea */}
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-mission-control-border">
+                      <Flex align="center" justify="between" className="mt-3 pt-3 border-t border-mission-control-border">
                         <span className="text-xs text-mission-control-text-dim">
                           {result.date && new Date(result.date).toLocaleDateString()}
                         </span>
-                        <div className="flex items-center gap-2">
+                        <Flex align="center" gap="2">
                           <button
                             onClick={(e) => { e.stopPropagation(); saveAsIdea(result); }}
-                            className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-info transition-colors"
                             title="Save as idea draft"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                           >
                             <Lightbulb size={12} />
                             Save as Idea
@@ -451,17 +454,17 @@ export function XResearchView() {
                               View on X <ExternalLink size={10} />
                             </a>
                           )}
-                        </div>
-                      </div>
+                        </Flex>
+                      </Flex>
                     </div>
-                  </div>
+                  </Flex>
                 </div>
               ))}
             </div>
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }
 

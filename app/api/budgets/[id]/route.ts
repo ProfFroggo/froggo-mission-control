@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
-import { calculatePeriodSpend } from '../route';
+import { calculatePeriodSpend } from '@/lib/budgets';
 
 export const dynamic = 'force-dynamic';
 

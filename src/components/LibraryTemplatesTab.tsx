@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button, TextField, Select, TextArea, Flex } from '@radix-ui/themes';
 import { FileText, Plus, Edit3, Trash2, Copy, Search, Mail, MessageSquare, Star, StarOff, LayoutTemplate } from 'lucide-react';
 import EmptyState from './EmptyState';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -169,50 +170,52 @@ export default function LibraryTemplatesTab() {
   });
 
   return (
-    <div className="h-full flex flex-col">
+    <Flex direction="column" height="100%">
       {/* Toolbar */}
-      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between mb-4">
+      <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between" className="mb-4">
           <p className="text-sm text-mission-control-text-dim">
             Reusable content templates
           </p>
-          <button
+          <Button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90"
+            size="2"
+            variant="solid"
           >
             <Plus size={16} />
             New Template
-          </button>
-        </div>
+          </Button>
+        </Flex>
 
         {/* Search and filters */}
-        <div className="flex gap-3">
-          <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
+        <Flex gap="3">
+          <div className="flex-1">
+            <TextField.Root
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search templates..."
-              className="w-full pl-9 pr-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
-            />
+              size="2"
+            >
+              <TextField.Slot>
+                <Search size={16} />
+              </TextField.Slot>
+            </TextField.Root>
           </div>
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
-          >
-            <option value="all">All Types</option>
-            <option value="tweet">Tweets</option>
-            <option value="email">Emails</option>
-            <option value="message">Messages</option>
-            <option value="generic">Generic</option>
-          </select>
-        </div>
+          <Select.Root value={typeFilter} onValueChange={setTypeFilter}>
+            <Select.Trigger />
+            <Select.Content>
+              <Select.Item value="all">All Types</Select.Item>
+              <Select.Item value="tweet">Tweets</Select.Item>
+              <Select.Item value="email">Emails</Select.Item>
+              <Select.Item value="message">Messages</Select.Item>
+              <Select.Item value="generic">Generic</Select.Item>
+            </Select.Content>
+          </Select.Root>
+        </Flex>
       </div>
 
       {/* Templates List */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4">
         {sortedTemplates.length === 0 ? (
           <EmptyState icon={LayoutTemplate} title="No templates" description="Create your first template" />
         ) : (
@@ -225,44 +228,48 @@ export default function LibraryTemplatesTab() {
               return (
                 <div
                   key={template.id}
-                  className={`p-4 rounded-lg border transition-all ${
+                  className={`p-4 rounded-xl border transition-colors cursor-pointer ${
                     isEditing
                       ? 'bg-mission-control-accent/5 border-mission-control-accent/30'
                       : 'bg-mission-control-surface border-mission-control-border hover:border-mission-control-accent/30'
                   }`}
                 >
                   {/* Header */}
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                  <Flex align="start" justify="between" className="mb-2">
+                    <Flex align="center" gap="2">
                       <Icon size={16} className={config.color} />
                       {isEditing ? (
-                        <input
+                        <TextField.Root
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="font-medium bg-transparent border-b border-mission-control-accent focus:outline-none"
+                          size="1"
+                          variant="soft"
                         />
                       ) : (
-                        <span className="font-medium">{template.name}</span>
+                        <span className="text-sm font-semibold text-mission-control-text truncate">{template.name}</span>
                       )}
-                    </div>
+                    </Flex>
                     <button
                       onClick={() => handleStar(template.id)}
-                      className="p-1 hover:bg-mission-control-border rounded"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                      title={template.starred ? 'Unstar' : 'Star'}
                     >
                       {template.starred ? (
-                        <Star size={14} className="text-warning fill-yellow-400" />
+                        <Star size={14} className="text-warning fill-current" />
                       ) : (
                         <StarOff size={14} className="text-mission-control-text-dim" />
                       )}
                     </button>
-                  </div>
+                  </Flex>
 
                   {/* Content */}
                   {isEditing ? (
-                    <textarea
+                    <TextArea
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
-                      className="w-full h-24 bg-mission-control-bg border border-mission-control-border rounded-lg p-2 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
+                      className="w-full h-24"
+                      resize="none"
+                      size="1"
                     />
                   ) : (
                     <p className="text-sm text-mission-control-text-dim line-clamp-3 mb-3">
@@ -272,66 +279,67 @@ export default function LibraryTemplatesTab() {
 
                   {/* Tags */}
                   {template.tags.length > 0 && !isEditing && (
-                    <div className="flex gap-1 mb-3">
+                    <Flex gap="1" className="mb-3">
                       {template.tags.map(tag => (
                         <span
                           key={tag}
-                          className="px-2 py-0.5 bg-mission-control-border text-mission-control-text-dim text-xs rounded"
+                          className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-border/30 text-mission-control-text-dim"
                         >
                           {tag}
                         </span>
                       ))}
-                    </div>
+                    </Flex>
                   )}
 
                   {/* Actions */}
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <span className="text-xs text-mission-control-text-dim">
                       Used {template.usageCount}x
                     </span>
-                    <div className="flex gap-1">
+                    <Flex gap="1">
                       {isEditing ? (
                         <>
                           <button
                             onClick={() => setEditingId(null)}
-                            className="px-2 py-1 text-xs text-mission-control-text-dim hover:text-mission-control-text"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                           >
                             Cancel
                           </button>
-                          <button
+                          <Button
                             onClick={handleSave}
-                            className="px-2 py-1 text-xs bg-mission-control-accent text-white rounded"
+                            size="1"
+                            variant="solid"
                           >
                             Save
-                          </button>
+                          </Button>
                         </>
                       ) : (
                         <>
                           <button
                             onClick={() => handleCopy(template)}
-                            className="p-1.5 hover:bg-mission-control-border rounded"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                             title="Copy"
                           >
-                            <Copy size={14} className="text-mission-control-text-dim" />
+                            <Copy size={14} />
                           </button>
                           <button
                             onClick={() => handleEdit(template)}
-                            className="p-1.5 hover:bg-mission-control-border rounded"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                             title="Edit"
                           >
-                            <Edit3 size={14} className="text-mission-control-text-dim" />
+                            <Edit3 size={14} />
                           </button>
                           <button
                             onClick={() => handleDelete(template.id)}
-                            className="p-1.5 hover:bg-error-subtle rounded"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-error hover:bg-mission-control-surface transition-colors"
                             title="Delete"
                           >
-                            <Trash2 size={14} className="text-error" />
+                            <Trash2 size={14} />
                           </button>
                         </>
                       )}
-                    </div>
-                  </div>
+                    </Flex>
+                  </Flex>
                 </div>
               );
             })}
@@ -341,61 +349,62 @@ export default function LibraryTemplatesTab() {
 
       {/* Create Modal */}
       {showCreate && (
-        <div className="fixed inset-0 modal-backdrop backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="glass-modal rounded-2xl w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-md p-6">
             <h2 className="text-lg font-semibold mb-4">New Template</h2>
             <div className="space-y-4">
               <div>
                 <label htmlFor="template-name" className="block text-sm text-mission-control-text-dim mb-1">Name</label>
-                <input
+                <TextField.Root
                   id="template-name"
-                  type="text"
                   value={newTemplate.name}
                   onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
                   placeholder="Template name"
+                  size="2"
                 />
               </div>
               <div>
                 <label htmlFor="template-type" className="block text-sm text-mission-control-text-dim mb-1">Type</label>
-                <select
-                  id="template-type"
-                  value={newTemplate.type}
-                  onChange={(e) => setNewTemplate({ ...newTemplate, type: e.target.value as Template['type'] })}
-                  className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
-                >
-                  <option value="tweet">Tweet</option>
-                  <option value="email">Email</option>
-                  <option value="message">Message</option>
-                  <option value="generic">Generic</option>
-                </select>
+                <Select.Root value={newTemplate.type} onValueChange={(v) => setNewTemplate({ ...newTemplate, type: v as Template['type'] })}>
+                  <Select.Trigger id="template-type" className="w-full" />
+                  <Select.Content>
+                    <Select.Item value="tweet">Tweet</Select.Item>
+                    <Select.Item value="email">Email</Select.Item>
+                    <Select.Item value="message">Message</Select.Item>
+                    <Select.Item value="generic">Generic</Select.Item>
+                  </Select.Content>
+                </Select.Root>
               </div>
               <div>
                 <label htmlFor="template-content" className="block text-sm text-mission-control-text-dim mb-1">Content</label>
-                <textarea
+                <TextArea
                   id="template-content"
                   value={newTemplate.content}
                   onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })}
-                  className="w-full h-32 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none"
+                  className="w-full h-32"
+                  resize="none"
                   placeholder="Use {variable} for placeholders"
+                  size="2"
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-6">
+            <Flex justify="end" gap="2" className="mt-6">
               <button
+                type="button"
                 onClick={() => setShowCreate(false)}
-                className="px-4 py-2 text-mission-control-text-dim hover:text-mission-control-text"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 Cancel
               </button>
-              <button
+              <Button
                 onClick={handleCreate}
                 disabled={!newTemplate.name || !newTemplate.content}
-                className="px-4 py-2 bg-mission-control-accent text-white rounded-lg disabled:opacity-50"
+                size="2"
+                variant="solid"
               >
                 Create
-              </button>
-            </div>
+              </Button>
+            </Flex>
           </div>
         </div>
       )}
@@ -410,6 +419,6 @@ export default function LibraryTemplatesTab() {
         cancelLabel={config.cancelLabel}
         type={config.type}
       />
-    </div>
+    </Flex>
   );
 }

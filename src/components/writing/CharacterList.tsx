@@ -1,5 +1,6 @@
 import { Pencil, Trash2, Plus } from 'lucide-react';
 import { useState } from 'react';
+import { Flex } from '@radix-ui/themes';
 import { useMemoryStore } from '../../store/memoryStore';
 import { useWritingStore } from '../../store/writingStore';
 import CharacterForm from './CharacterForm';
@@ -30,7 +31,7 @@ export default function CharacterList() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <Flex direction="column" height="100%">
       <div className="flex-1 overflow-y-auto space-y-1 p-2">
         {characters.length === 0 && editingId !== 'new-character' && (
           <p className="text-[11px] text-mission-control-text-dim text-center py-4">No characters yet</p>
@@ -49,7 +50,7 @@ export default function CharacterList() {
               key={char.id}
               className="group p-2 rounded bg-mission-control-bg/30 hover:bg-mission-control-border/40 transition-colors"
             >
-              <div className="flex items-start justify-between gap-1">
+              <Flex align="start" justify="between" gap="1">
                 <div className="flex-1 min-w-0">
                   <span className="text-xs font-medium text-mission-control-text">{char.name}</span>
                   {char.relationship && (
@@ -58,21 +59,21 @@ export default function CharacterList() {
                 </div>
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                   <button
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     onClick={() => setEditingId(char.id)}
-                    className="p-0.5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
                     title="Edit"
                   >
                     <Pencil size={11} />
                   </button>
                   <button
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     onClick={() => handleDelete(char.id, char.name)}
-                    className="p-0.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                     title="Delete"
                   >
                     <Trash2 size={11} />
                   </button>
                 </div>
-              </div>
+              </Flex>
               {char.description && (
                 <p className="text-[10px] text-mission-control-text-dim mt-0.5 line-clamp-2">{char.description}</p>
               )}
@@ -100,14 +101,14 @@ export default function CharacterList() {
       {editingId !== 'new-character' && (
         <div className="p-2 border-t border-mission-control-border flex-shrink-0">
           <button
+            className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             onClick={() => setEditingId('new-character')}
-            className="flex items-center gap-1.5 w-full px-2 py-1 rounded text-xs text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-colors"
           >
             <Plus size={14} />
             Add Character
           </button>
         </div>
       )}
-    </div>
+    </Flex>
   );
 }

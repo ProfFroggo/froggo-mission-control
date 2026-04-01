@@ -12,6 +12,7 @@ import AgentCompareModal from './AgentCompareModal';
 import EmptyState from './EmptyState';
 import AgentCapabilityMatrix from './AgentCapabilityMatrix';
 import { getAgentTheme } from '../utils/agentThemes';
+import { Button, TextField, Box, Flex } from '@radix-ui/themes';
 
 const CORE_AGENT_IDS = ['mission-control', 'clara', 'hr', 'coder', 'inbox'];
 
@@ -39,8 +40,8 @@ const SORT_OPTIONS: { id: SortOption; label: string; icon: typeof SortAsc }[] = 
 
 const MODEL_BADGE: Record<string, { label: string; cls: string }> = {
   opus:    { label: 'Opus',    cls: 'bg-review-subtle text-review border border-review-border' },
-  sonnet:  { label: 'Sonnet',  cls: 'bg-info-subtle text-info border border-info-border' },
-  haiku:   { label: 'Haiku',   cls: 'bg-warning-subtle text-warning border border-warning-border' },
+  sonnet:  { label: 'Sonnet',  cls: 'bg-info/10 text-info border border-info/30' },
+  haiku:   { label: 'Haiku',   cls: 'bg-warning/10 text-warning border border-warning/30' },
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -227,7 +228,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
         <button
           type="button"
           onClick={() => load()}
-          className="px-4 py-2 text-sm border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           Retry
         </button>
@@ -238,13 +239,13 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
   return (
     <>
       {/* Library tabs */}
-      <div className="flex items-center gap-1 mb-4 border-b border-mission-control-border">
+      <Flex align="center" gap="1" mb="4" className="border-b border-mission-control-border">
         <button
           type="button"
           onClick={() => setActiveTab('catalog')}
-          className={`flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 transition-colors -mb-px ${
+          className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
             activeTab === 'catalog'
-              ? 'border-mission-control-accent text-mission-control-accent font-medium'
+              ? 'border-mission-control-accent text-mission-control-accent'
               : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
           }`}
         >
@@ -254,22 +255,22 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
         <button
           type="button"
           onClick={() => setActiveTab('capabilities')}
-          className={`flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 transition-colors -mb-px ${
+          className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
             activeTab === 'capabilities'
-              ? 'border-mission-control-accent text-mission-control-accent font-medium'
+              ? 'border-mission-control-accent text-mission-control-accent'
               : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
           }`}
         >
           <Table2 size={14} />
           Capabilities
         </button>
-      </div>
+      </Flex>
 
       {activeTab === 'capabilities' && <AgentCapabilityMatrix />}
-      {activeTab === 'catalog' && <div className="flex gap-4">
+      {activeTab === 'catalog' && <Flex gap="4">
         {/* ── Category sidebar ── */}
         <aside className="flex-shrink-0 w-44">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-mission-control-text-dim mb-2 px-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-mission-control-text-dim mb-2 px-1">
             Roles
           </p>
           <nav className="space-y-0.5">
@@ -282,14 +283,14 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                   key={cat.id}
                   type="button"
                   onClick={() => setRoleCategory(cat.id)}
-                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-sm transition-colors text-left ${
+                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-sm font-medium transition-colors text-left ${
                     roleCategory === cat.id
-                      ? 'bg-mission-control-accent/10 text-mission-control-accent font-medium'
-                      : 'text-mission-control-text-dim hover:bg-mission-control-surface hover:text-mission-control-text'
+                      ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                      : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/50'
                   }`}
                 >
                   <span>{cat.label}</span>
-                  <span className={`text-[11px] tabular-nums ${roleCategory === cat.id ? 'text-mission-control-accent/70' : 'text-mission-control-text-dim/60'}`}>
+                  <span className="text-xs tabular-nums opacity-60">
                     {count}
                   </span>
                 </button>
@@ -301,7 +302,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
         {/* ── Main content ── */}
         <div className="flex-1 min-w-0">
           {/* Stats bar */}
-          <div className="flex items-center gap-4 mb-4 text-sm">
+          <Flex align="center" gap="4" className="mb-4 text-sm">
             <span className="icon-text text-success">
               <CheckCircle size={14} className="flex-shrink-0" />
               {hiredCount} hired
@@ -316,7 +317,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
               <button
                 type="button"
                 onClick={() => setShowSortMenu(v => !v)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <ArrowUpDown size={12} />
                 {currentSortLabel}
@@ -332,8 +333,8 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                         onClick={() => { setSortBy(opt.id); setShowSortMenu(false); }}
                         className={`w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors text-left ${
                           sortBy === opt.id
-                            ? 'text-mission-control-accent bg-mission-control-accent/5'
-                            : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+                            ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                            : 'text-mission-control-text hover:bg-mission-control-bg'
                         }`}
                       >
                         <Icon size={12} className="flex-shrink-0" />
@@ -348,51 +349,50 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
               type="button"
               onClick={() => load(false)}
               disabled={refreshing}
-              className="icon-btn border border-mission-control-border disabled:opacity-50"
               title="Refresh catalog"
               aria-label="Refresh catalog"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
             >
               <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
             </button>
-          </div>
+          </Flex>
 
           {/* Search + filter */}
-          <div className="flex items-center gap-2 mb-4">
+          <Flex align="center" gap="2" className="mb-4">
             <div className="relative flex-1">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-              <input
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none z-[1]" />
+              <TextField.Root
                 ref={searchRef}
-                type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search agents…"
-                className="w-full pl-8 pr-20 py-2 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
+                className="w-full"
               />
-              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-mono bg-mission-control-bg border border-mission-control-border rounded text-mission-control-text-dim select-none">
+              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-xs font-mono border border-mission-control-border rounded select-none bg-mission-control-bg text-mission-control-text-dim">
                 ⌘F
               </kbd>
             </div>
-            <div className="flex border border-mission-control-border rounded-lg overflow-hidden text-xs">
+            <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border text-xs">
               {(['all', 'hired', 'available'] as const).map(f => (
                 <button
                   key={f}
                   type="button"
                   onClick={() => setFilter(f)}
-                  className={`px-3 py-2 capitalize transition-colors ${
+                  className={`px-3 py-1 capitalize rounded-md transition-colors ${
                     filter === f
-                      ? 'bg-mission-control-accent text-white'
-                      : 'hover:bg-mission-control-surface'
+                      ? 'bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30'
+                      : 'text-mission-control-text-dim hover:text-mission-control-text'
                   }`}
                 >
                   {f}
                 </button>
               ))}
             </div>
-          </div>
+          </Flex>
 
           {/* Compare bar */}
           {compareIds.length > 0 && (
-            <div className="flex items-center gap-3 mb-4 px-3 py-2.5 bg-info-subtle border border-info-border rounded-lg text-sm">
+            <Flex align="center" gap="3" className="mb-4 px-3 py-2.5 bg-info/10 border border-info/30 rounded-lg text-sm">
               <GitCompare size={14} className="text-info flex-shrink-0" />
               <span className="text-info flex-1">
                 {compareIds.length === 1
@@ -400,23 +400,26 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                   : `${compareIds.length} agents selected`}
               </span>
               {compareIds.length === 2 && (
-                <button
+                <Button
                   type="button"
                   onClick={() => setShowCompare(true)}
-                  className="px-3 py-1 text-xs font-medium bg-info text-white rounded-lg hover:bg-info/90 transition-colors"
+                  size="1"
+                  variant="solid"
+                  color="blue"
+                 
                 >
                   Compare
-                </button>
+                </Button>
               )}
               <button
                 type="button"
                 onClick={() => setCompareIds([])}
-                className="p-1 rounded hover:bg-info/20 text-info transition-colors"
                 aria-label="Clear comparison"
+                className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <X size={12} />
               </button>
-            </div>
+            </Flex>
           )}
 
           {filtered.length === 0 ? (
@@ -439,30 +442,30 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                 return (
                   <div
                     key={agent.id}
-                    className={`relative rounded-lg border-2 p-4 transition-all duration-200 flex flex-col ${
+                    className={`relative rounded-xl bg-mission-control-surface border p-4 transition-colors duration-200 flex flex-col cursor-pointer hover:-translate-y-0.5 hover:shadow-lg ${
                       isInCompare
-                        ? 'border-info bg-info-subtle/30'
+                        ? 'border-info/40'
                         : isInstalled
-                          ? 'border-success-border bg-success-subtle/30'
-                          : 'border-mission-control-border hover:border-mission-control-accent/40'
+                          ? 'border-success/30'
+                          : 'border-mission-control-border hover:border-mission-control-accent/30'
                     }`}
                     onMouseEnter={() => setHoveredCard(agent.id)}
                     onMouseLeave={() => setHoveredCard(null)}
                   >
                     {/* Featured badge */}
                     {isFeatured && (
-                      <div className="absolute top-3 right-3 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warning-subtle border border-warning-border text-warning text-[10px] font-medium">
-                        <Star size={9} className="fill-warning" />
+                      <div className="absolute top-3 right-3 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warning/10 border border-warning/30 text-warning text-xs font-medium">
+                        <Star size={9} className="fill-current" />
                         Featured
                       </div>
                     )}
 
                     {/* Header */}
-                    <div className="flex items-start gap-3 mb-3">
+                    <Flex align="start" gap="3" className="mb-3">
                       <LibraryAvatar agentId={agent.id} agentName={agent.name} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                          <span className="font-semibold text-sm leading-tight">{agent.name}</span>
+                          <span className="font-semibold text-sm leading-tight text-mission-control-text">{agent.name}</span>
                           {isInstalled && (
                             <CheckCircle size={13} className="text-success flex-shrink-0" />
                           )}
@@ -471,14 +474,14 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                           {agent.role || agent.description || '—'}
                         </p>
                       </div>
-                    </div>
+                    </Flex>
 
                     {/* Badges row */}
                     <div className="flex flex-wrap gap-1.5 mb-3">
-                      <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim uppercase tracking-wide">
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim uppercase tracking-wide">
                         {categoryLabel}
                       </span>
-                      <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${modelBadge.cls}`}>
+                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${modelBadge.cls}`}>
                         {modelBadge.label}
                       </span>
                     </div>
@@ -487,12 +490,12 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                     {agent.capabilities.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-3">
                         {agent.capabilities.slice(0, 4).map((cap, i) => (
-                          <span key={i} className="px-1.5 py-0.5 text-[11px] rounded-md bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim">
+                          <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-full bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim">
                             {cap}
                           </span>
                         ))}
                         {agent.capabilities.length > 4 && (
-                          <span className="text-[11px] text-mission-control-text-dim px-1">
+                          <span className="text-xs text-mission-control-text-dim px-1">
                             +{agent.capabilities.length - 4}
                           </span>
                         )}
@@ -501,16 +504,16 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
 
                     {/* Required APIs warning */}
                     {agent.requiredApis.length > 0 && !isInstalled && (
-                      <div className="flex items-center gap-1 text-[11px] text-warning mb-3">
+                      <Flex align="center" gap="1" className="text-xs text-warning mb-3">
                         <Cpu size={11} className="flex-shrink-0" />
                         <span>Requires: {agent.requiredApis.join(', ')}</span>
-                      </div>
+                      </Flex>
                     )}
 
                     {/* Action */}
-                    <div className="pt-2 border-t border-mission-control-border mt-auto">
+                    <div className="pt-2 border-t border-mission-control-border/40 mt-auto">
                       {isInstalled ? (
-                        <div className="flex items-center gap-2">
+                        <Flex align="center" gap="2">
                           <div className="flex items-center gap-1.5 text-xs text-success flex-1">
                             <CheckCircle size={13} className="flex-shrink-0" />
                             <span>Hired &amp; active{CORE_AGENT_IDS.includes(agent.id) ? ' · Core' : ''}</span>
@@ -520,10 +523,10 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                             type="button"
                             onClick={() => toggleCompare(agent.id)}
                             title="Compare this agent"
-                            className={`p-1.5 rounded-lg text-[11px] border transition-colors ${
+                            className={`flex items-center justify-center w-6 h-6 rounded border transition-colors ${
                               isInCompare
-                                ? 'bg-info-subtle border-info text-info'
-                                : 'border-mission-control-border text-mission-control-text-dim hover:border-info hover:text-info'
+                                ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                             }`}
                           >
                             <GitCompare size={11} />
@@ -541,48 +544,38 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
                                   await load(false);
                                 } finally { setFiring(null); }
                               }}
-                              className="flex items-center gap-1 px-2 py-1 text-[11px] text-error border border-error-border rounded hover:bg-error-subtle transition-colors disabled:opacity-50"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-error hover:bg-mission-control-border/40 transition-colors disabled:opacity-50"
                             >
                               <Trash2 size={10} /> Fire
                             </button>
                           )}
-                        </div>
+                        </Flex>
                       ) : (
-                        <div className="flex gap-2">
-                          {/* Quick Hire — visible on hover */}
-                          {isHovered ? (
-                            <button
-                              type="button"
-                              onClick={() => setHiringAgent(agent)}
-                              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
-                            >
-                              <Zap size={12} />
-                              Quick Hire
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setHiringAgent(agent)}
-                              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-mission-control-accent/80 text-white rounded-lg hover:bg-mission-control-accent transition-colors"
-                            >
-                              <Bot size={12} />
-                              Hire Agent
-                            </button>
-                          )}
+                        <Flex gap="2">
+                          {/* Quick Hire / Hire Agent */}
+                          <Button
+                            type="button"
+                            onClick={() => setHiringAgent(agent)}
+                            size="1"
+                            variant="soft"
+                            style={{ flex: 1, justifyContent: 'center' }}
+                          >
+                            {isHovered ? <><Zap size={12} /> Quick Hire</> : <><Bot size={12} /> Hire Agent</>}
+                          </Button>
                           {/* Compare toggle */}
                           <button
                             type="button"
                             onClick={() => toggleCompare(agent.id)}
                             title={isInCompare ? 'Remove from comparison' : 'Add to comparison'}
-                            className={`px-2 py-1.5 rounded-lg text-[11px] border transition-colors ${
+                            className={`flex items-center justify-center w-6 h-6 rounded border transition-colors ${
                               isInCompare
-                                ? 'bg-info-subtle border-info text-info'
-                                : 'border-mission-control-border text-mission-control-text-dim hover:border-info hover:text-info'
+                                ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                             }`}
                           >
                             <GitCompare size={11} />
                           </button>
-                        </div>
+                        </Flex>
                       )}
                     </div>
                   </div>
@@ -591,7 +584,7 @@ export default function AgentLibraryPanel({ onHire }: AgentLibraryPanelProps) {
             </div>
           )}
         </div>
-      </div>}
+      </Flex>}
 
       {/* Hire wizard */}
       {hiringAgent && (

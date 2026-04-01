@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useWritingStore } from '../../store/writingStore';
 import ChapterListItem from './ChapterListItem';
 import { ArrowLeft, Plus, ChevronDown } from 'lucide-react';
+import { Button, TextField, Flex } from '@radix-ui/themes';
 import {
   DndContext,
   closestCenter,
@@ -84,13 +85,13 @@ export default function ChapterSidebar() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-mission-control-surface border-r border-mission-control-border flex-shrink-0 min-w-0">
+    <Flex direction="column" width="100%" height="100%" className="bg-mission-control-surface border-r border-mission-control-border flex-shrink-0 min-w-0">
       {/* Header */}
       <div className="px-3 py-3 border-b border-mission-control-border flex-shrink-0">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <button
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             onClick={closeProject}
-            className="p-1 rounded text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-colors"
             title="Back to projects"
           >
             <ArrowLeft size={16} />
@@ -103,16 +104,15 @@ export default function ChapterSidebar() {
               {totalWords.toLocaleString()} words total
             </p>
           </div>
-        </div>
+        </Flex>
       </div>
 
       {/* Add chapter button */}
       <div className="px-3 py-2 border-b border-mission-control-border flex-shrink-0">
         {showAddInput ? (
           <div className="space-y-1.5">
-            <input
+            <TextField.Root
               ref={addInputRef}
-              type="text"
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               onKeyDown={(e) => {
@@ -120,29 +120,31 @@ export default function ChapterSidebar() {
                 if (e.key === 'Escape') handleCancelAdd();
               }}
               placeholder="Chapter title..."
-              className="w-full px-2 py-1 rounded bg-mission-control-bg border border-mission-control-border text-mission-control-text text-xs placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent"
+              size="1"
               disabled={creating}
             />
-            <div className="flex gap-1">
-              <button
+            <Flex gap="1">
+              <Button
+                size="1"
+                variant="solid"
                 onClick={handleCreateChapter}
                 disabled={!newTitle.trim() || creating}
-                className="px-2 py-0.5 rounded bg-mission-control-accent text-white text-[10px] font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40"
               >
                 {creating ? '...' : 'Add'}
-              </button>
+              </Button>
               <button
+                type="button"
                 onClick={handleCancelAdd}
-                className="px-2 py-0.5 rounded text-mission-control-text-dim text-[10px] hover:bg-mission-control-border transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 Cancel
               </button>
-            </div>
+            </Flex>
           </div>
         ) : (
           <button
+            className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             onClick={() => setShowAddInput(true)}
-            className="flex items-center gap-1.5 w-full px-2 py-1 rounded text-xs text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-colors"
           >
             <Plus size={14} />
             Add Chapter
@@ -152,8 +154,10 @@ export default function ChapterSidebar() {
 
       {/* Chapters section header */}
       <button
+        type="button"
         onClick={() => setChaptersCollapsed(!chaptersCollapsed)}
-        className="px-3 py-1.5 flex items-center justify-between text-[10px] uppercase tracking-wider text-mission-control-text-dim hover:text-mission-control-text transition-colors flex-shrink-0"
+        className="inline-flex items-center justify-between w-full px-3 py-1.5 flex-shrink-0 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors uppercase tracking-wider"
+        style={{ fontSize: '10px' }}
       >
         <span>Chapters ({chapters.length})</span>
         <ChevronDown
@@ -185,6 +189,6 @@ export default function ChapterSidebar() {
           </DndContext>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }

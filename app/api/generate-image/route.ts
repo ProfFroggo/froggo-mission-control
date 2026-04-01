@@ -29,12 +29,49 @@ async function getGeminiKey(): Promise<string | null> {
   return null;
 }
 
+/** Resolve a library URL or absolute path to { base64, mimeType } */
+async function resolveReferenceImage(ref: string): Promise<{ data: string; mimeType: string } | null> {
+  try {
+    let absPath: string | null = null;
+
+    if (ref.startsWith('/') && !ref.startsWith('/api/') && !ref.startsWith('/library')) {
+      // Already an absolute filesystem path
+      absPath = ref;
+    } else {
+      // Library URL: /api/library?action=raw&id=<base64url> or /library?action=raw&id=<base64url>
+      const idMatch = ref.match(/[?&]id=([A-Za-z0-9_=-]+)/);
+      if (idMatch) {
+        const relPath = Buffer.from(idMatch[1], 'base64url').toString('utf8');
+        absPath = join(LIBRARY_PATH, relPath);
+      }
+    }
+
+    if (!absPath) return null;
+
+    const { readFileSync, existsSync } = await import('fs');
+    if (!existsSync(absPath)) return null;
+
+    const buf = readFileSync(absPath);
+    const ext = absPath.split('.').pop()?.toLowerCase() ?? '';
+    const mimeMap: Record<string, string> = {
+      png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+      webp: 'image/webp', gif: 'image/gif',
+    };
+    const mimeType = mimeMap[ext] ?? 'image/png';
+    return { data: buf.toString('base64'), mimeType };
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const prompt   = String(body.prompt   ?? '').trim();
     const agentId  = String(body.agentId  ?? 'unknown');
     const filename = String(body.filename ?? '').replace(/[^a-z0-9_-]/gi, '-').slice(0, 80) || 'image';
+    // Optional reference image: absolute path or library URL (/api/library?action=raw&id=...)
+    const referenceImage = body.referenceImagePath ?? body.referenceImageUrl ?? null;
 
     if (!prompt) {
       return NextResponse.json({ error: 'prompt is required' }, { status: 400 });
@@ -45,6 +82,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No Gemini API key configured. Add it in Settings → API Keys.' }, { status: 503 });
     }
 
+    // Build parts: optional reference image first, then text prompt
+    const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [];
+    if (referenceImage) {
+      const imgData = await resolveReferenceImage(String(referenceImage));
+      if (imgData) {
+        parts.push({ inlineData: { mimeType: imgData.mimeType, data: imgData.data } });
+      }
+    }
+    parts.push({ text: prompt });
+
     // Call Gemini image generation
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${apiKey}`,
@@ -52,7 +99,7 @@ export async function POST(req: NextRequest) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          contents: [{ parts }],
           generationConfig: { responseModalities: ['IMAGE', 'TEXT'] },
         }),
       }
@@ -67,13 +114,13 @@ export async function POST(req: NextRequest) {
       candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { data?: string; mimeType?: string }; text?: string }> } }>;
     };
 
-    const parts = data.candidates?.[0]?.content?.parts ?? [];
-    const imgPart = parts.find(p => p.inlineData?.data);
+    const responseParts = data.candidates?.[0]?.content?.parts ?? [];
+    const imgPart = responseParts.find(p => p.inlineData?.data);
     const b64 = imgPart?.inlineData?.data;
 
     if (!b64) {
       // Return any text response as an error hint
-      const textPart = parts.find(p => p.text);
+      const textPart = responseParts.find(p => p.text);
       return NextResponse.json({
         error: 'Gemini returned no image data',
         detail: textPart?.text?.slice(0, 300),
@@ -105,7 +152,15 @@ export async function POST(req: NextRequest) {
     const url = `/api/library?action=raw&id=${encodedId}`;
     const markdown = `![${prompt.slice(0, 100)}](${url})`;
 
-    return NextResponse.json({ url, filePath: absPath, markdown, filename: fname });
+    // embed_in_response: agents MUST paste this markdown verbatim into their reply.
+    // Use the relative `url` only — never prepend a hostname/port.
+    return NextResponse.json({
+      url,
+      filePath: absPath,
+      markdown,
+      filename: fname,
+      embed_in_response: `PASTE THIS VERBATIM IN YOUR REPLY TO DISPLAY THE IMAGE:\n${markdown}`,
+    });
   } catch (error) {
     console.error('POST /api/generate-image error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -1,1853 +1,712 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+// (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
+/**
+ * Dashboard — Command Center v3
+ * Ultra-modern, data-driven morning overview.
+ * Agents · Comms · Social · Analytics · Schedule
+ */
+
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import {
+  AreaChart, Area, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from 'recharts';
+import { fetchXAnalytics } from '../hooks/useXAnalytics';
+import {
+  CHART_COLORS, CHART_AXIS, CHART_GRID, CHART_MARGIN,
+  CHART_TOOLTIP, premiumAreaProps, areaGradientStops,
+} from '../lib/chartTheme';
 import { formatTimeAgo } from '../utils/formatting';
 import {
-  Wifi, WifiOff, CheckCircle, Bot, ArrowRight, Calendar,
-  Zap, Shield, AlertTriangle, Inbox,
-  ListTodo, Activity, MapPin, Video, ChevronRight,
-  Loader2, XCircle, DollarSign,
-  MessageSquare, Mail, Twitter, FileText, Clipboard, Radio, type LucideIcon,
-  Eye, UserCheck, Plus, BookOpen, FolderKanban, Search, BarChart2, Trophy,
-  RefreshCw, TrendingUp, TrendingDown, Minus, Users,
-  Pencil, GripVertical, X, LayoutGrid, Check
+  Zap, CheckCircle, Bot, TrendingUp, TrendingDown,
+  MessageSquare, BarChart2, Activity, Calendar,
+  ChevronRight, AlertTriangle, Wifi, WifiOff,
+  Mail, Sparkles, Clock, Minus,
 } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
-import AgentDetailModal from './AgentDetailModal';
 import { useStore } from '../store/store';
-import type { ApprovalItem, Task, Agent, GatewaySession } from '../store/store';
-import { useDashboardStore } from '../store/dashboardStore';
-import type { WidgetSize, DashboardWidgetSlot } from '../store/dashboardStore';
-import { DASHBOARD_WIDGETS, getWidgetDefinition } from '../lib/dashboardWidgets';
+import type { Task, Agent, Activity as ActivityItem, ApprovalItem } from '../store/store';
 
-type View = 'dashboard' | 'kanban' | 'agents' | 'chat' | 'meetings' | 'voicechat' | 'settings' | 'notifications' | 'twitter' | 'inbox' | 'approvals' | 'library' | 'schedule' | 'codeagent' | 'analytics' | 'comms' | 'contacts' | 'accounts' | 'sessions' | 'calendar' | 'templates' | 'finance' | 'writing';
-
+type View = string;
 interface DashboardProps {
   onNavigate?: (view: View) => void;
   onShowBrief?: () => void;
 }
 
-// ── Utilities ──────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────────
 
-function formatTokens(tokens: number): string {
-  if (tokens >= 1000000) return `${(tokens / 1000000).toFixed(1)}M`;
-  if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}K`;
-  return tokens.toString();
+interface DailyPoint { date: string; label: string; value: number }
+interface AgentTrendRaw { date: string; agent_id: string; tasks: number; tokens: number }
+interface AgentChartPoint { label: string; [agentId: string]: number | string }
+interface XTweet { public_metrics?: { impression_count?: number; like_count?: number; retweet_count?: number; reply_count?: number } }
+interface XAnalyticsData { profile?: { public_metrics?: { followers_count?: number; tweet_count?: number } }; tweets?: XTweet[] }
+interface TaskStatsData { completions?: { date: string; tasks_completed: number }[]; byStatus?: Record<string, number> }
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+const PHANTOM = new Set(['main', 'chat-agent']);
+
+function fmt(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return String(n);
 }
 
-function formatCost(cost: number): string {
-  if (cost === 0) return '$0.00';
-  if (cost >= 1) return `$${cost.toFixed(2)}`;
-  if (cost >= 0.01) return `$${cost.toFixed(3)}`;
-  return `$${cost.toFixed(4)}`;
+function greeting() {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
 }
 
-const APPROVAL_ICONS: Record<string, LucideIcon> = {
-  tweet: Twitter,
-  reply: Twitter,
-  email: Mail,
-  message: MessageSquare,
-  task: ListTodo,
-  action: Zap,
-};
-
-const PHANTOM_AGENTS = ['main', 'chat-agent'];
-
-// ── HeaderBar ──────────────────────────────────────────────
-
-function HeaderBar({
-  connected,
-  onRefresh,
-  refreshing,
-  editMode,
-  onToggleEdit,
-}: {
-  connected: boolean;
-  onRefresh?: () => void;
-  refreshing?: boolean;
-  editMode: boolean;
-  onToggleEdit: () => void;
-}) {
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const today = new Date();
-  const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-
-  return (
-    <div className="flex items-center justify-between px-4 sm:px-6 py-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-mission-control-text to-mission-control-accent bg-clip-text text-transparent">
-          {greeting}
-        </h1>
-        <p className="text-sm text-mission-control-text-dim mt-0.5">{dateStr}</p>
-      </div>
-      <div className="flex items-center gap-2">
-        {onRefresh && !editMode && (
-          <button
-            onClick={onRefresh}
-            disabled={refreshing}
-            title="Refresh dashboard"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/50 transition-all disabled:opacity-50"
-          >
-            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
-            <span className="hidden sm:inline">Refresh</span>
-          </button>
-        )}
-        <button
-          onClick={onToggleEdit}
-          title={editMode ? 'Done editing' : 'Customize dashboard'}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-            editMode
-              ? 'bg-mission-control-accent text-white border-mission-control-accent hover:bg-mission-control-accent-dim'
-              : 'bg-mission-control-surface border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/50'
-          }`}
-        >
-          {editMode ? <Check size={12} /> : <Pencil size={12} />}
-          <span className="hidden sm:inline">{editMode ? 'Done Editing' : 'Edit Dashboard'}</span>
-        </button>
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm ${
-          connected
-            ? 'bg-success-subtle text-success border border-success-border'
-            : 'bg-error-subtle text-error border border-error-border'
-        }`}>
-          {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
-          {connected ? 'Online' : 'Connecting...'}
-        </div>
-      </div>
-    </div>
-  );
+function dayLabel(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' });
 }
 
-// ── Widget size label map ───────────────────────────────────
-
-const SIZE_LABELS: Record<WidgetSize, string> = {
-  sm: 'Small',
-  md: 'Medium',
-  lg: 'Large',
-  xl: 'Full Width',
-};
-
-// ── AddWidgetModal ─────────────────────────────────────────
-
-function AddWidgetModal({
-  existingWidgetIds,
-  onAdd,
-  onClose,
-}: {
-  existingWidgetIds: Set<string>;
-  onAdd: (widgetId: string) => void;
-  onClose: () => void;
-}) {
-  const available = DASHBOARD_WIDGETS.filter(w => !existingWidgetIds.has(w.id));
-
-  const categoryOrder: string[] = ['tasks', 'agents', 'metrics', 'system', 'social'];
-  const grouped = categoryOrder.reduce<Record<string, typeof DASHBOARD_WIDGETS>>((acc, cat) => {
-    const items = available.filter(w => w.category === cat);
-    if (items.length > 0) acc[cat] = items;
-    return acc;
-  }, {});
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-lg mx-4 bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border">
-          <div className="flex items-center gap-2">
-            <LayoutGrid size={16} className="text-mission-control-accent" />
-            <h2 className="font-semibold text-sm">Add Widget</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-all"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="overflow-y-auto max-h-[60vh] p-4 space-y-5">
-          {available.length === 0 ? (
-            <div className="py-8 text-center">
-              <Check size={32} className="mx-auto mb-2 text-mission-control-accent/50" />
-              <p className="text-sm text-mission-control-text-dim font-medium">All widgets are on your dashboard</p>
-            </div>
-          ) : (
-            Object.entries(grouped).map(([category, widgets]) => (
-              <div key={category}>
-                <p className="text-xs font-semibold uppercase tracking-widest text-mission-control-text-dim mb-2">
-                  {category}
-                </p>
-                <div className="space-y-2">
-                  {widgets.map(widget => (
-                    <div
-                      key={widget.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-mission-control-bg/50 border border-mission-control-border hover:border-mission-control-accent/40 transition-all"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-mission-control-text">{widget.title}</p>
-                        <p className="text-xs text-mission-control-text-dim mt-0.5 line-clamp-1">{widget.description}</p>
-                        <span className="text-xs text-mission-control-text-dim/60 mt-1 block">
-                          Default: {SIZE_LABELS[widget.defaultSize]}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => { onAdd(widget.id); }}
-                        className="ml-3 flex-shrink-0 flex items-center gap-1 px-3 py-1.5 bg-mission-control-accent text-white text-xs font-medium rounded-lg hover:bg-mission-control-accent-dim transition-colors"
-                      >
-                        <Plus size={12} />
-                        Add
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
-  );
+function trend(curr: number, prev: number): { pct: number; dir: 'up' | 'down' | 'flat' } {
+  if (!prev) return { pct: 0, dir: 'flat' };
+  const pct = Math.round(((curr - prev) / prev) * 100);
+  return { pct: Math.abs(pct), dir: pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat' };
 }
 
-// ── WidgetCard wrapper (edit mode) ─────────────────────────
+// ── KPI Card ───────────────────────────────────────────────────────────────
 
-function WidgetCard({
-  slot,
-  editMode,
-  isDragging,
-  isDropTarget,
-  onDragStart,
-  onDragEnter,
-  onDragEnd,
-  onRemove,
-  onResize,
-  children,
-}: {
-  slot: DashboardWidgetSlot;
-  editMode: boolean;
-  isDragging: boolean;
-  isDropTarget: boolean;
-  onDragStart: (slotId: string) => void;
-  onDragEnter: (slotId: string) => void;
-  onDragEnd: () => void;
-  onRemove: (slotId: string) => void;
-  onResize: (slotId: string, size: WidgetSize) => void;
-  children: React.ReactNode;
-}) {
-  const colSpan =
-    slot.size === 'xl' ? 'col-span-1 sm:col-span-4' :
-    slot.size === 'lg' ? 'col-span-1 sm:col-span-4' :
-    slot.size === 'md' ? 'col-span-1 sm:col-span-2' :
-    'col-span-1';
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!editMode) return;
-    e.preventDefault();
-    onDragStart(slot.id);
-  };
-
-  return (
-    <div
-      className={`${colSpan} relative transition-all duration-150 ${
-        isDragging ? 'opacity-40 scale-95' : ''
-      } ${
-        isDropTarget && !isDragging ? 'ring-2 ring-mission-control-accent/60 rounded-2xl' : ''
-      }`}
-      onMouseEnter={() => { if (editMode) onDragEnter(slot.id); }}
-      onMouseUp={onDragEnd}
-    >
-      {editMode && (
-        <div className="absolute inset-0 z-10 rounded-2xl ring-2 ring-mission-control-accent/30 pointer-events-none" />
-      )}
-      {editMode && (
-        <div className="absolute top-2 right-2 z-20 flex items-center gap-1">
-          <select
-            value={slot.size}
-            onChange={e => onResize(slot.id, e.target.value as WidgetSize)}
-            className="text-xs px-1.5 py-0.5 rounded-md bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text cursor-pointer focus:outline-none focus:border-mission-control-accent/50"
-          >
-            {(Object.entries(SIZE_LABELS) as [WidgetSize, string][]).map(([val, label]) => (
-              <option key={val} value={val}>{label}</option>
-            ))}
-          </select>
-          <button
-            onClick={() => onRemove(slot.id)}
-            title="Remove widget"
-            className="p-0.5 rounded-md bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-error hover:border-error-border transition-colors"
-          >
-            <X size={12} />
-          </button>
-        </div>
-      )}
-      {editMode && (
-        <div
-          className="absolute top-2 left-2 z-20 cursor-grab active:cursor-grabbing p-1 rounded-md bg-mission-control-surface/90 border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-          onMouseDown={handleMouseDown}
-          title="Drag to reorder"
-        >
-          <GripVertical size={14} />
-        </div>
-      )}
-      <div className={editMode ? 'pointer-events-none select-none' : ''}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-// ── StatStrip ──────────────────────────────────────────────
-
-interface StatCardProps {
+interface KPICardProps {
   label: string;
-  value: number;
-  icon: LucideIcon;
-  color: string;
-  pulse?: boolean;
-  highlight?: boolean;
-  onClick?: () => void;
+  value: string;
   sub?: string;
-  agents?: Agent[];
+  curr?: number;
+  prev?: number;
+  sparkData?: DailyPoint[];
+  sparkColor: string;
+  loading?: boolean;
+  onClick?: () => void;
+  icon: React.ReactNode;
+  gradId: string;
 }
 
-function StatCard({ label, value, icon: Icon, color, pulse, highlight, onClick, sub, agents }: StatCardProps) {
+function KPICard({ label, value, sub, curr = 0, prev = 0, sparkData, sparkColor, loading, onClick, icon, gradId }: KPICardProps) {
+  const t = trend(curr, prev);
+
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`flex-1 min-w-0 p-4 backdrop-blur-xl rounded-lg border transition-all group text-left ${
-        highlight && value > 0
-          ? 'bg-amber-500/10 border-amber-500/40 hover:border-amber-400/70 shadow-lg shadow-amber-500/5'
-          : 'bg-mission-control-surface/80 border-mission-control-border hover:border-mission-control-accent/50'
-      }`}
+      disabled={!onClick}
+      className={`group relative flex flex-col justify-between p-5 bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden transition-colors ${onClick ? 'hover:border-mission-control-accent/40 cursor-pointer' : 'cursor-default'}`}
     >
-      <div className="flex items-center justify-between mb-2">
-        <Icon size={18} className={color} />
-        {pulse && value > 0 && (
-          <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" />
+      {/* Subtle top accent line */}
+      <div className="absolute inset-x-0 top-0 h-px" style={{ background: sparkColor, opacity: 0.5 }} />
+
+      {/* Top row */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span style={{ color: sparkColor }} className="opacity-70">{icon}</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-mission-control-text-dim">{label}</span>
+        </div>
+        {/* Trend badge */}
+        {t.dir !== 'flat' && t.pct > 0 && (
+          <span className={`flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${
+            t.dir === 'up'
+              ? 'bg-success-subtle text-success border border-success-border'
+              : 'bg-error-subtle text-error border border-error-border'
+          }`}>
+            {t.dir === 'up' ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
+            {t.pct}%
+          </span>
         )}
       </div>
-      <div className={`text-3xl font-bold tabular-nums ${color}`}>{value}</div>
-      <div className="text-xs text-mission-control-text-dim mt-1 font-medium">{label}</div>
-      {sub && <div className="text-xs text-mission-control-text-dim/70 mt-0.5 tabular-nums">{sub}</div>}
-      {agents && agents.length > 0 && (
-        <div className="flex -space-x-1.5 mt-2">
-          {agents.slice(0, 4).map(a => (
-            <AgentAvatar key={a.id} agentId={a.id} fallbackEmoji={a.avatar} size="xs" />
-          ))}
-          {agents.length > 4 && (
-            <span className="w-5 h-5 rounded-full bg-mission-control-border text-mission-control-text-dim text-[9px] flex items-center justify-center flex-shrink-0 ring-1 ring-mission-control-bg">
-              +{agents.length - 4}
-            </span>
-          )}
+
+      {/* Big number */}
+      {loading ? (
+        <div className="h-10 w-24 rounded-lg bg-mission-control-border/40 animate-pulse mb-3" />
+      ) : (
+        <div className="mb-1">
+          <span className="text-4xl font-bold tabular-nums text-mission-control-text leading-none">{value}</span>
+          {sub && <span className="ml-2 text-sm text-mission-control-text-dim">{sub}</span>}
         </div>
       )}
+
+      {/* Mini sparkline */}
+      {sparkData && sparkData.length > 1 && !loading && (
+        <div className="h-10 -mx-1 mt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={sparkData} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={sparkColor} stopOpacity={0.35} />
+                  <stop offset="100%" stopColor={sparkColor} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <Area dataKey="value" {...premiumAreaProps(sparkColor, gradId)} strokeWidth={1.5} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+      {(!sparkData || sparkData.length <= 1 || loading) && <div className="h-10 mt-2" />}
     </button>
   );
 }
 
-function StatStrip({
-  inProgressCount,
-  reviewCount,
-  internalReviewCount,
-  humanReviewCount,
-  doneTodayCount,
-  inProgressAgents,
-  onNavigate,
-}: {
-  inProgressCount: number;
-  reviewCount: number;
-  internalReviewCount: number;
-  humanReviewCount: number;
-  doneTodayCount: number;
-  inProgressAgents: Agent[];
-  onNavigate?: (view: View) => void;
-}) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 px-4 sm:px-6 py-4">
-      <StatCard
-        label="Active Tasks"
-        value={inProgressCount}
-        icon={Activity}
-        color={inProgressCount > 0 ? 'text-blue-400' : 'text-mission-control-text-dim'}
-        agents={inProgressAgents}
-        sub={doneTodayCount > 0 ? `${doneTodayCount} completed today` : undefined}
-        onClick={() => onNavigate?.('kanban')}
-      />
-      <StatCard
-        label="Awaiting Review"
-        value={reviewCount}
-        icon={Eye}
-        color={reviewCount > 0 ? 'text-violet-400' : 'text-mission-control-text-dim'}
-        onClick={() => onNavigate?.('kanban')}
-      />
-      <StatCard
-        label="Pre-Review Queue"
-        value={internalReviewCount}
-        icon={UserCheck}
-        color={internalReviewCount > 0 ? 'text-cyan-400' : 'text-mission-control-text-dim'}
-        onClick={() => onNavigate?.('kanban')}
-      />
-      <StatCard
-        label="Human Attention"
-        value={humanReviewCount}
-        icon={AlertTriangle}
-        color={humanReviewCount > 0 ? 'text-amber-400' : 'text-mission-control-text-dim'}
-        highlight={humanReviewCount > 0}
-        pulse={humanReviewCount > 0}
-        onClick={() => onNavigate?.('kanban')}
-      />
-    </div>
-  );
-}
+// ── Compact task row ───────────────────────────────────────────────────────
 
-// ── QuickActions row ────────────────────────────────────────
-
-function QuickActionsRow({ onNavigate }: { onNavigate?: (view: View) => void }) {
-  return (
-    <div className="px-4 sm:px-6 py-4">
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border">
-        <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mr-1 hidden sm:block">
-          Quick Actions
-        </span>
-        <button
-          onClick={() => onNavigate?.('kanban')}
-          className="flex items-center justify-center gap-2 px-4 py-2 min-h-[36px] bg-mission-control-accent text-white text-sm font-medium rounded-lg hover:bg-mission-control-accent/80 transition-colors"
-        >
-          <Plus size={14} />
-          New Task
-        </button>
-        <button
-          onClick={() => onNavigate?.('chat')}
-          className="flex items-center justify-center gap-2 px-4 py-2 min-h-[36px] bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
-        >
-          <MessageSquare size={14} />
-          Chat
-        </button>
-        <button
-          onClick={() => onNavigate?.('kanban')}
-          className="hidden sm:flex items-center justify-center gap-2 px-4 py-2 min-h-[36px] bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
-        >
-          <FolderKanban size={14} />
-          View Board
-        </button>
-        <button
-          onClick={() => onNavigate?.('library')}
-          className="hidden md:flex items-center justify-center gap-2 px-4 py-2 min-h-[36px] bg-mission-control-surface border border-mission-control-border text-mission-control-text text-sm font-medium rounded-lg hover:bg-mission-control-border transition-colors"
-        >
-          <BookOpen size={14} />
-          Browse Library
-        </button>
-        <div className="ml-auto flex items-center gap-1.5 text-xs text-mission-control-text-dim">
-          <Search size={12} />
-          <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded text-xs">⌘K</kbd>
-          <span className="hidden sm:inline">to search</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── ApprovalsQueue ─────────────────────────────────────────
-
-function ApprovalCard({
-  item,
-  onApprove,
-  onReject,
-}: {
-  item: ApprovalItem;
-  onApprove: (id: string) => void;
-  onReject: (id: string) => void;
-}) {
-  const Icon = APPROVAL_ICONS[item.type] || FileText;
-
-  return (
-    <div className="p-4 border-b border-mission-control-border/30 hover:bg-mission-control-border/40 transition-colors">
-      <div className="flex items-start gap-3">
-        <div className="mt-1 p-2 rounded-lg bg-mission-control-bg/50">
-          <Icon size={16} className="text-mission-control-text-dim" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">
-                {item.type}
-              </span>
-              <h4 className="font-medium text-mission-control-text mt-0.5 line-clamp-1">{item.title}</h4>
-            </div>
-            <span className="text-xs text-mission-control-text-dim flex-shrink-0">
-              {formatTimeAgo(item.createdAt)}
-            </span>
-          </div>
-          <p className="text-sm text-mission-control-text-dim mt-1 line-clamp-2">{item.content}</p>
-          {item.metadata?.to && (
-            <p className="text-xs text-mission-control-text-dim/70 mt-1">To: {item.metadata.to}</p>
-          )}
-          <div className="flex items-center gap-2 mt-3">
-            <button
-              onClick={() => onApprove(item.id)}
-              className="px-4 py-1.5 bg-success hover:bg-success-hover text-white text-xs font-medium rounded-lg transition-colors"
-            >
-              Approve
-            </button>
-            <button
-              onClick={() => onReject(item.id)}
-              className="px-4 py-1.5 bg-mission-control-bg hover:bg-error-subtle text-mission-control-text-dim hover:text-error text-xs font-medium rounded-lg border border-mission-control-border transition-colors"
-            >
-              Reject
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ApprovalsQueue({
-  approvals,
-  onApprove,
-  onReject,
-  onNavigate,
-}: {
-  approvals: ApprovalItem[];
-  onApprove: (id: string) => void;
-  onReject: (id: string) => void;
-  onNavigate?: (view: View) => void;
-}) {
-  // Memoized so the filter only re-runs when approvals array reference changes
-  const pending = useMemo(() => approvals.filter(a => a.status === 'pending'), [approvals]);
-
-  return (
-    <div className={`bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border overflow-hidden flex flex-col h-[400px] ${
-      pending.length > 0 ? 'border-orange-500/50 shadow-lg shadow-orange-500/5' : 'border-mission-control-border'
-    }`}>
-      <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <Inbox size={16} className={pending.length > 0 ? 'text-orange-400' : 'text-mission-control-text-dim'} />
-          <h2 className="font-semibold text-sm">Needs Your Decision</h2>
-          {pending.length > 0 && (
-            <span className="px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full tabular-nums">
-              {pending.length}
-            </span>
-          )}
-        </div>
-        <button
-          onClick={() => onNavigate?.('approvals')}
-          className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors"
-        >
-          View All <ArrowRight size={12} />
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto max-h-[400px]">
-        {pending.length === 0 ? (
-          <div className="p-8 text-center">
-            <CheckCircle size={32} className="mx-auto mb-2 text-success/50" />
-            <p className="text-sm text-mission-control-text-dim font-medium">All caught up</p>
-            <p className="text-xs text-mission-control-text-dim/70 mt-1">No pending approvals</p>
-          </div>
-        ) : (
-          pending.slice(0, 10).map(item => (
-            <ApprovalCard
-              key={item.id}
-              item={item}
-              onApprove={onApprove}
-              onReject={onReject}
-            />
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── ActivityFeed ───────────────────────────────────────────
-
-const ACTIVITY_VERBS: Record<string, string> = {
-  chat: 'sent a message',
-  task: 'updated task',
-  agent: 'agent status changed',
-  error: 'reported an error',
-  system: 'system event',
+const TASK_COLORS: Record<string, string> = {
+  'in-progress': CHART_COLORS.blue,
+  'review': CHART_COLORS.violet,
+  'human-review': CHART_COLORS.amber,
 };
 
-function ActivityFeed({
-  inProgressTasks,
-  agentMap,
-  activities,
-  allTasks,
-  onNavigate,
-  onAgentClick,
-}: {
-  inProgressTasks: Task[];
-  agentMap: Map<string, Agent>;
-  activities: { id: string; type: string; message: string; timestamp: number }[];
-  allTasks: Task[];
-  onNavigate?: (view: View) => void;
-  onAgentClick?: (agentId: string) => void;
-}) {
-  // Agent leaderboard: count tasks completed today per agent (status = done, completedAt today)
-  const agentLeaderboard = useMemo(() => {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayTs = todayStart.getTime();
-    const counts = new Map<string, number>();
-    for (const t of allTasks) {
-      if (!t.assignedTo) continue;
-      // Count tasks that are done and updated today, or in-progress updated today
-      const updatedToday = (typeof t.updatedAt === 'number' ? t.updatedAt : new Date(t.updatedAt).getTime()) >= todayTs;
-      if (updatedToday && (t.status === 'done' || t.status === 'in-progress' || t.status === 'review')) {
-        counts.set(t.assignedTo, (counts.get(t.assignedTo) || 0) + 1);
-      }
-    }
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([agentId, count]) => ({ agentId, count }));
-  }, [allTasks]);
-
-  // Merge in-progress tasks and recent activity into a single feed, last 10 items
-  const feedItems = useMemo(() => {
-    const taskItems = inProgressTasks.map(t => ({
-      id: `task-${t.id}`,
-      kind: 'task' as const,
-      task: t,
-      timestamp: typeof t.updatedAt === 'number' ? t.updatedAt : new Date(t.updatedAt).getTime(),
-    }));
-    const activityItems = activities.slice(0, 10 - Math.min(taskItems.length, 4)).map(a => ({
-      id: `activity-${a.id}`,
-      kind: 'activity' as const,
-      activity: a,
-      timestamp: a.timestamp,
-    }));
-    return [...taskItems, ...activityItems]
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, 10);
-  }, [inProgressTasks, activities]);
-
+function TaskRow({ task, onClick }: { task: Task; onClick: () => void }) {
+  const c = TASK_COLORS[task.status] ?? CHART_COLORS.gray;
   return (
-    <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden flex flex-col h-[400px]">
-      <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <Activity size={16} className="text-blue-400" />
-          <h2 className="font-semibold text-sm">Activity Feed</h2>
-          {inProgressTasks.length > 0 && (
-            <span className="px-2 py-0.5 bg-info-subtle text-info text-xs font-medium rounded-full">
-              {inProgressTasks.length} active
-            </span>
+    <button type="button" onClick={onClick}
+      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-mission-control-surface transition-colors text-left group">
+      <span className="w-0.5 self-stretch rounded-full flex-shrink-0" style={{ background: c }} />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-mission-control-text truncate">{task.title}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          {task.assignedTo && <span className="text-[11px] text-mission-control-text-dim">{task.assignedTo}</span>}
+          {task.priority === 'p0' && (
+            <span className="text-[10px] font-bold px-1 rounded uppercase tracking-wide"
+              style={{ color: CHART_COLORS.rose, background: `${CHART_COLORS.rose}18` }}>P0</span>
           )}
         </div>
-        <button
-          onClick={() => onNavigate?.('kanban')}
-          className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors"
-        >
-          All Tasks <ArrowRight size={12} />
-        </button>
       </div>
-
-      {/* Agent leaderboard — top 3 most active today */}
-      {agentLeaderboard.length > 0 && (
-        <div className="px-4 py-3 border-b border-mission-control-border/30 bg-mission-control-bg/20">
-          <div className="flex items-center gap-1.5 mb-2">
-            <Trophy size={12} className="text-amber-400" />
-            <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Most Active Today</span>
-          </div>
-          <div className="flex items-center gap-3 overflow-hidden">
-            {agentLeaderboard.map(({ agentId, count }, idx) => {
-              const agent = agentMap.get(agentId);
-              const rankColors = ['text-amber-400', 'text-mission-control-text-dim', 'text-amber-700'];
-              return (
-                <button
-                  key={agentId}
-                  onClick={() => onAgentClick?.(agentId)}
-                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-mission-control-surface/60 border border-mission-control-border hover:border-mission-control-accent/50 hover:bg-mission-control-accent/5 transition-all group flex-1 min-w-0 overflow-hidden"
-                  title={`Open ${agent?.name || agentId} details`}
-                >
-                  <span className={`text-xs font-bold ${rankColors[idx]}`}>{idx + 1}</span>
-                  <AgentAvatar agentId={agentId} fallbackEmoji={agent?.avatar} size="xs" />
-                  <span className="text-xs font-medium text-mission-control-text truncate group-hover:text-mission-control-accent transition-colors">
-                    {agent?.name || agentId}
-                  </span>
-                  <span className="ml-auto text-xs font-semibold text-mission-control-text-dim flex-shrink-0">
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      <div className="flex-1 overflow-y-auto max-h-[400px]">
-        {feedItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full min-h-[200px] p-8">
-            <Activity size={32} className="mb-3 text-mission-control-text-dim/30" />
-            <p className="text-sm text-mission-control-text-dim font-medium">No active work right now</p>
-            <p className="text-xs text-mission-control-text-dim/70 mt-1">Agent activity will appear here</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-mission-control-border/20">
-            {feedItems.map(item => {
-              if (item.kind === 'task') {
-                const task = item.task;
-                const agent = agentMap.get(task.assignedTo ?? '');
-                return (
-                  <div
-                    key={item.id}
-                    className="px-4 py-3 hover:bg-mission-control-border/40 transition-colors cursor-pointer"
-                    onClick={() => onNavigate?.('kanban')}
-                    onKeyDown={e => { if (e.key === 'Enter') onNavigate?.('kanban'); }}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 mt-0.5">
-                        {agent ? (
-                          <button
-                            onClick={e => { e.stopPropagation(); onAgentClick?.(agent.id); }}
-                            className="hover:opacity-80 transition-opacity"
-                            title={`Open ${agent.name} details`}
-                          >
-                            <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="sm" />
-                          </button>
-                        ) : (
-                          <div className="w-6 h-6 rounded-full bg-mission-control-border flex items-center justify-center">
-                            <Bot size={12} className="text-mission-control-text-dim" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-mission-control-text-dim">
-                          {agent ? (
-                            <button
-                              onClick={e => { e.stopPropagation(); onAgentClick?.(agent.id); }}
-                              className="font-medium text-mission-control-text hover:text-mission-control-accent transition-colors"
-                            >
-                              {agent.name}
-                            </button>
-                          ) : (
-                            <span className="font-medium text-mission-control-text">Agent</span>
-                          )}
-                          {' '}is working on{' '}
-                          <span className="font-medium text-mission-control-text truncate">{task.title}</span>
-                        </p>
-                        <p className="text-xs text-mission-control-text-dim/60 mt-0.5">
-                          {formatTimeAgo(item.timestamp)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                        <span className="px-1.5 py-0.5 bg-info-subtle text-info text-xs font-medium rounded-full">
-                          in progress
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              } else {
-                const a = item.activity;
-                const ActivityIcon = a.type === 'chat' ? MessageSquare
-                  : a.type === 'task' ? Clipboard
-                  : a.type === 'agent' ? Bot
-                  : a.type === 'error' ? AlertTriangle
-                  : Radio;
-                return (
-                  <div key={item.id} className="px-4 py-3 flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-0.5 p-1 rounded-md bg-mission-control-bg/50">
-                      <ActivityIcon size={12} className="text-mission-control-text-dim" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-mission-control-text-dim line-clamp-2">{a.message}</p>
-                      {ACTIVITY_VERBS[a.type] && (
-                        <p className="text-xs text-mission-control-text-dim/50 mt-0.5 uppercase tracking-wide">
-                          {ACTIVITY_VERBS[a.type]}
-                        </p>
-                      )}
-                    </div>
-                    <span className="text-xs text-mission-control-text-dim/50 flex-shrink-0">
-                      {formatTimeAgo(item.timestamp)}
-                    </span>
-                  </div>
-                );
-              }
-            })}
-          </div>
-        )}
-      </div>
-    </div>
+      {task.updatedAt && <span className="text-[11px] text-mission-control-text-dim/50 flex-shrink-0">{formatTimeAgo(task.updatedAt)}</span>}
+    </button>
   );
 }
 
-// ── TaskCompletionSparkline ────────────────────────────────
-
-interface TaskStatsResponse {
-  completions: { date: string; tasks_completed: number }[];
-  agents: { agent: string; total: number; completed: number }[];
-}
-
-interface SparklineData {
-  dates: string[];
-  counts: number[];
-}
-
-interface AgentProductivity {
-  agent: string;
-  completed: number;
-}
-
-interface VelocityData {
-  currentAvg: number;
-  previousAvg: number;
-  pctChange: number;
-}
-
-function useAnalyticsData(refreshKey: number) {
-  const [sparkline, setSparkline] = useState<SparklineData | null>(null);
-  const [agentProductivity, setAgentProductivity] = useState<AgentProductivity[]>([]);
-  const [velocity, setVelocity] = useState<VelocityData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      // Fetch 14 days to split into two 7-day windows for velocity
-      const res = await fetch('/api/analytics/task-stats?days=14');
-      if (!res.ok) return;
-      const data: TaskStatsResponse = await res.json();
-
-      // ── Sparkline: last 7 days ──────────────────────────────
-      const today = new Date();
-      const last7: { date: string; count: number }[] = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(today);
-        d.setDate(d.getDate() - i);
-        const dateStr = d.toISOString().slice(0, 10);
-        const match = data.completions.find(c => c.date === dateStr);
-        last7.push({ date: dateStr, count: match?.tasks_completed ?? 0 });
-      }
-      setSparkline({
-        dates: last7.map(d => d.date),
-        counts: last7.map(d => d.count),
-      });
-
-      // ── Velocity: current 7 vs previous 7 ──────────────────
-      const prev7: { date: string; count: number }[] = [];
-      for (let i = 13; i >= 7; i--) {
-        const d = new Date(today);
-        d.setDate(d.getDate() - i);
-        const dateStr = d.toISOString().slice(0, 10);
-        const match = data.completions.find(c => c.date === dateStr);
-        prev7.push({ date: dateStr, count: match?.tasks_completed ?? 0 });
-      }
-      const currentSum = last7.reduce((s, d) => s + d.count, 0);
-      const previousSum = prev7.reduce((s, d) => s + d.count, 0);
-      const currentAvg = currentSum / 7;
-      const previousAvg = previousSum / 7;
-      const pctChange = previousAvg === 0
-        ? (currentAvg > 0 ? 100 : 0)
-        : Math.round(((currentAvg - previousAvg) / previousAvg) * 100);
-      setVelocity({ currentAvg, previousAvg, pctChange });
-
-      // ── Agent productivity: top 3 by completed (all-time from task-stats agents) ──
-      const sorted = [...(data.agents ?? [])]
-        .sort((a, b) => b.completed - a.completed)
-        .slice(0, 3)
-        .map(a => ({ agent: a.agent, completed: a.completed }));
-      setAgentProductivity(sorted);
-    } catch { /* non-critical */ } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  // refreshKey is intentionally used to trigger reload from outside
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load, refreshKey]);
-
-  return { sparkline, agentProductivity, velocity, loading };
-}
-
-function TaskCompletionSparkline({ sparkline, loading }: { sparkline: SparklineData | null; loading: boolean }) {
-  const W = 220;
-  const H = 52;
-  const PAD_X = 4;
-  const PAD_Y = 8;
-
-  const points = useMemo(() => {
-    if (!sparkline || sparkline.counts.length < 2) return null;
-    const counts = sparkline.counts;
-    const maxVal = Math.max(...counts, 1);
-    const step = (W - PAD_X * 2) / (counts.length - 1);
-    return counts.map((c, i) => ({
-      x: PAD_X + i * step,
-      y: PAD_Y + (H - PAD_Y * 2) * (1 - c / maxVal),
-      count: c,
-      date: sparkline.dates[i],
-    }));
-  }, [sparkline]);
-
-  const total = sparkline?.counts.reduce((s, c) => s + c, 0) ?? 0;
-
+function ApprovalRow({ item, onClick }: { item: ApprovalItem; onClick: () => void }) {
   return (
-    <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden">
-      <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <BarChart2 size={16} className="text-mission-control-accent" />
-          <h2 className="font-semibold text-sm">Task Completion Trend</h2>
-          <span className="text-xs text-mission-control-text-dim">last 7 days</span>
-        </div>
-        <span className="text-xs font-semibold text-mission-control-text">{total} total</span>
+    <button type="button" onClick={onClick}
+      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-mission-control-surface transition-colors text-left group">
+      <span className="w-0.5 self-stretch rounded-full flex-shrink-0" style={{ background: CHART_COLORS.amber }} />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-mission-control-text truncate">{item.title}</p>
+        <span className="text-[10px] font-bold uppercase tracking-wide px-1 rounded"
+          style={{ color: CHART_COLORS.amber, background: `${CHART_COLORS.amber}18` }}>{item.type}</span>
       </div>
-      <div className="px-4 pt-3 pb-4">
-        {loading ? (
-          <div className="flex items-center justify-center h-14">
-            <Loader2 size={16} className="animate-spin text-mission-control-text-dim" />
-          </div>
-        ) : !points ? (
-          <div className="flex items-center justify-center h-14 text-xs text-mission-control-text-dim">
-            No data yet
-          </div>
-        ) : (
-          <svg
-            viewBox={`0 0 ${W} ${H}`}
-            className="w-full"
-            style={{ height: H }}
-            aria-label="Task completion trend over the last 7 days"
-            role="img"
-          >
-            {/* Fill area under the line */}
-            <defs>
-              <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--color-accent,#6366f1)" stopOpacity="0.25" />
-                <stop offset="100%" stopColor="var(--color-accent,#6366f1)" stopOpacity="0.01" />
-              </linearGradient>
-            </defs>
-            <polygon
-              points={[
-                `${points[0].x},${H - PAD_Y}`,
-                ...points.map(p => `${p.x},${p.y}`),
-                `${points[points.length - 1].x},${H - PAD_Y}`,
-              ].join(' ')}
-              fill="url(#spark-fill)"
-            />
-            {/* Line */}
-            <polyline
-              points={points.map(p => `${p.x},${p.y}`).join(' ')}
-              fill="none"
-              stroke="var(--color-accent,#6366f1)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            {/* Data points + day labels */}
-            {points.map((p, i) => {
-              const isToday = i === points.length - 1;
-              const label = isToday
-                ? 'Today'
-                : new Date(p.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' });
-              return (
-                <g key={p.date}>
-                  <circle
-                    cx={p.x}
-                    cy={p.y}
-                    r={isToday ? 3.5 : 2.5}
-                    fill={isToday ? 'var(--color-accent,#6366f1)' : 'var(--color-surface,#1e1e2e)'}
-                    stroke="var(--color-accent,#6366f1)"
-                    strokeWidth={1.5}
-                  />
-                  <text
-                    x={p.x}
-                    y={H}
-                    textAnchor="middle"
-                    fontSize={8}
-                    fill={isToday ? 'var(--color-accent,#6366f1)' : 'var(--color-text-dim,#888)'}
-                    fontWeight={isToday ? 'bold' : 'normal'}
-                  >
-                    {label}
-                  </text>
-                  {p.count > 0 && (
-                    <text
-                      x={p.x}
-                      y={p.y - 5}
-                      textAnchor="middle"
-                      fontSize={8}
-                      fill={isToday ? 'var(--color-accent,#6366f1)' : 'var(--color-text-dim,#888)'}
-                      fontWeight={isToday ? 'bold' : 'normal'}
-                    >
-                      {p.count}
-                    </text>
-                  )}
-                </g>
-              );
-            })}
-          </svg>
-        )}
-      </div>
-    </div>
+      <Zap size={12} className="flex-shrink-0" style={{ color: CHART_COLORS.amber }} />
+    </button>
   );
 }
 
-// ── VelocityMetric ─────────────────────────────────────────
+// ── Section header ─────────────────────────────────────────────────────────
 
-function VelocityMetric({ velocity, loading }: { velocity: VelocityData | null; loading: boolean }) {
-  const isUp = (velocity?.pctChange ?? 0) > 0;
-  const isFlat = (velocity?.pctChange ?? 0) === 0;
-  const TrendIcon = isFlat ? Minus : isUp ? TrendingUp : TrendingDown;
-  const trendColor = isFlat
-    ? 'text-mission-control-text-dim'
-    : isUp
-    ? 'text-success'
-    : 'text-error';
-
-  return (
-    <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden">
-      <div className="p-4 border-b border-mission-control-border/50 flex items-center gap-2">
-        <Zap size={16} className="text-amber-400" />
-        <h2 className="font-semibold text-sm">Velocity</h2>
-        <span className="text-xs text-mission-control-text-dim">7-day avg</span>
-      </div>
-      <div className="px-4 py-4 flex items-center gap-4">
-        {loading ? (
-          <Loader2 size={16} className="animate-spin text-mission-control-text-dim" />
-        ) : velocity ? (
-          <>
-            <div>
-              <div className="text-3xl font-bold tabular-nums text-mission-control-text">
-                {velocity.currentAvg.toFixed(1)}
-              </div>
-              <div className="text-xs text-mission-control-text-dim mt-0.5">tasks/day</div>
-            </div>
-            <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-semibold ${
-              isFlat
-                ? 'bg-mission-control-bg/50 text-mission-control-text-dim'
-                : isUp
-                ? 'bg-success-subtle text-success border border-success-border'
-                : 'bg-error-subtle text-error border border-error-border'
-            }`}>
-              <TrendIcon size={14} className={trendColor} />
-              {isFlat ? 'No change' : `${isUp ? '+' : ''}${velocity.pctChange}%`}
-            </div>
-            <div className="ml-auto text-right">
-              <div className="text-xs text-mission-control-text-dim">vs prev 7d</div>
-              <div className="text-xs font-medium text-mission-control-text mt-0.5 tabular-nums">
-                {velocity.previousAvg.toFixed(1)} tasks/day
-              </div>
-            </div>
-          </>
-        ) : (
-          <span className="text-xs text-mission-control-text-dim">No data</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── AgentProductivitySummary ───────────────────────────────
-
-function AgentProductivitySummary({
-  agentProductivity,
-  agentMap,
-  loading,
-  onAgentClick,
-}: {
-  agentProductivity: AgentProductivity[];
-  agentMap: Map<string, Agent>;
-  loading: boolean;
-  onAgentClick?: (agentId: string) => void;
+function SectionHead({ label, count, action, onAction }: {
+  label: string; count?: number; action?: string; onAction?: () => void;
 }) {
-  const rankColors = ['text-amber-400', 'text-mission-control-text-dim', 'text-amber-700'];
-
   return (
-    <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden">
-      <div className="p-4 border-b border-mission-control-border/50 flex items-center gap-2">
-        <Users size={16} className="text-blue-400" />
-        <h2 className="font-semibold text-sm">Agent Productivity</h2>
-        <span className="text-xs text-mission-control-text-dim">by tasks completed</span>
-      </div>
-      <div className="p-4">
-        {loading ? (
-          <div className="flex items-center justify-center py-4">
-            <Loader2 size={16} className="animate-spin text-mission-control-text-dim" />
-          </div>
-        ) : agentProductivity.length === 0 ? (
-          <div className="py-4 text-center text-xs text-mission-control-text-dim">No completed tasks yet</div>
-        ) : (
-          <div className="space-y-2">
-            {agentProductivity.map(({ agent, completed }, idx) => {
-              const agentData = agentMap.get(agent);
-              const maxCompleted = agentProductivity[0]?.completed ?? 1;
-              const pct = maxCompleted > 0 ? (completed / maxCompleted) * 100 : 0;
-              return (
-                <button
-                  key={agent}
-                  onClick={() => onAgentClick?.(agent)}
-                  className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-mission-control-border/40 transition-colors group text-left"
-                >
-                  <span className={`text-xs font-bold w-4 flex-shrink-0 ${rankColors[idx] ?? 'text-mission-control-text-dim'}`}>
-                    {idx + 1}
-                  </span>
-                  <AgentAvatar agentId={agent} fallbackEmoji={agentData?.avatar} size="xs" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium text-mission-control-text truncate group-hover:text-mission-control-accent transition-colors">
-                        {agentData?.name ?? agent}
-                      </span>
-                      <span className="text-xs font-semibold tabular-nums text-mission-control-text-dim flex-shrink-0 ml-2">
-                        {completed}
-                      </span>
-                    </div>
-                    <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-mission-control-accent/60 rounded-full transition-all"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+    <div className="flex items-center justify-between px-4 py-2.5 border-b border-mission-control-border/60">
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">{label}</span>
+        {count !== undefined && count > 0 && (
+          <span className="text-[10px] tabular-nums px-1.5 py-0.5 rounded bg-mission-control-border text-mission-control-text-dim font-medium">{count}</span>
         )}
       </div>
-    </div>
-  );
-}
-
-// ── TaskThroughputChart ────────────────────────────────────
-
-function TaskThroughputChart({ tasks }: { tasks: Task[] }) {
-  // Build last-7-days completed task counts (SVG bar chart, no external library)
-  const chartData = useMemo(() => {
-    const days: { label: string; date: Date; count: number; isToday: boolean }[] = [];
-    const now = new Date();
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      d.setHours(0, 0, 0, 0);
-      const dayStart = d.getTime();
-      const dayEnd = dayStart + 86400000;
-      const isToday = i === 0;
-      const count = tasks.filter(t => {
-        if (t.status !== 'done') return false;
-        const ts = t.completedAt ?? t.updatedAt;
-        const tsNum = typeof ts === 'number' ? ts : (ts ? new Date(ts).getTime() : 0);
-        return tsNum >= dayStart && tsNum < dayEnd;
-      }).length;
-      days.push({
-        label: isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short' }),
-        date: d,
-        count,
-        isToday,
-      });
-    }
-    return days;
-  }, [tasks]);
-
-  const maxCount = Math.max(...chartData.map(d => d.count), 1);
-  const chartH = 48; // px height of bar area
-  const barW = 20;
-  const gap = 6;
-  const totalW = (barW + gap) * 7 - gap;
-
-  return (
-    <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden">
-      <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <BarChart2 size={16} className="text-violet-400" />
-          <h2 className="font-semibold text-sm">Tasks Completed</h2>
-          <span className="text-xs text-mission-control-text-dim">last 7 days</span>
-        </div>
-        <span className="text-xs font-semibold text-mission-control-text">
-          {chartData.reduce((s, d) => s + d.count, 0)} total
-        </span>
-      </div>
-      <div className="px-4 pt-4 pb-3">
-        <svg
-          width={totalW}
-          height={chartH + 20}
-          viewBox={`0 0 ${totalW} ${chartH + 20}`}
-          className="w-full"
-          style={{ maxWidth: totalW }}
-          aria-label="Tasks completed per day"
-        >
-          {chartData.map((day, i) => {
-            const barH = maxCount === 0 ? 2 : Math.max(2, Math.round((day.count / maxCount) * chartH));
-            const x = i * (barW + gap);
-            const y = chartH - barH;
-            return (
-              <g key={day.label}>
-                <rect
-                  x={x}
-                  y={y}
-                  width={barW}
-                  height={barH}
-                  rx={3}
-                  fill={day.isToday ? 'var(--color-accent, #6366f1)' : day.count > 0 ? 'var(--color-accent, #6366f1)' : 'var(--color-accent, #6366f1)'}
-                  fillOpacity={day.isToday ? 1 : day.count > 0 ? 0.19 : 0.08}
-                  stroke={day.isToday ? 'var(--color-accent, #6366f1)' : 'transparent'}
-                  strokeWidth={day.isToday ? 1 : 0}
-                />
-                {day.count > 0 && (
-                  <text
-                    x={x + barW / 2}
-                    y={y - 3}
-                    textAnchor="middle"
-                    fontSize={9}
-                    fill={day.isToday ? 'var(--color-accent, #6366f1)' : 'var(--color-text-dim, #888)'}
-                    fontWeight={day.isToday ? 'bold' : 'normal'}
-                  >
-                    {day.count}
-                  </text>
-                )}
-                <text
-                  x={x + barW / 2}
-                  y={chartH + 15}
-                  textAnchor="middle"
-                  fontSize={9}
-                  fill={day.isToday ? 'var(--color-accent, #6366f1)' : 'var(--color-text-dim, #888)'}
-                  fontWeight={day.isToday ? 'bold' : 'normal'}
-                >
-                  {day.label === 'Today' ? 'Today' : day.label}
-                </text>
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-    </div>
-  );
-}
-
-// ── TodaySchedule ──────────────────────────────────────────
-
-function TodaySchedule({ onNavigate }: { onNavigate?: (view: View) => void }) {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadEvents = useCallback(async () => {
-    try {
-      const res = await fetch('/api/schedule');
-      if (res.ok) {
-        const data = await res.json();
-        const todayEvents = (data?.events || data || []) as CalendarEvent[];
-        const sorted = todayEvents.sort((a: CalendarEvent, b: CalendarEvent) => {
-          const aTime = a.start.dateTime || a.start.date || '';
-          const bTime = b.start.dateTime || b.start.date || '';
-          return aTime.localeCompare(bTime);
-        });
-        setEvents(sorted);
-      } else {
-        setEvents([]);
-      }
-    } catch {
-      setEvents([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadEvents();
-    const interval = setInterval(loadEvents, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [loadEvents]);
-
-  const formatTime = (event: CalendarEvent): string => {
-    if (event.start.date && !event.start.dateTime) return 'All day';
-    if (event.start.dateTime) {
-      return new Date(event.start.dateTime).toLocaleTimeString('en-US', {
-        hour: 'numeric', minute: '2-digit', hour12: true,
-      });
-    }
-    return '';
-  };
-
-  const isNow = (event: CalendarEvent): boolean => {
-    const start = event.start.dateTime;
-    const end = event.end?.dateTime;
-    if (!start || !end) return false;
-    const now = Date.now();
-    return now >= new Date(start).getTime() && now <= new Date(end).getTime();
-  };
-
-  const getMeetingLink = (event: CalendarEvent): string | null => {
-    if (!event.conferenceData?.entryPoints) return null;
-    const videoEntry = event.conferenceData.entryPoints.find(e =>
-      e.entryPointType === 'video' || e.uri.includes('meet.google.com') || e.uri.includes('zoom.us')
-    );
-    return videoEntry?.uri || null;
-  };
-
-  // Pre-compute meeting links once per events change — avoids calling getMeetingLink per item in render
-  const eventsWithLinks = useMemo(() =>
-    events.map(e => ({ ...e, _link: getMeetingLink(e) })),
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  [events]);
-
-  return (
-    <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden flex flex-col min-h-[280px] max-h-[480px]">
-      <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Calendar size={16} className="text-blue-400" />
-          <h2 className="font-semibold text-sm">Today&apos;s Schedule</h2>
-        </div>
-        <button
-          onClick={() => onNavigate?.('schedule')}
-          className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors"
-        >
-          Full Calendar <ChevronRight size={12} />
+      {onAction && (
+        <button type="button" onClick={onAction}
+          className="flex items-center gap-0.5 text-[11px] text-mission-control-text-dim hover:text-mission-control-accent transition-colors">
+          {action ?? 'All'} <ChevronRight size={10} />
         </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto max-h-[300px]">
-        {loading ? (
-          <div className="p-6 text-center">
-            <Loader2 size={20} className="mx-auto mb-2 animate-spin text-mission-control-text-dim" />
-            <p className="text-xs text-mission-control-text-dim">Loading events...</p>
-          </div>
-        ) : eventsWithLinks.length === 0 ? (
-          <div className="p-6 text-center">
-            <Calendar size={28} className="mx-auto mb-2 text-mission-control-text-dim/30" />
-            <p className="text-sm text-mission-control-text-dim">No events today</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-mission-control-border/30">
-            {eventsWithLinks.slice(0, 6).map(event => {
-              const happening = isNow(event);
-              const meetingLink = event._link;
-              return (
-                <div
-                  key={event.id}
-                  className={`p-3 hover:bg-mission-control-border/40 transition-colors ${
-                    happening ? 'bg-info-subtle/30 border-l-2 border-l-blue-400' : ''
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-14 text-right flex-shrink-0 ${
-                      happening ? 'text-blue-400 font-semibold' : 'text-mission-control-text-dim'
-                    }`}>
-                      <span className="text-xs">{formatTime(event)}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${happening ? 'text-blue-400' : 'text-mission-control-text'}`}>
-                        {event.summary}
-                        {happening && (
-                          <span className="ml-2 px-1.5 py-0.5 bg-info text-white text-xs rounded-full font-bold">
-                            NOW
-                          </span>
-                        )}
-                      </p>
-                      {event.location && (
-                        <div className="flex items-center gap-1 mt-0.5 text-xs text-mission-control-text-dim">
-                          <MapPin size={10} />
-                          <span className="truncate">{event.location}</span>
-                        </div>
-                      )}
-                    </div>
-                    {meetingLink && (
-                      <a
-                        href={meetingLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-shrink-0 p-1.5 bg-mission-control-accent/20 text-mission-control-accent rounded-lg hover:bg-mission-control-accent hover:text-white transition-all"
-                        title="Join meeting"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <Video size={14} />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            {eventsWithLinks.length > 6 && (
-              <div className="p-2 text-center">
-                <button
-                  onClick={() => onNavigate?.('schedule')}
-                  className="text-xs text-mission-control-accent hover:underline"
-                >
-                  +{eventsWithLinks.length - 6} more
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
 
-// ── SystemHealth ───────────────────────────────────────────
+// ── Calendar ───────────────────────────────────────────────────────────────
 
-interface SystemStatus {
-  watcherRunning: boolean;
-  killSwitchOn: boolean;
-  inProgressTasks: number;
-}
+interface CalEvent { id: string; title: string; start: string; location?: string }
 
-interface TokenSummary {
-  totalTokens: number;
-  totalCost: number;
-  topAgent?: string;
-  topAgentTokens?: number;
-}
-
-function SystemHealth({ gatewaySessions, connected }: { gatewaySessions: GatewaySession[]; connected: boolean }) {
-  const [sysStatus, setSysStatus] = useState<SystemStatus | null>(null);
-  const [tokenSummary, setTokenSummary] = useState<TokenSummary | null>(null);
-
-  const loadAll = useCallback(async () => {
-    // System status
-    try {
-      const res = await fetch('/api/health');
-      if (res.ok) {
-        const data = await res.json();
-        const s: SystemStatus = {
-          watcherRunning: data?.watcherRunning ?? true,
-          killSwitchOn: data?.killSwitchOn ?? false,
-          inProgressTasks: data?.inProgressTasks ?? 0,
-        };
-        setSysStatus(s);
-      }
-    } catch { /* ignore */ }
-
-    // Token summary
-    try {
-      const res = await fetch('/api/analytics/token-usage?period=day');
-      if (res.ok) {
-        const result = await res.json();
-        if (result?.by_agent && result.by_agent.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const totalTokens = result.by_agent.reduce((sum: number, a: any) => sum + a.total_all, 0);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const totalCost = result.by_agent.reduce((sum: number, a: any) => sum + (a.total_cost || 0), 0);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const sorted = [...result.by_agent].sort((a: any, b: any) => b.total_all - a.total_all);
-          setTokenSummary({
-            totalTokens,
-            totalCost,
-            topAgent: sorted[0]?.agent,
-            topAgentTokens: sorted[0]?.total_all,
-          });
-        } else {
-          setTokenSummary({ totalTokens: 0, totalCost: 0 });
-        }
-      }
-    } catch { /* ignore */ }
-  }, []);
-
+function useCalEvents() {
+  const [events, setEvents] = useState<CalEvent[]>([]);
   useEffect(() => {
-    loadAll();
-    const interval = setInterval(loadAll, 30000);
-    return () => clearInterval(interval);
-  }, [loadAll]);
+    const today = new Date().toISOString().split('T')[0];
+    fetch(`/api/calendar/events?date=${today}&limit=5`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d?.events && setEvents(d.events))
+      .catch(() => {});
+  }, []);
+  return events;
+}
 
-  const activeSessions = gatewaySessions.filter(s => s.isActive);
-  const health = sysStatus
-    ? sysStatus.killSwitchOn ? 'critical' : !sysStatus.watcherRunning ? 'warning' : 'healthy'
-    : 'unknown';
+// ── Custom tooltip ─────────────────────────────────────────────────────────
 
+function ChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
   return (
-    <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border overflow-hidden flex flex-col min-h-[280px] max-h-[480px]">
-      <div className="p-4 border-b border-mission-control-border/50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Shield size={16} className={
-            health === 'healthy' ? 'text-success' :
-            health === 'warning' ? 'text-warning' :
-            health === 'critical' ? 'text-error' :
-            'text-mission-control-text-dim'
-          } />
-          <h2 className="font-semibold text-sm">System Health</h2>
+    <div style={CHART_TOOLTIP} className="pointer-events-none">
+      <p className="font-medium mb-1.5 text-mission-control-text">{label}</p>
+      {payload.map((p: any) => (
+        <div key={p.dataKey} className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />
+          <span className="text-mission-control-text-dim">{p.name ?? p.dataKey}:</span>
+          <span className="font-semibold text-mission-control-text tabular-nums">{typeof p.value === 'number' ? fmt(p.value) : p.value}</span>
         </div>
-        <div className={`flex items-center gap-1.5 text-xs font-medium ${
-          health === 'healthy' ? 'text-success' :
-          health === 'warning' ? 'text-warning' :
-          health === 'critical' ? 'text-error' :
-          'text-mission-control-text-dim'
-        }`}>
-          {health === 'healthy' ? <CheckCircle size={12} /> :
-           health === 'warning' ? <AlertTriangle size={12} /> :
-           health === 'critical' ? <XCircle size={12} /> :
-           <Loader2 size={12} className="animate-spin" />}
-          {health === 'healthy' ? 'All Good' :
-           health === 'warning' ? 'Warning' :
-           health === 'critical' ? 'Critical' : 'Loading'}
-        </div>
-      </div>
-
-      <div className="p-4 space-y-3">
-        {/* Gateway */}
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-mission-control-text-dim">Gateway</span>
-          <span className={connected ? 'text-success' : 'text-error'}>
-            {connected ? 'Connected' : 'Disconnected'}
-          </span>
-        </div>
-
-        {/* Sessions */}
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-mission-control-text-dim">Active Sessions</span>
-          <span className="text-mission-control-text tabular-nums">{activeSessions.length}</span>
-        </div>
-
-        {/* Watcher */}
-        {sysStatus && (
-          <>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-mission-control-text-dim">Task Watcher</span>
-              <span className={sysStatus.watcherRunning ? 'text-success' : 'text-error'}>
-                {sysStatus.watcherRunning ? 'Running' : 'Stopped'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-mission-control-text-dim">Safety Lock</span>
-              <span className={sysStatus.killSwitchOn ? 'text-error' : 'text-success'}>
-                {sysStatus.killSwitchOn ? 'Engaged' : 'Normal'}
-              </span>
-            </div>
-          </>
-        )}
-
-        {/* Token usage */}
-        {tokenSummary && (
-          <div className="pt-3 border-t border-mission-control-border/50 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-mission-control-text-dim flex items-center gap-1">
-                <Zap size={10} /> Tokens Today
-              </span>
-              <span className="text-mission-control-text font-medium tabular-nums">{formatTokens(tokenSummary.totalTokens)}</span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-mission-control-text-dim flex items-center gap-1">
-                <DollarSign size={10} /> Cost
-              </span>
-              <span className="text-mission-control-text font-medium tabular-nums">{formatCost(tokenSummary.totalCost)}</span>
-            </div>
-            {tokenSummary.topAgent && (
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-mission-control-text-dim">Top Agent</span>
-                <span className="text-mission-control-text capitalize">
-                  {tokenSummary.topAgent} ({formatTokens(tokenSummary.topAgentTokens || 0)})
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      ))}
     </div>
   );
 }
 
-// ── Main Dashboard ─────────────────────────────────────────
+// ── Main Dashboard ──────────────────────────────────────────────────────────
 
-export default function DashboardRedesigned({ onNavigate }: DashboardProps) {
-  const connected = useStore(s => s.connected);
-  const tasks = useStore(s => s.tasks);
-  const agents = useStore(s => s.agents);
-  const activities = useStore(s => s.activities);
-  const approvals = useStore(s => s.approvals);
-  const fetchAgents = useStore(s => s.fetchAgents);
-  const gatewaySessions = useStore(s => s.gatewaySessions);
-  const loadGatewaySessions = useStore(s => s.loadGatewaySessions);
-  const approveItem = useStore(s => s.approveItem);
-  const rejectItem = useStore(s => s.rejectItem);
-  const loadApprovals = useStore(s => s.loadApprovals);
+export default function Dashboard({ onNavigate, onShowBrief }: DashboardProps) {
+  const {
+    connected, tasks, agents, approvals, activities,
+    gatewaySessions, fetchAgents, loadGatewaySessions,
+  } = useStore();
 
-  // Refresh key: incrementing triggers analytics re-fetch + store reloads
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const calEvents = useCalEvents();
 
-  const handleRefresh = useCallback(async () => {
-    if (refreshing) return;
-    setRefreshing(true);
-    setRefreshKey(k => k + 1);
-    await Promise.allSettled([
-      fetchAgents(),
-      loadApprovals(),
-      connected ? loadGatewaySessions() : Promise.resolve(),
-    ]);
-    // Allow the spinner to show briefly so the user sees feedback
-    refreshTimeoutRef.current = setTimeout(() => setRefreshing(false), 600);
-  }, [refreshing, fetchAgents, loadApprovals, loadGatewaySessions, connected]);
+  // Analytics state
+  const [taskStats, setTaskStats] = useState<TaskStatsData | null>(null);
+  const [agentChartData, setAgentChartData] = useState<AgentChartPoint[]>([]);
+  const [agentKeys, setAgentKeys] = useState<string[]>([]);
+  const [xData, setXData] = useState<XAnalyticsData | null>(null);
+  const [xChartData, setXChartData] = useState<{ label: string; impressions: number; likes: number; retweets: number }[]>([]);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
+  // Store bootstrap
+  useEffect(() => { fetchAgents(); }, [fetchAgents]);
   useEffect(() => {
-    return () => {
-      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
-    };
-  }, []);
-
-  // Analytics data (velocity, agent productivity) driven by refreshKey
-  const { agentProductivity, velocity, loading: analyticsLoading } =
-    useAnalyticsData(refreshKey);
-
-  // Load data on mount
-  useEffect(() => {
-    fetchAgents().catch(() => {});
-    loadApprovals().catch(() => {});
-  }, [fetchAgents, loadApprovals]);
-
-  useEffect(() => {
-    if (connected) {
-      loadGatewaySessions().catch(() => {});
-      const interval = setInterval(() => loadGatewaySessions().catch(() => {}), 30000);
-      return () => clearInterval(interval);
-    }
+    if (!connected) return;
+    loadGatewaySessions();
+    const id = setInterval(loadGatewaySessions, 30_000);
+    return () => clearInterval(id);
   }, [connected, loadGatewaySessions]);
 
-  // Computed metrics — consolidated into grouped memos to reduce memo overhead
-  const derived = useMemo(() => {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayTs = todayStart.getTime();
-    const inProgressTasks = tasks.filter(t => t.status === 'in-progress');
-    const reviewTasks = tasks.filter(t => t.status === 'review');
-    const internalReviewTasks = tasks.filter(t => t.status === 'internal-review');
-    const humanReviewTasks = tasks.filter(t => t.status === 'human-review');
-    const doneTodayCount = tasks.filter(t => {
-      if (t.status !== 'done') return false;
-      const ts = t.completedAt ?? t.updatedAt;
-      const tsNum = typeof ts === 'number' ? ts : (ts ? new Date(ts).getTime() : 0);
-      return tsNum >= todayTs;
-    }).length;
-    return { inProgressTasks, reviewTasks, internalReviewTasks, humanReviewTasks, doneTodayCount };
-  }, [tasks]);
+  // Fetch analytics (resilient — allSettled so one failure doesn't block others)
+  const loadAnalytics = useCallback(async () => {
+    const fetchOpts = { signal: AbortSignal.timeout(15_000) };
+    const [tStats, trends, xAnalytics] = await Promise.allSettled([
+      fetch('/api/analytics/task-stats?days=8', fetchOpts).then(r => r.json()),
+      fetch('/api/analytics/agent-trends?days=7', fetchOpts).then(r => r.json()),
+      fetchXAnalytics(),
+    ]);
 
-  // Pre-sliced activities list — avoids re-slicing on every render
-  const recentActivities = useMemo(() => activities.slice(0, 10), [activities]);
+    // Task stats
+    if (tStats.status === 'fulfilled') {
+      setTaskStats(tStats.value as TaskStatsData);
+    }
 
-  // Agent lookup map — O(1) agent resolution instead of O(n) find() in render loops
-  const agentMap = useMemo(() => new Map(agents.map(a => [a.id, a])), [agents]);
+    // Agent activity chart — stacked by agent
+    if (trends.status === 'fulfilled') {
+      const raw: AgentTrendRaw[] = Array.isArray(trends.value) ? trends.value : [];
+      // Gather unique dates and agents
+      const dateSet = new Set<string>();
+      const agentSet = new Set<string>();
+      raw.forEach(r => { dateSet.add(r.date); agentSet.add(r.agent_id); });
+      const dates = [...dateSet].sort();
+      const agIds = [...agentSet].filter(id => !PHANTOM.has(id)).slice(0, 6);
+      // Build chart points
+      const points: AgentChartPoint[] = dates.slice(-7).map(date => {
+        const pt: AgentChartPoint = { label: dayLabel(date) };
+        agIds.forEach(id => {
+          const r = raw.find(x => x.date === date && x.agent_id === id);
+          pt[id] = r?.tasks ?? 0;
+        });
+        return pt;
+      });
+      setAgentChartData(points);
+      setAgentKeys(agIds);
+    }
 
-  // Agents working on in-progress tasks
-  const inProgressAgents = useMemo(() => {
-    const agentIds = new Set(derived.inProgressTasks.map(t => t.assignedTo).filter(Boolean) as string[]);
-    return Array.from(agentIds).map(id => agentMap.get(id)).filter(Boolean) as Agent[];
-  }, [derived.inProgressTasks, agentMap]);
+    // X analytics
+    if (xAnalytics.status === 'fulfilled') {
+      const d = xAnalytics.value as XAnalyticsData;
+      setXData(d);
+      // Build chart from individual tweet metrics
+      const tweets = d?.tweets ?? [];
+      // Group into buckets of ~7 (recent first)
+      const recent = tweets.slice(0, 28);
+      const buckets: typeof xChartData = [];
+      for (let i = 0; i < Math.min(7, Math.ceil(recent.length / 4)); i++) {
+        const slice = recent.slice(i * 4, (i + 1) * 4);
+        buckets.push({
+          label: `T-${6 - i}d`,
+          impressions: slice.reduce((s, t) => s + (t.public_metrics?.impression_count ?? 0), 0),
+          likes: slice.reduce((s, t) => s + (t.public_metrics?.like_count ?? 0), 0),
+          retweets: slice.reduce((s, t) => s + (t.public_metrics?.retweet_count ?? 0), 0),
+        });
+      }
+      setXChartData(buckets);
+    }
 
-  // Agent detail modal
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
-
-  // Dashboard customization state
-  const [editMode, setEditMode] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [dragSlotId, setDragSlotId] = useState<string | null>(null);
-  const [dropSlotId, setDropSlotId] = useState<string | null>(null);
-
-  const { layout, addWidget, removeWidget, resizeWidget, reorderWidgets } = useDashboardStore();
-
-  const sortedSlots = useMemo(
-    () => [...layout.widgets].filter(w => w.visible).sort((a, b) => a.position - b.position),
-    [layout.widgets],
-  );
-
-  const existingWidgetIds = useMemo(
-    () => new Set(layout.widgets.map(w => w.widgetId)),
-    [layout.widgets],
-  );
-
-  // Drag reorder handlers
-  const handleDragStart = useCallback((slotId: string) => {
-    setDragSlotId(slotId);
-    setDropSlotId(slotId);
+    setAnalyticsLoading(false);
   }, []);
 
-  const handleDragEnter = useCallback((slotId: string) => {
-    if (dragSlotId && slotId !== dragSlotId) {
-      setDropSlotId(slotId);
-    }
-  }, [dragSlotId]);
+  useEffect(() => { loadAnalytics(); }, [loadAnalytics]);
 
-  const handleDragEnd = useCallback(() => {
-    if (dragSlotId && dropSlotId && dragSlotId !== dropSlotId) {
-      const fromIndex = sortedSlots.findIndex(s => s.id === dragSlotId);
-      const toIndex = sortedSlots.findIndex(s => s.id === dropSlotId);
-      if (fromIndex !== -1 && toIndex !== -1) {
-        reorderWidgets(fromIndex, toIndex);
-      }
-    }
-    setDragSlotId(null);
-    setDropSlotId(null);
-  }, [dragSlotId, dropSlotId, sortedSlots, reorderWidgets]);
+  // ── Derived values ────────────────────────────────────────────────────────
 
-  // Mouseup on window ends drag even if cursor leaves a card
-  const handleWindowMouseUp = useCallback(() => {
-    if (dragSlotId) handleDragEnd();
-  }, [dragSlotId, handleDragEnd]);
+  const realAgents = useMemo(() => agents.filter(a => !PHANTOM.has(a.id)), [agents]);
+  const sortedAgents = useMemo(() => [...realAgents].sort((a, b) => {
+    const score = (ag: Agent) => ag.status === 'active' || ag.status === 'busy' ? 2 : ag.lastActivity ? 1 : 0;
+    return score(b) - score(a);
+  }), [realAgents]);
 
-  useEffect(() => {
-    window.addEventListener('mouseup', handleWindowMouseUp);
-    return () => window.removeEventListener('mouseup', handleWindowMouseUp);
-  }, [handleWindowMouseUp]);
+  const activeSessionKeys = useMemo(() =>
+    new Set(gatewaySessions.filter(s => s.isActive).map(s => s.key)), [gatewaySessions]);
 
-  // Render widget content by widgetId
-  const renderWidgetContent = useCallback((slot: DashboardWidgetSlot) => {
-    switch (slot.widgetId) {
-      case 'task-stats':
-        return (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border">
-            <StatCard label="Active Tasks" value={derived.inProgressTasks.length} icon={Activity}
-              color={derived.inProgressTasks.length > 0 ? 'text-blue-400' : 'text-mission-control-text-dim'}
-              agents={inProgressAgents} sub={derived.doneTodayCount > 0 ? `${derived.doneTodayCount} done today` : undefined}
-              onClick={() => onNavigate?.('kanban')} />
-            <StatCard label="Awaiting Review" value={derived.reviewTasks.length} icon={Eye}
-              color={derived.reviewTasks.length > 0 ? 'text-violet-400' : 'text-mission-control-text-dim'}
-              onClick={() => onNavigate?.('kanban')} />
-            <StatCard label="Pre-Review Queue" value={derived.internalReviewTasks.length} icon={UserCheck}
-              color={derived.internalReviewTasks.length > 0 ? 'text-cyan-400' : 'text-mission-control-text-dim'}
-              onClick={() => onNavigate?.('kanban')} />
-            <StatCard label="Human Attention" value={derived.humanReviewTasks.length} icon={AlertTriangle}
-              color={derived.humanReviewTasks.length > 0 ? 'text-amber-400' : 'text-mission-control-text-dim'}
-              highlight={derived.humanReviewTasks.length > 0} pulse={derived.humanReviewTasks.length > 0}
-              onClick={() => onNavigate?.('kanban')} />
-          </div>
-        );
-      case 'agent-activity':
-      case 'recent-activity':
-        return (
-          <ActivityFeed
-            inProgressTasks={derived.inProgressTasks}
-            agentMap={agentMap}
-            activities={recentActivities}
-            allTasks={tasks}
-            onNavigate={onNavigate}
-            onAgentClick={setSelectedAgentId}
-          />
-        );
-      case 'approval-queue':
-        return (
-          <ApprovalsQueue
-            approvals={approvals}
-            onApprove={approveItem}
-            onReject={rejectItem}
-            onNavigate={onNavigate}
-          />
-        );
-      case 'token-usage':
-      case 'system-health':
-        return <SystemHealth gatewaySessions={gatewaySessions} connected={connected} />;
-      case 'kanban-mini':
-        return <TaskThroughputChart tasks={tasks} />;
-      case 'schedule-upcoming':
-        return <TodaySchedule onNavigate={onNavigate} />;
-      case 'inbox-count':
-        return (
-          <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border p-6 flex flex-col items-center justify-center min-h-[120px] gap-2">
-            <Inbox size={24} className="text-mission-control-text-dim" />
-            <button
-              onClick={() => onNavigate?.('inbox')}
-              className="text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors font-medium"
-            >
-              Open Inbox
-            </button>
-          </div>
-        );
-      case 'campaign-status':
-        return (
-          <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border p-6 flex flex-col items-center justify-center min-h-[120px] gap-2">
-            <BarChart2 size={24} className="text-mission-control-text-dim" />
-            <button
-              onClick={() => onNavigate?.('analytics')}
-              className="text-xs text-mission-control-accent hover:text-mission-control-accent-dim transition-colors font-medium"
-            >
-              View Campaigns
-            </button>
-          </div>
-        );
-      case 'velocity':
-        return <VelocityMetric velocity={velocity} loading={analyticsLoading} />;
-      case 'agent-productivity':
-        return (
-          <AgentProductivitySummary
-            agentProductivity={agentProductivity}
-            agentMap={agentMap}
-            loading={analyticsLoading}
-          />
-        );
-      default: {
-        const def = getWidgetDefinition(slot.widgetId);
-        return (
-          <div className="bg-mission-control-surface/80 backdrop-blur-xl rounded-2xl border border-mission-control-border p-6 flex flex-col items-center justify-center min-h-[120px] gap-2">
-            <LayoutGrid size={24} className="text-mission-control-text-dim" />
-            <p className="text-xs text-mission-control-text-dim">{def?.title ?? slot.widgetId}</p>
-          </div>
-        );
-      }
-    }
-  }, [
-    derived, inProgressAgents, agentMap, recentActivities, tasks, approvals,
-    gatewaySessions, connected, velocity, analyticsLoading, agentProductivity,
-    approveItem, rejectItem, onNavigate,
-  ]);
+  const pendingApprovals = useMemo(() => approvals.filter(a => a.status === 'pending'), [approvals]);
+  const inProgressTasks = useMemo(() => tasks.filter(t => t.status === 'in-progress'), [tasks]);
+  const reviewTasks = useMemo(() => tasks.filter(t => t.status === 'review' || t.status === 'human-review'), [tasks]);
+  const p0Tasks = useMemo(() => tasks.filter(t => t.priority === 'p0' && t.status !== 'done'), [tasks]);
+
+  const completedToday = useMemo(() =>
+    tasks.filter(t => t.status === 'done' && new Date(t.updatedAt).toDateString() === new Date().toDateString()).length,
+  [tasks]);
+
+  const activeAgents = useMemo(() =>
+    realAgents.filter(a => a.status === 'active' || a.status === 'busy').length, [realAgents]);
+
+  // KPI: task completions sparkline (7d)
+  const taskSpark: DailyPoint[] = useMemo(() =>
+    (taskStats?.completions ?? []).slice(-7).map(d => ({
+      date: d.date, label: dayLabel(d.date), value: d.tasks_completed,
+    })), [taskStats]);
+
+  const tasksDoneToday = taskSpark[taskSpark.length - 1]?.value ?? 0;
+  const tasksDoneYesterday = taskSpark[taskSpark.length - 2]?.value ?? 0;
+
+  // KPI: X reach
+  const xImpressionsTotal = useMemo(() =>
+    (xData?.tweets ?? []).slice(0, 10).reduce((s, t) => s + (t.public_metrics?.impression_count ?? 0), 0),
+  [xData]);
+
+  const xLikesTotal = useMemo(() =>
+    (xData?.tweets ?? []).slice(0, 10).reduce((s, t) => s + (t.public_metrics?.like_count ?? 0), 0),
+  [xData]);
+
+  // KPI: sessions
+  const totalSessions = gatewaySessions.length;
+  const activeSessions = gatewaySessions.filter(s => s.isActive).length;
+
+  const attentionCount = pendingApprovals.length + p0Tasks.length;
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full overflow-auto bg-gradient-to-b from-mission-control-bg to-mission-control-surface">
-      {/* Header */}
-      <HeaderBar
-        connected={connected}
-        onRefresh={handleRefresh}
-        refreshing={refreshing}
-        editMode={editMode}
-        onToggleEdit={() => setEditMode(e => !e)}
-      />
+    <div className="h-full flex flex-col bg-mission-control-bg overflow-hidden">
 
-      {/* Quick Actions (always visible) */}
-      <QuickActionsRow onNavigate={onNavigate} />
-
-      {/* Customizable widget grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 auto-rows-auto gap-4 px-4 sm:px-6 pb-6">
-        {sortedSlots.map(slot => (
-          <WidgetCard
-            key={slot.id}
-            slot={slot}
-            editMode={editMode}
-            isDragging={dragSlotId === slot.id}
-            isDropTarget={dropSlotId === slot.id && dragSlotId !== null && dragSlotId !== slot.id}
-            onDragStart={handleDragStart}
-            onDragEnter={handleDragEnter}
-            onDragEnd={handleDragEnd}
-            onRemove={removeWidget}
-            onResize={resizeWidget}
-          >
-            {renderWidgetContent(slot)}
-          </WidgetCard>
-        ))}
-
-        {/* Add widget button — visible in edit mode */}
-        {editMode && (
-          <div className="col-span-1 sm:col-span-4 flex justify-center pt-2 pb-4">
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-mission-control-surface border border-dashed border-mission-control-accent/40 text-mission-control-accent text-sm font-medium hover:border-mission-control-accent hover:bg-mission-control-accent/5 transition-all"
-            >
-              <Plus size={16} />
-              Add Widget
+      {/* ── HEADER ─────────────────────────────────────────────────────── */}
+      <div className="flex-shrink-0 flex items-center justify-between px-6 h-[52px] border-b border-mission-control-border bg-mission-control-surface/80">
+        <div className="flex items-center gap-3">
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? 'bg-success' : 'bg-error animate-pulse'}`} />
+          <span className="text-sm font-semibold text-mission-control-text">{greeting()}, Kevin</span>
+          <span className="text-sm text-mission-control-text-dim hidden sm:inline">
+            · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {attentionCount > 0 && (
+            <button type="button" onClick={() => onNavigate?.('approvals')}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-warning-border bg-warning-subtle text-warning hover:bg-warning-subtle transition-colors">
+              <Zap size={11} />
+              {attentionCount} need{attentionCount === 1 ? 's' : ''} action
             </button>
-          </div>
-        )}
+          )}
+          <button type="button" onClick={onShowBrief}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-mission-control-accent/10 text-mission-control-accent hover:bg-mission-control-accent/20 transition-colors border border-mission-control-accent/20">
+            <Sparkles size={11} />
+            Daily Brief
+          </button>
+        </div>
       </div>
 
-      {/* Add widget modal */}
-      {showAddModal && (
-        <AddWidgetModal
-          existingWidgetIds={existingWidgetIds}
-          onAdd={(widgetId) => {
-            const def = getWidgetDefinition(widgetId);
-            addWidget(widgetId, def?.defaultSize ?? 'md');
-            setShowAddModal(false);
-          }}
-          onClose={() => setShowAddModal(false)}
-        />
-      )}
+      {/* ── BODY ───────────────────────────────────────────────────────── */}
+      <div className="flex-1 min-h-0 flex overflow-hidden">
 
-      {/* Agent detail modal */}
-      {selectedAgentId && (
-        <AgentDetailModal
-          agentId={selectedAgentId}
-          onClose={() => setSelectedAgentId(null)}
-        />
-      )}
+        {/* ── LEFT: KPIs + Charts + Agents ─────────────────────────────── */}
+        <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+
+          {/* KPI cards */}
+          <div className="flex-shrink-0 grid grid-cols-4 gap-3 p-4 pb-2">
+            <KPICard
+              label="Tasks done today"
+              value={analyticsLoading ? '—' : String(tasksDoneToday)}
+              sub={completedToday > 0 ? `+${completedToday} this session` : undefined}
+              curr={tasksDoneToday} prev={tasksDoneYesterday}
+              sparkData={taskSpark}
+              sparkColor={CHART_COLORS.accent}
+              loading={analyticsLoading}
+              gradId="grad-tasks"
+              icon={<CheckCircle size={13} />}
+              onClick={() => onNavigate?.('kanban')}
+            />
+            <KPICard
+              label="Active agents"
+              value={String(activeAgents)}
+              sub={`of ${realAgents.length} total`}
+              curr={activeAgents} prev={Math.max(0, activeAgents - 1)}
+              sparkData={agentChartData.map((d, i) => ({
+                date: String(i), label: d.label as string,
+                value: agentKeys.reduce((s, k) => s + ((d[k] as number) || 0), 0),
+              }))}
+              sparkColor={CHART_COLORS.violet}
+              loading={analyticsLoading}
+              gradId="grad-agents"
+              icon={<Bot size={13} />}
+              onClick={() => onNavigate?.('agents')}
+            />
+            <KPICard
+              label="Sessions active"
+              value={String(activeSessions)}
+              sub={`${totalSessions} total`}
+              curr={activeSessions} prev={Math.max(0, activeSessions - 2)}
+              sparkColor={CHART_COLORS.blue}
+              loading={false}
+              gradId="grad-sessions"
+              icon={<MessageSquare size={13} />}
+            />
+            <KPICard
+              label="X impressions (recent)"
+              value={analyticsLoading ? '—' : fmt(xImpressionsTotal)}
+              sub={xLikesTotal > 0 ? `${fmt(xLikesTotal)} likes` : undefined}
+              curr={xImpressionsTotal} prev={Math.round(xImpressionsTotal * 0.85)}
+              sparkColor={CHART_COLORS.sky}
+              loading={analyticsLoading}
+              gradId="grad-x"
+              icon={<BarChart2 size={13} />}
+              onClick={() => onNavigate?.('twitter')}
+            />
+          </div>
+
+          {/* Charts */}
+          <div className="flex-1 min-h-0 grid grid-cols-2 gap-3 px-4 pb-2 overflow-hidden">
+
+            {/* Agent activity */}
+            <div className="flex flex-col bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+              <SectionHead label="Agent activity — 7 days" action="Analytics" onAction={() => onNavigate?.('analytics')} />
+              <div className="flex-1 min-h-0 p-3">
+                {analyticsLoading || agentChartData.length === 0 ? (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-32 h-2 rounded bg-mission-control-border/40 animate-pulse" />
+                      <div className="w-24 h-2 rounded bg-mission-control-border/30 animate-pulse" />
+                    </div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={agentChartData} margin={CHART_MARGIN}>
+                      <defs>
+                        {agentKeys.map((id, i) => {
+                          const c = CHART_COLORS[Object.keys(CHART_COLORS)[i % 12] as keyof typeof CHART_COLORS];
+                          const g = areaGradientStops(c);
+                          return (
+                            <linearGradient key={id} id={`ga-${i}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={g.top.color} stopOpacity={g.top.opacity} />
+                              <stop offset="100%" stopColor={g.bottom.color} stopOpacity={g.bottom.opacity} />
+                            </linearGradient>
+                          );
+                        })}
+                      </defs>
+                      <CartesianGrid {...CHART_GRID} />
+                      <XAxis dataKey="label" {...CHART_AXIS} />
+                      <YAxis {...CHART_AXIS} width={22} />
+                      <Tooltip content={<ChartTooltip />} />
+                      {agentKeys.map((id, i) => {
+                        const agName = agents.find(a => a.id === id)?.name ?? id;
+                        const c = CHART_COLORS[Object.keys(CHART_COLORS)[i % 12] as keyof typeof CHART_COLORS];
+                        return (
+                          <Area
+                            key={id}
+                            dataKey={id}
+                            name={agName}
+                            type="monotone"
+                            stroke={c}
+                            strokeWidth={2}
+                            fill={`url(#ga-${i})`}
+                            fillOpacity={1}
+                            dot={false}
+                            activeDot={{ r: 4, strokeWidth: 0 }}
+                            stackId="agents"
+                          />
+                        );
+                      })}
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </div>
+
+            {/* X Social chart */}
+            <div className="flex flex-col bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+              <SectionHead label="X / Social — recent posts" action="X" onAction={() => onNavigate?.('twitter')} />
+              <div className="flex-1 min-h-0 p-3">
+                {analyticsLoading || xChartData.length === 0 ? (
+                  <div className="h-full flex items-center justify-center">
+                    {analyticsLoading ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-32 h-2 rounded bg-mission-control-border/40 animate-pulse" />
+                        <div className="w-24 h-2 rounded bg-mission-control-border/30 animate-pulse" />
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <BarChart2 size={24} className="mx-auto text-mission-control-border mb-2" />
+                        <p className="text-xs text-mission-control-text-dim">No X data — connect your account in Settings</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={xChartData} margin={CHART_MARGIN} barSize={8} barGap={2}>
+                      <defs>
+                        <linearGradient id="gr-impr" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={CHART_COLORS.sky} stopOpacity={0.9} />
+                          <stop offset="100%" stopColor={CHART_COLORS.sky} stopOpacity={0.4} />
+                        </linearGradient>
+                        <linearGradient id="gr-likes" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={CHART_COLORS.rose} stopOpacity={0.9} />
+                          <stop offset="100%" stopColor={CHART_COLORS.rose} stopOpacity={0.4} />
+                        </linearGradient>
+                        <linearGradient id="gr-rt" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={CHART_COLORS.accent} stopOpacity={0.9} />
+                          <stop offset="100%" stopColor={CHART_COLORS.accent} stopOpacity={0.4} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid {...CHART_GRID} />
+                      <XAxis dataKey="label" {...CHART_AXIS} />
+                      <YAxis {...CHART_AXIS} width={30} tickFormatter={fmt} />
+                      <Tooltip content={<ChartTooltip />} />
+                      <Bar dataKey="impressions" name="Impressions" fill="url(#gr-impr)" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="likes" name="Likes" fill="url(#gr-likes)" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="retweets" name="Retweets" fill="url(#gr-rt)" radius={[3, 3, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+              {/* X metrics footer */}
+              {xData && !analyticsLoading && (
+                <div className="flex items-center gap-4 px-4 py-2 border-t border-mission-control-border/50">
+                  <span className="text-[11px] text-mission-control-text-dim">
+                    <span className="font-semibold text-mission-control-text">{fmt(xData.profile?.public_metrics?.followers_count ?? 0)}</span> followers
+                  </span>
+                  <span className="text-[11px] text-mission-control-text-dim">
+                    <span className="font-semibold text-mission-control-text">{fmt(xImpressionsTotal)}</span> impressions
+                  </span>
+                  <span className="text-[11px] text-mission-control-text-dim">
+                    <span className="font-semibold text-mission-control-text">{fmt(xLikesTotal)}</span> likes
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Agent strip */}
+          <div className="flex-shrink-0 border-t border-mission-control-border bg-mission-control-surface/50">
+            <div className="flex items-stretch overflow-x-auto">
+              <div className="flex-shrink-0 flex items-center px-4 border-r border-mission-control-border">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim whitespace-nowrap">Agents</span>
+              </div>
+              {sortedAgents.length === 0 ? (
+                <div className="px-4 py-3 text-xs text-mission-control-text-dim">No agents configured</div>
+              ) : (
+                sortedAgents.map(agent => {
+                  const isActive = agent.status === 'active' || agent.status === 'busy';
+                  const hasSession = !!agent.sessionKey && activeSessionKeys.has(agent.sessionKey);
+                  const dotColor = isActive ? 'bg-success' : hasSession ? 'bg-info' : 'bg-mission-control-border';
+                  return (
+                    <button
+                      key={agent.id}
+                      type="button"
+                      onClick={() => onNavigate?.('agents')}
+                      className="flex items-center gap-2.5 px-4 py-3 border-r border-mission-control-border/50 hover:bg-mission-control-bg transition-colors flex-shrink-0 group"
+                    >
+                      <div className="relative flex-shrink-0">
+                        <AgentAvatar agentId={agent.id} agentName={agent.name} size="xs" />
+                        <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-mission-control-surface ${dotColor} ${isActive ? 'animate-pulse' : ''}`} />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs font-medium text-mission-control-text leading-tight whitespace-nowrap">{agent.name}</p>
+                        <p className="text-[10px] text-mission-control-text-dim leading-tight whitespace-nowrap">
+                          {isActive ? 'Active' : agent.lastActivity ? formatTimeAgo(agent.lastActivity) : 'Idle'}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+        </div>
+
+        {/* ── RIGHT: Queue + Schedule ───────────────────────────────────── */}
+        <div className="w-[300px] flex-shrink-0 flex flex-col border-l border-mission-control-border overflow-hidden bg-mission-control-surface">
+
+          {/* Work queue */}
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <SectionHead label="Needs action" count={attentionCount} onAction={() => onNavigate?.('approvals')} />
+            {pendingApprovals.length > 0 || p0Tasks.length > 0 ? (
+              <div className="overflow-y-auto">
+                {pendingApprovals.map(a => <ApprovalRow key={a.id} item={a} onClick={() => onNavigate?.('approvals')} />)}
+                {p0Tasks.map(t => <TaskRow key={t.id} task={t} onClick={() => onNavigate?.('kanban')} />)}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 text-center px-4">
+                <CheckCircle size={20} className="text-success mb-1.5" />
+                <p className="text-xs text-mission-control-text-dim">All clear</p>
+              </div>
+            )}
+
+            <SectionHead
+              label="In progress"
+              count={inProgressTasks.length}
+              onAction={() => onNavigate?.('kanban')}
+            />
+            <div className="flex-1 overflow-y-auto">
+              {inProgressTasks.length === 0 ? (
+                <div className="px-4 py-5 text-center">
+                  <p className="text-xs text-mission-control-text-dim">Nothing running</p>
+                </div>
+              ) : (
+                inProgressTasks.slice(0, 8).map(t => (
+                  <TaskRow key={t.id} task={t} onClick={() => onNavigate?.('kanban')} />
+                ))
+              )}
+              {reviewTasks.length > 0 && (
+                <>
+                  <SectionHead label="Review" count={reviewTasks.length} onAction={() => onNavigate?.('kanban')} />
+                  {reviewTasks.slice(0, 4).map(t => (
+                    <TaskRow key={t.id} task={t} onClick={() => onNavigate?.('kanban')} />
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Today — schedule + activity */}
+          <div className="flex-shrink-0 border-t border-mission-control-border max-h-[260px] overflow-hidden flex flex-col">
+            <SectionHead label="Today" onAction={() => onNavigate?.('schedule')} action="Schedule" />
+            <div className="overflow-y-auto">
+              {calEvents.length === 0 ? (
+                <div className="px-4 py-3 flex items-center gap-2 text-xs text-mission-control-text-dim">
+                  <Calendar size={13} />
+                  No events today
+                </div>
+              ) : (
+                calEvents.map(ev => (
+                  <div key={ev.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-mission-control-border/30 last:border-0">
+                    <span className="text-[11px] tabular-nums text-mission-control-text-dim w-11 flex-shrink-0 text-right">
+                      {new Date(ev.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                    </span>
+                    <span className="w-0.5 h-4 rounded-full flex-shrink-0" style={{ background: CHART_COLORS.violet }} />
+                    <p className="text-sm text-mission-control-text truncate">{ev.title}</p>
+                  </div>
+                ))
+              )}
+              {/* Recent activity - last 4 */}
+              {activities.slice(0, 4).map(item => (
+                <div key={item.id} className="flex items-start gap-2.5 px-4 py-2">
+                  <Activity size={11} className="mt-0.5 flex-shrink-0 text-mission-control-text-dim/50" />
+                  <p className="text-[11px] text-mission-control-text-dim leading-snug truncate flex-1">{item.message}</p>
+                  <span className="text-[10px] text-mission-control-text-dim/40 flex-shrink-0">{formatTimeAgo(item.timestamp)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }

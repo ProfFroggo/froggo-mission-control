@@ -17,7 +17,6 @@ tools:
   - Glob
   - Grep
   - Bash
-  - Agent
   - WebFetch
   - WebSearch
   - TodoRead

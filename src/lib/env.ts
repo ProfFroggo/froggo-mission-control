@@ -153,7 +153,8 @@ export const ENV = {
 // path to use without re-checking the filesystem on every request.
 export const searchBackend: 'qmd' | 'ripgrep' | 'none' = resolveSearchBackend(ENV.QMD_BIN);
 
-// Model pricing (USD per million tokens) — update when Anthropic changes pricing
+// UPDATE ANNUALLY — check Anthropic pricing page for current rates
+// Model pricing (USD per million tokens)
 export const MODEL_PRICING: Record<string, { input: number; output: number }> = {
   'claude-opus-4-6':           { input: 15.00, output: 75.00 },
   'claude-sonnet-4-6':         { input: 3.00,  output: 15.00 },

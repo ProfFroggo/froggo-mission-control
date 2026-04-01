@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, Filter, Star, Mail, Paperclip, X, Save, Reply, MessageCircle, Gamepad2, Send as SendPlane, AlertTriangle } from 'lucide-react';
 import { showToast } from './Toast';
+import { Button, Flex, TextField, Box } from '@radix-ui/themes';
 
 export interface FilterCriteria {
   search?: string;
@@ -215,35 +216,41 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
   const hasActiveFilters = searchInput || quickFilterInput || platforms.length > 0 || Object.keys(flags).length > 0;
 
   return (
-    <div className="bg-mission-control-surface border-b border-mission-control-border">
+    <Box className="bg-mission-control-surface border-b border-mission-control-border">
       {/* Main Filter Bar */}
       <div className="p-3 space-y-3">
         {/* Search Row */}
-        <div className="flex gap-2">
+        <Flex gap="2">
           {/* Semantic Search */}
           <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
+            <TextField.Root
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Semantic search across all messages..."
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
-            />
+              size="2"
+              className="flex-1"
+            >
+              <TextField.Slot>
+                <Search size={14} className="text-mission-control-text-dim" />
+              </TextField.Slot>
+            </TextField.Root>
           </div>
 
           {/* Quick Filter with Help */}
           <div className="flex-1 relative">
-            <Filter size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
+            <TextField.Root
               value={quickFilterInput}
               onChange={(e) => setQuickFilterInput(e.target.value)}
               onFocus={() => setShowQuickHelp(true)}
               onBlur={() => setTimeout(() => setShowQuickHelp(false), 200)}
               placeholder="Quick filter (is:unread, from:sender, has:attachment)"
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
-            />
+              size="2"
+              className="flex-1"
+            >
+              <TextField.Slot>
+                <Filter size={14} className="text-mission-control-text-dim" />
+              </TextField.Slot>
+            </TextField.Root>
             {showQuickHelp && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-mission-control-bg border border-mission-control-border rounded-lg p-2 text-xs z-10 shadow-lg">
                 <div className="font-semibold mb-1">Quick Filter Syntax:</div>
@@ -267,52 +274,62 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
 
           {/* Actions */}
           <button
+            type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className={`px-3 py-2 rounded-lg text-sm flex items-center gap-2 ${
-              showAdvanced ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+              showAdvanced
+                ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             <Filter size={14} />
             Advanced
           </button>
 
-          <button
+          <Button
+            variant="soft"
+            color="gray"
+            size="2"
             onClick={() => setShowSavedFilters(!showSavedFilters)}
-            className="px-3 py-2 bg-mission-control-border rounded-lg text-sm flex items-center gap-2 text-mission-control-text-dim hover:text-mission-control-text relative"
           >
             <Star size={14} />
             Saved ({savedFilters.length})
-          </button>
+          </Button>
 
           {hasActiveFilters && (
-            <button
+            <Button
+              variant="soft"
+              color="red"
+              size="2"
               onClick={clearFilters}
-              className="px-3 py-2 bg-error-subtle text-error rounded-lg text-sm flex items-center gap-2 hover:bg-error-subtle"
             >
               <X size={14} />
               Clear
-            </button>
+            </Button>
           )}
-        </div>
+        </Flex>
 
         {/* Results Count */}
-        <div className="flex items-center justify-between text-xs text-mission-control-text-dim">
+        <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim">
           <span>
             Showing {filteredCount} of {totalMessages} messages
             {hasActiveFilters && <span className="text-mission-control-accent ml-1">(filtered)</span>}
           </span>
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <span>Logic:</span>
             <button
+              type="button"
               onClick={() => setLogicMode(logicMode === 'AND' ? 'OR' : 'AND')}
-              className={`px-2 py-0.5 rounded text-xs font-mono ${
-                logicMode === 'AND' ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border'
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium font-mono border transition-colors ${
+                logicMode === 'AND'
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               {logicMode}
             </button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
       </div>
 
       {/* Advanced Filters */}
@@ -320,16 +337,17 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
         <div className="px-3 pb-3 space-y-3 border-t border-mission-control-border pt-3">
           {/* Platform Filters */}
           <div>
-            <div className="text-xs font-semibold mb-2 text-mission-control-text-dim">Platforms</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider mb-2 text-mission-control-text-dim">Platforms</div>
             <div className="flex gap-2 flex-wrap">
               {PLATFORM_OPTIONS.map(platform => (
                 <button
                   key={platform.id}
+                  type="button"
                   onClick={() => togglePlatform(platform.id)}
-                  className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 transition-all ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
                     platforms.includes(platform.id)
-                      ? 'bg-mission-control-accent text-white'
-                      : 'bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                      ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                      : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                   }`}
                 >
                   <span>{platform.icon}</span>
@@ -341,44 +359,59 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
 
           {/* Flag Filters */}
           <div>
-            <div className="text-xs font-semibold mb-2 text-mission-control-text-dim">Flags</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider mb-2 text-mission-control-text-dim">Flags</div>
             <div className="flex gap-2 flex-wrap">
               <button
+                type="button"
                 onClick={() => toggleFlag('unread')}
-                className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  flags.unread ? 'bg-info-subtle text-info' : 'bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim'
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  flags.unread
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 <Mail size={14} /> Unread
               </button>
               <button
+                type="button"
                 onClick={() => toggleFlag('unreplied')}
-                className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  flags.unreplied ? 'bg-warning-subtle text-warning' : 'bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim'
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  flags.unreplied
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 <Reply size={14} /> Awaiting Reply
               </button>
               <button
+                type="button"
                 onClick={() => toggleFlag('starred')}
-                className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  flags.starred ? 'bg-warning-subtle text-warning' : 'bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim'
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  flags.starred
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 <Star size={14} /> Starred
               </button>
               <button
+                type="button"
                 onClick={() => toggleFlag('hasAttachment')}
-                className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  flags.hasAttachment ? 'bg-success-subtle text-success' : 'bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim'
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  flags.hasAttachment
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 <Paperclip size={14} /> Has Attachment
               </button>
               <button
+                type="button"
                 onClick={() => toggleFlag('urgent')}
-                className={`px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 ${
-                  flags.urgent ? 'bg-error-subtle text-error' : 'bg-mission-control-bg border border-mission-control-border text-mission-control-text-dim'
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  flags.urgent
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 <AlertTriangle size={14} /> Urgent
@@ -387,34 +420,35 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
           </div>
 
           {/* Save Filter */}
-          <div className="flex gap-2 items-center pt-2 border-t border-mission-control-border">
-            <input
-              type="text"
+          <Flex gap="2" align="center" className="pt-2 border-t border-mission-control-border">
+            <TextField.Root
               value={filterName}
               onChange={(e) => setFilterName(e.target.value)}
               placeholder="Filter name..."
-              className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
+              className="flex-1"
             />
-            <button
+            <Button
+              variant="solid"
+              color="violet"
+              size="2"
               onClick={saveCurrentFilter}
               disabled={!filterName.trim() || !hasActiveFilters}
-              className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={14} /> Save Filter
-            </button>
-          </div>
+            </Button>
+          </Flex>
         </div>
       )}
 
       {/* Saved Filters Dropdown */}
       {showSavedFilters && (
         <div className="px-3 pb-3 border-t border-mission-control-border pt-3">
-          <div className="text-xs font-semibold mb-2 text-mission-control-text-dim">Saved Filters</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider mb-2 text-mission-control-text-dim">Saved Filters</div>
           {savedFilters.length === 0 ? (
-            <div className="flex flex-col items-center justify-center min-h-[200px] text-mission-control-text-dim">
-              <Filter size={32} className="mb-3 opacity-40" />
-              <p className="text-sm font-medium mb-1">No saved filters</p>
-              <p className="text-xs">Save a filter to quickly apply it later</p>
+            <div className="flex flex-col items-center justify-center min-h-[200px] gap-3 text-center px-6 py-8">
+              <Filter size={32} className="text-mission-control-text-dim opacity-40" />
+              <p className="text-sm font-semibold text-mission-control-text">No saved filters</p>
+              <p className="text-xs text-mission-control-text-dim max-w-xs">Save a filter to quickly apply it later</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -424,14 +458,17 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
                   className="bg-mission-control-bg border border-mission-control-border rounded-lg p-2 flex items-center justify-between hover:border-mission-control-accent/50 transition-colors"
                 >
                   <button
+                    type="button"
                     onClick={() => applySavedFilter(filter)}
-                    className="flex-1 text-left text-sm font-medium"
+                    className="flex-1 text-left inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     {filter.name}
                   </button>
                   <button
+                    type="button"
                     onClick={() => deleteSavedFilter(filter.id)}
-                    className="p-1 text-error hover:bg-error-subtle rounded"
+                    aria-label="Delete saved filter"
+                    className="inline-flex items-center justify-center w-6 h-6 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors"
                   >
                     <X size={14} />
                   </button>
@@ -441,6 +478,6 @@ export default function InboxFilter({ onFilterChange, totalMessages, filteredCou
           )}
         </div>
       )}
-    </div>
+    </Box>
   );
 }

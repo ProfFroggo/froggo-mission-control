@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BarChart2, TrendingUp, Eye, Activity, Download, Users, RefreshCw } from 'lucide-react';
+import { Button, Flex } from '@radix-ui/themes';
+import { fetchXAnalytics } from '../hooks/useXAnalytics';
 
 interface AnalyticsSummary {
   followers: number;
@@ -38,11 +40,11 @@ export function XAnalyticsView() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/x/analytics');
-      if (!res.ok) { setSummary(null); setTopContent([]); return; }
-      const data = await res.json();
+      // Use shared fetch with in-flight deduplication + caching
+      const data = await fetchXAnalytics();
+      if (!data.ok) { setSummary(null); setTopContent([]); return; }
       const tweets: any[] = data.tweets ?? [];
-      const metrics = data.profile?.public_metrics ?? {};
+      const metrics = data.profile?.public_metrics ?? {} as Partial<{ followers_count: number; following_count: number; tweet_count: number; like_count: number }>;
       setSummary({
         followers: metrics.followers_count ?? 0,
         following: metrics.following_count ?? 0,
@@ -136,7 +138,7 @@ export function XAnalyticsView() {
       icon: TrendingUp,
       format: (v: number) => `${v.toFixed(2)}%`,
       color: 'text-success',
-      bg: 'bg-success-subtle',
+      bg: 'bg-success/10',
     },
     {
       label: 'Total Impressions',
@@ -144,7 +146,7 @@ export function XAnalyticsView() {
       icon: Eye,
       format: (v: number) => v.toLocaleString(),
       color: 'text-info',
-      bg: 'bg-info-subtle',
+      bg: 'bg-info/10',
     },
     {
       label: 'Total Engagements',
@@ -157,11 +159,11 @@ export function XAnalyticsView() {
   ];
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="overflow-y-auto bg-mission-control-bg">
       <div className="max-w-5xl mx-auto p-6 space-y-6 w-full">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/10 rounded-lg">
               <BarChart2 size={24} className="text-mission-control-accent" />
             </div>
@@ -169,37 +171,39 @@ export function XAnalyticsView() {
               <h1 className="text-xl font-semibold text-mission-control-text">X Analytics</h1>
               <p className="text-sm text-mission-control-text-dim">Performance overview for your social media account</p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <button
               onClick={loadData}
-              className="p-2 rounded-lg border border-mission-control-border hover:bg-mission-control-surface transition-colors text-mission-control-text-dim hover:text-mission-control-text"
               title="Refresh data"
+              aria-label="Refresh data"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <RefreshCw size={16} />
             </button>
-            <button
+            <Button
               onClick={handleDownloadReport}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors text-sm font-medium"
+              size="2"
+              variant="solid"
             >
               <Download size={16} />
               Download Report
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Flex>
+        </Flex>
 
         {loading ? (
-          <div className="flex items-center justify-center py-16">
+          <Flex align="center" justify="center" className="py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-mission-control-accent" />
-          </div>
+          </Flex>
         ) : (
           <>
             {/* Estimated data banner */}
             {summary?.estimated && (
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-warning/10 border border-warning/20 rounded-lg text-warning text-sm">
+              <Flex align="center" gap="2" className="px-4 py-2.5 bg-warning/10 border border-warning/20 rounded-lg text-warning text-sm">
                 <Activity size={16} />
                 <span>Showing estimated metrics. Connect X API for real-time data.</span>
-              </div>
+              </Flex>
             )}
 
             {/* Stat Cards */}
@@ -238,7 +242,7 @@ export function XAnalyticsView() {
                   </div>
                 ) : (
                   topContent.map((post) => (
-                    <div key={post.id} className="p-4 flex items-start gap-3">
+                    <Flex key={post.id} align="start" gap="3" className="p-4">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-mission-control-text line-clamp-2">
                           {post.content.slice(0, 120)}{post.content.length > 120 ? '...' : ''}
@@ -249,12 +253,12 @@ export function XAnalyticsView() {
                       </div>
                       <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
                         post.status === 'posted'
-                          ? 'bg-success-subtle text-success'
-                          : 'bg-info-subtle text-info'
+                          ? 'bg-success/10 text-success'
+                          : 'bg-info/10 text-info'
                       }`}>
                         {post.status}
                       </span>
-                    </div>
+                    </Flex>
                   ))
                 )}
               </div>
@@ -300,7 +304,7 @@ export function XAnalyticsView() {
           </>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }
 

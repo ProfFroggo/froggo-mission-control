@@ -1,9 +1,9 @@
-// Sync knowledge articles to ~/mission-control/memory/knowledge/{category}/
+// Sync knowledge articles to {VAULT_PATH}/knowledge/{category}/
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
+import { ENV } from './env';
 
-const KNOWLEDGE_DIR = path.join(os.homedir(), 'mission-control', 'memory', 'knowledge');
+const KNOWLEDGE_DIR = path.join(ENV.VAULT_PATH, 'knowledge');
 
 function sanitizeFilename(name: string): string {
   return name

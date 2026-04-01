@@ -24,7 +24,7 @@ import {
   Settings,
   BarChart2,
   FolderOpen,
-  Twitter,
+  Twitter as XIcon,
   BookOpen,
   MessageSquare,
   Users,
@@ -38,11 +38,11 @@ import {
   Layout,
   Star,
   Layers,
-  Search,
   ShieldCheck,
-  Loader2,
   Bot,
 } from 'lucide-react';
+import { Button, Flex, IconButton, Spinner } from '@radix-ui/themes';
+import SearchInput from './SearchInput';
 import { Skeleton } from './LoadingStates';
 import AgentInstallModal from './AgentInstallModal';
 import { marketplaceApi } from '../lib/api';
@@ -56,7 +56,7 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   Settings,
   BarChart2,
   FolderOpen,
-  Twitter,
+  Twitter: XIcon,
   BookOpen,
   MessageSquare,
   Puzzle,
@@ -125,19 +125,19 @@ interface UpdateInfo {
 function MarketplaceCardSkeleton() {
   return (
     <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4 space-y-3">
-      <div className="flex items-start gap-3">
+      <Flex align="start" gap="3">
         <Skeleton width="w-10" height="h-10" rounded="lg" />
         <div className="flex-1 space-y-1.5">
           <Skeleton width="w-28" height="h-4" />
           <Skeleton width="w-20" height="h-3" />
         </div>
-      </div>
+      </Flex>
       <Skeleton width="w-full" height="h-3" />
       <Skeleton width="w-4/5" height="h-3" />
-      <div className="flex items-center gap-2 pt-1">
+      <Flex align="center" gap="2" className="pt-1">
         <Skeleton width="w-16" height="h-5" rounded="full" />
         <Skeleton width="w-24" height="h-7" rounded="lg" />
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -192,31 +192,42 @@ function ModuleCard({
   const IconComponent = resolveIcon(mod.icon);
 
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4 transition-all hover:border-mission-control-text-dim/30 flex flex-col gap-3">
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">
-          <IconComponent size={20} className="text-mission-control-accent" />
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden transition-colors hover:border-[var(--mission-control-accent)]/30 flex flex-col">
+      {/* Icon area */}
+      <div className="bg-mission-control-border/20 px-4 pt-4 pb-3 flex items-center justify-between">
+        <div className="w-10 h-10 rounded-lg bg-mission-control-border/20 flex items-center justify-center flex-shrink-0">
+          <IconComponent size={18} className="text-mission-control-text-dim" />
         </div>
+        {installed && !hasUpdate && (
+          <span className="flex items-center gap-1 text-[10px] font-medium text-success bg-success/10 px-2 py-0.5 rounded-full border border-success/20">
+            <CheckCircle size={10} />
+            {builtin ? 'Built-in' : 'Installed'}
+          </span>
+        )}
+        {hasUpdate && (
+          <span className="text-[10px] bg-warning/10 text-warning border border-warning/30 px-2 py-0.5 rounded-full font-medium">
+            Update available
+          </span>
+        )}
+      </div>
+      {/* Content */}
+      <div className="p-4 flex flex-col gap-3 flex-1">
+      {/* Header */}
+      <div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
             <span className="font-semibold text-mission-control-text text-sm">{mod.name}</span>
             {mod.agent && (
-              <span className="inline-flex items-center gap-0.5 text-xs bg-mission-control-accent/15 text-mission-control-accent px-1.5 py-0.5 rounded font-medium">
-                <Bot size={10} />
+              <span className="inline-flex items-center gap-0.5 text-[10px] bg-mission-control-accent/15 text-mission-control-accent px-1.5 py-0.5 rounded font-medium">
+                <Bot size={9} />
                 Agent
               </span>
             )}
             {mod.verified && (
-              <ShieldCheck size={13} className="text-blue-400 flex-shrink-0" aria-label="Verified" />
-            )}
-            {hasUpdate && (
-              <span className="text-xs bg-amber-500/15 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded-full font-medium">
-                Update available
-              </span>
+              <ShieldCheck size={12} className="text-info flex-shrink-0" aria-label="Verified" />
             )}
           </div>
-          <span className="text-xs text-mission-control-text-dim">
+          <span className="text-xs text-mission-control-text-dim/70">
             v{mod.version}
             {mod.author && ` · ${mod.author}`}
           </span>
@@ -225,79 +236,83 @@ function ModuleCard({
 
       {/* Description */}
       {mod.description && (
-        <p className="text-sm text-mission-control-text-dim line-clamp-2 leading-relaxed">
+        <p className="text-xs text-mission-control-text-dim/80 line-clamp-2 leading-relaxed">
           {mod.description}
         </p>
       )}
 
       {/* Footer: category + downloads + actions */}
-      <div className="mt-auto flex items-center gap-2 flex-wrap">
-        <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-border/60 text-mission-control-text-dim capitalize">
+      <div className="mt-auto flex items-center gap-2 flex-wrap pt-1">
+        <span className="text-[10px] uppercase font-bold tracking-wider bg-mission-control-border/40 rounded-full px-2 py-0.5 text-mission-control-text-dim/70 capitalize">
           {mod.category}
         </span>
         {mod.downloads > 0 && (
-          <span className="text-xs text-mission-control-text-dim">
+          <span className="text-[10px] text-mission-control-text-dim/70">
             {mod.downloads.toLocaleString()} installs
           </span>
         )}
 
         {/* Action buttons */}
-        <div className="ml-auto flex items-center gap-2">
+        <Flex align="center" gap="2" className="ml-auto">
           {isInstalling ? (
             <span className="flex items-center gap-1.5 text-xs text-mission-control-text-dim px-3 py-1.5">
-              <Loader2 size={13} className="animate-spin" />
+              <Spinner size="1" />
               Installing…
             </span>
           ) : !installed ? (
-            <button
+            <Button
               type="button"
               onClick={() => onInstall(mod)}
-              className="flex items-center gap-1.5 text-xs font-medium bg-success/90 hover:bg-success text-white px-3 py-1.5 rounded-lg transition-colors"
+              variant="solid"
+              size="1"
             >
               <Download size={13} />
               Install
-            </button>
+            </Button>
           ) : hasUpdate ? (
             <>
-              <button
+              <Button
                 type="button"
                 onClick={() => onUpdate(mod)}
-                className="flex items-center gap-1.5 text-xs font-medium bg-warning/90 hover:bg-warning text-white px-3 py-1.5 rounded-lg transition-colors"
+                variant="solid"
+                color="amber"
+                size="1"
               >
                 <RefreshCw size={13} />
                 Update
-              </button>
-              <button
+              </Button>
+              <IconButton
                 type="button"
                 onClick={() => onUninstall(mod.id)}
-                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 px-2 py-1.5 rounded-lg border border-mission-control-border hover:border-red-500/40 transition-colors"
-                title="Uninstall"
+                variant="soft"
+                color="red"
+                size="1"
+                aria-label="Uninstall"
               >
                 <Trash2 size={13} />
-              </button>
+              </IconButton>
             </>
           ) : builtin ? (
-            <span className="flex items-center gap-1.5 text-xs text-mission-control-accent font-medium">
+            <span className="flex items-center gap-1.5 text-xs text-mission-control-accent/70 font-medium">
               <PackageCheck size={13} />
               Built-in
             </span>
           ) : (
             <>
-              <span className="flex items-center gap-1.5 text-xs text-green-400 font-medium">
-                <CheckCircle size={13} />
-                Installed
-              </span>
-              <button
+              <IconButton
                 type="button"
                 onClick={() => onUninstall(mod.id)}
-                className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 px-2 py-1.5 rounded-lg border border-mission-control-border hover:border-red-500/40 transition-colors"
-                title="Uninstall"
+                variant="soft"
+                color="red"
+                size="1"
+                aria-label="Uninstall"
               >
                 <Trash2 size={13} />
-              </button>
+              </IconButton>
             </>
           )}
-        </div>
+        </Flex>
+      </div>
       </div>
     </div>
   );
@@ -448,40 +463,37 @@ export default function MarketplaceBrowse() {
     <div className="h-full overflow-y-auto p-6 space-y-5">
       {/* Restart banner */}
       {restartBanner && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm">
+        <Flex align="center" gap="2" className="px-4 py-2.5 rounded-lg bg-warning/10 border border-warning/30 text-warning text-sm">
           <AlertCircle size={15} className="flex-shrink-0" />
           Please restart Mission Control.app to apply changes.
-        </div>
+        </Flex>
       )}
 
       {/* Error banner */}
       {error && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+        <Flex align="center" gap="2" className="px-4 py-2.5 rounded-lg bg-error border border-error text-error text-sm">
           <AlertCircle size={15} className="flex-shrink-0" />
           {error}
-        </div>
+        </Flex>
       )}
 
       {/* Header */}
       <div>
-        <div className="flex items-center gap-2.5 mb-1">
+        <Flex align="center" gap="3" className="mb-1">
           <Store size={22} className="text-mission-control-accent flex-shrink-0" />
           <h1 className="text-xl font-semibold text-mission-control-text">Marketplace</h1>
-        </div>
+        </Flex>
         <p className="text-mission-control-text-dim text-sm">Browse and install modules to extend your dashboard</p>
       </div>
 
       {/* Search */}
-      <div className="relative">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none" />
-        <input
-          type="text"
-          placeholder="Search modules…"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg pl-9 pr-4 py-2 text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent transition-colors"
-        />
-      </div>
+      <SearchInput
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search modules…"
+        className="w-full"
+        size="md"
+      />
 
       {/* Category filter */}
       {!loading && categories.length > 0 && (

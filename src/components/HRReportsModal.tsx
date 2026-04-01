@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, FileText, Calendar, Download, RefreshCw } from 'lucide-react';
+import { Button, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -97,27 +98,30 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
     if (items.length === 0) return null;
     return (
       <div className="mb-4">
-        <div className="px-4 py-2 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
+        <div className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
           {title}
         </div>
         <div className="px-4 space-y-2">
           {items.map((file) => (
             <button
               key={file.name}
+              type="button"
               onClick={() => loadFileContent(file)}
-              className={`w-full text-left p-3 rounded-lg border transition-all ${
+              className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors ${
                 selectedFile?.name === file.name
-                  ? 'border-mission-control-accent/50 bg-mission-control-accent/10'
-                  : 'border-mission-control-border hover:border-mission-control-border/50 hover:bg-mission-control-bg'
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-transparent text-mission-control-text hover:bg-mission-control-border/30 hover:border-mission-control-border'
               }`}
             >
-              <div className="font-medium text-sm mb-1 line-clamp-1">{file.name}</div>
-              <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
-                <Calendar size={12} />
-                {formatDate(file.modifiedAt)}
-              </div>
-              <div className="text-xs text-mission-control-text-dim mt-1">
-                {formatSize(file.size)}
+              <div className="w-full">
+                <div className="font-medium text-sm mb-1 line-clamp-1">{file.name}</div>
+                <div className="flex items-center gap-2 text-[11px] text-mission-control-text-dim/70">
+                  <Calendar size={11} />
+                  {formatDate(file.modifiedAt)}
+                </div>
+                <div className="text-[11px] text-mission-control-text-dim/70 mt-0.5 tabular-nums">
+                  {formatSize(file.size)}
+                </div>
               </div>
             </button>
           ))}
@@ -127,44 +131,34 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border w-full max-w-6xl h-[80vh] flex flex-col overflow-hidden">
+    <Flex align="center" justify="center" p="4" className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50">
+      <div className="bg-mission-control-surface rounded-2xl shadow-2xl border border-mission-control-border w-full max-w-6xl h-[80vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-mission-control-accent/20 flex items-center justify-center ring-2 ring-mission-control-accent/30">
-              <FileText size={20} className="text-mission-control-accent" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold">HR Reports</h2>
-              <p className="text-sm text-mission-control-text-dim">
-                {files.length} report{files.length !== 1 ? 's' : ''} available
-              </p>
-            </div>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <div>
+            <h2 className="text-base font-semibold text-mission-control-text">HR Reports</h2>
+            <p className="text-xs text-mission-control-text-dim mt-0.5">
+              {files.length} report{files.length !== 1 ? 's' : ''} available
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={loadFiles}
+              type="button"
               disabled={loading}
-              className="p-2 hover:bg-mission-control-bg rounded-lg transition-colors disabled:opacity-50"
               title="Refresh"
+              onClick={loadFiles}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             </button>
             {selectedFile && fileContent && (
-              <button
-                onClick={downloadReport}
-                className="flex items-center gap-2 px-3 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
-              >
+              <Button size="2" variant="solid" onClick={downloadReport}>
                 <Download size={16} />
                 Download
-              </button>
+              </Button>
             )}
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-mission-control-bg rounded-lg transition-colors"
-            >
-              <X size={20} />
+            <button type="button" onClick={onClose} aria-label="Close" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+              <X size={16} />
             </button>
           </div>
         </div>
@@ -208,6 +202,6 @@ export default function HRReportsModal({ onClose }: HRReportsModalProps) {
           </div>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

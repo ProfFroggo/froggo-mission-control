@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
 import { X, Bell, BellOff, BellRing, Pin } from 'lucide-react';
+import { Button, TextField, TextArea } from '@radix-ui/themes';
 import { type ChatRoom } from '../store/chatRoomStore';
 
 export type NotificationSetting = 'all' | 'mentions' | 'muted';
@@ -63,65 +64,72 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl w-full max-w-sm max-h-[90vh] flex flex-col shadow-2xl sm:m-4">
         {/* Header */}
-        <div className="p-4 border-b border-mission-control-border flex items-center justify-between shrink-0">
-          <h3 className="font-semibold text-sm">Room Settings</h3>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <h3 className="text-base font-semibold">Room Settings</h3>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
+            aria-label="Close settings"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={16} />
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1 min-h-0 p-4 space-y-5">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5 min-h-0">
           {/* Name */}
           <div>
-            <label className="block text-xs font-medium text-mission-control-text-dim mb-1.5">Room Name</label>
-            <input
+            <label className="text-xs font-medium text-mission-control-text-dim mb-1 block">Room Name</label>
+            <TextField.Root
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent transition-colors"
               placeholder="Room name"
               maxLength={80}
+              size="2"
+              className="w-full"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-mission-control-text-dim mb-1.5">Description</label>
-            <textarea
+            <label className="text-xs font-medium text-mission-control-text-dim mb-1 block">Description</label>
+            <TextArea
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={2}
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors"
               placeholder="Optional description..."
               maxLength={200}
+              size="2"
+              className="w-full"
             />
           </div>
 
-          <button
+          <Button
             onClick={handleSave}
             disabled={saving}
-            className="w-full py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
+            variant="solid"
+            size="2"
+            className="w-full"
           >
             {saving ? 'Saving...' : 'Save Changes'}
-          </button>
+          </Button>
 
           {/* Notifications */}
           <div>
-            <p className="text-xs font-medium text-mission-control-text-dim mb-2">Notifications</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Notifications</p>
             <div className="space-y-1">
               {NOTIF_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
+                  type="button"
                   onClick={() => handleNotif(opt.value)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  className={`flex w-full items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
                     notif === opt.value
-                      ? 'bg-mission-control-accent/15 text-mission-control-accent ring-1 ring-mission-control-accent/30'
-                      : 'text-mission-control-text hover:bg-mission-control-border'
+                      ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                      : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                   }`}
                 >
                   {opt.icon}
@@ -134,10 +142,11 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
           {/* Pinned message */}
           {room.pinnedMessageId ? (
             <div>
-              <p className="text-xs font-medium text-mission-control-text-dim mb-2">Pinned Message</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Pinned Message</p>
               <button
+                type="button"
                 onClick={onUnpin}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border rounded-lg transition-colors"
+                className="w-full inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <Pin size={14} />
                 Unpin current message
@@ -145,7 +154,7 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
             </div>
           ) : (
             <div>
-              <p className="text-xs font-medium text-mission-control-text-dim mb-1">Pinned Message</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Pinned Message</p>
               <p className="text-xs text-mission-control-text-dim">
                 Hover a message and click the pin icon to pin it here.
               </p>
@@ -154,13 +163,16 @@ export default function RoomSettingsPanel({ room, onClose, onLeave, onSave, onUn
         </div>
 
         {/* Leave room */}
-        <div className="p-4 border-t border-mission-control-border shrink-0">
-          <button
+        <div className="flex items-center justify-center px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+          <Button
+            type="button"
+            variant="ghost"
+            color="red"
+            size="2"
             onClick={onLeave}
-            className="w-full py-2 text-sm text-error hover:bg-error-subtle rounded-lg transition-colors"
           >
             Leave Room
-          </button>
+          </Button>
         </div>
       </div>
     </div>

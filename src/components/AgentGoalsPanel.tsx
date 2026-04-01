@@ -4,6 +4,7 @@ import {
   Target, Plus, CheckCircle2, Trash2, Clock,
   ChevronRight, RefreshCw, AlertTriangle,
 } from 'lucide-react';
+import { Button, TextField, Box, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface Goal {
@@ -36,7 +37,7 @@ function DeadlineBadge({ deadline }: { deadline: string }) {
   if (days === null) return null;
 
   const color = days > 14
-    ? 'var(--color-success)'
+    ? 'var(--mission-control-success)'
     : days >= 7
     ? 'var(--color-warning)'
     : 'var(--color-error)';
@@ -49,7 +50,7 @@ function DeadlineBadge({ deadline }: { deadline: string }) {
 
   return (
     <span
-      className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border border-mission-control-border"
+      className="inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full border border-mission-control-border"
       style={{ color, borderColor: color, background: `color-mix(in srgb, ${color} 12%, transparent)` }}
     >
       <Clock size={9} />
@@ -65,25 +66,25 @@ function GoalProgressBar({ current, target, status }: { current: string; target:
   if (cur !== null && tgt !== null && tgt > 0) {
     const pct = Math.min(100, Math.round((cur / tgt) * 100));
     const color = status === 'completed'
-      ? 'var(--color-success)'
+      ? 'var(--mission-control-success)'
       : pct >= 75
-      ? 'var(--color-success)'
+      ? 'var(--mission-control-success)'
       : pct >= 40
       ? 'var(--color-warning)'
       : 'var(--color-error)';
 
     return (
       <div className="space-y-1">
-        <div className="flex items-center justify-between text-[10px] text-mission-control-text-dim">
+        <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim">
           <span>{current} / {target}</span>
           <span style={{ color }}>{pct}%</span>
-        </div>
+        </Flex>
         <div
           className="h-1.5 rounded-full overflow-hidden"
-          style={{ background: 'var(--color-mission-control-border)' }}
+          style={{ background: 'var(--mission-control-border)' }}
         >
           <div
-            className="h-full rounded-full transition-all duration-500"
+            className="h-full rounded-full transition-colors duration-500"
             style={{ width: `${pct}%`, background: color }}
           />
         </div>
@@ -92,16 +93,16 @@ function GoalProgressBar({ current, target, status }: { current: string; target:
   }
 
   const statusColor = status === 'completed'
-    ? 'var(--color-success)'
+    ? 'var(--mission-control-success)'
     : status === 'cancelled'
     ? 'var(--color-error)'
     : status === 'paused'
     ? 'var(--color-warning)'
-    : 'var(--color-info)';
+    : 'var(--mission-control-info)';
 
   return (
     <span
-      className="inline-flex text-[10px] font-medium px-2 py-0.5 rounded-full border border-mission-control-border capitalize"
+      className="inline-flex text-xs font-medium px-2 py-0.5 rounded-full border border-mission-control-border capitalize"
       style={{ color: statusColor, borderColor: statusColor, background: `color-mix(in srgb, ${statusColor} 12%, transparent)` }}
     >
       {status}
@@ -208,23 +209,23 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
   const completedGoals = goals.filter(g => g.status === 'completed');
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+    <Box className="space-y-4">
+      <Flex align="center" justify="between">
+        <Flex align="center" gap="2">
           <Target size={14} className="text-mission-control-text-dim" />
-          <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Goals</span>
+          <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Goals</span>
           {goals.length > 0 && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-mission-control-border text-mission-control-text-dim font-medium">
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-mission-control-border text-mission-control-text-dim font-medium tabular-nums">
               {activeGoals.length} active
             </span>
           )}
-        </div>
+        </Flex>
         <div className="flex items-center gap-1">
           <button
             type="button"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
             onClick={fetchGoals}
             disabled={loading}
-            className="icon-btn border border-mission-control-border disabled:opacity-50"
             title="Refresh goals"
             aria-label="Refresh goals"
           >
@@ -232,95 +233,95 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
           </button>
           <button
             type="button"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             onClick={() => setShowForm(v => !v)}
-            className="icon-btn border border-mission-control-border"
             title="Add goal"
             aria-label="Add new goal"
           >
             <Plus size={12} />
           </button>
         </div>
-      </div>
+      </Flex>
 
       {error && !loading && (
-        <div className="rounded-lg border border-error-border bg-error-subtle p-3 text-xs text-error flex items-center gap-2">
+        <Flex align="center" gap="2" p="3" className="rounded-lg border border-error/30 bg-error/10 text-xs text-error">
           <AlertTriangle size={12} className="flex-shrink-0" />
           {error}
-        </div>
+        </Flex>
       )}
 
       {showForm && (
         <form
           onSubmit={handleAddGoal}
-          className="rounded-lg border border-mission-control-border bg-mission-control-bg p-4 space-y-3"
+          className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4 space-y-3"
         >
           <div>
-            <label className="block text-[10px] font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
+            <label className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">
               Goal title
             </label>
-            <input
-              type="text"
+            <TextField.Root
               value={formTitle}
               onChange={e => setFormTitle(e.target.value)}
               placeholder="e.g. Reach 90% success rate"
-              className="w-full"
+              size="2"
               required
               maxLength={200}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">
                 Target
               </label>
-              <input
-                type="text"
+              <TextField.Root
                 value={formTarget}
                 onChange={e => setFormTarget(e.target.value)}
                 placeholder="e.g. 90 or complete"
-                className="w-full"
+                size="2"
                 maxLength={200}
               />
             </div>
             <div>
-              <label className="block text-[10px] font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">
                 Deadline
               </label>
-              <input
+              <TextField.Root
                 type="date"
                 value={formDeadline}
                 onChange={e => setFormDeadline(e.target.value)}
-                className="w-full"
+                size="2"
               />
             </div>
           </div>
-          <div className="flex items-center gap-2 pt-1">
-            <button
+          <Flex align="center" gap="2" className="pt-1">
+            <Button
               type="submit"
+              size="2"
+              variant="solid"
               disabled={formSubmitting || !formTitle.trim()}
-              className="flex-1 py-2 text-xs font-medium rounded-lg bg-mission-control-accent text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              className="flex-1"
             >
               {formSubmitting ? 'Adding...' : 'Add goal'}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="px-3 py-2 text-xs font-medium rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               Cancel
             </button>
-          </div>
+          </Flex>
         </form>
       )}
 
       {!loading && goals.length === 0 && (
-        <div className="rounded-lg border border-mission-control-border p-6 text-center space-y-2">
+        <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-6 text-center space-y-2">
           <Target size={24} className="mx-auto text-mission-control-text-dim opacity-40" />
           <p className="text-sm text-mission-control-text-dim">No goals set yet</p>
           <button
             type="button"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             onClick={() => setShowForm(true)}
-            className="text-xs text-mission-control-accent hover:underline"
           >
             Add the first goal
           </button>
@@ -332,16 +333,16 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
           {activeGoals.map(goal => (
             <div
               key={goal.id}
-              className="rounded-lg border border-mission-control-border bg-mission-control-bg p-4 space-y-2"
+              className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4 space-y-2 hover:bg-mission-control-border/10 transition-colors"
             >
-              <div className="flex items-start justify-between gap-2">
+              <Flex align="start" justify="between" gap="2">
                 <span className="text-sm font-medium text-mission-control-text leading-snug flex-1">{goal.title}</span>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {goal.status !== 'completed' && (
                     <button
                       type="button"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       onClick={() => handleMarkComplete(goal.id, goal.title)}
-                      className="icon-btn text-success hover:bg-success-subtle"
                       title="Mark complete"
                       aria-label="Mark goal complete"
                     >
@@ -350,62 +351,63 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
                   )}
                   <button
                     type="button"
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     onClick={() => handleDeleteGoal(goal.id)}
-                    className="icon-btn text-error hover:bg-error-subtle"
                     title="Delete goal"
                     aria-label="Delete goal"
                   >
                     <Trash2 size={13} />
                   </button>
                 </div>
-              </div>
+              </Flex>
 
               <GoalProgressBar current={goal.current} target={goal.target} status={goal.status} />
 
-              <div className="flex items-center justify-between">
+              <Flex align="center" justify="between">
                 {goal.deadline && <DeadlineBadge deadline={goal.deadline} />}
                 <button
                   type="button"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors ml-auto"
                   onClick={() => {
                     setEditingGoalId(goal.id === editingGoalId ? null : goal.id);
                     setEditCurrent(goal.current);
                   }}
-                  className="ml-auto inline-flex items-center gap-1 text-[10px] text-mission-control-text-dim hover:text-mission-control-text transition-colors"
                 >
                   Update progress
                   <ChevronRight size={10} />
                 </button>
-              </div>
+              </Flex>
 
               {editingGoalId === goal.id && (
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="text"
+                <Flex align="center" gap="2" className="pt-1">
+                  <TextField.Root
                     value={editCurrent}
                     onChange={e => setEditCurrent(e.target.value)}
                     placeholder="Current value"
-                    className="flex-1 text-xs"
+                    size="1"
                     autoFocus
                     onKeyDown={e => {
                       if (e.key === 'Enter') void handleUpdateProgress(goal.id);
                       if (e.key === 'Escape') setEditingGoalId(null);
                     }}
+                    className="flex-1"
                   />
-                  <button
+                  <Button
                     type="button"
+                    size="1"
+                    variant="solid"
                     onClick={() => void handleUpdateProgress(goal.id)}
-                    className="px-2.5 py-1.5 text-[10px] font-medium rounded-md bg-mission-control-accent text-white hover:opacity-90 transition-opacity"
                   >
                     Save
-                  </button>
+                  </Button>
                   <button
                     type="button"
                     onClick={() => setEditingGoalId(null)}
-                    className="px-2.5 py-1.5 text-[10px] font-medium rounded-md border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                   >
                     Cancel
                   </button>
-                </div>
+                </Flex>
               )}
             </div>
           ))}
@@ -413,10 +415,10 @@ export default function AgentGoalsPanel({ agentId }: AgentGoalsPanelProps) {
       )}
 
       {completedGoals.length > 0 && (
-        <div className="text-[11px] text-mission-control-text-dim text-center pt-1">
+        <div className="text-xs text-mission-control-text-dim text-center pt-1">
           {completedGoals.length} completed goal{completedGoals.length !== 1 ? 's' : ''}
         </div>
       )}
-    </div>
+    </Box>
   );
 }

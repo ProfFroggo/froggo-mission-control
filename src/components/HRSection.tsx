@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { UserPlus, BookOpen, Users, ChevronRight, Award, Target, CheckCircle, AlertTriangle, FileText, Sparkles } from 'lucide-react';
+import { UserPlus, BookOpen, Users, ChevronRight, Target, CheckCircle, AlertTriangle, FileText, GraduationCap } from 'lucide-react';
+import { Button, Badge, Flex } from '@radix-ui/themes';
 import HRAgentCreationModal from './HRAgentCreationModal';
 import TrainingLogModal from './TrainingLogModal';
 import AgentSkillsModal from './AgentSkillsModal';
@@ -106,25 +107,25 @@ export default function HRSection() {
   };
 
   const indicatorEl = indicator && (
-    <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border bg-success-subtle text-success border-success-border">
-      {indicator === 'new-training' && <><Sparkles size={10} /> New training</>}
-      {indicator === 'new-report' && <><Sparkles size={10} /> New report</>}
-    </span>
+    <Badge color="grass" variant="soft" className="flex items-center gap-1">
+      {indicator === 'new-training' && <><BookOpen size={10} /> New training</>}
+      {indicator === 'new-report' && <><FileText size={10} /> New report</>}
+    </Badge>
   );
 
   return (
     <>
       <div className="mb-8">
-        <div className="rounded-lg border border-success-border bg-gradient-to-br from-teal-500/5 to-transparent overflow-hidden">
+        <div className="rounded-lg border border-success/30 bg-mission-control-surface overflow-hidden">
           {/* HR Header */}
-          <div className="p-4 flex items-center gap-3 border-b border-success-border">
-            <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center text-2xl ring-2 ring-teal-500/30">
-              🎓
+          <Flex align="center" gap="3" className="p-4 border-b border-success/30">
+            <div className="w-12 h-12 rounded-full bg-success/10 border border-success/20 flex items-center justify-center text-success">
+              <GraduationCap size={22} />
             </div>
             <div className="flex-1">
               <h2 className="font-bold text-mission-control-text flex items-center gap-2">
                 HR Agent
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-success-border">
+                <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-success/10 text-success border border-success/30">
                   Agent Management
                 </span>
               </h2>
@@ -132,36 +133,47 @@ export default function HRSection() {
                 I help you build and train the best possible team.
               </p>
             </div>
-            {/* Indicator — top right, clears when relevant modal opened */}
-            {indicatorEl}
-          </div>
+            {/* Indicator + action buttons — top right */}
+            <Flex align="center" gap="2">
+              {indicatorEl}
+              <Button onClick={openReports} variant="outline" color="grass" size="2">
+                <FileText size={14} /> Reports
+              </Button>
+              <Button onClick={openTrainingLog} variant="outline" color="grass" size="2">
+                <BookOpen size={14} /> Training Log
+              </Button>
+              <Button onClick={() => setShowCreate(true)} size="2">
+                <UserPlus size={14} /> New Agent
+              </Button>
+            </Flex>
+          </Flex>
 
           {/* Quick Stats */}
           {teamHealth && (
             <div className="grid grid-cols-4 gap-px bg-mission-control-border/30">
-              <div className="p-3 bg-mission-control-bg">
-                <div className="text-lg font-bold text-mission-control-text">{teamHealth.totalAgents}</div>
-                <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
+              <div className="p-3 bg-mission-control-surface">
+                <div className="text-lg font-bold text-mission-control-text tabular-nums">{teamHealth.totalAgents}</div>
+                <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   <Users size={10} /> Agents
                 </div>
               </div>
-              <div className="p-3 bg-mission-control-bg">
-                <div className="text-lg font-bold text-mission-control-text">{teamHealth.avgProficiency}</div>
-                <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
+              <div className="p-3 bg-mission-control-surface">
+                <div className="text-lg font-bold text-mission-control-text tabular-nums">{teamHealth.avgProficiency}</div>
+                <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   <Target size={10} /> Avg Skill
                 </div>
               </div>
-              <div className="p-3 bg-mission-control-bg">
-                <div className="text-lg font-bold text-mission-control-text">{teamHealth.recentTrainings}</div>
-                <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
+              <div className="p-3 bg-mission-control-surface">
+                <div className="text-lg font-bold text-mission-control-text tabular-nums">{teamHealth.recentTrainings}</div>
+                <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   <BookOpen size={10} /> Total Trainings
                 </div>
               </div>
-              <div className="p-3 bg-mission-control-bg">
-                <div className={`text-lg font-bold ${teamHealth.agentsNeedingTraining.length > 0 ? 'text-amber-400' : 'text-success'}`}>
-                  {teamHealth.agentsNeedingTraining.length > 0 ? teamHealth.agentsNeedingTraining.length : '✓'}
+              <div className="p-3 bg-mission-control-surface">
+                <div className={`text-lg font-bold tabular-nums font-mono ${teamHealth.agentsNeedingTraining.length > 0 ? 'text-warning' : 'text-success'}`}>
+                  {teamHealth.agentsNeedingTraining.length > 0 ? teamHealth.agentsNeedingTraining.length : '0'}
                 </div>
-                <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
+                <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider flex items-center gap-1">
                   {teamHealth.agentsNeedingTraining.length > 0 ? <AlertTriangle size={10} /> : <CheckCircle size={10} />}
                   Gaps
                 </div>
@@ -169,47 +181,20 @@ export default function HRSection() {
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="p-3 flex gap-2">
-            <button
-              onClick={() => setShowCreate(true)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white font-medium rounded-lg hover:bg-mission-control-accent-dim transition-colors text-sm"
-            >
-              <UserPlus size={16} /> Create New Agent
-            </button>
-            <button
-              onClick={openReports}
-              className="flex items-center gap-2 px-4 py-2.5 border border-success-border text-teal-400 rounded-lg hover:bg-teal-500/10 transition-colors text-sm"
-            >
-              <FileText size={16} /> Reports
-            </button>
-            <button
-              onClick={openTrainingLog}
-              className="flex items-center gap-2 px-4 py-2.5 border border-success-border text-teal-400 rounded-lg hover:bg-teal-500/10 transition-colors text-sm"
-            >
-              <BookOpen size={16} /> Training Log
-            </button>
-            <button
-              onClick={() => setShowSkills(true)}
-              className="flex items-center gap-2 px-4 py-2.5 border border-success-border text-teal-400 rounded-lg hover:bg-teal-500/10 transition-colors text-sm"
-            >
-              <Award size={16} /> Skills
-            </button>
-          </div>
 
           {/* Skill gaps alert */}
           {teamHealth && teamHealth.agentsNeedingTraining.length > 0 && (
             <div className="px-4 pb-3">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning/5 border border-warning-border text-xs text-amber-300">
+              <Flex align="center" gap="2" className="px-3 py-2 rounded-lg bg-warning/10 border border-warning/30 text-xs text-warning">
                 <AlertTriangle size={12} className="flex-shrink-0" />
                 <span>
                   <strong>{teamHealth.agentsNeedingTraining.join(', ')}</strong>{' '}
                   {teamHealth.agentsNeedingTraining.length === 1 ? 'has' : 'have'} skills below threshold. Training recommended.
                 </span>
-                <button className="ml-auto text-amber-400 hover:text-amber-300 whitespace-nowrap" onClick={openTrainingLog}>
+                <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors ml-auto whitespace-nowrap" onClick={openTrainingLog}>
                   View <ChevronRight size={12} className="inline" />
                 </button>
-              </div>
+              </Flex>
             </div>
           )}
         </div>

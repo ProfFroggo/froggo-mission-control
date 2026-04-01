@@ -47,7 +47,7 @@
   
   /* Line heights */
   --leading-tight: 1.25;
-  --leading-normal: 1.5;
+  --leading-normal: 1.55;
   --leading-relaxed: 1.75;
   
   /* Font weights */
@@ -62,33 +62,14 @@
   --tracking-wide: 0.025em;
   
   /* ============================================
-     COLOR TOKENS - THEME BASE
+     COLOR TOKENS - THEME BASE (fallback values only)
+     Live values are injected by .radix-themes below,
+     which auto-updates when Radix appearance changes.
      ============================================ */
-  
-  /* Surface colors */
-  --mission-control-bg: #0a0a0a;               /* Page background */
-  --mission-control-surface: #141414;          /* Cards, panels, elevated surfaces */
-  --mission-control-border: #262626;           /* Borders, dividers */
-  --mission-control-border-glass: rgba(255, 255, 255, 0.08);   /* Subtle glass borders (dark) */
-  --mission-control-border-glass-hover: rgba(255, 255, 255, 0.15); /* Glass border hover state */
-  --mission-control-border-subtle: rgba(38, 38, 38, 0.5);      /* Muted dividers */
 
-  /* Text colors */
-  --mission-control-text: #fafafa;             /* Primary text */
-  --mission-control-text-dim: #a1a1aa;         /* Secondary text, muted content */
-
-  /* Accent colors */
-  --mission-control-accent: #22c55e;           /* Primary action color (green) */
-  --mission-control-accent-dim: #16a34a;       /* Accent hover/active state */
-
-  /* Alternate / alias surface colors */
-  --mission-control-bg-alt: #1a1a1a;           /* Between bg and surface, used for input backgrounds */
-  --mission-control-bg0: #0a0a0a;              /* Deepest background, used for status dots and inactive states */
-  --mission-control-card: #141414;             /* Card background, used for message bubbles and cards */
-
-  /* Typography defaults */
+  /* Typography defaults (not theme-sensitive) */
   --mission-control-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --mission-control-font-size: 14px;
+  --mission-control-font-size: 1rem;
   
   /* ============================================
      COLOR TOKENS - INTERACTIVE STATES
@@ -116,26 +97,26 @@
   
   /* Success */
   --color-success: #22c55e;
-  --color-success-bg: rgba(34, 197, 94, 0.1);
-  --color-success-border: rgba(34, 197, 94, 0.3);
+  --color-success-bg: color-mix(in srgb, var(--color-success) 10%, transparent);
+  --color-success-border: color-mix(in srgb, var(--color-success) 30%, transparent);
   --color-success-hover: #16a34a;
   
   /* Error */
   --color-error: #ef4444;
-  --color-error-bg: rgba(239, 68, 68, 0.1);
-  --color-error-border: rgba(239, 68, 68, 0.3);
+  --color-error-bg: color-mix(in srgb, var(--color-error) 10%, transparent);
+  --color-error-border: color-mix(in srgb, var(--color-error) 30%, transparent);
   --color-error-hover: #dc2626;
   
   /* Warning */
   --color-warning: #f59e0b;
-  --color-warning-bg: rgba(245, 158, 11, 0.1);
-  --color-warning-border: rgba(245, 158, 11, 0.3);
+  --color-warning-bg: color-mix(in srgb, var(--color-warning) 10%, transparent);
+  --color-warning-border: color-mix(in srgb, var(--color-warning) 30%, transparent);
   --color-warning-hover: #d97706;
   
   /* Info */
   --color-info: #3b82f6;
-  --color-info-bg: rgba(59, 130, 246, 0.1);
-  --color-info-border: rgba(59, 130, 246, 0.3);
+  --color-info-bg: color-mix(in srgb, var(--color-info) 10%, transparent);
+  --color-info-border: color-mix(in srgb, var(--color-info) 30%, transparent);
   --color-info-hover: #2563eb;
   --color-info-text: #3b82f6;
   
@@ -194,8 +175,8 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
   --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(34, 197, 94, 0.3);
-  --shadow-glow-lg: 0 0 40px rgba(34, 197, 94, 0.4);
+  --shadow-glow: 0 0 20px color-mix(in srgb, var(--mission-control-accent) 30%, transparent);
+  --shadow-glow-lg: 0 0 40px color-mix(in srgb, var(--mission-control-accent) 40%, transparent);
   
   /* ============================================
      COMPONENT SIZE TOKENS
@@ -237,6 +218,7 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-quint-out: cubic-bezier(0.22, 1, 0.36, 1);   /* Premium deceleration (Stripe/Linear) */
   
   /* ============================================
      Z-INDEX SCALE
@@ -253,37 +235,37 @@
 }
 
 /* ============================================
-   LIGHT THEME OVERRIDES
+   MISSION CONTROL ↔ RADIX THEME BRIDGE
+   All surface/text/accent vars alias Radix CSS vars.
+   When Radix appearance changes (dark ↔ light),
+   these automatically update — no JS needed.
    ============================================ */
 
-:root.light {
-  /* Surface colors */
-  --mission-control-bg: #fafafa;
-  --mission-control-surface: #ffffff;
-  --mission-control-border: #e4e4e7;
-  --mission-control-border-glass: rgba(0, 0, 0, 0.08);
-  --mission-control-border-glass-hover: rgba(0, 0, 0, 0.15);
-  --mission-control-border-subtle: rgba(228, 228, 231, 0.5);
+.radix-themes {
+  /* Surface — Radix color scale */
+  --mission-control-bg:               var(--color-background);
+  --mission-control-surface:          var(--color-panel);
+  --mission-control-border:           var(--gray-5);
+  --mission-control-border-glass:     var(--gray-a4);
+  --mission-control-border-glass-hover: var(--gray-a6);
+  --mission-control-border-subtle:    var(--gray-a3);
 
-  /* Text colors */
-  --mission-control-text: #18181b;
-  --mission-control-text-dim: #52525b;
+  /* Text */
+  --mission-control-text:             var(--gray-12);
+  --mission-control-text-dim:         var(--gray-9);
 
-  /* Alternate / alias surface colors */
-  --mission-control-bg-alt: #f4f4f5;           /* Light alternate bg for input backgrounds */
-  --mission-control-bg0: #fafafa;              /* Deepest background in light mode */
-  --mission-control-card: #ffffff;             /* Card background in light mode */
+  /* Accent — always violet (Theme accentColor="violet") */
+  --mission-control-accent:           var(--accent-9);
+  --mission-control-accent-dim:       var(--accent-10);
 
-  /* Interactive states (light theme specific) */
-  --color-hover: color-mix(in srgb, var(--mission-control-bg) 90%, var(--mission-control-text));
-  --color-active: color-mix(in srgb, var(--mission-control-bg) 80%, var(--mission-control-text));
-  
-  /* Shadows (lighter in light theme) */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.15);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
-  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.25);
+  /* Aliases */
+  --mission-control-bg-alt:           var(--color-surface);
+  --mission-control-bg0:              var(--color-background);
+  --mission-control-card:             var(--color-panel);
+
+  /* Interactive states (derived from Radix vars) */
+  --color-hover:  var(--gray-a3);
+  --color-active: var(--gray-a4);
 }
 
 /* ============================================
@@ -339,16 +321,22 @@
 .text-error { color: var(--color-error); }
 .text-warning { color: var(--color-warning); }
 .text-info { color: var(--color-info); }
+.text-review { color: var(--color-review); }
+.text-danger { color: var(--color-danger); }
+.text-muted { color: var(--color-muted-text); }
 
 .bg-success { background: var(--color-success-bg); }
 .bg-error { background: var(--color-error-bg); }
 .bg-warning { background: var(--color-warning-bg); }
 .bg-info { background: var(--color-info-bg); }
+.bg-review { background: var(--color-review-bg); }
+.bg-danger { background-color: var(--color-danger); }
 
 .border-success { border-color: var(--color-success-border); }
 .border-error { border-color: var(--color-error-border); }
 .border-warning { border-color: var(--color-warning-border); }
 .border-info { border-color: var(--color-info-border); }
+.border-review { border-color: var(--color-review-border); }
 
 /* Focus Styles */
 .focus-ring:focus-visible {

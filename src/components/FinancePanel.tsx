@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Upload, AlertTriangle, DollarSign, Coins, Bell, MessageSquare, Wallet, Plus, X, Calculator, ChevronDown, UtensilsCrossed, Lightbulb, ShoppingBag, ImageIcon, ShoppingCart, Car, Tv, Cross, Home, Clipboard, Fuel, ArrowLeftRight, Lock, Globe, ArrowRightLeft } from 'lucide-react';
+// eslint-disable-next-line import/order
+import { Button, Flex, IconButton, Badge, Heading, Select, TextField } from '@radix-ui/themes';
+import PanelHeader from './PanelHeader';
 import EmptyState from './EmptyState';
 import WidgetLoading from './WidgetLoading';
 import { showToast } from './Toast';
@@ -275,9 +278,9 @@ export default function FinancePanel() {
   };
 
   const getProgressColor = (percentage: number) => {
-    if (percentage >= 90) return 'bg-error';
+    if (percentage >= 100) return 'bg-error';
     if (percentage >= 80) return 'bg-warning';
-    return 'bg-success';
+    return 'bg-[var(--mission-control-accent)]';
   };
 
   const getCategoryIcon = (category: string) => {
@@ -330,56 +333,60 @@ export default function FinancePanel() {
         </div>
       )}
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-2">
-          <DollarSign size={24} className="text-success" />
-          <h1 className="text-heading-2">Finance Manager</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
+      <PanelHeader
+        icon={<DollarSign size={16} />}
+        title="Finance Manager"
+        subtitle={selectedAccountId ? accounts.find(a => a.id === selectedAccountId)?.name : 'All Accounts'}
+        variant="compact"
+      >
+        <Flex align="center" gap="2">
+          <Button
+            variant={chatOpen ? 'soft' : 'surface'}
+            color={chatOpen ? 'green' : 'gray'}
+            size="2"
             onClick={() => setChatOpen(!chatOpen)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-              chatOpen
-                ? 'bg-success-subtle text-success hover:bg-success/30'
-                : 'bg-mission-control-bg-alt text-mission-control-text-dim hover:bg-mission-control-bg'
-            }`}
             aria-label={chatOpen ? "Close AI chat" : "Open AI chat"}
           >
             <MessageSquare size={16} />
             AI Chat
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="surface"
+            color="gray"
+            size="2"
             onClick={() => setShowExportModal(true)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text rounded-lg text-sm transition-colors"
             aria-label="Export transactions to XLSX"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
             </svg>
             Export
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="solid"
+            color="blue"
+            size="2"
             onClick={handleUploadClick}
-            className="flex items-center gap-2 px-4 py-2 bg-info hover:bg-info-dim text-white rounded-lg transition-colors"
             aria-label="Upload bank statement"
           >
             <Upload size={16} />
             Upload Statement
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Flex>
+      </PanelHeader>
 
       {/* Account Tab Strip */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-mission-control-border overflow-x-auto flex-shrink-0">
+      <div className="flex items-center border-b border-mission-control-border overflow-x-auto flex-shrink-0">
         {/* All Accounts tab */}
         <button
+          type="button"
           onClick={() => setSelectedAccountId(null)}
-          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-            selectedAccountId === null
-              ? 'bg-mission-control-accent text-white'
-              : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text hover:bg-mission-control-bg-alt'
-          }`}
           aria-label="View all accounts"
+          className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
+            selectedAccountId === null
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+          }`}
         >
           All Accounts
         </button>
@@ -388,18 +395,17 @@ export default function FinancePanel() {
         {accounts.map((acc) => (
           <div key={acc.id} className="flex-shrink-0 flex items-center group">
             <button
+              type="button"
               onClick={() => setSelectedAccountId(acc.id)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                selectedAccountId === acc.id
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text hover:bg-mission-control-bg-alt'
-              }`}
               aria-label={`View ${acc.name} account`}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
+                selectedAccountId === acc.id
+                  ? 'border-mission-control-accent text-mission-control-accent'
+                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {acc.name}
-              <span className={`ml-1.5 text-xs ${
-                selectedAccountId === acc.id ? 'text-white/80' : 'text-mission-control-text-dim'
-              }`}>
+              <span className="ml-1 text-xs opacity-70">
                 {formatCurrency(acc.computed_balance, acc.currency)}
               </span>
             </button>
@@ -410,9 +416,10 @@ export default function FinancePanel() {
                   e.stopPropagation();
                   handleArchiveAccount(acc.id, acc.name);
                 }}
-                className="ml-1 p-0.5 rounded-full text-mission-control-text-dim hover:text-error hover:bg-error/10 opacity-0 group-hover:opacity-100 transition-all"
                 aria-label={`Archive ${acc.name}`}
                 title={`Archive ${acc.name}`}
+                style={{ opacity: 0 }}
+                className="group-hover:!opacity-100 inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <X size={14} />
               </button>
@@ -423,8 +430,8 @@ export default function FinancePanel() {
         {/* + New Account button */}
         <button
           onClick={() => setShowCreateAccountModal(true)}
-          className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border border-dashed border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent transition-colors"
           aria-label="Create new account"
+          className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <Plus size={14} />
           New Account
@@ -434,11 +441,11 @@ export default function FinancePanel() {
       {/* Main Content + Chat Split */}
       <div className="flex-1 flex overflow-hidden">
         {/* Finance Content */}
-        <div className={`${chatOpen ? 'w-3/5' : 'w-full'} overflow-auto p-4 transition-all`}>
+        <div className={`${chatOpen ? 'w-3/5' : 'w-full'} overflow-auto p-4 transition-[width]`}>
         {/* AI Processing Banner */}
         {aiProcessing && (
           <div className="bg-mission-control-surface border border-mission-control-accent/30 rounded-lg p-4 mb-4">
-            <div className="flex items-center gap-3">
+            <Flex align="center" gap="3">
               <div className="animate-spin h-5 w-5 border-2 border-mission-control-accent border-t-transparent rounded-full" />
               <div className="flex-1">
                 <div className="text-sm font-medium">{aiMessage || 'AI is processing...'}</div>
@@ -446,44 +453,44 @@ export default function FinancePanel() {
                   <div className="h-full bg-mission-control-accent rounded-full animate-pulse" style={{ width: '60%' }} />
                 </div>
               </div>
-            </div>
+            </Flex>
           </div>
         )}
 
         {/* AI Insights Section */}
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4 mb-6">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 mb-6">
           <FinanceInsightsPanel />
         </div>
 
         {/* Legacy Alerts (if any exist) */}
         {alerts.length > 0 && (
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4 mb-6">
-            <div className="flex items-center gap-2 mb-4">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 mb-6">
+            <Flex align="center" gap="2" mb="4">
               <Bell size={18} className="text-warning" />
-              <h2 className="text-heading-3">System Alerts</h2>
-            </div>
+              <h2 className="text-sm font-semibold text-mission-control-text">System Alerts</h2>
+            </Flex>
 
             <div className="space-y-2">
               {/* Critical alerts first */}
               {alerts.filter(a => a.severity === 'critical').map((alert) => (
-                <div key={alert.id} className="flex items-start gap-2 p-3 bg-error-subtle border border-error-border rounded-lg">
+                <Flex key={alert.id} align="start" gap="2" className="p-3 bg-error/10 border border-error/30 rounded-lg">
                   <AlertTriangle size={16} className="text-error flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm text-error">{alert.title}</div>
                     <div className="text-xs text-error/80 mt-0.5">{alert.message}</div>
                   </div>
-                </div>
+                </Flex>
               ))}
 
               {/* Warning alerts */}
               {alerts.filter(a => a.severity === 'warning').map((alert) => (
-                <div key={alert.id} className="flex items-start gap-2 p-3 bg-warning/10 border border-warning-border rounded-lg">
+                <Flex key={alert.id} align="start" gap="2" className="p-3 bg-warning/10 border border-warning/30 rounded-lg">
                   <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm text-warning">{alert.title}</div>
                     <div className="text-xs text-warning/80 mt-0.5">{alert.message}</div>
                   </div>
-                </div>
+                </Flex>
               ))}
             </div>
           </div>
@@ -492,36 +499,36 @@ export default function FinancePanel() {
         {/* Budget Cards Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
           {/* Family Budget */}
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-heading-3 flex items-center gap-2">
-                <DollarSign size={20} className="text-info" />
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+            <Flex align="center" justify="between" mb="4">
+              <span className="text-sm font-semibold text-mission-control-text flex items-center gap-2">
+                <DollarSign size={14} className="text-info" />
                 Family Budget
-              </h2>
-              <span className="text-sm text-mission-control-text/60">
+              </span>
+              <span className="text-sm text-mission-control-text-dim">
                 {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
               </span>
-            </div>
+            </Flex>
 
             {familyBudget ? (
               <>
                 {/* Overall Progress */}
                 <div className="mb-6">
-                  <div className="flex justify-between items-baseline mb-2">
-                    <span className="text-2xl font-bold">
+                  <Flex justify="between" align="baseline" mb="2">
+                    <span className="text-2xl font-bold font-mono tabular-nums">
                       {formatCurrency(familyBudget.total_spent, familyBudget.currency)}
                     </span>
-                    <span className="text-sm text-mission-control-text/60">
+                    <span className="text-sm text-mission-control-text-dim tabular-nums">
                       of {formatCurrency(familyBudget.total_limit, familyBudget.currency)}
                     </span>
-                  </div>
-                  <div className="w-full bg-mission-control-bg rounded-full h-3 overflow-hidden">
+                  </Flex>
+                  <div className="w-full bg-mission-control-border/40 rounded-full h-1.5 overflow-hidden">
                     <div
-                      className={`h-full ${getProgressColor((familyBudget.total_spent / familyBudget.total_limit) * 100)}`}
+                      className={`h-full rounded-full transition-colors ${getProgressColor((familyBudget.total_spent / familyBudget.total_limit) * 100)}`}
                       style={{ width: `${Math.min((familyBudget.total_spent / familyBudget.total_limit) * 100, 100)}%` }}
                     />
                   </div>
-                  <div className="text-right mt-1 text-sm text-mission-control-text/60">
+                  <div className="text-right mt-1 text-sm text-mission-control-text-dim tabular-nums">
                     {((familyBudget.total_spent / familyBudget.total_limit) * 100).toFixed(0)}%
                   </div>
                 </div>
@@ -532,18 +539,18 @@ export default function FinancePanel() {
                     const percentage = (cat.spent / cat.limit) * 100;
                     return (
                       <div key={cat.category} className="text-sm">
-                        <div className="flex justify-between items-center mb-1">
+                        <Flex justify="between" align="center" mb="1">
                           <span className="flex items-center gap-1">
                             <span>{getCategoryIcon(cat.category)}</span>
                             <span>{cat.category}</span>
                           </span>
-                          <span className={percentage >= 90 ? 'text-error' : ''}>
+                          <span className={`tabular-nums ${percentage >= 90 ? 'text-error' : ''}`}>
                             {formatCurrency(cat.spent, cat.currency)} / {formatCurrency(cat.limit, cat.currency)}
                           </span>
-                        </div>
-                        <div className="w-full bg-mission-control-bg rounded-full h-1.5">
+                        </Flex>
+                        <div className="w-full bg-mission-control-border/40 rounded-full h-1.5 overflow-hidden">
                           <div
-                            className={getProgressColor(percentage)}
+                            className={`h-full rounded-full transition-colors ${getProgressColor(percentage)}`}
                             style={{ width: `${Math.min(percentage, 100)}%` }}
                           />
                         </div>
@@ -552,16 +559,16 @@ export default function FinancePanel() {
                   })}
                 </div>
 
-                <button className="mt-4 w-full text-sm text-info hover:text-info transition-colors" aria-label="View all budget categories">
+                <button type="button" aria-label="View all budget categories" className="w-full inline-flex items-center justify-center px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors mt-4">
                   View All Categories →
                 </button>
               </>
             ) : (
-              <div className="text-center py-8 text-mission-control-text/60">
+              <div className="text-center py-8 text-mission-control-text-dim">
                 <p className="mb-2">
                   {selectedAccountId ? 'No family budget for this account' : 'No family budget set up'}
                 </p>
-                <button onClick={() => openBudgetModal('family')} className="text-info hover:text-info text-sm" aria-label="Create family budget">
+                <button type="button" onClick={() => openBudgetModal('family')} aria-label="Create family budget" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                   Create Budget
                 </button>
               </div>
@@ -569,36 +576,36 @@ export default function FinancePanel() {
           </div>
 
           {/* Crypto Budget */}
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-heading-3 flex items-center gap-2">
-                <Coins size={20} className="text-review" />
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+            <Flex align="center" justify="between" mb="4">
+              <span className="text-sm font-semibold text-mission-control-text flex items-center gap-2">
+                <Coins size={14} className="text-review" />
                 Crypto Budget
-              </h2>
-              <span className="text-sm text-mission-control-text/60">
+              </span>
+              <span className="text-sm text-mission-control-text-dim">
                 {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
               </span>
-            </div>
+            </Flex>
 
             {cryptoBudget ? (
               <>
                 {/* Overall Progress */}
                 <div className="mb-6">
-                  <div className="flex justify-between items-baseline mb-2">
-                    <span className="text-2xl font-bold">
+                  <Flex justify="between" align="baseline" mb="2">
+                    <span className="text-2xl font-bold font-mono tabular-nums">
                       {formatCurrency(cryptoBudget.total_spent, cryptoBudget.currency)}
                     </span>
-                    <span className="text-sm text-mission-control-text/60">
+                    <span className="text-sm text-mission-control-text-dim tabular-nums">
                       of {formatCurrency(cryptoBudget.total_limit, cryptoBudget.currency)}
                     </span>
-                  </div>
+                  </Flex>
                   <div className="w-full bg-mission-control-bg rounded-full h-3 overflow-hidden">
                     <div
-                      className={`h-full ${getProgressColor((cryptoBudget.total_spent / cryptoBudget.total_limit) * 100)}`}
+                      className={`h-full rounded-full ${getProgressColor((cryptoBudget.total_spent / cryptoBudget.total_limit) * 100)}`}
                       style={{ width: `${Math.min((cryptoBudget.total_spent / cryptoBudget.total_limit) * 100, 100)}%` }}
                     />
                   </div>
-                  <div className="text-right mt-1 text-sm text-mission-control-text/60">
+                  <div className="text-right mt-1 text-sm text-mission-control-text-dim tabular-nums">
                     {((cryptoBudget.total_spent / cryptoBudget.total_limit) * 100).toFixed(0)}%
                   </div>
                 </div>
@@ -609,18 +616,18 @@ export default function FinancePanel() {
                     const percentage = (cat.spent / cat.limit) * 100;
                     return (
                       <div key={cat.category} className="text-sm">
-                        <div className="flex justify-between items-center mb-1">
+                        <Flex justify="between" align="center" mb="1">
                           <span className="flex items-center gap-1">
                             <span>{getCategoryIcon(cat.category)}</span>
                             <span>{cat.category}</span>
                           </span>
-                          <span className={percentage >= 90 ? 'text-error' : ''}>
+                          <span className={`tabular-nums ${percentage >= 90 ? 'text-error' : ''}`}>
                             {formatCurrency(cat.spent, cat.currency)} / {formatCurrency(cat.limit, cat.currency)}
                           </span>
-                        </div>
-                        <div className="w-full bg-mission-control-bg rounded-full h-1.5">
+                        </Flex>
+                        <div className="w-full bg-mission-control-border/40 rounded-full h-1.5 overflow-hidden">
                           <div
-                            className={getProgressColor(percentage)}
+                            className={`h-full rounded-full transition-colors ${getProgressColor(percentage)}`}
                             style={{ width: `${Math.min(percentage, 100)}%` }}
                           />
                         </div>
@@ -629,16 +636,16 @@ export default function FinancePanel() {
                   })}
                 </div>
 
-                <button className="mt-4 w-full text-sm text-review hover:text-review transition-colors" aria-label="View all crypto budget categories">
+                <button type="button" aria-label="View all crypto budget categories" className="w-full inline-flex items-center justify-center px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors mt-4">
                   View All Categories →
                 </button>
               </>
             ) : (
-              <div className="text-center py-8 text-mission-control-text/60">
+              <div className="text-center py-8 text-mission-control-text-dim">
                 <p className="mb-2">
                   {selectedAccountId ? 'No crypto budget for this account' : 'No crypto budget set up'}
                 </p>
-                <button onClick={() => openBudgetModal('crypto')} className="text-review hover:text-review text-sm" aria-label="Create crypto budget">
+                <button type="button" onClick={() => openBudgetModal('crypto')} aria-label="Create crypto budget" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                   Create Budget
                 </button>
               </div>
@@ -649,117 +656,107 @@ export default function FinancePanel() {
         {/* Recurring Transactions Section */}
         {recurringItems.length > 0 && (
           <div className="mb-6">
-            <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase tracking-wide mb-3">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">
               Recurring Detected ({recurringItems.filter(r => r.status === 'pending').length} pending)
-            </h3>
+            </div>
             <div className="space-y-2">
               {recurringItems.map(item => (
-                <div key={item.id} className="flex items-center justify-between bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3">
+                <Flex key={item.id} align="center" justify="between" className="bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <Flex align="center" gap="2">
                       <span className="text-mission-control-text font-medium truncate">{item.description}</span>
                       {item.status === 'confirmed' && (
-                        <span className="text-xs bg-green-500/20 text-green-400 border border-green-500/30 rounded-full px-2 py-0.5">Confirmed</span>
+                        <span className="text-xs bg-success/10 text-success border border-success/30 rounded-full px-2 py-0.5">Confirmed</span>
                       )}
-                    </div>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="text-mission-control-text-dim text-sm font-mono">{item.currency} {Math.abs(item.amount).toFixed(2)}</span>
+                    </Flex>
+                    <Flex align="center" gap="3" mt="1">
+                      <span className="text-mission-control-text-dim text-sm font-mono tabular-nums">{item.currency} {Math.abs(item.amount).toFixed(2)}</span>
                       <span className="text-xs bg-mission-control-accent/20 text-mission-control-accent border border-mission-control-accent/30 rounded-full px-2 py-0.5 capitalize">{item.frequency}</span>
                       {item.next_expected_date && (
                         <span className="text-mission-control-text-dim text-xs">Next: {new Date(item.next_expected_date).toLocaleDateString()}</span>
                       )}
-                    </div>
+                    </Flex>
                   </div>
                   {item.status === 'pending' && (
-                    <div className="flex gap-2 ml-4">
-                      <button
-                        onClick={() => handleConfirmRecurring(item.id)}
-                        className="text-xs px-3 py-1.5 bg-mission-control-accent text-white rounded-md hover:bg-mission-control-accent/80 transition-colors"
-                      >
+                    <Flex gap="2" className="ml-4">
+                      <Button size="1" variant="solid" onClick={() => handleConfirmRecurring(item.id)}>
                         Confirm
-                      </button>
-                      <button
-                        onClick={() => handleDismissRecurring(item.id)}
-                        className="text-xs px-3 py-1.5 bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text rounded-md transition-colors"
-                      >
+                      </Button>
+                      <Button size="1" variant="surface" color="gray" onClick={() => handleDismissRecurring(item.id)}>
                         Dismiss
-                      </button>
-                    </div>
+                      </Button>
+                    </Flex>
                   )}
-                </div>
+                </Flex>
               ))}
             </div>
           </div>
         )}
 
         {/* Recent Transactions */}
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl">
-          <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-            <h2 className="text-heading-3">Recent Transactions</h2>
-            <span className="text-sm text-mission-control-text-dim">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0">
+            <span className="text-sm font-semibold text-mission-control-text">Recent Transactions</span>
+            <span className="text-xs text-mission-control-text-dim">
               {selectedAccountId
                 ? accounts.find(a => a.id === selectedAccountId)?.name || 'Account'
                 : 'All Accounts'}
             </span>
           </div>
 
-          <div className="divide-y divide-mission-control-border max-h-96 overflow-auto">
+          <div className="max-h-96 overflow-auto">
             {transactions.length > 0 ? (
               transactions.slice(0, 20).map((tx) => (
-                <div key={tx.id} className="p-4 hover:bg-mission-control-bg/50 transition-colors">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="text-mission-control-text-dim">{getCategoryIcon(tx.category)}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{tx.description}</div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-sm text-mission-control-text/60">
-                            {new Date(tx.date).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </span>
-                          {/* Inline category editor */}
-                          {editingCategoryTxId === tx.id ? (
-                            <select
-                              value={tx.category}
-                              onChange={async (e) => {
-                                const newCat = e.target.value;
-                                // Update category in local state only (REST stub, no backend persistence)
-                                setTransactions((prev) =>
-                                  prev.map((t) => t.id === tx.id ? { ...t, category: newCat } : t)
-                                );
-                                setEditingCategoryTxId(null);
-                                showToast('success', `Recategorized to ${newCat}`);
-                              }}
-                              onBlur={() => setEditingCategoryTxId(null)}
-                              className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-0.5 text-xs text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-                              aria-label={`Change category for ${tx.description}`}
-                            >
-                              {categoryOptions.length > 0
-                                ? categoryOptions.map((c) => (
-                                    <option key={c.name} value={c.name}>{c.name}</option>
-                                  ))
-                                : <option value={tx.category}>{tx.category}</option>
-                              }
-                            </select>
-                          ) : (
-                            <button
-                              className="text-xs px-2 py-0.5 bg-mission-control-bg-alt border border-mission-control-border rounded-full capitalize cursor-pointer hover:border-mission-control-accent hover:text-mission-control-accent transition-colors"
-                              onClick={() => setEditingCategoryTxId(tx.id)}
-                              title="Click to recategorize"
-                              aria-label={`Recategorize ${tx.description} (currently ${tx.category || 'other'})`}
-                            >
-                              {tx.category || 'other'}
-                            </button>
-                          )}
-                        </div>
-                      </div>
+                <div key={tx.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-mission-control-border/40 last:border-0 hover:bg-mission-control-border/10 transition-colors">
+                  <div className="text-mission-control-text-dim shrink-0">{getCategoryIcon(tx.category)}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-mission-control-text truncate">{tx.description}</div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[11px] text-mission-control-text-dim/70">
+                        {new Date(tx.date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </span>
+                      {/* Inline category editor */}
+                      {editingCategoryTxId === tx.id ? (
+                        <Select.Root
+                          value={tx.category}
+                          onValueChange={async (newCat) => {
+                            setTransactions((prev) =>
+                              prev.map((t) => t.id === tx.id ? { ...t, category: newCat } : t)
+                            );
+                            setEditingCategoryTxId(null);
+                            showToast('success', `Recategorized to ${newCat}`);
+                          }}
+                          size="1"
+                        >
+                          <Select.Trigger aria-label={`Change category for ${tx.description}`} />
+                          <Select.Content>
+                            {categoryOptions.length > 0
+                              ? categoryOptions.map((c) => (
+                                  <Select.Item key={c.name} value={c.name}>{c.name}</Select.Item>
+                                ))
+                              : <Select.Item value={tx.category}>{tx.category}</Select.Item>
+                            }
+                          </Select.Content>
+                        </Select.Root>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setEditingCategoryTxId(tx.id)}
+                          title="Click to recategorize"
+                          aria-label={`Recategorize ${tx.description} (currently ${tx.category || 'other'})`}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-mission-control-border/40 text-mission-control-text-dim text-[11px] rounded-full hover:text-mission-control-text hover:bg-mission-control-border/60 transition-colors"
+                        >
+                          {tx.category || 'other'}
+                        </button>
+                      )}
                     </div>
-                    <div className={`text-lg font-semibold flex-shrink-0 ${tx.amount < 0 ? 'text-error' : 'text-success'}`}>
-                      {tx.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(tx.amount), tx.currency)}
-                    </div>
+                  </div>
+                  <div className={`text-sm font-medium flex-shrink-0 tabular-nums text-right ${tx.amount < 0 ? 'text-error' : 'text-success'}`}>
+                    {tx.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(tx.amount), tx.currency)}
                   </div>
                 </div>
               ))
@@ -785,9 +782,10 @@ export default function FinancePanel() {
         {/* Scenario Projections (collapsible) */}
         <div className="mt-2 mb-6">
           <button
+            type="button"
             onClick={() => setShowScenarios(!showScenarios)}
-            className="flex items-center gap-2 text-sm font-semibold text-mission-control-text-dim uppercase tracking-wide mb-3 hover:text-mission-control-text transition-colors w-full text-left"
             aria-label={showScenarios ? 'Collapse scenario projections' : 'Expand scenario projections'}
+            className="w-full inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors mb-3"
           >
             <Calculator className="w-4 h-4" />
             Scenario Projections
@@ -812,51 +810,52 @@ export default function FinancePanel() {
 
       {/* Upload Modal */}
       {uploadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-heading-3 mb-4">Upload Bank Statement</h2>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+              <h2 className="text-base font-semibold text-mission-control-text">Upload Bank Statement</h2>
+            </div>
+            <div className="px-6 py-4 flex-1 overflow-y-auto">
+              <div className="space-y-4">
+                {/* Account selector */}
+                <div>
+                  <label htmlFor="upload-account-id" className="block text-sm text-mission-control-text-dim mb-1">Import to Account</label>
+                  <Select.Root value={uploadAccountId} onValueChange={setUploadAccountId}>
+                    <Select.Trigger id="upload-account-id" className="w-full" />
+                    <Select.Content>
+                      {accounts.map((acc) => (
+                        <Select.Item key={acc.id} value={acc.id}>{acc.name}</Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Root>
+                </div>
 
-            <div className="space-y-4">
-              {/* Account selector */}
-              <div>
-                <label htmlFor="upload-account-id" className="block text-sm text-mission-control-text-dim mb-1">Import to Account</label>
-                <select
-                  id="upload-account-id"
-                  value={uploadAccountId}
-                  onChange={(e) => setUploadAccountId(e.target.value)}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text focus:border-mission-control-accent outline-none text-sm"
-                >
-                  {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>{acc.name}</option>
-                  ))}
-                </select>
-              </div>
+                <div>
+                  <p className="text-sm text-mission-control-text-dim mb-2">
+                    Supported formats: CSV (Revolut, N26, Binance, Coinbase, Generic) and PDF bank statements
+                  </p>
 
-              <div>
-                <p className="text-sm text-mission-control-text/60 mb-2">
-                  Supported formats: CSV (Revolut, N26, Binance, Coinbase, Generic) and PDF bank statements
-                </p>
-
-                <input
-                  type="file"
-                  accept=".csv,.pdf"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFileUpload(file);
-                  }}
-                  className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm"
-                />
+                  <input
+                    type="file"
+                    accept=".csv,.pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file);
+                    }}
+                    className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm"
+                  />
+                </div>
               </div>
             </div>
-
-            <div className="flex gap-2 justify-end mt-4">
-              <button
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+              <Button
                 onClick={() => setUploadModalOpen(false)}
-                className="px-4 py-2 text-sm bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors"
+                variant="outline"
+                size="2"
                 aria-label="Cancel upload"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -864,92 +863,93 @@ export default function FinancePanel() {
 
       {/* Budget Creation Modal */}
       {budgetModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-heading-3 mb-4">
-              Create {budgetModalType === 'family' ? 'Family' : 'Crypto'} Budget
-            </h2>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+              <h2 className="text-base font-semibold text-mission-control-text">
+                Create {budgetModalType === 'family' ? 'Family' : 'Crypto'} Budget
+              </h2>
+            </div>
 
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="budget-name" className="block text-sm text-mission-control-text-dim mb-1">Budget Name</label>
-                <input
-                  id="budget-name"
-                  type="text"
-                  value={budgetName}
-                  onChange={(e) => setBudgetName(e.target.value)}
-                  placeholder="e.g., February 2026 Family Budget"
-                  className="w-full px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-                />
-              </div>
-
-              {/* Account scope selector */}
-              <div>
-                <label htmlFor="budget-account-id" className="block text-sm text-mission-control-text-dim mb-1">Scope to Account</label>
-                <select
-                  id="budget-account-id"
-                  value={budgetAccountId}
-                  onChange={(e) => setBudgetAccountId(e.target.value)}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text focus:border-mission-control-accent outline-none text-sm"
-                >
-                  <option value="">All Accounts (Global)</option>
-                  {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>{acc.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="budget-amount" className="block text-sm text-mission-control-text-dim mb-1">Total Budget</label>
-                <div className="flex gap-2">
-                  <input
-                    id="budget-amount"
-                    type="number"
-                    value={budgetAmount}
-                    onChange={(e) => setBudgetAmount(e.target.value)}
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                    className="flex-1 px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+            <div className="px-6 py-4 flex-1 overflow-y-auto">
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="budget-name" className="block text-sm text-mission-control-text-dim mb-1">Budget Name</label>
+                  <TextField.Root
+                    id="budget-name"
+                    size="1"
+                    value={budgetName}
+                    onChange={(e) => setBudgetName(e.target.value)}
+                    placeholder="e.g., February 2026 Family Budget"
                   />
-                  <select
-                    value={budgetCurrency}
-                    onChange={(e) => setBudgetCurrency(e.target.value)}
-                    className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-                  >
-                    <option value="EUR">EUR</option>
-                    <option value="USD">USD</option>
-                    <option value="GBP">GBP</option>
-                  </select>
                 </div>
-              </div>
 
-              <div>
-                <div className="block text-sm text-mission-control-text-dim mb-1">Period</div>
-                <p className="text-sm text-mission-control-text">
-                  {new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
-                  {' - '}
-                  {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                </p>
+                {/* Account scope selector */}
+                <div>
+                  <label htmlFor="budget-account-id" className="block text-sm text-mission-control-text-dim mb-1">Scope to Account</label>
+                  <Select.Root value={budgetAccountId || '__all__'} onValueChange={val => setBudgetAccountId(val === '__all__' ? '' : val)}>
+                    <Select.Trigger id="budget-account-id" className="w-full" />
+                    <Select.Content>
+                      <Select.Item value="__all__">All Accounts (Global)</Select.Item>
+                      {accounts.map((acc) => (
+                        <Select.Item key={acc.id} value={acc.id}>{acc.name}</Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Root>
+                </div>
+
+                <div>
+                  <label htmlFor="budget-amount" className="block text-sm text-mission-control-text-dim mb-1">Total Budget</label>
+                  <Flex gap="2">
+                    <TextField.Root
+                      id="budget-amount"
+                      type="number"
+                      value={budgetAmount}
+                      onChange={(e) => setBudgetAmount(e.target.value)}
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                      className="flex-1"
+                    />
+                    <Select.Root value={budgetCurrency} onValueChange={setBudgetCurrency}>
+                      <Select.Trigger />
+                      <Select.Content>
+                        <Select.Item value="EUR">EUR</Select.Item>
+                        <Select.Item value="USD">USD</Select.Item>
+                        <Select.Item value="GBP">GBP</Select.Item>
+                      </Select.Content>
+                    </Select.Root>
+                  </Flex>
+                </div>
+
+                <div>
+                  <div className="block text-sm text-mission-control-text-dim mb-1">Period</div>
+                  <p className="text-sm text-mission-control-text">
+                    {new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                    {' - '}
+                    {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-2 justify-end mt-6">
-              <button
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+              <Button
                 onClick={() => setBudgetModalOpen(false)}
-                className="px-4 py-2 text-sm bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors"
+                variant="outline"
+                size="2"
                 aria-label="Cancel budget creation"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCreateBudget}
                 disabled={budgetSubmitting || !budgetName.trim() || !budgetAmount}
-                className="px-4 py-2 text-sm bg-mission-control-accent hover:opacity-90 disabled:opacity-50 text-white rounded-lg transition-colors"
+                size="2"
                 aria-label="Create budget"
               >
                 {budgetSubmitting ? 'Creating...' : 'Create Budget'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -957,72 +957,73 @@ export default function FinancePanel() {
 
       {/* Create Account Modal */}
       {showCreateAccountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-heading-3 mb-4">Create Account</h2>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+              <h2 className="text-base font-semibold text-mission-control-text">Create Account</h2>
+            </div>
 
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="new-account-name" className="block text-sm text-mission-control-text-dim mb-1">Account Name</label>
-                <input
-                  id="new-account-name"
-                  type="text"
-                  value={newAccountName}
-                  onChange={(e) => setNewAccountName(e.target.value)}
-                  placeholder="e.g., Chase Checking"
-                  className="w-full px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-                />
-              </div>
+            <div className="px-6 py-4 flex-1 overflow-y-auto">
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="new-account-name" className="block text-sm text-mission-control-text-dim mb-1">Account Name</label>
+                  <TextField.Root
+                    id="new-account-name"
+                    size="1"
+                    value={newAccountName}
+                    onChange={(e) => setNewAccountName(e.target.value)}
+                    placeholder="e.g., Chase Checking"
+                  />
+                </div>
 
-              <div>
-                <label htmlFor="new-account-type" className="block text-sm text-mission-control-text-dim mb-1">Account Type</label>
-                <select
-                  id="new-account-type"
-                  value={newAccountType}
-                  onChange={(e) => setNewAccountType(e.target.value)}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text focus:border-mission-control-accent outline-none text-sm"
-                >
-                  <option value="bank">Bank</option>
-                  <option value="crypto_wallet">Crypto Wallet</option>
-                  <option value="credit_card">Credit Card</option>
-                  <option value="cash">Cash</option>
-                </select>
-              </div>
+                <div>
+                  <label htmlFor="new-account-type" className="block text-sm text-mission-control-text-dim mb-1">Account Type</label>
+                  <Select.Root value={newAccountType} onValueChange={setNewAccountType}>
+                    <Select.Trigger id="new-account-type" className="w-full" />
+                    <Select.Content>
+                      <Select.Item value="bank">Bank</Select.Item>
+                      <Select.Item value="crypto_wallet">Crypto Wallet</Select.Item>
+                      <Select.Item value="credit_card">Credit Card</Select.Item>
+                      <Select.Item value="cash">Cash</Select.Item>
+                    </Select.Content>
+                  </Select.Root>
+                </div>
 
-              <div>
-                <label htmlFor="new-account-currency" className="block text-sm text-mission-control-text-dim mb-1">Currency</label>
-                <input
-                  id="new-account-currency"
-                  type="text"
-                  value={newAccountCurrency}
-                  onChange={(e) => setNewAccountCurrency(e.target.value.toUpperCase())}
-                  placeholder="EUR"
-                  className="w-full px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-                />
+                <div>
+                  <label htmlFor="new-account-currency" className="block text-sm text-mission-control-text-dim mb-1">Currency</label>
+                  <TextField.Root
+                    id="new-account-currency"
+                    size="1"
+                    value={newAccountCurrency}
+                    onChange={(e) => setNewAccountCurrency(e.target.value.toUpperCase())}
+                    placeholder="EUR"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-2 justify-end mt-6">
-              <button
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+              <Button
                 onClick={() => {
                   setShowCreateAccountModal(false);
                   setNewAccountName('');
                   setNewAccountType('bank');
                   setNewAccountCurrency('EUR');
                 }}
-                className="px-4 py-2 text-sm bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors"
+                variant="outline"
+                size="2"
                 aria-label="Cancel account creation"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCreateAccount}
                 disabled={!newAccountName.trim()}
-                className="px-4 py-2 text-sm bg-mission-control-accent hover:opacity-90 disabled:opacity-50 text-white rounded-lg transition-colors"
+                size="2"
                 aria-label="Create account"
               >
                 Create Account
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1030,73 +1031,76 @@ export default function FinancePanel() {
 
       {/* Export Modal */}
       {showExportModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-heading-3 mb-4">Export Transactions</h2>
-
-            <div className="space-y-4">
-              {/* Account filter */}
-              <div>
-                <label htmlFor="export-account-id" className="block text-sm text-mission-control-text-dim mb-1">Account</label>
-                <select
-                  id="export-account-id"
-                  value={exportAccountId}
-                  onChange={e => setExportAccountId(e.target.value)}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text focus:border-mission-control-accent outline-none"
-                >
-                  <option value="">All Accounts</option>
-                  {accounts.map(acc => (
-                    <option key={acc.id} value={acc.id}>{acc.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Date range */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="export-date-from" className="block text-sm text-mission-control-text-dim mb-1">From</label>
-                  <input
-                    id="export-date-from"
-                    type="date"
-                    value={exportDateFrom}
-                    onChange={e => setExportDateFrom(e.target.value)}
-                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text focus:border-mission-control-accent outline-none"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="export-date-to" className="block text-sm text-mission-control-text-dim mb-1">To</label>
-                  <input
-                    id="export-date-to"
-                    type="date"
-                    value={exportDateTo}
-                    onChange={e => setExportDateTo(e.target.value)}
-                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text focus:border-mission-control-accent outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Result message */}
-              {exportResult && (
-                <p className={`text-sm ${exportResult.startsWith('Export failed') ? 'text-red-400' : 'text-green-400'}`}>
-                  {exportResult}
-                </p>
-              )}
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+              <h2 className="text-base font-semibold text-mission-control-text">Export Transactions</h2>
             </div>
 
-            <div className="flex gap-3 mt-6">
-              <button
+            <div className="px-6 py-4 flex-1 overflow-y-auto">
+              <div className="space-y-4">
+                {/* Account filter */}
+                <div>
+                  <label htmlFor="export-account-id" className="block text-sm text-mission-control-text-dim mb-1">Account</label>
+                  <Select.Root value={exportAccountId || '__all__'} onValueChange={val => setExportAccountId(val === '__all__' ? '' : val)}>
+                    <Select.Trigger id="export-account-id" className="w-full" />
+                    <Select.Content>
+                      <Select.Item value="__all__">All Accounts</Select.Item>
+                      {accounts.map(acc => (
+                        <Select.Item key={acc.id} value={acc.id}>{acc.name}</Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Root>
+                </div>
+
+                {/* Date range */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="export-date-from" className="block text-sm text-mission-control-text-dim mb-1">From</label>
+                    <input
+                      id="export-date-from"
+                      type="date"
+                      value={exportDateFrom}
+                      onChange={e => setExportDateFrom(e.target.value)}
+                      className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text focus:border-mission-control-accent outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="export-date-to" className="block text-sm text-mission-control-text-dim mb-1">To</label>
+                    <input
+                      id="export-date-to"
+                      type="date"
+                      value={exportDateTo}
+                      onChange={e => setExportDateTo(e.target.value)}
+                      className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text focus:border-mission-control-accent outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Result message */}
+                {exportResult && (
+                  <p className={`text-sm ${exportResult.startsWith('Export failed') ? 'text-error' : 'text-success'}`}>
+                    {exportResult}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+              <Button
                 onClick={handleExport}
                 disabled={exportLoading}
-                className="flex-1 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors disabled:opacity-50 font-medium"
+                size="2"
               >
                 {exportLoading ? 'Exporting...' : 'Export XLSX'}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => { setShowExportModal(false); setExportResult(null); }}
-                className="px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text rounded-lg transition-colors"
+                variant="outline"
+                size="2"
               >
                 Close
-              </button>
+              </Button>
             </div>
           </div>
         </div>

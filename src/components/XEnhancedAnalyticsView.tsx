@@ -9,7 +9,9 @@ import {
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
 import { Spinner } from './LoadingStates';
+import { Button, IconButton, TextArea, Flex } from '@radix-ui/themes';
 import { CHART_COLORS, CHART_GRID, CHART_AXIS, CHART_TOOLTIP } from '../lib/chartTheme';
+import { useXAnalytics, invalidateXAnalytics, fetchXAnalytics } from '../hooks/useXAnalytics';
 
 interface PostMetrics {
   id: string;
@@ -57,7 +59,7 @@ const SUGGESTION_ICONS: Record<string, React.ReactNode> = {
   repeat: <Repeat size={24} />,
 };
 
-const COLORS = [CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.amber, CHART_COLORS.red, CHART_COLORS.purple, CHART_COLORS.pink];
+const COLORS = [CHART_COLORS.blue, CHART_COLORS.accent, CHART_COLORS.amber, CHART_COLORS.red, CHART_COLORS.purple, CHART_COLORS.pink];
 
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -133,10 +135,10 @@ export function XEnhancedAnalyticsView() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/x/analytics');
-      const data = res.ok ? await res.json() : {};
-      const profile = data.profile?.public_metrics ?? {};
-      const rawTweets: any[] = data.tweets ?? [];
+      // Use shared fetch with in-flight deduplication + caching
+      const apiData = await fetchXAnalytics();
+      const profile = apiData.profile?.public_metrics ?? {} as Partial<{ followers_count: number; following_count: number; tweet_count: number; like_count: number }>;
+      const rawTweets: any[] = apiData.tweets ?? [];
 
       // Filter tweets by selected time range
       const rangeDays = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
@@ -375,23 +377,26 @@ export function XEnhancedAnalyticsView() {
           <BarChart2 size={48} className="mx-auto mb-4 text-mission-control-text-dim opacity-30" />
           <p className="text-mission-control-text font-medium mb-1">Could not load analytics</p>
           <p className="text-sm text-mission-control-text-dim">Check your X API credentials.</p>
-          <button
+          <Button
             onClick={loadData}
-            className="mt-4 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent/90 transition-colors"
+            variant="solid"
+            color="blue"
+            size="2"
+            className="mt-4"
           >
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg overflow-hidden">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-mission-control-border shrink-0">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+      <div className="border-b border-mission-control-border shrink-0">
+        <Flex align="center" justify="between" p="4" className="pb-0">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/10 rounded-lg">
               <BarChart2 size={24} className="text-mission-control-accent" />
             </div>
@@ -399,30 +404,33 @@ export function XEnhancedAnalyticsView() {
               <h1 className="text-xl font-semibold text-mission-control-text">Enhanced Analytics</h1>
               <p className="text-sm text-mission-control-text-dim">Deep insights for your social media performance</p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex bg-mission-control-surface rounded-lg p-1 border border-mission-control-border">
+          </Flex>
+          <Flex align="center" gap="2">
+            <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
               {(['7d', '30d', '90d'] as const).map((range) => (
                 <button
                   key={range}
+                  type="button"
                   onClick={() => setTimeRange(range)}
-                  className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                     timeRange === range
-                      ? 'bg-mission-control-accent text-white'
-                      : 'text-mission-control-text-dim hover:text-mission-control-text'
+                      ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                      : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
                   }`}
                 >
                   {range === '7d' ? '7D' : range === '30d' ? '30D' : '90D'}
                 </button>
               ))}
             </div>
-            <button
+            <IconButton
               onClick={loadData}
-              className="p-2 rounded-lg border border-mission-control-border hover:bg-mission-control-surface transition-colors text-mission-control-text-dim"
+              variant="outline"
+              color="gray"
+              size="2"
               title="Refresh"
             >
               <RefreshCw size={16} />
-            </button>
+            </IconButton>
             <div className="h-4 border-l border-mission-control-border" />
             {[
               { label: 'Weekly report', prompt: 'Generate a weekly performance report. Summarize post performance, engagement trends, top content, follower growth, and key insights. Use markdown tables.' },
@@ -432,37 +440,41 @@ export function XEnhancedAnalyticsView() {
               <button
                 key={i}
                 onClick={() => window.dispatchEvent(new CustomEvent('x-agent-chat-inject', { detail: { message: action.prompt } }))}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-info hover:bg-info-subtle/50 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <Sparkles size={10} />
                 {action.label}
               </button>
             ))}
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* View Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto">
+        <div className="flex items-center overflow-x-auto px-4">
           {[
             { id: 'overview', label: 'Overview', icon: BarChart2 },
             { id: 'posts', label: 'Post Metrics', icon: MessageCircle },
             { id: 'heatmap', label: 'Posting Heatmap', icon: Calendar },
             { id: 'insights', label: 'Suggestions', icon: Lightbulb },
             { id: 'predictor', label: 'Before You Post', icon: Sparkles },
-          ].map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setView(id as AnalyticsView)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                view === id
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/50'
-              }`}
-            >
-              <Icon size={16} />
-              {label}
-            </button>
-          ))}
+          ].map(({ id, label, icon: Icon }) => {
+            const isActive = view === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setView(id as AnalyticsView)}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors focus-visible:outline-none ${
+                  isActive
+                    ? 'border-mission-control-accent text-mission-control-accent'
+                    : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
+              >
+                <Icon size={16} aria-hidden="true" />
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -473,39 +485,44 @@ export function XEnhancedAnalyticsView() {
             {/* Summary Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <MessageCircle size={16} className="text-info" />
-                  <span className="text-sm text-mission-control-text-dim">Total Posts</span>
-                </div>
-                <div className="text-2xl font-bold text-mission-control-text">{data.summary.totalPosts}</div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-1.5">
+                  <MessageCircle size={12} className="text-info" />
+                  Posts
+                </p>
+                <div className="text-2xl font-bold text-mission-control-text tabular-nums">{data.summary.totalPosts}</div>
+                <p className="text-xs text-mission-control-text-dim mt-1">in selected period</p>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <Eye size={16} className="text-mission-control-accent" />
-                  <span className="text-sm text-mission-control-text-dim">Impressions</span>
-                </div>
-                <div className="text-2xl font-bold text-mission-control-text">{formatNumber(data.summary.totalImpressions)}</div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-1.5">
+                  <Eye size={12} className="text-mission-control-accent" />
+                  Impressions
+                </p>
+                <div className="text-2xl font-bold text-mission-control-text tabular-nums">{formatNumber(data.summary.totalImpressions)}</div>
+                <p className="text-xs text-mission-control-text-dim mt-1">total views</p>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp size={16} className="text-success" />
-                  <span className="text-sm text-mission-control-text-dim">Engagement Rate</span>
-                </div>
-                <div className="text-2xl font-bold text-success">{data.summary.engagementRate.toFixed(2)}%</div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-1.5">
+                  <TrendingUp size={12} className="text-success" />
+                  Engagement
+                </p>
+                <div className="text-2xl font-bold tabular-nums" style={{ color: 'var(--color-success)' }}>{data.summary.engagementRate.toFixed(2)}%</div>
+                <p className="text-xs text-mission-control-text-dim mt-1">avg rate</p>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <Users size={16} className="text-mission-control-accent" />
-                  <span className="text-sm text-mission-control-text-dim">Followers</span>
-                </div>
-                <div className="text-2xl font-bold text-mission-control-accent">{formatNumber(data.summary.followerCount)}</div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-1.5">
+                  <Users size={12} className="text-mission-control-accent" />
+                  Followers
+                </p>
+                <div className="text-2xl font-bold text-mission-control-accent tabular-nums">{formatNumber(data.summary.followerCount)}</div>
+                <p className="text-xs text-mission-control-text-dim mt-1">current count</p>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <Activity size={16} className="text-warning" />
-                  <span className="text-sm text-mission-control-text-dim">Avg Likes/Tweet</span>
-                </div>
-                <div className="text-2xl font-bold text-warning">{data.summary.avgLikesPerTweet.toFixed(1)}</div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-1.5">
+                  <Activity size={12} className="text-warning" />
+                  Avg Likes
+                </p>
+                <div className="text-2xl font-bold tabular-nums" style={{ color: 'var(--color-warning)' }}>{data.summary.avgLikesPerTweet.toFixed(1)}</div>
+                <p className="text-xs text-mission-control-text-dim mt-1">per tweet</p>
               </div>
             </div>
 
@@ -526,7 +543,7 @@ export function XEnhancedAnalyticsView() {
                           <stop offset="95%" stopColor={CHART_COLORS.blue} stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID.stroke} opacity={0.3} />
+                      <CartesianGrid {...CHART_GRID} />
                       <XAxis dataKey="date" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} />
                       <YAxis tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} tickFormatter={formatNumber} />
                       <Tooltip
@@ -548,7 +565,7 @@ export function XEnhancedAnalyticsView() {
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data.followerGrowth}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID.stroke} opacity={0.3} />
+                      <CartesianGrid {...CHART_GRID} />
                       <XAxis dataKey="date" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} />
                       <YAxis tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} tickLine={false} domain={['dataMin - 100', 'dataMax + 100']} />
                       <Tooltip
@@ -603,14 +620,14 @@ export function XEnhancedAnalyticsView() {
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data.contentTypes} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID.stroke} opacity={0.3} />
+                      <CartesianGrid {...CHART_GRID} />
                       <XAxis type="number" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} />
                       <YAxis type="category" dataKey="name" tick={{ fill: CHART_AXIS.stroke, fontSize: 10 }} width={80} />
                       <Tooltip
                         contentStyle={{ backgroundColor: CHART_TOOLTIP.backgroundColor, border: CHART_TOOLTIP.border, borderRadius: CHART_TOOLTIP.borderRadius }}
                         formatter={((value: number) => [`${value}%`, 'Engagement']) as any}
                       />
-                      <Bar dataKey="engagement" fill={CHART_COLORS.green} radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="engagement" fill={CHART_COLORS.accent} radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -619,31 +636,31 @@ export function XEnhancedAnalyticsView() {
 
             {/* Top Suggestions Preview */}
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-4">
+              <Flex align="center" justify="between" className="mb-4">
                 <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
                   <Lightbulb size={16} className="text-warning" />
                   Top Insights
                 </h3>
                 <button
                   onClick={() => setView('insights')}
-                  className="text-sm text-info hover:underline"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   View all →
                 </button>
-              </div>
+              </Flex>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {data.suggestions.slice(0, 3).map((suggestion) => (
                   <div key={suggestion.id} className="p-4 bg-mission-control-bg rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
+                    <Flex align="center" gap="2" className="mb-2">
                       <span className="text-xl">{SUGGESTION_ICONS[suggestion.icon] || <Lightbulb size={20} />}</span>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        suggestion.impact === 'high' ? 'bg-success-subtle text-success' :
-                        suggestion.impact === 'medium' ? 'bg-warning-subtle text-warning' :
+                        suggestion.impact === 'high' ? 'bg-success/10 text-success' :
+                        suggestion.impact === 'medium' ? 'bg-warning/10 text-warning' :
                         'bg-mission-control-border text-mission-control-text-dim'
                       }`}>
                         {suggestion.impact} impact
                       </span>
-                    </div>
+                    </Flex>
                     <div className="font-medium text-mission-control-text text-sm">{suggestion.title}</div>
                     <div className="text-xs text-mission-control-text-dim mt-1 line-clamp-2">{suggestion.description}</div>
                   </div>
@@ -655,12 +672,12 @@ export function XEnhancedAnalyticsView() {
                 Engagement Rate Trend Sparkline (7-day, from real data)
             ============================================================ */}
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-1">
+              <Flex align="center" justify="between" className="mb-1">
                 <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
                   <TrendingUp size={16} className="text-success" />
                   Engagement Rate Trend
                 </h3>
-              </div>
+              </Flex>
               <p className="text-xs text-mission-control-text-dim mb-4">Engagement rate by day of week</p>
 
               {engagementTrend.values.length > 0 && engagementTrend.values.some(v => v > 0) ? (
@@ -708,11 +725,11 @@ export function XEnhancedAnalyticsView() {
                           ` L${pts[pts.length - 1][0].toFixed(1)},${H - pad} L${pts[0][0].toFixed(1)},${H - pad} Z`;
                         return (
                           <>
-                            <path d={fillPath} fill={CHART_COLORS.green} fillOpacity={0.12} />
+                            <path d={fillPath} fill={CHART_COLORS.accent} fillOpacity={0.12} />
                             <polyline
                               points={polyPoints}
                               fill="none"
-                              stroke={CHART_COLORS.green}
+                              stroke={CHART_COLORS.accent}
                               strokeWidth={2.5}
                               strokeLinejoin="round"
                               strokeLinecap="round"
@@ -723,7 +740,7 @@ export function XEnhancedAnalyticsView() {
                                 cx={x.toFixed(1)}
                                 cy={y.toFixed(1)}
                                 r={3}
-                                fill={CHART_COLORS.green}
+                                fill={CHART_COLORS.accent}
                               />
                             ))}
                           </>
@@ -733,7 +750,7 @@ export function XEnhancedAnalyticsView() {
                   </div>
 
                   {/* Day labels + values */}
-                  <div className="flex justify-between mt-2 px-1">
+                  <Flex justify="between" className="mt-2 px-1">
                     {engagementTrend.labels.map((label, i) => (
                       <div key={label} className="flex flex-col items-center gap-0.5">
                         <span className="text-xs font-semibold text-success">
@@ -742,12 +759,12 @@ export function XEnhancedAnalyticsView() {
                         <span className="text-xs text-mission-control-text-dim">{label}</span>
                       </div>
                     ))}
-                  </div>
+                  </Flex>
                 </>
               ) : (
-                <div className="flex items-center justify-center h-20 text-sm text-mission-control-text-dim">
+                <Flex align="center" justify="center" className="h-20 text-sm text-mission-control-text-dim">
                   No engagement data available for this period
-                </div>
+                </Flex>
               )}
             </div>
 
@@ -755,12 +772,12 @@ export function XEnhancedAnalyticsView() {
                 Best Posting Times Heatmap (from real data)
             ============================================================ */}
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-1">
+              <Flex align="center" justify="between" className="mb-1">
                 <h3 className="font-semibold text-mission-control-text flex items-center gap-2">
                   <Clock size={16} className="text-info" />
                   Best Posting Times
                 </h3>
-              </div>
+              </Flex>
               <p className="text-xs text-mission-control-text-dim mb-4">
                 Based on your tweet engagement data. Darker cells = higher engagement.
               </p>
@@ -769,7 +786,7 @@ export function XEnhancedAnalyticsView() {
                 <div className="overflow-x-auto">
                   <div className="min-w-[360px]">
                     {/* Day headers */}
-                    <div className="flex ml-24 mb-1.5 gap-1">
+                    <Flex gap="1" className="ml-24 mb-1.5">
                       {DAYS_SHORT.map((d) => (
                         <div
                           key={d}
@@ -778,14 +795,14 @@ export function XEnhancedAnalyticsView() {
                           {d}
                         </div>
                       ))}
-                    </div>
+                    </Flex>
 
                     {/* Time slot rows */}
                     {HEATMAP_TIME_SLOTS.map((slot) => {
                       const allScores = DAYS_SHORT.map((_, dayIdx) => postingHeatmap[dayIdx]?.[slot] ?? 0);
                       const maxScore = Math.max(...allScores, 1);
                       return (
-                        <div key={slot} className="flex items-center gap-1 mb-1">
+                        <Flex key={slot} align="center" gap="1" className="mb-1">
                           <div className="w-24 shrink-0 text-right pr-3 text-xs text-mission-control-text-dim font-medium">
                             {HEATMAP_SLOT_LABELS[slot]}
                           </div>
@@ -806,26 +823,26 @@ export function XEnhancedAnalyticsView() {
                               />
                             );
                           })}
-                        </div>
+                        </Flex>
                       );
                     })}
 
                     {/* Legend */}
-                    <div className="flex items-center justify-end gap-2 mt-3">
+                    <Flex align="center" justify="end" gap="2" className="mt-3">
                       <span className="text-xs text-mission-control-text-dim">Low</span>
-                      <div className="flex gap-1">
+                      <Flex gap="1">
                         <div className="w-5 h-4 rounded-sm bg-info/10" />
                         <div className="w-5 h-4 rounded-sm bg-info/40" />
                         <div className="w-5 h-4 rounded-sm bg-info/70" />
-                      </div>
+                      </Flex>
                       <span className="text-xs text-mission-control-text-dim">High</span>
-                    </div>
+                    </Flex>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-20 text-sm text-mission-control-text-dim">
+                <Flex align="center" justify="center" className="h-20 text-sm text-mission-control-text-dim">
                   No posting data available for this period
-                </div>
+                </Flex>
               )}
             </div>
 
@@ -833,7 +850,7 @@ export function XEnhancedAnalyticsView() {
                 Content Performance Mini-Table (top 5 posts, real data)
             ============================================================ */}
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
+              <Flex align="center" justify="between" p="4" className="border-b border-mission-control-border">
                 <div>
                   <h3 className="text-sm font-semibold text-mission-control-text flex items-center gap-2">
                     <BarChart2 size={15} className="text-mission-control-accent" />
@@ -844,35 +861,37 @@ export function XEnhancedAnalyticsView() {
                   </p>
                 </div>
                 {recentTopPosts.length > 0 && (
-                  <button
+                  <Button
                     onClick={() => exportPostsCSV(recentTopPosts)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-mission-control-border rounded-lg hover:bg-mission-control-bg transition-colors text-mission-control-text-dim hover:text-mission-control-text"
+                    variant="outline"
+                    color="gray"
+                    size="1"
                     title="Export CSV"
                   >
                     <Download size={13} />
                     Export CSV
-                  </button>
+                  </Button>
                 )}
-              </div>
+              </Flex>
 
               {recentTopPosts.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-mission-control-border bg-mission-control-bg/50">
-                        <th className="text-left p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
+                        <th className="text-left p-3 text-[10px] uppercase tracking-wide text-mission-control-text-dim font-bold">
                           Content
                         </th>
-                        <th className="text-left p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium whitespace-nowrap">
+                        <th className="text-left p-3 text-[10px] uppercase tracking-wide text-mission-control-text-dim font-bold whitespace-nowrap">
                           Date
                         </th>
-                        <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
+                        <th className="text-right p-3 text-[10px] uppercase tracking-wide text-mission-control-text-dim font-bold">
                           Likes
                         </th>
-                        <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium">
+                        <th className="text-right p-3 text-[10px] uppercase tracking-wide text-mission-control-text-dim font-bold">
                           Replies
                         </th>
-                        <th className="text-right p-3 text-xs uppercase tracking-wide text-mission-control-text-dim font-medium whitespace-nowrap">
+                        <th className="text-right p-3 text-[10px] uppercase tracking-wide text-mission-control-text-dim font-bold whitespace-nowrap">
                           Eng %
                         </th>
                       </tr>
@@ -933,9 +952,9 @@ export function XEnhancedAnalyticsView() {
                   </table>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-20 text-sm text-mission-control-text-dim">
+                <Flex align="center" justify="center" className="h-20 text-sm text-mission-control-text-dim">
                   No posts available for this period
-                </div>
+                </Flex>
               )}
             </div>
 
@@ -948,31 +967,31 @@ export function XEnhancedAnalyticsView() {
             <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4">
               <div className="text-sm text-mission-control-text-dim mb-3">Average Post Performance</div>
               <div className="flex items-center gap-6 flex-wrap">
-                <div className="flex items-center gap-2">
+                <Flex align="center" gap="2">
                   <Eye size={14} className="text-mission-control-accent" />
                   <span className="text-mission-control-text">{formatFullNumber(avgMetrics.impressions)}</span>
                   <span className="text-xs text-mission-control-text-dim">impressions</span>
-                </div>
-                <div className="flex items-center gap-2">
+                </Flex>
+                <Flex align="center" gap="2">
                   <Heart size={14} className="text-review" />
                   <span className="text-mission-control-text">{avgMetrics.likes}</span>
                   <span className="text-xs text-mission-control-text-dim">likes</span>
-                </div>
-                <div className="flex items-center gap-2">
+                </Flex>
+                <Flex align="center" gap="2">
                   <Repeat size={14} className="text-success" />
                   <span className="text-mission-control-text">{avgMetrics.retweets}</span>
                   <span className="text-xs text-mission-control-text-dim">retweets</span>
-                </div>
-                <div className="flex items-center gap-2">
+                </Flex>
+                <Flex align="center" gap="2">
                   <MessageCircle size={14} className="text-info" />
                   <span className="text-mission-control-text">{avgMetrics.replies}</span>
                   <span className="text-xs text-mission-control-text-dim">replies</span>
-                </div>
-                <div className="flex items-center gap-2">
+                </Flex>
+                <Flex align="center" gap="2">
                   <MousePointer size={14} className="text-mission-control-accent" />
                   <span className="text-mission-control-text">{avgMetrics.clicks}</span>
                   <span className="text-xs text-mission-control-text-dim">clicks</span>
-                </div>
+                </Flex>
               </div>
             </div>
 
@@ -984,12 +1003,12 @@ export function XEnhancedAnalyticsView() {
               <div className="divide-y divide-mission-control-border">
                 {data.postMetrics.map((post) => (
                   <div key={post.id} className="p-4 hover:bg-mission-control-bg/50 transition-colors">
-                    <div className="flex items-start gap-4">
+                    <Flex align="start" gap="4">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <Flex align="center" gap="2" className="mb-1">
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                            post.type === 'thread' ? 'bg-success-subtle text-success' :
-                            post.type === 'reply' ? 'bg-info-subtle text-info' :
+                            post.type === 'thread' ? 'bg-success/10 text-success' :
+                            post.type === 'reply' ? 'bg-info/10 text-info' :
                             post.type === 'quote' ? 'bg-mission-control-accent/10 text-mission-control-accent' :
                             'bg-mission-control-accent/20 text-mission-control-accent'
                           }`}>
@@ -998,7 +1017,7 @@ export function XEnhancedAnalyticsView() {
                           <span className="text-xs text-mission-control-text-dim">
                             {new Date(post.created_at).toLocaleDateString()}
                           </span>
-                        </div>
+                        </Flex>
                         <p className="text-sm text-mission-control-text line-clamp-2">{post.content}</p>
                       </div>
                       <div className="shrink-0 flex items-center gap-4">
@@ -1015,32 +1034,32 @@ export function XEnhancedAnalyticsView() {
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
                           <div>
-                            <div className="flex items-center justify-center gap-1 text-review">
+                            <Flex align="center" justify="center" gap="1" className="text-review">
                               <Heart size={12} />
-                            </div>
+                            </Flex>
                             <div className="text-xs font-medium text-mission-control-text">{post.likes}</div>
                           </div>
                           <div>
-                            <div className="flex items-center justify-center gap-1 text-success">
+                            <Flex align="center" justify="center" gap="1" className="text-success">
                               <Repeat size={12} />
-                            </div>
+                            </Flex>
                             <div className="text-xs font-medium text-mission-control-text">{post.retweets}</div>
                           </div>
                           <div>
-                            <div className="flex items-center justify-center gap-1 text-info">
+                            <Flex align="center" justify="center" gap="1" className="text-info">
                               <MessageCircle size={12} />
-                            </div>
+                            </Flex>
                             <div className="text-xs font-medium text-mission-control-text">{post.replies}</div>
                           </div>
                           <div>
-                            <div className="flex items-center justify-center gap-1 text-mission-control-accent">
+                            <Flex align="center" justify="center" gap="1" className="text-mission-control-accent">
                               <MousePointer size={12} />
-                            </div>
+                            </Flex>
                             <div className="text-xs font-medium text-mission-control-text">{post.clicks}</div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </Flex>
                   </div>
                 ))}
               </div>
@@ -1063,17 +1082,17 @@ export function XEnhancedAnalyticsView() {
               <div className="overflow-x-auto">
                 <div className="min-w-[800px]">
                   {/* Hour labels */}
-                  <div className="flex ml-12 mb-2">
+                  <Flex className="ml-12 mb-2">
                     {[0, 3, 6, 9, 12, 15, 18, 21].map((hour) => (
                       <div key={hour} className="flex-1 text-xs text-mission-control-text-dim text-center">
                         {hour.toString().padStart(2, '0')}:00
                       </div>
                     ))}
-                  </div>
+                  </Flex>
                   
                   {/* Heatmap grid */}
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, _dayIndex) => (
-                    <div key={day} className="flex items-center mb-1">
+                    <Flex key={day} align="center" className="mb-1">
                       <div className="w-10 text-xs text-mission-control-text-dim text-right pr-2">{day}</div>
                       <div className="flex-1 flex gap-0.5">
                         {Array.from({ length: 24 }, (_, hour) => {
@@ -1092,13 +1111,13 @@ export function XEnhancedAnalyticsView() {
                           );
                         })}
                       </div>
-                    </div>
+                    </Flex>
                   ))}
-                  
+
                   {/* Legend */}
-                  <div className="flex items-center justify-end gap-2 mt-4">
+                  <Flex align="center" justify="end" gap="2" className="mt-4">
                     <span className="text-xs text-mission-control-text-dim">Low</span>
-                    <div className="flex gap-0.5">
+                    <Flex gap="1" className="gap-[2px]">
                       {[0.2, 0.4, 0.6, 0.8, 1].map((intensity) => (
                         <div
                           key={intensity}
@@ -1106,9 +1125,9 @@ export function XEnhancedAnalyticsView() {
                           style={{ backgroundColor: `${CHART_COLORS.blue}${Math.round(intensity * 255).toString(16).padStart(2, '0')}` }}
                         />
                       ))}
-                    </div>
+                    </Flex>
                     <span className="text-xs text-mission-control-text-dim">High</span>
-                  </div>
+                  </Flex>
                 </div>
               </div>
             </div>
@@ -1116,26 +1135,26 @@ export function XEnhancedAnalyticsView() {
             {/* Best Times Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
+                <Flex align="center" gap="2" className="mb-2">
                   <Zap size={16} className="text-warning" />
                   <span className="text-sm text-mission-control-text-dim">Best Day</span>
-                </div>
+                </Flex>
                 <div className="text-2xl font-bold text-mission-control-text">{bestTimes.day}</div>
                 <div className="text-sm text-mission-control-text-dim">Highest average engagement</div>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
+                <Flex align="center" gap="2" className="mb-2">
                   <Clock size={16} className="text-info" />
                   <span className="text-sm text-mission-control-text-dim">Best Time</span>
-                </div>
+                </Flex>
                 <div className="text-2xl font-bold text-mission-control-text">{bestTimes.hour}</div>
                 <div className="text-sm text-mission-control-text-dim">Peak engagement window</div>
               </div>
               <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-2">
+                <Flex align="center" gap="2" className="mb-2">
                   <Calendar size={16} className="text-success" />
                   <span className="text-sm text-mission-control-text-dim">Best Day + Time</span>
-                </div>
+                </Flex>
                 <div className="text-2xl font-bold text-mission-control-text">{bestTimes.combined}</div>
                 <div className="text-sm text-mission-control-text-dim">Optimal posting slot</div>
               </div>
@@ -1155,22 +1174,22 @@ export function XEnhancedAnalyticsView() {
                   key={suggestion.id}
                   className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-5"
                 >
-                  <div className="flex items-start gap-4">
+                  <Flex align="start" gap="4">
                     <div className="text-3xl">{SUGGESTION_ICONS[suggestion.icon] || <Lightbulb size={28} />}</div>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                      <Flex align="center" gap="2" className="mb-2">
                         <h4 className="font-semibold text-mission-control-text">{suggestion.title}</h4>
                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                          suggestion.impact === 'high' ? 'bg-success-subtle text-success' :
-                          suggestion.impact === 'medium' ? 'bg-warning-subtle text-warning' :
+                          suggestion.impact === 'high' ? 'bg-success/10 text-success' :
+                          suggestion.impact === 'medium' ? 'bg-warning/10 text-warning' :
                           'bg-mission-control-border text-mission-control-text-dim'
                         }`}>
                           {suggestion.impact} impact
                         </span>
-                      </div>
+                      </Flex>
                       <p className="text-sm text-mission-control-text-dim">{suggestion.description}</p>
                     </div>
-                  </div>
+                  </Flex>
                 </div>
               ))}
             </div>
@@ -1184,7 +1203,7 @@ export function XEnhancedAnalyticsView() {
           <div className="space-y-6 max-w-2xl mx-auto">
             <div>
               <h3 className="font-semibold text-mission-control-text flex items-center gap-2 mb-1">
-                <Sparkles size={16} style={{ color: 'var(--color-info)' }} />
+                <Sparkles size={16} className="text-info" />
                 Before You Post
               </h3>
               <p className="text-sm text-mission-control-text-dim">
@@ -1194,17 +1213,19 @@ export function XEnhancedAnalyticsView() {
 
             {/* Input */}
             <div>
-              <textarea
+              <TextArea
                 value={predictorDraft}
                 onChange={e => { setPredictorDraft(e.target.value); setPrediction(null); setPredictionError(null); }}
                 rows={5}
                 maxLength={280}
                 placeholder="Paste your draft tweet here..."
-                className="w-full px-3 py-2 text-sm border border-mission-control-border rounded-lg resize-none focus:outline-none bg-mission-control-surface text-mission-control-text placeholder:text-mission-control-text-dim"
+                variant="soft"
+                resize="vertical"
+                className="w-full"
               />
-              <div className="flex items-center justify-between mt-2">
+              <Flex align="center" justify="between" className="mt-2">
                 <span className="text-xs text-mission-control-text-dim">{predictorDraft.length}/280</span>
-                <button
+                <Button
                   onClick={async () => {
                     if (!predictorDraft.trim()) return;
                     setPredicting(true);
@@ -1226,24 +1247,26 @@ export function XEnhancedAnalyticsView() {
                     }
                   }}
                   disabled={!predictorDraft.trim() || predicting}
-                  className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors disabled:opacity-50"
-                  style={{ background: 'var(--color-info)', color: '#fff' }}
+                  variant="solid"
+                  color="blue"
+                  size="2"
                 >
                   <Sparkles size={14} />
                   {predicting ? 'Predicting...' : 'Predict Performance'}
-                </button>
-              </div>
+                </Button>
+              </Flex>
             </div>
 
             {/* Error */}
             {predictionError && (
-              <div
-                className="flex items-center gap-2 p-3 rounded-lg text-sm"
-                style={{ background: 'var(--color-error-subtle)', color: 'var(--color-error)' }}
+              <Flex
+                align="center"
+                gap="2"
+                className="p-3 rounded-xl text-sm bg-error-subtle text-error"
               >
                 <AlertCircle size={16} />
                 {predictionError}
-              </div>
+              </Flex>
             )}
 
             {/* Prediction results */}
@@ -1261,41 +1284,41 @@ export function XEnhancedAnalyticsView() {
                       key={label}
                       className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4"
                     >
-                      <div className="flex items-center gap-1.5 mb-1">
+                      <Flex align="center" gap="1" className="mb-1">
                         <Icon size={14} style={{ color }} />
                         <span className="text-xs text-mission-control-text-dim">{label}</span>
-                      </div>
+                      </Flex>
                       <div className="text-xl font-bold text-mission-control-text">{value}</div>
                     </div>
                   ))}
                 </div>
 
                 {/* Optimal post time */}
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-surface border border-mission-control-border">
-                  <Clock size={16} style={{ color: 'var(--color-info)' }} />
+                <Flex align="center" gap="3" p="3" className="rounded-lg bg-mission-control-surface border border-mission-control-border">
+                  <Clock size={16} className="text-info" />
                   <div>
                     <div className="text-xs text-mission-control-text-dim">Optimal post time</div>
                     <div className="text-sm font-semibold text-mission-control-text">{prediction.optimalPostTime}</div>
                   </div>
-                </div>
+                </Flex>
 
                 {/* Content signals */}
                 <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4">
                   <div className="text-sm font-medium text-mission-control-text mb-3">Content signals</div>
                   <div className="space-y-2">
                     {prediction.contentSignals.map(signal => (
-                      <div key={signal.label} className="flex items-center gap-3">
+                      <Flex key={signal.label} align="center" gap="3">
                         {signal.verdict === 'good' ? (
-                          <CheckCircle2 size={14} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
+                          <CheckCircle2 size={14} className="text-success flex-shrink-0" />
                         ) : signal.verdict === 'improve' ? (
-                          <AlertCircle size={14} style={{ color: 'var(--color-warning)', flexShrink: 0 }} />
+                          <AlertCircle size={14} className="text-warning flex-shrink-0" />
                         ) : (
                           <Minus size={14} className="text-mission-control-text-dim flex-shrink-0" />
                         )}
                         <span className="text-sm text-mission-control-text w-32">{signal.label}</span>
                         <div className="flex-1 h-1.5 rounded-full bg-mission-control-border overflow-hidden">
                           <div
-                            className="h-full rounded-full transition-all"
+                            className="h-full rounded-full transition-colors"
                             style={{
                               width: `${signal.score}%`,
                               background: signal.verdict === 'good'
@@ -1307,7 +1330,7 @@ export function XEnhancedAnalyticsView() {
                           />
                         </div>
                         <span className="text-xs text-mission-control-text-dim w-6 text-right">{signal.score}</span>
-                      </div>
+                      </Flex>
                     ))}
                   </div>
                 </div>
@@ -1318,7 +1341,7 @@ export function XEnhancedAnalyticsView() {
                   <ul className="space-y-2">
                     {prediction.improvements.map((tip, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-mission-control-text">
-                        <Lightbulb size={13} style={{ color: 'var(--color-warning)', flexShrink: 0, marginTop: 2 }} />
+                        <Lightbulb size={13} className="text-warning flex-shrink-0 mt-0.5" />
                         {tip}
                       </li>
                     ))}
@@ -1333,7 +1356,7 @@ export function XEnhancedAnalyticsView() {
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }
 

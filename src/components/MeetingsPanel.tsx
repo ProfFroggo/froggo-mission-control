@@ -8,15 +8,17 @@
 // Review: 2026-02-17 - suppression retained, all patterns intentional
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Button, IconButton, TextField, Select, TextArea, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
-import { 
-  Mic, MicOff, Phone, PhoneOff, Loader2, 
+import {
+  Mic, MicOff, Phone, PhoneOff, Loader2,
   MessageSquare, Brain, ListTodo, Clock, FileText,
   Download, ChevronRight, Calendar, Send, X,
   Check, Edit3, Trash2, Plus, CheckCircle2, XCircle,
-  Upload, Zap, Archive
+  Upload, Zap, Archive, Search, SlidersHorizontal, ArrowUpDown
 } from 'lucide-react';
 import MarkdownMessage from './MarkdownMessage';
+import TabNav from './TabNav';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { authHeaders } from '../lib/api';
 // GeminiLiveService not used for passive recording — using Web Speech API for live + Gemini audio API for post-meeting diarization
@@ -26,6 +28,8 @@ import { copyToClipboard } from '../utils/clipboard';
 import { Spinner } from './LoadingStates';
 import ErrorDisplay from './ErrorDisplay';
 import EmptyState from './EmptyState';
+import MicSelector from './MicSelector';
+import { GeminiStt } from '../lib/globalStt';
 
 const logger = createLogger('Meetings');
 
@@ -38,19 +42,21 @@ const logger = createLogger('Meetings');
  * 3. Action Items: Clear approve/edit/dismiss workflow
  */
 
-// Gemini API key — loaded dynamically, no hardcoded fallback
-let _cachedGeminiKey: string | null = null;
-async function getGeminiApiKey(): Promise<string> {
-  if (_cachedGeminiKey) return _cachedGeminiKey;
-  try {
-    const { settingsApi } = await import('../lib/api');
-    const result = await settingsApi.get('gemini_api_key');
-    if (result?.value) { _cachedGeminiKey = result.value; return result.value; }
-  } catch { /* ignore */ }
-  return '';
+// Server-side Gemini proxy helper — API key never leaves the server (F-02 fix)
+async function geminiGenerate(
+  contents: unknown[],
+  generationConfig?: Record<string, unknown>,
+  model?: string,
+): Promise<{ candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }> {
+  const { authHeaders } = await import('../lib/api');
+  const res = await fetch('/api/gemini/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ contents, generationConfig, model }),
+  });
+  if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+  return res.json();
 }
-const GEMINI_WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
-const GEMINI_MODEL = 'models/gemini-live-2.5-flash-preview';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -219,6 +225,10 @@ export default function MeetingsPanel() {
   // View state
   const [activeView, setActiveView] = useState<'current' | 'history' | 'transcribe' | 'upload-transcript'>('current');
   const [pastMeetings, setPastMeetings] = useState<PastMeeting[]>([]);
+  const [historySearch, setHistorySearch] = useState('');
+  const [historySortBy, setHistorySortBy] = useState<'date' | 'title' | 'duration'>('date');
+  const [historySortDir, setHistorySortDir] = useState<'desc' | 'asc'>('desc');
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'has-tasks' | 'has-actions' | 'uploaded' | 'recorded'>('all');
   const [transcribing, setTranscribing] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState<string>('');
   const [transcriptionProgress, setTranscriptionProgress] = useState(0);
@@ -250,6 +260,17 @@ export default function MeetingsPanel() {
     id: string; title: string; description: string; planningNotes: string;
     priority: string; assignedTo: string; subtasks: string[]; status: 'pending' | 'approved' | 'rejected';
   }>>([]);
+
+  // Google Drive sync
+  const [driveFolderInput, setDriveFolderInput] = useState('');
+  const [driveFolderSaved, setDriveFolderSaved] = useState('');
+  const [driveFiles, setDriveFiles] = useState<Array<{
+    id: string; name: string; mimeType: string; modifiedTime: string; alreadyImported: boolean;
+  }>>([]);
+  const [driveLoading, setDriveLoading] = useState(false);
+  const [driveError, setDriveError] = useState<string | null>(null);
+  const [driveImporting, setDriveImporting] = useState<Set<string>>(new Set());
+  const [driveImported, setDriveImported] = useState<Set<string>>(new Set());
 
   // AI Chat
   const [meetingChatInput, setMeetingChatInput] = useState('');
@@ -289,6 +310,7 @@ export default function MeetingsPanel() {
   const streamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const recognitionRef = useRef<any>(null);
+  const sttRef = useRef<GeminiStt | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const transcriptionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -311,10 +333,23 @@ export default function MeetingsPanel() {
   useEffect(() => { loadPastMeetings(); }, []);
   useEffect(() => { loadUpcomingEvents(); }, [loadUpcomingEvents]);
 
+  // Load saved Drive folder ID from settings
+  useEffect(() => {
+    fetch('/api/settings?key=meetings.driveFolder.id', { headers: { ...authHeaders() } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.value) {
+          setDriveFolderSaved(data.value);
+          setDriveFolderInput(data.value);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     return () => {
       if (wsRef.current) { try { wsRef.current.close(); } catch { /* ignore */ } }
-      if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); }
+      if (streamRef.current) { try { streamRef.current.getTracks().forEach(t => t.stop()); } catch { /* ignore */ } }
       if (audioContextRef.current) { audioContextRef.current.close().catch((err) => { logger.error('Failed to close audio context:', err); }); }
     };
   }, []);
@@ -445,21 +480,11 @@ export default function MeetingsPanel() {
     setGeneratingSummary(true);
     try {
       const fullText = transcript.join('\n');
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: `Summarize this meeting transcript. Include:\n1. **Key Topics** discussed\n2. **Decisions** made\n3. **Action Items** with owners if mentioned\n4. **Next Steps**\n\nKeep it concise but comprehensive.\n\nTranscript:\n${fullText}` }] }],
-            generationConfig: { maxOutputTokens: 2048, temperature: 0.3 }
-          })
-        }
+      const data = await geminiGenerate(
+        [{ parts: [{ text: `Summarize this meeting transcript. Include:\n1. **Key Topics** discussed\n2. **Decisions** made\n3. **Action Items** with owners if mentioned\n4. **Next Steps**\n\nKeep it concise but comprehensive.\n\nTranscript:\n${fullText}` }] }],
+        { maxOutputTokens: 2048, temperature: 0.3 }
       );
-      if (response.ok) {
-        const data = await response.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
-      }
+      return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
     } catch (err) {
       // '[Meeting] Summary generation error:', err;
     } finally {
@@ -503,27 +528,20 @@ Based on the transcript, create 1-5 task proposals in this JSON format (only res
 Only include tasks that are clearly mentioned or implied. Assign appropriate agents based on task type.`;
 
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 4096, temperature: 0.2 }
-          })
-        }
+      const data = await geminiGenerate(
+        [{ parts: [{ text: prompt }] }],
+        { maxOutputTokens: 4096, temperature: 0.2 }
       );
-      
-      if (response.ok) {
-        const data = await response.json();
+
+      {
         const content = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
         
         if (content) {
           // Extract JSON from response
           const jsonMatch = content.match(/\[[\s\S]*\]/);
           if (jsonMatch) {
-            const tasks = JSON.parse(jsonMatch[0]);
+            let tasks: any[];
+            try { tasks = JSON.parse(jsonMatch[0]); } catch { tasks = []; }
             const formatted = tasks.map((t: any, idx: number) => ({
               id: `proposed-${Date.now()}-${idx}`,
               title: t.title || 'Untitled Task',
@@ -724,30 +742,20 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
         reader.readAsDataURL(file);
       });
 
-      // Transcribe using Gemini API directly in browser
-      // Use Gemini API directly with the base64 data
-      const apiKey = await getGeminiApiKey();
-      if (!apiKey) throw new Error('Gemini API key not configured');
+      // Transcribe via server-side proxy (F-02: API key never leaves server)
       const mimeType = file.type || 'audio/webm';
-      const transcribeResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { inlineData: { mimeType, data: base64 } },
-                { text: 'Transcribe this audio accurately. Output ONLY the transcript text. If no speech detected, return empty string.' }
-              ]
-            }],
-            generationConfig: { maxOutputTokens: 4096, temperature: 0.1 }
-          })
-        }
-      );
-      if (!transcribeResponse.ok) throw new Error(`Gemini API error: ${transcribeResponse.status}`);
+      const formData = new FormData();
+      formData.append('audio', file);
+      formData.append('mimeType', mimeType);
+      const { authHeaders: getAuthHeaders } = await import('../lib/api');
+      const transcribeResponse = await fetch('/api/gemini/transcribe', {
+        method: 'POST',
+        headers: { ...getAuthHeaders() },
+        body: formData,
+      });
+      if (!transcribeResponse.ok) throw new Error(`Transcription error: ${transcribeResponse.status}`);
       const transcribeData = await transcribeResponse.json();
-      const result = transcribeData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      const result = transcribeData.transcript?.trim() || '';
       setTranscriptionProgress(100);
       setTranscriptionResult(result);
       setStatusMessage('Transcription complete!');
@@ -870,6 +878,70 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
   const handleTranscriptDragLeave = useCallback(() => {
     setUploadDragOver(false);
   }, []);
+
+  // Google Drive sync helpers
+  const parseFolderId = (input: string): string => {
+    // Accept raw ID or full URL — extract ID from URL if needed
+    const match = input.match(/folders\/([a-zA-Z0-9_-]+)/);
+    return match ? match[1] : input.trim();
+  };
+
+  const saveDriveFolder = useCallback(async (folderId: string) => {
+    await fetch('/api/settings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ 'meetings.driveFolder.id': folderId }),
+    }).catch(() => {});
+    setDriveFolderSaved(folderId);
+  }, []);
+
+  const loadDriveFiles = useCallback(async (folderId: string) => {
+    if (!folderId) return;
+    setDriveLoading(true);
+    setDriveError(null);
+    try {
+      const res = await fetch(`/api/meetings/drive-sync?folderId=${encodeURIComponent(folderId)}`, {
+        headers: { ...authHeaders() },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        setDriveError(err.error || 'Failed to list files');
+        setDriveFiles([]);
+        return;
+      }
+      const data = await res.json();
+      setDriveFiles(data.files ?? []);
+    } catch (e) {
+      setDriveError(e instanceof Error ? e.message : 'Network error');
+      setDriveFiles([]);
+    } finally {
+      setDriveLoading(false);
+    }
+  }, []);
+
+  const importDriveFile = useCallback(async (fileId: string, fileName: string) => {
+    setDriveImporting(prev => new Set(prev).add(fileId));
+    try {
+      const res = await fetch('/api/meetings/drive-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ fileId, fileName }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        showToast('error', 'Import failed', err.error);
+        return;
+      }
+      setDriveImported(prev => new Set(prev).add(fileId));
+      setDriveFiles(prev => prev.map(f => f.id === fileId ? { ...f, alreadyImported: true } : f));
+      showToast('success', 'Imported', fileName);
+      loadPastMeetings();
+    } catch (e) {
+      showToast('error', 'Import failed', e instanceof Error ? e.message : 'Network error');
+    } finally {
+      setDriveImporting(prev => { const s = new Set(prev); s.delete(fileId); return s; });
+    }
+  }, [loadPastMeetings]);
 
   // Create tasks from approved upload action items
   const createTasksFromUploadItems = useCallback(async () => {
@@ -997,225 +1069,57 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
     return created;
   }, [meetingActionItems]);
 
-  // --- LEGACY: kept for file-upload transcription path only ---
-  const connectGeminiTranscription = useCallback(async (_stream: MediaStream) => {
-    const apiKey = await getGeminiApiKey();
-    if (!apiKey || apiKey.trim() === '') {
-      throw new Error('Gemini API key not configured. Add it in Settings \u2192 API Keys.');
-    }
-    return new Promise<WebSocket>((resolve, reject) => {
-      const url = `${GEMINI_WS_URL}?key=${apiKey}`;
-      const ws = new WebSocket(url);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        ws.send(JSON.stringify({
-          setup: {
-            model: GEMINI_MODEL,
-            generationConfig: { responseModalities: [] },
-            realtimeInputConfig: {
-              mediaResolution: 'MEDIA_RESOLUTION_LOW',
-              speechConfig: { languageCode: 'en' },
-              automaticActivityDetection: {
-                disabled: false,
-                startOfSpeechSensitivity: 'START_SENSITIVITY_HIGH',
-                endOfSpeechSensitivity: 'END_SENSITIVITY_HIGH',
-                prefixPaddingMs: 100,
-                silenceDurationMs: 1500,
-              },
-            },
-            inputAudioTranscription: {},
-            systemInstruction: {
-              parts: [{ text: 'You are a silent meeting transcriber. Do NOT respond with any text or audio. Only listen and transcribe.' }]
-            }
-          }
-        }));
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.setupComplete) {
-            resolve(ws);
-            return;
-          }
-          if (data.serverContent?.inputTranscription?.text) {
-            const text = data.serverContent.inputTranscription.text.trim();
-            if (text) {
-              transcriptBufferRef.current += (transcriptBufferRef.current ? ' ' : '') + text;
-              const buffer = transcriptBufferRef.current;
-              if (/[.?!]\s*$/.test(buffer) || buffer.length > 200) {
-                const finalText = buffer.trim();
-                transcriptBufferRef.current = '';
-                setMeetingTranscript(prev => [...prev, finalText]);
-                setMeetingTranscriptLines(prev => [...prev, { text: finalText, timestamp: Date.now() }]);
-                if (meetingDbIdRef.current) {
-                  saveTranscriptToDb(meetingDbIdRef.current, finalText).catch((err) => { logger.error('Failed to save transcript:', err); });
-                }
-                const actions = detectActionItems(finalText);
-                if (actions.length > 0) {
-                  setMeetingActionItems(prev => [...prev, ...actions]);
-                }
-                cleanupWithGemini(finalText);
-              }
-            }
-          }
-          if (data.serverContent?.turnComplete) {
-            if (transcriptBufferRef.current.trim()) {
-              const finalText = transcriptBufferRef.current.trim();
-              transcriptBufferRef.current = '';
-              setMeetingTranscript(prev => [...prev, finalText]);
-              const actions = detectActionItems(finalText);
-              if (actions.length > 0) setMeetingActionItems(prev => [...prev, ...actions]);
-              cleanupWithGemini(finalText);
-            }
-          }
-        } catch (err) {
-          // '[Gemini] Message parse error:', err;
-        }
-      };
-
-      ws.onerror = (err) => {
-        logger.error('Gemini WebSocket error:', err);
-        reject(new Error('Gemini WebSocket connection failed'));
-      };
-
-      ws.onclose = () => {
-        wsRef.current = null;
-      };
-    });
-  }, [detectActionItems]);
-
-  const startAudioStreaming = useCallback((stream: MediaStream, ws: WebSocket) => {
-    const audioContext = new AudioContext({ sampleRate: 16000 });
-    audioContextRef.current = audioContext;
-    streamRef.current = stream;
-    const source = audioContext.createMediaStreamSource(stream);
-    const analyser = audioContext.createAnalyser();
-    analyser.fftSize = 256;
-    source.connect(analyser);
-    analyserRef.current = analyser;
-    const processor = audioContext.createScriptProcessor(4096, 1, 1);
-    processor.onaudioprocess = (e) => {
-      if (!listeningRef.current || !ws || ws.readyState !== WebSocket.OPEN) return;
-      if (isMutedRef.current) { setAudioLevel(0); return; }
-      if (analyserRef.current) {
-        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-        analyserRef.current.getByteFrequencyData(dataArray);
-        const avg = dataArray.reduce((a, b) => a + b) / dataArray.length;
-        setAudioLevel(avg / 255);
-      }
-      const inputData = e.inputBuffer.getChannelData(0);
-      const pcm16 = new Int16Array(inputData.length);
-      for (let i = 0; i < inputData.length; i++) {
-        pcm16[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
-      }
-      const bytes = new Uint8Array(pcm16.buffer);
-      let binary = '';
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      try {
-        ws.send(JSON.stringify({
-          realtimeInput: {
-            mediaChunks: [{ data: btoa(binary), mimeType: 'audio/pcm;rate=16000' }]
-          }
-        }));
-      } catch { /* ignore */ }
-    };
-    source.connect(processor);
-    processor.connect(audioContext.destination);
-  }, []);
-
   const cleanupWithGemini = useCallback(async (text: string) => {
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: `Fix transcription errors. Common words: "perps" (perpetual futures), "Mission Control", "Bitso", "Kanban", "onchain", "Solana".\n\nDO NOT add explanation or context. Output ONLY the corrected text:\n\n${text}` }] }],
-            generationConfig: { maxOutputTokens: 512, temperature: 0.1 }
-          })
-        }
+      const data = await geminiGenerate(
+        [{ parts: [{ text: `Fix transcription errors. Common words: "perps" (perpetual futures), "Mission Control", "Bitso", "Kanban", "onchain", "Solana".\n\nDO NOT add explanation or context. Output ONLY the corrected text:\n\n${text}` }] }],
+        { maxOutputTokens: 512, temperature: 0.1 }
       );
-      if (response.ok) {
-        const data = await response.json();
-        const cleaned = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (cleaned && cleaned !== text) {
-          setMeetingTranscript(prev => {
-            const updated = [...prev];
-            const idx = updated.indexOf(text);
-            if (idx !== -1) updated[idx] = cleaned;
-            return updated;
-          });
-        }
+      const cleaned = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (cleaned && cleaned !== text) {
+        setMeetingTranscript(prev => {
+          const updated = [...prev];
+          const idx = updated.indexOf(text);
+          if (idx !== -1) updated[idx] = cleaned;
+          return updated;
+        });
       }
-    } catch (err) {
-      // '[Gemini] Cleanup error:', err;
+    } catch {
+      // '[Gemini] Cleanup error'
     }
   }, []);
 
-  // Web Speech API Transcription — defined after cleanupWithGemini to avoid TDZ
+  // Gemini STT Transcription — defined after cleanupWithGemini to avoid TDZ
   const startSpeechRecognition = useCallback((meetingDbId: string | null) => {
-    const SpeechRecognitionCtor =
-      (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognitionCtor) throw new Error('Speech recognition not supported in this browser. Use Chrome or Edge.');
-
-    const recognition: any = new SpeechRecognitionCtor();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-    recognitionRef.current = recognition;
-
-    recognition.onresult = (event: any) => {
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const text = event.results[i][0].transcript.trim();
-        if (!text) continue;
-
-        if (event.results[i].isFinal) {
-          // Final result — commit to transcript
-          transcriptBufferRef.current = '';
-          setMeetingTranscript(prev => [...prev, text]);
-          setMeetingTranscriptLines(prev => [...prev, { text, timestamp: Date.now() }]);
-          if (meetingDbId) saveTranscriptToDb(meetingDbId, text).catch(() => {});
-          cleanupWithGemini(text);
-        } else {
-          // Interim result — show live typing indicator
-          transcriptBufferRef.current = text;
-          setStatusMessage(text.slice(-80));
+    const stt = new GeminiStt({
+      deviceId: selectedDeviceId || undefined,
+      continuous: true,
+      chunkDurationMs: 10000,
+      onTranscript: (text) => {
+        if (!text.trim()) return;
+        transcriptBufferRef.current = '';
+        setMeetingTranscript(prev => [...prev, text]);
+        setMeetingTranscriptLines(prev => [...prev, { text, timestamp: Date.now() }]);
+        if (meetingDbId) saveTranscriptToDb(meetingDbId, text).catch(() => {});
+        cleanupWithGemini(text);
+        setStatusMessage('Listening...');
+      },
+      onStatus: (status) => { setStatusMessage(status); },
+      onError: (err) => {
+        console.error('[MeetingsPanel STT] error:', err);
+        setStatusMessage(`Mic error: ${err}`);
+      },
+      onEnd: () => {
+        // Only restart if meeting is still active
+        if (listeningRef.current) {
+          sttRef.current?.start();
         }
-      }
-    };
-
-    recognition.onerror = (event: any) => {
-      if (event.error === 'no-speech') return;
-      if (event.error === 'aborted') return;
-      console.error('[SpeechRecognition] error:', event.error, event);
-      setStatusMessage(`Mic error: ${event.error}`);
-    };
-
-    recognition.onaudiostart = () => { console.log('[SpeechRecognition] audio started — mic is active'); setStatusMessage('Mic active — listening...'); };
-    recognition.onspeechstart = () => { console.log('[SpeechRecognition] speech detected'); setStatusMessage('Hearing you...'); };
-    recognition.onspeechend = () => { console.log('[SpeechRecognition] speech ended — waiting for more...'); };
-    recognition.onnomatch = () => { console.log('[SpeechRecognition] no match'); };
-
-    recognition.onend = () => {
-      console.log('[SpeechRecognition] ended, listeningRef:', listeningRef.current);
-      if (listeningRef.current && recognitionRef.current) {
-        try { recognitionRef.current.start(); } catch (e) { console.error('[SpeechRecognition] restart failed:', e); }
-      }
-    };
-
-    try {
-      recognition.start();
-      console.log('[SpeechRecognition] started successfully');
-    } catch (e) {
-      console.error('[SpeechRecognition] start() failed:', e);
-      setStatusMessage(`Speech recognition failed to start: ${e}`);
-    }
-  }, [detectActionItems, cleanupWithGemini, saveTranscriptToDb]);
+      },
+    });
+    sttRef.current = stt;
+    stt.start();
+    setStatusMessage('Gemini STT active — listening...');
+  }, [selectedDeviceId, cleanupWithGemini, saveTranscriptToDb]);
 
   const startMeeting = useCallback(async () => {
     if (listeningRef.current) return;
@@ -1289,9 +1193,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       // Start Web Speech API for live transcription (Chrome/Edge)
       try {
         startSpeechRecognition(dbId);
-        console.log('[Meeting] Web Speech API started for live transcription');
-      } catch (e) {
-        console.error('[Meeting] Web Speech API failed:', e);
+      } catch {
         setStatusMessage('Speech recognition unavailable — audio is still being recorded for post-meeting processing');
       }
 
@@ -1319,6 +1221,10 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
         const finalText = transcriptBufferRef.current.trim();
         transcriptBufferRef.current = '';
         setMeetingTranscript(prev => [...prev, finalText]);
+      }
+      if (sttRef.current) {
+        sttRef.current.stop();
+        sttRef.current = null;
       }
       if (recognitionRef.current) {
         recognitionRef.current.onend = null; // prevent auto-restart
@@ -1371,74 +1277,97 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
   // 3. Update meeting record with results
   const prevMeetingActive = useRef(isMeetingActive);
   useEffect(() => {
-    if (prevMeetingActive.current && !isMeetingActive && meetingTranscript.length > 0) {
-      (async () => {
-        const rawTranscript = meetingTranscript.join('\n\n');
-        let finalTranscript = rawTranscript;
+    if (!prevMeetingActive.current || isMeetingActive) {
+      prevMeetingActive.current = isMeetingActive;
+      return;
+    }
+    // Meeting just ended — run post-processing regardless of whether transcript has content
+    prevMeetingActive.current = isMeetingActive;
 
-        // Step 1: Diarize — send audio or raw text to Gemini for speaker labels
-        setStatusMessage('Identifying speakers...');
-        try {
-          const formData = new FormData();
-          if (audioChunksRef.current.length > 0) {
-            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-            formData.append('audio', audioBlob, 'meeting.webm');
+    (async () => {
+      const rawTranscript = meetingTranscript.join('\n\n');
+      const hasAudio = audioChunksRef.current.length > 0;
+
+      // No transcript and no audio — just mark ended so user sees the post-meeting state
+      if (!rawTranscript.trim() && !hasAudio) {
+        setMeetingEndSummary({ savedPath: null, tasksCreated: 0, extractedTasks: [] });
+        setStatusMessage('Meeting ended — no audio captured');
+        if (meetingDbId) {
+          try { await endMeetingInDb(meetingDbId, elapsedTime); } catch { /* ignore */ }
+        }
+        addActivity({ type: 'system', message: 'Meeting ended', timestamp: Date.now() });
+        loadPastMeetings();
+        return;
+      }
+
+      // Audio recorded but no speech transcript — attempt audio-only diarization
+      if (!rawTranscript.trim() && hasAudio) {
+        setStatusMessage('No speech transcript — processing audio...');
+      }
+
+      let finalTranscript = rawTranscript;
+
+      // Step 1: Diarize — send audio + raw text to Gemini for speaker labels
+      setStatusMessage('Identifying speakers...');
+      try {
+        const formData = new FormData();
+        if (audioChunksRef.current.length > 0) {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          formData.append('audio', audioBlob, 'meeting.webm');
+        }
+        formData.append('rawTranscript', rawTranscript);
+
+        const diarRes = await fetch('/api/meetings/diarize', { method: 'POST', headers: { ...authHeaders() }, body: formData });
+        if (diarRes.ok) {
+          const diarData = await diarRes.json();
+          if (diarData.diarizedTranscript) {
+            finalTranscript = diarData.diarizedTranscript;
           }
-          formData.append('rawTranscript', rawTranscript);
+        }
+      } catch { /* diarization failed — use raw transcript */ }
+      audioChunksRef.current = []; // free memory
 
-          const diarRes = await fetch('/api/meetings/diarize', { method: 'POST', headers: { ...authHeaders() }, body: formData });
-          if (diarRes.ok) {
-            const diarData = await diarRes.json();
-            if (diarData.diarizedTranscript) {
-              finalTranscript = diarData.diarizedTranscript;
-            }
+      // Step 2: Send diarized transcript for summary + task extraction
+      setStatusMessage('Generating summary and extracting tasks...');
+      try {
+        const res = await fetch('/api/meetings/transcript', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({
+            content: finalTranscript || `[Meeting recorded on ${new Date().toLocaleString()} — no speech transcript available]`,
+            filename: `live-meeting-${new Date().toISOString().slice(0, 10)}.md`,
+          }),
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          if (result.summary) setAiSummary(result.summary);
+          if (result.taskProposals) setTaskProposals(result.taskProposals);
+          setMeetingEndSummary({ savedPath: result.savedPath, tasksCreated: 0, extractedTasks: [] });
+
+          if (meetingDbId) {
+            try { await endMeetingInDb(meetingDbId, elapsedTime, result.summary || undefined); } catch { /* ignore */ }
           }
-        } catch { /* diarization failed — use raw transcript */ }
-        audioChunksRef.current = []; // free memory
 
-        // Step 2: Send diarized transcript for summary + task extraction
-        setStatusMessage('Generating summary and extracting tasks...');
-        try {
-          const res = await fetch('/api/meetings/transcript', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders() },
-            body: JSON.stringify({
-              content: finalTranscript,
-              filename: `live-meeting-${new Date().toISOString().slice(0, 10)}.md`,
-            }),
-          });
-
-          if (res.ok) {
-            const result = await res.json();
-            if (result.summary) setAiSummary(result.summary);
-            if (result.taskProposals) setTaskProposals(result.taskProposals);
-            setMeetingEndSummary({ savedPath: result.savedPath, tasksCreated: 0, extractedTasks: [] });
-
-            if (meetingDbId) {
-              try { await endMeetingInDb(meetingDbId, elapsedTime, result.summary || undefined); } catch { /* ignore */ }
-            }
-
-            setStatusMessage('Meeting processed — review in Meetings tab');
-          } else {
-            if (meetingDbId) {
-              try { await endMeetingInDb(meetingDbId, elapsedTime); } catch { /* ignore */ }
-            }
-            setMeetingEndSummary({ savedPath: null, tasksCreated: 0, extractedTasks: [] });
-            setStatusMessage('Meeting ended');
-          }
-        } catch {
+          setStatusMessage(finalTranscript.trim() ? 'Meeting processed — review below' : 'Meeting saved — no transcript available');
+        } else {
           if (meetingDbId) {
             try { await endMeetingInDb(meetingDbId, elapsedTime); } catch { /* ignore */ }
           }
           setMeetingEndSummary({ savedPath: null, tasksCreated: 0, extractedTasks: [] });
           setStatusMessage('Meeting ended');
         }
+      } catch {
+        if (meetingDbId) {
+          try { await endMeetingInDb(meetingDbId, elapsedTime); } catch { /* ignore */ }
+        }
+        setMeetingEndSummary({ savedPath: null, tasksCreated: 0, extractedTasks: [] });
+        setStatusMessage('Meeting ended');
+      }
 
-        addActivity({ type: 'system', message: 'Meeting ended and processed', timestamp: Date.now() });
-        loadPastMeetings();
-      })();
-    }
-    prevMeetingActive.current = isMeetingActive;
+      addActivity({ type: 'system', message: 'Meeting ended and processed', timestamp: Date.now() });
+      loadPastMeetings();
+    })();
   }, [isMeetingActive, meetingTranscript, addActivity, loadPastMeetings, meetingDbId, elapsedTime, endMeetingInDb]);
 
   useEffect(() => {
@@ -1490,20 +1419,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
         }
       } else {
         const prompt = `You are helping Kevin review a meeting transcript. Answer questions about the meeting content.\n\nMeeting from ${meeting.date.toLocaleDateString()}:\n${meeting.rawContent}\n\nUser question: ${question}\n\nGive a helpful, concise answer.`;
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${await getGeminiApiKey()}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...authHeaders() },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 1024 } })
-          }
+        const data = await geminiGenerate(
+          [{ parts: [{ text: prompt }] }],
+          { maxOutputTokens: 1024 }
         );
-        if (response.ok) {
-          const data = await response.json();
-          const answer = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-          if (answer) {
-            setMeetingChatMessages(prev => [...prev, { role: 'assistant', content: answer, timestamp: Date.now() }]);
-          }
+        const answer = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (answer) {
+          setMeetingChatMessages(prev => [...prev, { role: 'assistant', content: answer, timestamp: Date.now() }]);
         }
       }
     } catch (e) {
@@ -1519,105 +1441,75 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
 
   // ── RENDER ──
   return (
-    <div className="h-full flex flex-col bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
-      <div className="shrink-0 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="max-w-5xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-success-subtle flex items-center justify-center">
-                <Phone size={20} className="text-success" />
-              </div>
-              <div>
-                <h1 className="text-heading-2">Meetings</h1>
-                <p className="text-secondary">
-                  {isMeetingActive ? 'Recording in progress' : 'Transcribe and review meetings'}
-                </p>
-              </div>
+      <div className="px-4 py-3 border-b border-mission-control-border flex-shrink-0 bg-mission-control-surface">
+        <Flex align="center" justify="between">
+          <Flex align="center" gap="3">
+            <div className="p-1.5 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+              <Phone size={18} className="text-mission-control-accent" />
             </div>
-            <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-sm font-semibold text-mission-control-text">Meetings</h1>
+              <p className="text-xs text-mission-control-text-dim mt-0.5">
+                {isMeetingActive ? 'Recording in progress' : 'Transcribe and review meetings'}
+              </p>
+            </div>
+          </Flex>
+          {isMeetingActive && (
+            <Flex align="center" gap="2.5">
               {statusMessage && (
-                <span className="text-sm text-mission-control-text-dim bg-mission-control-bg px-3 py-1 rounded-full">
+                <span className="text-xs text-mission-control-text-dim bg-mission-control-bg px-2.5 py-1 rounded-full max-w-[200px] truncate">
                   {statusMessage}
                 </span>
               )}
               <button
                 onClick={toggleMuted}
-                className={`p-2.5 rounded-lg transition-all ${isMuted 
-                  ? 'bg-error-subtle text-error hover:bg-error-subtle' 
-                  : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'}`}
                 title={isMuted ? 'Unmute' : 'Mute'}
+                className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
+                  isMuted
+                    ? 'bg-error/10 border border-error/30 text-error'
+                    : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
-                {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
+                {isMuted ? <MicOff size={15} /> : <Mic size={15} />}
               </button>
-            </div>
-          </div>
-        </div>
+            </Flex>
+          )}
+        </Flex>
       </div>
 
       {/* Tab Navigation */}
-      <div className="shrink-0 border-b border-mission-control-border bg-mission-control-surface/50">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="flex gap-1">
-            <button
-              onClick={() => { setActiveView('current'); setSelectedMeeting(null); }}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-all ${
-                activeView === 'current' 
-                  ? 'border-mission-control-accent text-mission-control-accent' 
-                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
-            >
-              Current Meeting
-            </button>
-            <button
-              onClick={() => setActiveView('history')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-all ${
-                activeView === 'history' 
-                  ? 'border-mission-control-accent text-mission-control-accent' 
-                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
-            >
-              Meetings
-            </button>
-            <button
-              onClick={() => setActiveView('transcribe')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-all ${
-                activeView === 'transcribe' 
-                  ? 'border-mission-control-accent text-mission-control-accent' 
-                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
-            >
-              Upload Audio
-            </button>
-            <button
-              onClick={() => setActiveView('upload-transcript')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-all ${
-                activeView === 'upload-transcript'
-                  ? 'border-mission-control-accent text-mission-control-accent'
-                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
-            >
-              Upload Transcript
-            </button>
-          </div>
-        </div>
-      </div>
+      <TabNav
+        tabs={[
+          { id: 'current', label: 'Record', icon: Mic },
+          { id: 'history', label: 'History', icon: Clock },
+          { id: 'transcribe', label: 'Upload Audio', icon: Upload },
+          { id: 'upload-transcript', label: 'Upload Transcript', icon: FileText },
+        ]}
+        activeTab={activeView}
+        onTabChange={(id) => {
+          if (id === 'current') { setActiveView('current'); setSelectedMeeting(null); }
+          else setActiveView(id as typeof activeView);
+        }}
+      />
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto">
-          <div className="max-w-5xl mx-auto px-6 py-6">
-            
+          <div className="px-6 py-6">
+
+            {/* ─── RECORD TAB ─── */}
             {activeView === 'current' && (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* Meeting Control Card */}
                 <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
                   <div className="p-6">
                     {isMeetingActive ? (
                       <div className="space-y-4">
                         {/* Header row */}
-                        <div className="flex items-center gap-3">
-                          <div className="relative flex-shrink-0 w-10 h-10 rounded-lg bg-error-subtle flex items-center justify-center">
+                        <Flex align="center" gap="3">
+                          <div className="relative flex-shrink-0 w-10 h-10 rounded-lg bg-error/10 flex items-center justify-center">
                             <Mic size={18} className="text-error" />
                             <span className="absolute -top-1 -right-1 w-3 h-3 bg-error rounded-full animate-pulse" />
                           </div>
@@ -1627,25 +1519,29 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               {formatDuration(elapsedTime)} · {audioDevices.find(d => d.deviceId === selectedDeviceId)?.label?.split('(')[0].trim() || 'Default mic'}
                             </p>
                           </div>
-                          <button
+                          <Button
                             onClick={endMeeting}
-                            className="flex-shrink-0 px-4 py-2 bg-error hover:bg-error/80 text-white rounded-lg font-medium flex items-center gap-2 text-sm transition-colors"
+                            size="2"
+                            variant="solid"
+                            color="red"
+
+                            className="flex-shrink-0"
                           >
                             <PhoneOff size={15} /> End
-                          </button>
-                        </div>
+                          </Button>
+                        </Flex>
 
                         {/* Audio waveform */}
-                        <div className="flex items-end gap-0.5 h-8 px-1">
+                        <Flex align="end" gap="1" className="h-8 px-1">
                           {Array.from({ length: 32 }).map((_, i) => {
                             const active = i / 32 < audioLevel * 1.4;
                             const height = active ? `${30 + Math.sin(i * 0.9 + Date.now() / 200) * 50}%` : '15%';
                             return (
-                              <div key={i} className={`flex-1 rounded-full transition-all duration-75 ${active ? 'bg-success' : 'bg-mission-control-border'}`}
+                              <div key={i} className={`flex-1 rounded-full transition-colors duration-75 ${active ? 'bg-success' : 'bg-mission-control-border'}`}
                                 style={{ height }} />
                             );
                           })}
-                        </div>
+                        </Flex>
 
                         {/* Live transcript feed */}
                         <div className="bg-mission-control-bg rounded-lg p-4 min-h-[80px]">
@@ -1659,7 +1555,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             </div>
                           ) : (
                             <div className="space-y-2">
-                              <div className="flex items-center gap-3 text-mission-control-text-dim">
+                              <Flex align="center" gap="3" className="text-mission-control-text-dim">
                                 <span className="flex gap-1 items-center">
                                   {[0, 1, 2].map(i => (
                                     <span key={i} className="w-1.5 h-1.5 rounded-full bg-success animate-bounce"
@@ -1667,7 +1563,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                   ))}
                                 </span>
                                 <span className="text-sm">{statusMessage || 'Listening — audio is being recorded...'}</span>
-                              </div>
+                              </Flex>
                               <p className="text-xs text-mission-control-text-dim">
                                 Audio is recording. Transcript will be generated with speaker labels when the meeting ends.
                               </p>
@@ -1685,102 +1581,103 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                       <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-mission-control-text mb-1.5">Title</label>
-                          <input
-                            type="text"
+                          <TextField.Root
                             value={meetingTitle}
                             onChange={(e) => { setMeetingTitle(e.target.value); setStartError(null); }}
                             onKeyDown={(e) => { if (e.key === 'Escape') { setShowTitleInput(false); setStartError(null); } }}
                             placeholder="Meeting title (optional)"
-                            className="w-full px-4 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
                             autoFocus
+                            className="w-full"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-mission-control-text mb-1.5">Agenda</label>
-                          <textarea
+                          <TextArea
                             value={meetingAgenda}
                             onChange={(e) => setMeetingAgenda(e.target.value)}
                             placeholder="Topics to discuss..."
                             rows={2}
-                            className="w-full px-4 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none"
+                            className="w-full"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-mission-control-text mb-1.5">Participants</label>
-                          <input
-                            type="text"
+                          <TextField.Root
                             value={meetingParticipants}
                             onChange={(e) => setMeetingParticipants(e.target.value)}
                             placeholder="Names, comma-separated"
-                            className="w-full px-4 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
+                            className="w-full"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-mission-control-text mb-1.5">Notes</label>
-                          <textarea
+                          <TextArea
                             value={meetingNotes}
                             onChange={(e) => setMeetingNotes(e.target.value)}
                             placeholder="Pre-meeting notes..."
                             rows={2}
-                            className="w-full px-4 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none"
+                            className="w-full"
                           />
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-mission-control-text mb-1.5">Microphone</label>
-                          <select
-                            value={selectedDeviceId}
-                            onChange={e => setSelectedDeviceId(e.target.value)}
-                            className="w-full px-4 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent text-sm"
-                          >
-                            <option value="">System Default</option>
-                            {audioDevices.map(d => (
-                              <option key={d.deviceId} value={d.deviceId}>
-                                {d.label || `Microphone ${d.deviceId.slice(0, 8)}`}
-                              </option>
-                            ))}
-                          </select>
+                          <Select.Root value={selectedDeviceId || '__default__'} onValueChange={val => setSelectedDeviceId(val === '__default__' ? '' : val)}>
+                            <Select.Trigger className="w-full" />
+                            <Select.Content>
+                              <Select.Item value="__default__">System Default</Select.Item>
+                              {audioDevices.map(d => (
+                                <Select.Item key={d.deviceId} value={d.deviceId}>
+                                  {d.label || `Microphone ${d.deviceId.slice(0, 8)}`}
+                                </Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select.Root>
                         </div>
 
                         {startError && (
-                          <div className="flex items-start gap-3 p-4 bg-error-subtle border border-error-border rounded-lg">
+                          <Flex align="start" gap="3" p="4" className="bg-error/10 border border-error/30 rounded-lg">
                             <XCircle size={18} className="text-error shrink-0 mt-0.5" />
                             <p className="text-sm text-error">{startError}</p>
-                          </div>
+                          </Flex>
                         )}
 
-                        <div className="flex gap-3">
-                          <button
+                        <Flex gap="3">
+                          <Button
                             onClick={startMeeting}
-                            className="flex-1 py-3.5 bg-success hover:bg-success/80 text-white rounded-lg text-lg font-semibold flex items-center justify-center gap-3 transition-all shadow-lg shadow-success/20"
+                            size="3"
+                            variant="solid"
+                            className="flex-1"
                           >
                             <Mic size={24} />
                             Start Recording
-                          </button>
+                          </Button>
                           <button
                             onClick={() => { setShowTitleInput(false); setStartError(null); }}
-                            className="px-5 py-3.5 bg-mission-control-bg border border-mission-control-border rounded-lg hover:bg-mission-control-border transition-all"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                           >
-                            <X size={20} className="text-mission-control-text-dim" />
+                            <X size={20} />
                           </button>
-                        </div>
+                        </Flex>
                       </div>
                     ) : (
-                      <div className="text-center py-8">
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-success-subtle flex items-center justify-center">
-                          <Phone size={36} className="text-success" />
+                      <div className="text-center py-10">
+                        <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-mission-control-accent/10 flex items-center justify-center">
+                          <Mic size={26} className="text-mission-control-accent" />
                         </div>
-                        <h2 className="text-heading-3 mb-2">Start a Meeting</h2>
-                        <p className="text-mission-control-text-dim mb-6 max-w-md mx-auto">
-                          Record, transcribe, and extract action items from your meetings with AI-powered transcription.
+                        <h2 className="text-sm font-semibold text-mission-control-text mb-1.5">Start a Meeting</h2>
+                        <p className="text-sm text-mission-control-text-dim mb-6 max-w-sm mx-auto">
+                          Record, transcribe, and extract action items with AI-powered transcription.
                         </p>
-                        <button
+                        <Button
                           onClick={() => setShowTitleInput(true)}
-                          className="px-8 py-4 bg-success hover:bg-success/80 text-white rounded-lg text-lg font-semibold flex items-center justify-center gap-3 transition-all shadow-lg shadow-success/20 mx-auto"
+                          size="2"
+                          variant="solid"
+                          className="mx-auto"
                         >
-                          <Phone size={24} />
+                          <Mic size={16} />
                           New Meeting
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -1789,15 +1686,15 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 {/* Upcoming Calendar Events */}
                 {upcomingEvents.length > 0 && !isMeetingActive && (
                   <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                    <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={18} className="text-mission-control-accent" />
-                        <h3 className="font-medium text-mission-control-text">Upcoming Meetings</h3>
-                      </div>
-                      <button 
+                    <div className="px-4 py-3 border-b border-mission-control-border flex items-center justify-between">
+                      <Flex align="center" gap="2">
+                        <Calendar size={16} className="text-mission-control-accent" />
+                        <h3 className="text-sm font-semibold text-mission-control-text">Upcoming Meetings</h3>
+                      </Flex>
+                      <button
                         onClick={loadUpcomingEvents}
                         disabled={loadingUpcomingEvents}
-                        className="text-xs text-mission-control-text-dim hover:text-mission-control-accent"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
                       >
                         <Loader2 size={12} className={loadingUpcomingEvents ? 'animate-spin inline' : 'hidden'} />
                         Refresh
@@ -1810,7 +1707,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         const isToday = startDate.toDateString() === new Date().toDateString();
                         return (
                           <div key={event.id} className="p-4 hover:bg-mission-control-bg/50 transition-colors">
-                            <div className="flex items-start gap-3">
+                            <Flex align="start" gap="3">
                               <div className="w-12 h-12 rounded-lg bg-mission-control-bg flex flex-col items-center justify-center shrink-0">
                                 <span className="text-xs font-medium text-mission-control-accent">
                                   {isToday ? 'Today' : startDate.toLocaleDateString('en-US', { weekday: 'short' })}
@@ -1820,8 +1717,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                 </span>
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="font-medium text-mission-control-text truncate">{event.summary || 'Untitled'}</p>
-                                <p className="text-sm text-mission-control-text-dim">
+                                <p className="text-sm font-semibold text-mission-control-text truncate">{event.summary || 'Untitled'}</p>
+                                <p className="text-[10px] tabular-nums font-mono text-mission-control-text-dim">
                                   {startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                   {endDate.getTime() !== startDate.getTime() && (
                                     <> - {endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</>
@@ -1832,7 +1729,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                   <p className="text-xs text-mission-control-text-dim mt-1 truncate">{event.location}</p>
                                 )}
                               </div>
-                            </div>
+                            </Flex>
                           </div>
                         );
                       })}
@@ -1846,17 +1743,17 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* AI Summary */}
                     {(generatingSummary || aiSummary) && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-mission-control-border flex items-center gap-2">
-                          <Brain size={18} className="text-review" />
-                          <h3 className="font-medium text-mission-control-text">AI Summary</h3>
+                        <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
+                          <Brain size={16} className="text-review" />
+                          <h3 className="text-sm font-semibold text-mission-control-text">AI Summary</h3>
                           {generatingSummary && <Loader2 size={14} className="animate-spin text-mission-control-text-dim" />}
                         </div>
                         <div className="p-6">
                           {generatingSummary ? (
-                            <div className="flex items-center gap-3 text-mission-control-text-dim">
+                            <Flex align="center" gap="3" className="text-mission-control-text-dim">
                               <Loader2 size={16} className="animate-spin" />
                               <span>Generating summary...</span>
-                            </div>
+                            </Flex>
                           ) : aiSummary ? (
                             <div className="prose prose-sm prose-invert max-w-none">
                               <MarkdownMessage content={aiSummary} />
@@ -1869,18 +1766,18 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* Action Items Approval */}
                     {meetingActionItems.length > 0 && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <ListTodo size={18} className="text-warning" />
-                            <h3 className="font-medium text-mission-control-text">Action Items</h3>
+                        <div className="px-4 py-3 border-b border-mission-control-border flex items-center justify-between">
+                          <Flex align="center" gap="2">
+                            <ListTodo size={16} className="text-warning" />
+                            <h3 className="text-sm font-semibold text-mission-control-text">Action Items</h3>
                             <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
                               {pendingItems.length} pending • {approvedItems.length} approved
                             </span>
-                          </div>
+                          </Flex>
                           {pendingItems.length > 0 && (
                             <button
                               onClick={approveAllPending}
-                              className="text-sm text-success hover:text-success flex items-center gap-1"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                             >
                               <CheckCircle2 size={14} />
                               Approve All
@@ -1891,113 +1788,119 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           {meetingActionItems.map((item) => (
                             <div 
                               key={item.id} 
-                              className={`p-4 transition-all ${
+                              className={`p-4 transition-colors ${
                                 item.status === 'dismissed' ? 'opacity-40' : ''
-                              } ${item.status === 'approved' ? 'bg-success-subtle' : ''}`}
+                              } ${item.status === 'approved' ? 'bg-success/10' : ''}`}
                             >
                               {editingItemId === item.id ? (
                                 <div className="space-y-3">
-                                  <input
-                                    type="text"
+                                  <TextField.Root
                                     value={editingText}
                                     onChange={(e) => setEditingText(e.target.value)}
-                                    className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent"
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') saveEditedItem();
                                       if (e.key === 'Escape') cancelEditing();
                                     }}
+                                    className="w-full"
                                   />
-                                  <div className="flex gap-2">
-                                    <button
+                                  <Flex gap="2">
+                                    <Button
                                       onClick={saveEditedItem}
-                                      className="px-3 py-1.5 bg-success text-white rounded-lg text-sm hover:bg-success/80 flex items-center gap-1"
+                                      size="1"
+                                      variant="solid"
+                                      color="green"
                                     >
                                       <Check size={14} />
                                       Save & Approve
-                                    </button>
+                                    </Button>
                                     <button
+                                      type="button"
                                       onClick={cancelEditing}
-                                      className="px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm hover:bg-mission-control-border text-mission-control-text-dim"
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                                     >
                                       Cancel
                                     </button>
-                                  </div>
+                                  </Flex>
                                 </div>
                               ) : (
-                                <div className="flex items-start justify-between gap-4">
+                                <Flex align="start" justify="between" gap="4">
                                   <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
+                                    <Flex align="center" gap="2" className="mb-1">
                                       <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                        item.type === 'task' ? 'bg-info-subtle text-info' :
-                                        item.type === 'schedule' ? 'bg-review-subtle text-review' :
-                                        item.type === 'message' ? 'bg-warning-subtle text-warning' :
+                                        item.type === 'task' ? 'bg-mission-control-accent/10 text-mission-control-accent' :
+                                        item.type === 'schedule' ? 'bg-review/10 text-review' :
+                                        item.type === 'message' ? 'bg-warning/10 text-warning' :
                                         'bg-mission-control-border text-mission-control-text-dim'
                                       }`}>
                                         {item.type}
                                       </span>
                                       {item.status === 'approved' && (
-                                        <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded-full flex items-center gap-1">
+                                        <span className="text-xs px-2 py-0.5 bg-success/10 text-success rounded-full flex items-center gap-1">
                                           <Check size={10} />
                                           Approved
                                         </span>
                                       )}
                                       {item.status === 'dismissed' && (
-                                        <span className="text-xs px-2 py-0.5 bg-error-subtle text-error rounded-full">
+                                        <span className="text-xs px-2 py-0.5 bg-error/10 text-error rounded-full">
                                           Dismissed
                                         </span>
                                       )}
-                                    </div>
+                                    </Flex>
                                     <p className={`text-sm ${item.status === 'dismissed' ? 'line-through text-mission-control-text-dim' : 'text-mission-control-text'}`}>
                                       {item.editedText || item.text}
                                     </p>
                                   </div>
                                   {item.status === 'pending' && (
-                                    <div className="flex items-center gap-1">
+                                    <Flex align="center" gap="1">
                                       <button
                                         onClick={() => approveActionItem(item.id)}
-                                        className="p-2 hover:bg-success-subtle rounded-lg text-success transition-all"
                                         title="Approve"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                                       >
                                         <Check size={16} />
                                       </button>
                                       <button
+                                        type="button"
                                         onClick={() => startEditingItem(item)}
-                                        className="p-2 hover:bg-mission-control-bg rounded-lg text-mission-control-text-dim transition-all"
                                         title="Edit"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                                       >
                                         <Edit3 size={16} />
                                       </button>
                                       <button
                                         onClick={() => dismissActionItem(item.id)}
-                                        className="p-2 hover:bg-error-subtle rounded-lg text-error transition-all"
                                         title="Dismiss"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors"
                                       >
                                         <XCircle size={16} />
                                       </button>
-                                    </div>
+                                    </Flex>
                                   )}
-                                </div>
+                                </Flex>
                               )}
                             </div>
                           ))}
                         </div>
                         {approvedItems.length > 0 && (
-                          <div className="p-4 border-t border-mission-control-border bg-mission-control-bg/50 flex items-center justify-between">
+                          <Flex align="center" justify="between" p="4" className="border-t border-mission-control-border bg-mission-control-bg">
                             <p className="text-sm text-mission-control-text-dim">
                               {approvedItems.length} item{approvedItems.length > 1 ? 's' : ''} ready to create as tasks
                             </p>
-                            <button
+                            <Button
                               onClick={async () => {
                                 const count = await createTasksFromApproved();
                                 setMeetingEndSummary(prev => prev ? { ...prev, tasksCreated: count } : null);
                                 addActivity({ type: 'system', message: `Created ${count} tasks from meeting`, timestamp: Date.now() });
                               }}
-                              className="px-4 py-2 bg-success hover:bg-success/80 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-all"
+                              size="2"
+                              variant="solid"
+                              color="green"
+                             
                             >
                               <Plus size={16} />
                               Create Tasks
-                            </button>
-                          </div>
+                            </Button>
+                          </Flex>
                         )}
                       </div>
                     )}
@@ -2005,9 +1908,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* Agent-Proposed Tasks */}
                     {proposedTasks.length > 0 && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-mission-control-border flex items-center gap-2">
-                          <Brain size={18} className="text-review" />
-                          <h3 className="font-medium text-mission-control-text">Agent-Proposed Tasks</h3>
+                        <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
+                          <Brain size={16} className="text-review" />
+                          <h3 className="text-sm font-semibold text-mission-control-text">Agent-Proposed Tasks</h3>
                           <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
                             {proposedTasks.filter(t => t.status === 'pending').length} pending • {proposedTasks.filter(t => t.status === 'approved').length} approved
                           </span>
@@ -2016,41 +1919,43 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           {proposedTasks.map((task) => (
                             <div 
                               key={task.id} 
-                              className={`p-4 transition-all ${
+                              className={`p-4 transition-colors ${
                                 task.status === 'rejected' ? 'opacity-40' : ''
-                              } ${task.status === 'approved' ? 'bg-success-subtle' : ''}`}
+                              } ${task.status === 'approved' ? 'bg-success/10' : ''}`}
                             >
                               {editingProposedTask === task.id ? (
                                 <div className="space-y-3">
-                                  <input
-                                    type="text"
+                                  <TextField.Root
                                     value={editingProposedText}
                                     onChange={(e) => setEditingProposedText(e.target.value)}
-                                    className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm text-mission-control-text"
                                     placeholder="Edit task title..."
+                                    className="w-full"
                                   />
-                                  <div className="flex gap-2">
-                                    <button
+                                  <Flex gap="2">
+                                    <Button
                                       onClick={() => {
-                                        setProposedTasks(prev => prev.map(t => 
+                                        setProposedTasks(prev => prev.map(t =>
                                           t.id === task.id ? { ...t, title: editingProposedText, status: 'approved' as const } : t
                                         ));
                                         setEditingProposedTask(null);
                                       }}
-                                      className="px-3 py-1.5 bg-success text-white rounded-lg text-sm"
+                                      size="1"
+                                      variant="solid"
+                                      color="green"
                                     >
                                       Save
-                                    </button>
+                                    </Button>
                                     <button
+                                      type="button"
                                       onClick={() => setEditingProposedTask(null)}
-                                      className="px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm text-mission-control-text"
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                                     >
                                       Cancel
                                     </button>
-                                  </div>
+                                  </Flex>
                                 </div>
                               ) : (
-                                <div className="flex items-start justify-between gap-4">
+                                <Flex align="start" justify="between" gap="4">
                                   <div className="min-w-0 flex-1">
                                     <p className="font-medium text-mission-control-text">{task.title}</p>
                                     {task.description && (
@@ -2059,41 +1964,42 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                     {task.plan && (
                                       <p className="text-xs text-mission-control-text-dim mt-2 italic">Plan: {task.plan}</p>
                                     )}
-                                    <div className="flex items-center gap-2 mt-2">
+                                    <Flex align="center" gap="2" className="mt-2">
                                       <span className="text-xs px-2 py-0.5 bg-mission-control-accent/20 text-mission-control-accent rounded-full">
                                         {task.proposedAgent}
                                       </span>
-                                    </div>
+                                    </Flex>
                                   </div>
                                   {task.status === 'pending' && (
-                                    <div className="flex items-center gap-1 shrink-0">
+                                    <Flex align="center" gap="1" className="shrink-0">
                                       <button
                                         onClick={() => approveProposedTask(task.id)}
-                                        className="p-2 hover:bg-success-subtle rounded-lg text-success transition-all"
                                         title="Approve & Create Task"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                                       >
                                         <CheckCircle2 size={16} />
                                       </button>
                                       <button
+                                        type="button"
                                         onClick={() => {
                                           setEditingProposedTask(task.id);
                                           setEditingProposedText(task.title);
                                         }}
-                                        className="p-2 hover:bg-mission-control-bg rounded-lg text-mission-control-text-dim transition-all"
                                         title="Edit"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                                       >
                                         <Edit3 size={16} />
                                       </button>
                                       <button
                                         onClick={() => rejectProposedTask(task.id)}
-                                        className="p-2 hover:bg-error-subtle rounded-lg text-error transition-all"
                                         title="Reject"
+                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors"
                                       >
                                         <XCircle size={16} />
                                       </button>
-                                    </div>
+                                    </Flex>
                                   )}
-                                </div>
+                                </Flex>
                               )}
                             </div>
                           ))}
@@ -2124,14 +2030,18 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     )}
 
                     {/* Actions */}
-                    <div className="flex gap-3">
-                      <button
+                    <Flex gap="3">
+                      <Button
                         onClick={sendMeetingSummary}
-                        className="flex-1 px-4 py-3 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm font-medium flex items-center justify-center gap-2 hover:border-success-border transition-all"
+                        size="2"
+                        variant="soft"
+                        color="gray"
+                       
+                        className="flex-1"
                       >
                         <MessageSquare size={18} />
                         Send to Mission Control
-                      </button>
+                      </Button>
                       <button
                         onClick={() => {
                           setMeetingTranscript([]);
@@ -2139,12 +2049,12 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                           setMeetingEndSummary(null);
                           setAiSummary(null);
                         }}
-                        className="px-4 py-3 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm font-medium flex items-center justify-center gap-2 hover:border-error-border text-mission-control-text-dim transition-all"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors"
                       >
                         <Trash2 size={18} />
                         Clear
                       </button>
-                    </div>
+                    </Flex>
                   </>
                 )}
               </div>
@@ -2155,23 +2065,26 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 {selectedMeeting ? (
                   <div className="space-y-6">
                     {/* Meeting Detail Header */}
-                    <div className="flex items-center justify-between">
-                      <button 
+                    <Flex align="center" justify="between">
+                      <button
                         onClick={() => { setSelectedMeeting(null); setMeetingChatMessages([]); }}
-                        className="flex items-center gap-2 text-mission-control-text-dim hover:text-mission-control-text transition-all"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <ChevronRight size={16} className="rotate-180" />
                         Back to list
                       </button>
-                      <div className="flex items-center gap-2">
-                        <button
+                      <Flex align="center" gap="2">
+                        <Button
                           onClick={() => exportMeeting(selectedMeeting)}
-                          className="flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm hover:border-mission-control-accent transition-all"
+                          size="2"
+                          variant="soft"
+                          color="gray"
+                         
                         >
                           <Download size={14} />
                           Export
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={async () => {
                             if (!selectedMeeting.id) return;
                             try {
@@ -2181,13 +2094,16 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               showToast('success', 'Meeting archived');
                             } catch { showToast('error', 'Failed to archive'); }
                           }}
-                          className="flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm hover:border-mission-control-accent transition-all"
+                          size="2"
+                          variant="soft"
+                          color="gray"
+                         
                           title="Archive meeting"
                         >
                           <Archive size={14} />
                           Archive
-                        </button>
-                        <button
+                        </Button>
+                        <IconButton
                           onClick={async () => {
                             if (!selectedMeeting.id) return;
                             try {
@@ -2197,23 +2113,26 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               showToast('success', 'Meeting deleted');
                             } catch { showToast('error', 'Failed to delete'); }
                           }}
-                          className="flex items-center gap-2 px-3 py-2 bg-mission-control-surface border border-error-border rounded-lg text-sm text-error hover:bg-error-subtle transition-all"
+                          size="2"
+                          variant="soft"
+                          color="red"
+                         
                           title="Delete meeting"
                         >
                           <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
+                        </IconButton>
+                      </Flex>
+                    </Flex>
 
                     {/* Meeting Info */}
                     <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-                      <h2 className="text-heading-3 mb-1">
+                      <h2 className="text-sm font-semibold text-mission-control-text mb-1">
                         {selectedMeeting.title || selectedMeeting.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                       </h2>
                       {selectedMeeting.oneLiner && (
-                        <p className="text-sm text-mission-control-text-dim mb-2">{selectedMeeting.oneLiner}</p>
+                        <p className="text-xs text-mission-control-text-dim mb-2">{selectedMeeting.oneLiner}</p>
                       )}
-                      <div className="flex items-center gap-4 text-secondary">
+                      <Flex align="center" gap="4" className="text-xs text-mission-control-text-dim">
                         <span className="flex items-center gap-1">
                           <Calendar size={14} />
                           {selectedMeeting.date.toLocaleDateString()}
@@ -2227,15 +2146,15 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             {formatDuration(selectedMeeting.duration)}
                           </span>
                         )}
-                      </div>
+                      </Flex>
                     </div>
 
                     {/* Summary (from uploaded transcript — stored in rawContent/description) */}
                     {selectedMeeting.rawContent && selectedMeeting.transcript.length === 0 && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-mission-control-border flex items-center gap-2">
+                        <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
                           <Brain size={16} className="text-mission-control-accent" />
-                          <h3 className="font-medium text-mission-control-text">Meeting Summary</h3>
+                          <h3 className="text-sm font-semibold text-mission-control-text">Meeting Summary</h3>
                         </div>
                         <div className="p-4 text-sm">
                           <MarkdownMessage content={selectedMeeting.rawContent} />
@@ -2246,11 +2165,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* Transcript (from live meetings — stored as line array) */}
                     {selectedMeeting.transcript.length > 0 && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-mission-control-border">
-                          <h3 className="font-medium text-mission-control-text flex items-center gap-2">
-                            <FileText size={16} />
-                            Transcript
-                          </h3>
+                        <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
+                          <FileText size={16} className="text-mission-control-text-dim" />
+                          <h3 className="text-sm font-semibold text-mission-control-text">Transcript</h3>
                         </div>
                         <div className="p-4 max-h-96 overflow-y-auto space-y-2">
                           {selectedMeeting.transcript.map((line, i) => (
@@ -2265,11 +2182,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* Action Items & Tasks */}
                     {(selectedMeeting.actionItems.length > 0 || selectedMeeting.tasksCreated.length > 0) && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-mission-control-border">
-                          <h3 className="font-medium text-mission-control-text flex items-center gap-2">
-                            <ListTodo size={16} />
-                            Action Items
-                          </h3>
+                        <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
+                          <ListTodo size={16} className="text-mission-control-text-dim" />
+                          <h3 className="text-sm font-semibold text-mission-control-text">Action Items</h3>
                         </div>
                         <div className="p-4 space-y-4">
                           {selectedMeeting.actionItems.length > 0 && (
@@ -2302,31 +2217,29 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     {/* Proposed Tasks (from uploaded transcript metadata) — fully actionable */}
                     {selectedMeeting.storedTaskProposals && selectedMeeting.storedTaskProposals.length > 0 && (
                       <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Zap size={16} className="text-mission-control-accent" />
-                            <h3 className="font-medium text-mission-control-text">Proposed Tasks</h3>
-                            <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
-                              {selectedMeeting.storedTaskProposals.filter(t => t.status === 'pending').length} pending
-                            </span>
-                          </div>
+                        <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
+                          <Zap size={16} className="text-mission-control-accent" />
+                          <h3 className="text-sm font-semibold text-mission-control-text">Proposed Tasks</h3>
+                          <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
+                            {selectedMeeting.storedTaskProposals.filter(t => t.status === 'pending').length} pending
+                          </span>
                         </div>
                         <div className="divide-y divide-mission-control-border">
                           {selectedMeeting.storedTaskProposals.map(proposal => (
                             <div
                               key={proposal.id}
-                              className={`p-4 transition-all ${
+                              className={`p-4 transition-colors ${
                                 proposal.status === 'rejected' ? 'opacity-30' : ''
-                              } ${proposal.status === 'approved' ? 'bg-success-subtle' : ''}`}
+                              } ${proposal.status === 'approved' ? 'bg-success/10' : ''}`}
                             >
-                              <div className="flex items-start gap-3">
+                              <Flex align="start" gap="3">
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                                     <span className="font-medium text-sm text-mission-control-text">{proposal.title}</span>
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                                      proposal.priority === 'p0' ? 'bg-error-subtle text-error' :
-                                      proposal.priority === 'p1' ? 'bg-warning-subtle text-warning' :
-                                      proposal.priority === 'p2' ? 'bg-info-subtle text-info' :
+                                      proposal.priority === 'p0' ? 'bg-error/10 text-error' :
+                                      proposal.priority === 'p1' ? 'bg-warning/10 text-warning' :
+                                      proposal.priority === 'p2' ? 'bg-mission-control-accent/10 text-mission-control-accent' :
                                       'bg-mission-control-bg text-mission-control-text-dim'
                                     }`}>{proposal.priority?.toUpperCase()}</span>
                                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-mission-control-bg text-mission-control-text-dim">{proposal.assignedTo}</span>
@@ -2344,7 +2257,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                   )}
                                 </div>
                                 {proposal.status === 'pending' && (
-                                  <div className="flex items-center gap-1 shrink-0">
+                                  <Flex align="center" gap="1" className="shrink-0">
                                     <button
                                       onClick={async () => {
                                         // Update local state
@@ -2374,8 +2287,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                           showToast('error', 'Failed to create task');
                                         }
                                       }}
-                                      className="p-2 hover:bg-success-subtle rounded-lg text-success transition-all"
                                       title="Approve — creates task assigned to agent"
+                                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                                     >
                                       <CheckCircle2 size={16} />
                                     </button>
@@ -2386,23 +2299,23 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                         );
                                         setSelectedMeeting({ ...selectedMeeting, storedTaskProposals: updated });
                                       }}
-                                      className="p-2 hover:bg-error-subtle rounded-lg text-error transition-all"
                                       title="Reject"
+                                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors"
                                     >
                                       <XCircle size={16} />
                                     </button>
-                                  </div>
+                                  </Flex>
                                 )}
                                 {proposal.status === 'approved' && (
-                                  <div className="flex items-center gap-1 shrink-0 mt-1">
+                                  <Flex align="center" gap="1" className="shrink-0 mt-1">
                                     <CheckCircle2 size={14} className="text-success" />
                                     <span className="text-xs text-success">Created</span>
-                                  </div>
+                                  </Flex>
                                 )}
                                 {proposal.status === 'rejected' && (
                                   <span className="text-xs text-mission-control-text-dim shrink-0 mt-1">Rejected</span>
                                 )}
-                              </div>
+                              </Flex>
                             </div>
                           ))}
                         </div>
@@ -2416,11 +2329,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
 
                     {/* AI Chat */}
                     <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                      <div className="p-4 border-b border-mission-control-border">
-                        <h3 className="font-medium text-mission-control-text flex items-center gap-2">
-                          <Brain size={16} />
-                          Ask about this meeting
-                        </h3>
+                      <div className="px-4 py-3 border-b border-mission-control-border flex items-center gap-2">
+                        <Brain size={16} className="text-mission-control-text-dim" />
+                        <h3 className="text-sm font-semibold text-mission-control-text">Ask about this meeting</h3>
                       </div>
                       <div className="p-4">
                         {meetingChatMessages.length > 0 && (
@@ -2428,9 +2339,9 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             {meetingChatMessages.map((msg) => (
                               <div key={`${msg.role}-${msg.timestamp}-${msg.content.slice(0, 20)}`} className={`text-sm ${msg.role === 'user' ? 'text-right' : ''}`}>
                                 <span className={`inline-block rounded-lg px-3 py-2 max-w-[90%] ${
-                                  msg.role === 'user' 
-                                    ? 'bg-success text-white' 
-                                    : 'bg-mission-control-bg border border-mission-control-border'
+                                  msg.role === 'user'
+                                    ? 'bg-mission-control-accent/10 border border-mission-control-accent/20 text-mission-control-text'
+                                    : 'bg-mission-control-bg border border-mission-control-border text-mission-control-text'
                                 }`}>
                                   {msg.role === 'assistant' ? <MarkdownMessage content={msg.content} /> : msg.content}
                                 </span>
@@ -2438,49 +2349,123 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             ))}
                           </div>
                         )}
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
+                        <Flex gap="2">
+                          <TextField.Root
                             value={meetingChatInput}
                             onChange={(e) => setMeetingChatInput(e.target.value)}
-                            onKeyDown={(e) => { 
-                              if (e.key === 'Enter' && !e.shiftKey && meetingChatInput.trim()) 
-                                askAboutMeeting(selectedMeeting, meetingChatInput); 
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey && meetingChatInput.trim())
+                                askAboutMeeting(selectedMeeting, meetingChatInput);
                             }}
                             placeholder="What were the main topics discussed?"
-                            className="flex-1 px-4 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent"
                             disabled={meetingChatProcessing}
+                            className="flex-1"
                           />
-                          <button
+                          <IconButton
                             onClick={() => askAboutMeeting(selectedMeeting, meetingChatInput)}
                             disabled={!meetingChatInput.trim() || meetingChatProcessing}
-                            className="px-4 py-2.5 bg-success hover:bg-success/80 text-white rounded-lg disabled:opacity-50 transition-all"
+                            size="2"
+                            variant="solid"
+
                           >
                             {meetingChatProcessing ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                          </button>
-                        </div>
+                          </IconButton>
+                        </Flex>
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div>
-                    {/* Meetings List */}
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-heading-3">Meetings</h2>
-                      <button 
-                        onClick={loadPastMeetings} 
+                    {/* Header row */}
+                    <Flex align="center" justify="between" className="mb-3">
+                      <h2 className="text-sm font-semibold text-mission-control-text">Past Meetings</h2>
+                      <button
+                        onClick={loadPastMeetings}
                         disabled={loadingPastMeetings}
-                        className="text-sm text-mission-control-text-dim hover:text-mission-control-accent flex items-center gap-1"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
                       >
-                        {loadingPastMeetings ? <Spinner size={14} /> : <Loader2 size={14} />}
+                        <Loader2 size={12} className={loadingPastMeetings ? 'animate-spin' : ''} />
                         Refresh
                       </button>
-                    </div>
+                    </Flex>
+
+                    {/* Search + filter + sort bar */}
+                    {!loadingPastMeetings && pastMeetings.length > 0 && (
+                      <div className="space-y-2 mb-4">
+                        {/* Search */}
+                        <div className="relative">
+                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none" />
+                          <input
+                            type="text"
+                            value={historySearch}
+                            onChange={(e) => setHistorySearch(e.target.value)}
+                            placeholder="Search meetings..."
+                            className="w-full pl-8 pr-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50 transition-colors"
+                          />
+                          {historySearch && (
+                            <button
+                              onClick={() => setHistorySearch('')}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim hover:text-mission-control-text"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Filter + Sort row */}
+                        <Flex gap="2" wrap="wrap">
+                          {/* Filter chips */}
+                          <div className="flex items-center gap-1.5 flex-1 flex-wrap">
+                            {([
+                              { key: 'all', label: 'All' },
+                              { key: 'recorded', label: 'Recorded' },
+                              { key: 'uploaded', label: 'Uploaded' },
+                              { key: 'has-tasks', label: 'Has tasks' },
+                              { key: 'has-actions', label: 'Has actions' },
+                            ] as const).map(({ key, label }) => (
+                              <button
+                                key={key}
+                                onClick={() => setHistoryFilter(key)}
+                                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                                  historyFilter === key
+                                    ? 'bg-mission-control-accent/15 text-mission-control-accent border border-mission-control-accent/30'
+                                    : 'bg-mission-control-bg text-mission-control-text-dim border border-mission-control-border hover:text-mission-control-text'
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Sort control */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Select.Root
+                              value={historySortBy}
+                              onValueChange={(v) => setHistorySortBy(v as typeof historySortBy)}
+                            >
+                              <Select.Trigger className="text-xs h-7" />
+                              <Select.Content>
+                                <Select.Item value="date">Date</Select.Item>
+                                <Select.Item value="title">Title</Select.Item>
+                                <Select.Item value="duration">Duration</Select.Item>
+                              </Select.Content>
+                            </Select.Root>
+                            <button
+                              onClick={() => setHistorySortDir(d => d === 'desc' ? 'asc' : 'desc')}
+                              title={historySortDir === 'desc' ? 'Newest first' : 'Oldest first'}
+                              className="w-7 h-7 flex items-center justify-center rounded-md border border-mission-control-border bg-mission-control-surface text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                            >
+                              <ArrowUpDown size={13} className={historySortDir === 'asc' ? 'rotate-180' : ''} />
+                            </button>
+                          </div>
+                        </Flex>
+                      </div>
+                    )}
 
                     {loadingPastMeetings ? (
-                      <div className="flex items-center justify-center py-12">
-                        <Spinner size={24} />
-                      </div>
+                      <Flex align="center" justify="center" className="py-12">
+                        <Loader2 size={24} className="animate-spin text-mission-control-text-dim" />
+                      </Flex>
                     ) : pastMeetingsError ? (
                       <ErrorDisplay
                         error={pastMeetingsError}
@@ -2494,53 +2479,109 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         title="No meetings recorded"
                         description="Upload a transcript or start a meeting to see it here."
                       />
-                    ) : (
-                      <div className="space-y-3">
-                        {pastMeetings.map((meeting) => (
+                    ) : (() => {
+                      // Apply search + filter + sort
+                      const q = historySearch.toLowerCase().trim();
+                      const filtered = pastMeetings.filter(m => {
+                        // text search across title, oneLiner, transcript
+                        if (q) {
+                          const hay = [
+                            m.title,
+                            m.oneLiner,
+                            m.transcript.join(' '),
+                            m.actionItems.join(' '),
+                          ].join(' ').toLowerCase();
+                          if (!hay.includes(q)) return false;
+                        }
+                        // filter chips
+                        if (historyFilter === 'has-tasks') return m.tasksCreated.length > 0 || (m.storedTaskProposals && m.storedTaskProposals.length > 0);
+                        if (historyFilter === 'has-actions') return m.actionItems.length > 0;
+                        if (historyFilter === 'uploaded') return m.source === 'db' && m.transcript.length === 0;
+                        if (historyFilter === 'recorded') return m.transcript.length > 0;
+                        return true;
+                      });
+
+                      const sorted = [...filtered].sort((a, b) => {
+                        let cmp = 0;
+                        if (historySortBy === 'date') cmp = a.date.getTime() - b.date.getTime();
+                        else if (historySortBy === 'title') cmp = (a.title || '').localeCompare(b.title || '');
+                        else if (historySortBy === 'duration') cmp = (a.duration ?? 0) - (b.duration ?? 0);
+                        return historySortDir === 'desc' ? -cmp : cmp;
+                      });
+
+                      if (sorted.length === 0) return (
+                        <div className="py-12 text-center">
+                          <p className="text-sm text-mission-control-text-dim">No meetings match your search.</p>
                           <button
-                            key={meeting.id || meeting.filepath}
-                            onClick={() => setSelectedMeeting(meeting)}
-                            className="w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-4 hover:border-mission-control-accent transition-all group"
+                            onClick={() => { setHistorySearch(''); setHistoryFilter('all'); }}
+                            className="mt-2 text-xs text-mission-control-accent hover:underline"
                           >
-                            <div className="flex items-center justify-between mb-2">
-                              <div>
-                                <p className="font-medium text-mission-control-text group-hover:text-success transition-all">
-                                  {meeting.title || meeting.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                                </p>
-                                <div className="flex items-center gap-3 text-sm text-mission-control-text-dim">
-                                  <span>{meeting.time}</span>
-                                  {meeting.duration && meeting.duration > 0 && (
-                                    <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full">
-                                      {formatDuration(meeting.duration)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <ChevronRight size={16} className="text-mission-control-text-dim group-hover:text-success transition-all" />
-                            </div>
-                            {(meeting.oneLiner || meeting.transcript.length > 0) && (
-                              <p className="text-sm text-mission-control-text-dim line-clamp-2 mt-2">
-                                {meeting.oneLiner || meeting.transcript[0]?.slice(0, 150)}
-                              </p>
-                            )}
-                            {(meeting.actionItems.length > 0 || meeting.tasksCreated.length > 0) && (
-                              <div className="flex gap-2 mt-3">
-                                {meeting.actionItems.length > 0 && (
-                                  <span className="text-xs px-2 py-0.5 bg-warning-subtle text-warning rounded-full">
-                                    {meeting.actionItems.length} action items
-                                  </span>
-                                )}
-                                {meeting.tasksCreated.length > 0 && (
-                                  <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded-full">
-                                    {meeting.tasksCreated.length} tasks
-                                  </span>
-                                )}
-                              </div>
-                            )}
+                            Clear filters
                           </button>
-                        ))}
-                      </div>
-                    )}
+                        </div>
+                      );
+
+                      return (
+                        <div>
+                          {q || historyFilter !== 'all' ? (
+                            <p className="text-xs text-mission-control-text-dim mb-3">
+                              {sorted.length} of {pastMeetings.length} meeting{pastMeetings.length !== 1 ? 's' : ''}
+                            </p>
+                          ) : null}
+                          <div className="space-y-3">
+                            {sorted.map((meeting) => (
+                              <button
+                                type="button"
+                                key={meeting.id || meeting.filepath}
+                                onClick={() => setSelectedMeeting(meeting)}
+                                className="w-full text-left bg-mission-control-surface border border-mission-control-border rounded-xl p-4 hover:border-mission-control-accent/30 transition-colors group cursor-pointer"
+                              >
+                                <Flex align="center" justify="between" className="mb-2">
+                                  <div>
+                                    <p className="text-sm font-semibold text-mission-control-text group-hover:text-mission-control-accent transition-colors">
+                                      {meeting.title || meeting.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                    </p>
+                                    <Flex align="center" gap="3" className="text-sm text-mission-control-text-dim">
+                                      <span className="text-[10px] tabular-nums font-mono text-mission-control-text-dim">{meeting.time}</span>
+                                      {meeting.duration && meeting.duration > 0 && (
+                                        <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full">
+                                          {formatDuration(meeting.duration)}
+                                        </span>
+                                      )}
+                                    </Flex>
+                                  </div>
+                                  <ChevronRight size={16} className="text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors" />
+                                </Flex>
+                                {(meeting.oneLiner || meeting.transcript.length > 0) && (
+                                  <p className="text-sm text-mission-control-text-dim line-clamp-2 mt-2">
+                                    {meeting.oneLiner || meeting.transcript[0]?.slice(0, 150)}
+                                  </p>
+                                )}
+                                {(meeting.actionItems.length > 0 || meeting.tasksCreated.length > 0 || (meeting.storedTaskProposals && meeting.storedTaskProposals.length > 0)) && (
+                                  <Flex gap="2" className="mt-3">
+                                    {meeting.actionItems.length > 0 && (
+                                      <span className="text-xs px-2 py-0.5 bg-warning/10 text-warning rounded-full">
+                                        {meeting.actionItems.length} action items
+                                      </span>
+                                    )}
+                                    {(meeting.tasksCreated.length > 0 || (meeting.storedTaskProposals && meeting.storedTaskProposals.filter(t => t.status === 'approved').length > 0)) && (
+                                      <span className="text-xs px-2 py-0.5 bg-success/10 text-success rounded-full">
+                                        {meeting.tasksCreated.length || meeting.storedTaskProposals?.filter(t => t.status === 'approved').length} tasks
+                                      </span>
+                                    )}
+                                    {meeting.storedTaskProposals && meeting.storedTaskProposals.filter(t => t.status === 'pending').length > 0 && (
+                                      <span className="text-xs px-2 py-0.5 bg-mission-control-accent/10 text-mission-control-accent rounded-full">
+                                        {meeting.storedTaskProposals.filter(t => t.status === 'pending').length} proposed
+                                      </span>
+                                    )}
+                                  </Flex>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -2548,18 +2589,25 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
 
             {/* Transcribe Audio File View */}
             {activeView === 'transcribe' && (
-              <div className="p-6 max-w-2xl mx-auto">
-                <h2 className="text-heading-3 mb-4">Transcribe Audio File</h2>
+              <div className="max-w-2xl">
+                <h2 className="text-sm font-semibold text-mission-control-text mb-4">Transcribe Audio File</h2>
                 <p className="text-mission-control-text-dim mb-6">
                   Upload an audio file (MP3, WAV, M4A) to transcribe using Gemini AI.
                 </p>
 
                 {!transcribing && !transcriptionResult && (
                   <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-8 text-center">
-                    <Upload size={48} className="mx-auto mb-4 text-mission-control-text-dim opacity-30" />
-                    <label className="inline-flex items-center gap-2 px-6 py-3 bg-mission-control-accent hover:bg-mission-control-accent/90 text-white rounded-lg cursor-pointer transition-all">
-                      <Upload size={18} />
-                      Choose Audio File
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-mission-control-bg flex items-center justify-center">
+                      <Upload size={26} className="text-mission-control-text-dim" />
+                    </div>
+                    <p className="text-sm text-mission-control-text-dim mb-4">MP3, WAV, M4A, WebM, OGG, FLAC — up to 100MB</p>
+                    <label>
+                      <Button asChild size="2" variant="solid">
+                        <span className="cursor-pointer">
+                          <Upload size={16} />
+                          Choose Audio File
+                        </span>
+                      </Button>
                       <input
                         type="file"
                         accept="audio/*,video/*"
@@ -2567,22 +2615,19 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                         className="hidden"
                       />
                     </label>
-                    <p className="text-sm text-mission-control-text-dim mt-4">
-                      Supported: MP3, WAV, M4A, WebM, OGG, FLAC
-                    </p>
                   </div>
                 )}
 
                 {/* Progress bar during transcription */}
                 {transcribing && (
                   <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-8">
-                    <div className="flex items-center gap-3 mb-4">
+                    <Flex align="center" gap="3" className="mb-4">
                       <Loader2 size={20} className="animate-spin text-mission-control-accent" />
                       <span className="font-medium text-mission-control-text">Transcribing audio...</span>
-                    </div>
+                    </Flex>
                     <div className="w-full h-3 bg-mission-control-bg rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-mission-control-accent to-success rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-mission-control-accent to-[var(--color-success)] rounded-full transition-colors duration-500"
                         style={{ width: `${Math.min(100, transcriptionProgress)}%` }}
                       />
                     </div>
@@ -2596,15 +2641,15 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
 
             {/* Upload Transcript View */}
             {activeView === 'upload-transcript' && (
-              <div className="p-6 max-w-2xl mx-auto">
-                <h2 className="text-heading-3 mb-4">Upload Transcript</h2>
+              <div className="max-w-2xl">
+                <h2 className="text-sm font-semibold text-mission-control-text mb-4">Upload Transcript</h2>
                 <p className="text-mission-control-text-dim mb-6">
                   Upload a .txt or .md transcript file to generate a summary and extract action items.
                 </p>
 
                 {/* Upload error */}
                 {uploadError && !transcribing && (
-                  <div className="mb-4 bg-error-subtle border border-error-border rounded-2xl p-4 flex items-start gap-3">
+                  <div className="mb-4 bg-error/10 border border-error/30 rounded-2xl p-4 flex items-start gap-3">
                     <XCircle size={20} className="text-error shrink-0 mt-0.5" />
                     <div>
                       <p className="font-medium text-error">Upload failed</p>
@@ -2612,7 +2657,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     </div>
                     <button
                       onClick={() => setUploadError(null)}
-                      className="ml-auto p-1 hover:bg-error-subtle rounded-lg text-error"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors ml-auto"
                     >
                       <X size={14} />
                     </button>
@@ -2625,22 +2670,26 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     onDrop={handleTranscriptDrop}
                     onDragOver={handleTranscriptDragOver}
                     onDragLeave={handleTranscriptDragLeave}
-                    className={`bg-mission-control-surface border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
+                    className={`bg-mission-control-surface border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${
                       uploadDragOver
                         ? 'border-mission-control-accent bg-mission-control-accent/5'
                         : 'border-mission-control-border hover:border-mission-control-text-dim'
                     }`}
                   >
-                    <Upload size={48} className={`mx-auto mb-4 transition-all ${
+                    <Upload size={48} className={`mx-auto mb-4 transition-colors ${
                       uploadDragOver ? 'text-mission-control-accent scale-110' : 'text-mission-control-text-dim opacity-30'
                     }`} />
                     <p className="text-mission-control-text font-medium mb-2">
                       {uploadDragOver ? 'Drop file here' : 'Drag & drop a transcript file'}
                     </p>
                     <p className="text-sm text-mission-control-text-dim mb-4">or</p>
-                    <label className="inline-flex items-center gap-2 px-6 py-3 bg-mission-control-accent hover:bg-mission-control-accent/90 text-white rounded-lg cursor-pointer transition-all">
-                      <FileText size={18} />
-                      Choose File
+                    <label>
+                      <Button asChild size="2" variant="solid">
+                        <span className="cursor-pointer">
+                          <FileText size={16} />
+                          Choose File
+                        </span>
+                      </Button>
                       <input
                         type="file"
                         accept=".txt,.md"
@@ -2657,13 +2706,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 {/* Progress bar during processing */}
                 {transcribing && (
                   <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-8">
-                    <div className="flex items-center gap-3 mb-4">
+                    <Flex align="center" gap="3" className="mb-4">
                       <Loader2 size={20} className="animate-spin text-mission-control-accent" />
                       <span className="font-medium text-mission-control-text">Processing transcript...</span>
-                    </div>
+                    </Flex>
                     <div className="w-full h-3 bg-mission-control-bg rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-mission-control-accent to-success rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-mission-control-accent to-[var(--color-success)] rounded-full transition-colors duration-500"
                         style={{ width: `${Math.min(100, transcriptionProgress)}%` }}
                       />
                     </div>
@@ -2677,19 +2726,19 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 {transcriptionSaved && !transcribing && (
                   <div className="space-y-4">
                     {/* Success — navigate to meeting detail */}
-                    <div className="bg-success-subtle border border-success-border rounded-2xl p-5">
-                      <div className="flex items-center gap-3 mb-3">
+                    <div className="bg-success/10 border border-success/30 rounded-2xl p-5">
+                      <Flex align="center" gap="3" className="mb-3">
                         <CheckCircle2 size={20} className="text-success shrink-0" />
                         <p className="font-medium text-success">Transcript processed</p>
-                      </div>
+                      </Flex>
                       <p className="text-sm text-mission-control-text-dim mb-4">
                         {uploadSummary ? 'AI summary generated' : 'Extractive summary created'}
                         {taskProposals.length > 0 && ` with ${taskProposals.length} proposed tasks`}
                         {uploadActionItems.length > 0 && ` and ${uploadActionItems.length} action items`}.
                         View the full meeting to review and approve tasks.
                       </p>
-                      <div className="flex items-center gap-2">
-                        <button
+                      <Flex align="center" gap="2">
+                        <Button
                           onClick={async () => {
                             await loadPastMeetings();
                             // Find the most recent meeting and select it
@@ -2731,11 +2780,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             }
                             setActiveView('history');
                           }}
-                          className="px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent-dim transition-all"
+                          size="2"
+                          variant="solid"
+                         
                         >
                           View Meeting
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => {
                             setTranscriptionSaved(false);
                             setTranscriptionResult('');
@@ -2745,11 +2796,13 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                             setUploadError(null);
                             setTasksCreatedCount(0);
                           }}
-                          className="px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm hover:border-mission-control-accent transition-all"
+                          size="2"
+                          variant="soft"
+                          color="gray"
                         >
                           Upload Another
-                        </button>
-                      </div>
+                        </Button>
+                      </Flex>
                     </div>
 
                     {/* All detail content (summary, actions, proposals) now lives in meeting detail view */}
@@ -2760,19 +2813,20 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                 {/* Recent uploads — shown as clickable cards */}
                 {recentUploads.length > 0 && (
                   <div className="mt-6">
-                    <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Recently Uploaded</h3>
+                    <h3 className="text-sm font-semibold text-mission-control-text mb-3">Recently Uploaded</h3>
                     <div className="space-y-2">
                       {recentUploads.map(upload => (
                         <button
+                          type="button"
                           key={upload.id}
                           onClick={() => {
                             setActiveView('history');
                             loadPastMeetings();
                           }}
-                          className="w-full p-3 bg-mission-control-surface border border-mission-control-border rounded-xl flex items-center gap-3 hover:border-mission-control-accent/50 transition-all text-left"
+                          className="w-full p-3 bg-mission-control-surface border border-mission-control-border rounded-xl flex items-center gap-3 hover:border-mission-control-accent/50 transition-colors text-left cursor-pointer"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-info-subtle flex items-center justify-center shrink-0">
-                            <FileText size={16} className="text-info" />
+                          <div className="w-8 h-8 rounded-lg bg-mission-control-accent/10 flex items-center justify-center shrink-0">
+                            <FileText size={16} className="text-mission-control-accent" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-mission-control-text truncate">{upload.title}</p>
@@ -2784,114 +2838,228 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                     </div>
                   </div>
                 )}
+
+                {/* Google Drive Sync */}
+                <div className="mt-8 border-t border-mission-control-border pt-6">
+                  <Flex align="center" gap="2" className="mb-4">
+                    <div className="w-8 h-8 rounded-lg bg-mission-control-bg flex items-center justify-center shrink-0">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-mission-control-accent">
+                        <path d="M6.5 20L1 11L7 1H17L23 11L17.5 20H6.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+                        <path d="M7 1L12 11L17 1" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+                        <path d="M1 11H23" stroke="currentColor" strokeWidth="1.5"/>
+                        <path d="M7.5 20L12 11L16.5 20" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-mission-control-text">Sync from Google Drive</h3>
+                      <p className="text-xs text-mission-control-text-dim">Import meeting transcripts from a Drive folder periodically</p>
+                    </div>
+                  </Flex>
+
+                  <div className="space-y-3">
+                    <Flex gap="2">
+                      <TextField.Root
+                        value={driveFolderInput}
+                        onChange={(e) => setDriveFolderInput(e.target.value)}
+                        placeholder="Paste Drive folder URL or folder ID"
+                        className="flex-1"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && driveFolderInput.trim()) {
+                            const id = parseFolderId(driveFolderInput);
+                            saveDriveFolder(id);
+                            loadDriveFiles(id);
+                          }
+                        }}
+                      />
+                      <Button
+                        size="2"
+                        variant="solid"
+                        disabled={!driveFolderInput.trim() || driveLoading}
+                        onClick={() => {
+                          const id = parseFolderId(driveFolderInput);
+                          saveDriveFolder(id);
+                          loadDriveFiles(id);
+                        }}
+                      >
+                        {driveLoading ? <Loader2 size={14} className="animate-spin" /> : <Loader2 size={14} className="opacity-0" />}
+                        {driveLoading ? 'Checking...' : driveFolderSaved ? 'Sync' : 'Connect'}
+                      </Button>
+                    </Flex>
+
+                    {driveError && (
+                      <Flex align="start" gap="2" className="bg-error/10 border border-error/30 rounded-xl p-3">
+                        <XCircle size={16} className="text-error shrink-0 mt-0.5" />
+                        <p className="text-sm text-error">{driveError}</p>
+                      </Flex>
+                    )}
+
+                    {driveFiles.length > 0 && (
+                      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+                        <div className="px-4 py-2.5 border-b border-mission-control-border flex items-center justify-between">
+                          <span className="text-xs font-medium text-mission-control-text-dim">
+                            {driveFiles.length} file{driveFiles.length !== 1 ? 's' : ''} found
+                          </span>
+                          <span className="text-xs text-mission-control-text-dim">
+                            {driveFiles.filter(f => !f.alreadyImported).length} new
+                          </span>
+                        </div>
+                        <div className="divide-y divide-mission-control-border max-h-64 overflow-y-auto">
+                          {driveFiles.map(file => {
+                            const isImporting = driveImporting.has(file.id);
+                            const isImported = file.alreadyImported || driveImported.has(file.id);
+                            return (
+                              <div key={file.id} className="flex items-center gap-3 px-4 py-3">
+                                <FileText size={15} className={`shrink-0 ${isImported ? 'text-success' : 'text-mission-control-text-dim'}`} />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-mission-control-text truncate">{file.name}</p>
+                                  <p className="text-xs text-mission-control-text-dim">
+                                    {new Date(file.modifiedTime).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                {isImported ? (
+                                  <span className="text-xs text-success flex items-center gap-1 shrink-0">
+                                    <Check size={12} /> Imported
+                                  </span>
+                                ) : (
+                                  <Button
+                                    size="1"
+                                    variant="soft"
+                                    disabled={isImporting}
+                                    onClick={() => importDriveFile(file.id, file.name)}
+                                    className="shrink-0"
+                                  >
+                                    {isImporting ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+                                    {isImporting ? 'Importing...' : 'Import'}
+                                  </Button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {driveFolderSaved && driveFiles.length === 0 && !driveLoading && !driveError && (
+                      <p className="text-xs text-mission-control-text-dim">
+                        No transcript files found in this folder. Supported: Google Docs, .txt, .md
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
             {/* Post-result UI for transcribe view only (upload-transcript has its own result UI above) */}
             {activeView === 'transcribe' && transcriptionResult && !transcribing && (
-              <div className="p-6 pt-0 max-w-2xl mx-auto">
+              <div className="max-w-2xl mt-4">
                 <div className="space-y-4">
                   {!transcriptionSaved ? (
-                    <div className="bg-success-subtle border border-success-border rounded-2xl p-6">
-                      <div className="flex items-center gap-2 mb-4">
+                    <div className="bg-success/10 border border-success/30 rounded-2xl p-6">
+                      <Flex align="center" gap="2" className="mb-4">
                         <CheckCircle2 size={20} className="text-success" />
                         <span className="font-medium text-success">
                           {activeView === 'transcribe' ? 'Transcription Complete' : 'Text Extracted'}
                         </span>
-                      </div>
+                      </Flex>
                       <div className="space-y-3">
                         <div>
                           <label className="block text-sm font-medium text-mission-control-text mb-1.5">Meeting Name</label>
-                          <input
-                            type="text"
+                          <TextField.Root
                             value={transcriptionFileName}
                             onChange={(e) => setTranscriptionFileName(e.target.value)}
                             placeholder="Name this meeting..."
-                            className="w-full px-4 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
+                            className="w-full"
                           />
                         </div>
-                        <div className="flex gap-3">
-                          <button
+                        <Flex gap="3">
+                          <Button
                             onClick={saveTranscriptionAsMeeting}
                             disabled={transcriptionSaving}
-                            className="flex-1 py-3 bg-success hover:bg-success/80 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                            size="2"
+                            variant="solid"
+                            className="flex-1"
                           >
                             {transcriptionSaving ? (
                               <><Loader2 size={18} className="animate-spin" /> Processing...</>
                             ) : (
                               <><Check size={18} /> Save to Meetings</>
                             )}
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={async () => {
                               const success = await copyToClipboard(transcriptionResult);
                               if (!success) {
                                 alert('Failed to copy transcription. Please copy manually.');
                               }
                             }}
-                            className="px-4 py-3 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm hover:border-mission-control-accent transition-all"
+                            size="2"
+                            variant="soft"
+                            color="gray"
                           >
                             Copy Text
-                          </button>
-                        </div>
+                          </Button>
+                        </Flex>
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-success-subtle border border-success-border rounded-2xl p-6 text-center">
+                    <div className="bg-success/10 border border-success/30 rounded-2xl p-6 text-center">
                       <CheckCircle2 size={32} className="text-success mx-auto mb-3" />
                       <p className="font-medium text-success mb-1">Saved to Meetings</p>
                       <p className="text-sm text-mission-control-text-dim mb-4">
                         Summary and tasks have been generated. View in the Meetings tab.
                       </p>
-                      <div className="flex gap-3 justify-center">
-                        <button
+                      <Flex gap="3" justify="center">
+                        <Button
                           onClick={() => { setActiveView('history'); setTranscriptionResult(''); setTranscriptionSaved(false); }}
-                          className="px-4 py-2 bg-success hover:bg-success/80 text-white rounded-lg text-sm font-medium transition-all"
+                          size="2"
+                          variant="solid"
+                         
                         >
                           View Meetings
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => { setTranscriptionResult(''); setTranscriptionSaved(false); setTranscriptionProgress(0); }}
-                          className="px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm hover:border-mission-control-accent transition-all"
+                          size="2"
+                          variant="soft"
+                          color="gray"
                         >
                           Upload Another
-                        </button>
-                      </div>
+                        </Button>
+                      </Flex>
                     </div>
                   )}
 
                   {/* Proposed Task Cards from Mission Control */}
                   {proposedTasks.length > 0 && (
                     <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl overflow-hidden">
-                      <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Brain size={18} className="text-review" />
-                          <h3 className="font-medium text-mission-control-text">Task Cards from Mission Control</h3>
+                      <div className="px-4 py-3 border-b border-mission-control-border flex items-center justify-between">
+                        <Flex align="center" gap="2">
+                          <Brain size={16} className="text-review" />
+                          <h3 className="text-sm font-semibold text-mission-control-text">Task Cards from Mission Control</h3>
                           <span className="text-xs px-2 py-0.5 bg-mission-control-bg rounded-full text-mission-control-text-dim">
                             {proposedTasks.filter(t => t.status === 'pending').length} pending
                           </span>
-                        </div>
+                        </Flex>
                         <p className="text-xs text-mission-control-text-dim">Approve to add to Kanban</p>
                       </div>
                       <div className="divide-y divide-mission-control-border">
                         {proposedTasks.map((task) => (
                           <div
                             key={task.id}
-                            className={`p-4 transition-all ${
+                            className={`p-4 transition-colors ${
                               task.status === 'rejected' ? 'opacity-40' : ''
-                            } ${task.status === 'approved' ? 'bg-success-subtle' : ''}`}
+                            } ${task.status === 'approved' ? 'bg-success/10' : ''}`}
                           >
                             {editingProposedTask === task.id ? (
                               <div className="space-y-3">
-                                <input
-                                  type="text"
+                                <TextField.Root
                                   value={editingProposedText}
                                   onChange={(e) => setEditingProposedText(e.target.value)}
-                                  className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm text-mission-control-text"
                                   placeholder="Edit task title..."
+                                  className="w-full"
                                 />
-                                <div className="flex gap-2">
-                                  <button
+                                <Flex gap="2">
+                                  <Button
                                     onClick={() => {
                                       setProposedTasks(prev => prev.map(t =>
                                         t.id === task.id ? { ...t, title: editingProposedText, status: 'approved' as const } : t
@@ -2899,42 +3067,45 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                       approveProposedTask(task.id);
                                       setEditingProposedTask(null);
                                     }}
-                                    className="px-3 py-1.5 bg-success text-white rounded-lg text-sm"
+                                    size="1"
+                                    variant="solid"
+                                    color="green"
                                   >
                                     Save & Approve
-                                  </button>
+                                  </Button>
                                   <button
+                                    type="button"
                                     onClick={() => setEditingProposedTask(null)}
-                                    className="px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm text-mission-control-text"
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                                   >
                                     Cancel
                                   </button>
-                                </div>
+                                </Flex>
                               </div>
                             ) : (
-                              <div className="flex items-start justify-between gap-4">
+                              <Flex align="start" justify="between" gap="4">
                                 <div className="min-w-0 flex-1">
                                   <p className="font-medium text-mission-control-text">{task.title}</p>
                                   {task.description && (
                                     <p className="text-sm text-mission-control-text-dim mt-1">{task.description}</p>
                                   )}
-                                  <div className="flex items-center gap-2 mt-2">
+                                  <Flex align="center" gap="2" className="mt-2">
                                     <span className="text-xs px-2 py-0.5 bg-mission-control-accent/20 text-mission-control-accent rounded-full">
                                       {task.proposedAgent}
                                     </span>
                                     {task.status === 'approved' && (
-                                      <span className="text-xs px-2 py-0.5 bg-success-subtle text-success rounded-full flex items-center gap-1">
+                                      <span className="text-xs px-2 py-0.5 bg-success/10 text-success rounded-full flex items-center gap-1">
                                         <Check size={10} /> Added to Kanban
                                       </span>
                                     )}
-                                  </div>
+                                  </Flex>
                                 </div>
                                 {task.status === 'pending' && (
-                                  <div className="flex items-center gap-1 shrink-0">
+                                  <Flex align="center" gap="1" className="shrink-0">
                                     <button
                                       onClick={() => approveProposedTask(task.id)}
-                                      className="p-2 hover:bg-success-subtle rounded-lg text-success transition-all"
                                       title="Approve — add to Kanban"
+                                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                                     >
                                       <CheckCircle2 size={16} />
                                     </button>
@@ -2943,21 +3114,21 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                         setEditingProposedTask(task.id);
                                         setEditingProposedText(task.title);
                                       }}
-                                      className="p-2 hover:bg-mission-control-bg rounded-lg text-mission-control-text-dim transition-all"
                                       title="Edit & Approve"
+                                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                                     >
                                       <Edit3 size={16} />
                                     </button>
                                     <button
                                       onClick={() => rejectProposedTask(task.id)}
-                                      className="p-2 hover:bg-error-subtle rounded-lg text-error transition-all"
                                       title="Reject"
+                                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors"
                                     >
                                       <XCircle size={16} />
                                     </button>
-                                  </div>
+                                  </Flex>
                                 )}
-                              </div>
+                              </Flex>
                             )}
                           </div>
                         ))}
@@ -2984,6 +3155,6 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
           </div>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

@@ -38,16 +38,25 @@ export async function runScheduledAutomations(): Promise<void> {
 // ── Cron timer ────────────────────────────────────────────────────────────────
 type G = typeof globalThis & { _automationCron?: ReturnType<typeof setInterval> | true };
 
+let _running = false;
+
 export function startAutomationCron(): void {
   const g = globalThis as G;
+  // Clear stale interval from hot-reload before creating a new one
+  if (g._automationCron && g._automationCron !== true) {
+    clearInterval(g._automationCron);
+    g._automationCron = undefined;
+  }
   if (g._automationCron) return;
-  // Set sentinel immediately to prevent concurrent callers from racing in
   g._automationCron = true;
 
   const interval = setInterval(() => {
-    runScheduledAutomations().catch(err => {
-      console.error('[AutomationCron] Unhandled error in runScheduledAutomations:', err);
-    });
+    // Prevent overlapping executions if previous run is still in progress
+    if (_running) return;
+    _running = true;
+    runScheduledAutomations()
+      .catch(err => { console.error('[AutomationCron] Unhandled error in runScheduledAutomations:', err); })
+      .finally(() => { _running = false; });
   }, AUTOMATION_CRON_INTERVAL_MS);
   interval.unref?.();
   g._automationCron = interval;

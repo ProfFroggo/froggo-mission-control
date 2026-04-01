@@ -31,7 +31,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
       name: 'schedule_task',
-      description: 'Schedule a claude CLI command to run at a specific time',
+      description: 'Schedule a claude CLI command to run once at a specific Unix ms timestamp. Persists to ~/mission-control/data/schedule.json. The cron daemon checks this file on its tick interval. Use list_jobs to confirm the job was created and to retrieve its ID for cancellation.',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -44,7 +44,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'list_jobs',
-      description: 'List all scheduled jobs',
+      description: 'List all jobs in ~/mission-control/data/schedule.json. Filter by status: "pending" (not yet run), "executed" (completed), "cancelled". Returns job ID, label, runAt timestamp, and status. Use this to find job IDs before calling cancel_job.',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -54,7 +54,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'cancel_job',
-      description: 'Cancel a scheduled job by ID',
+      description: 'Cancel a pending job by its ID (marks status="cancelled" in the schedule file). Only pending jobs can be cancelled — executed jobs are already done. Use list_jobs to find the job ID first. Returns an error message if the ID is not found.',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -109,4 +109,7 @@ async function main() {
   await server.connect(transport);
 }
 
-main();
+main().catch((err) => {
+  console.error('[cron-mcp] Fatal error:', err);
+  process.exit(1);
+});

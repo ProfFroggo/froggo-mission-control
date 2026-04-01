@@ -1,8 +1,42 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Button, Select, TextArea, TextField, Flex } from '@radix-ui/themes';
 import { Clock, RefreshCw, Play, Trash2, Plus, ChevronDown, ChevronRight, AlertCircle, Edit2 } from 'lucide-react';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { formatTimeAgo, formatTimeUntil } from '../utils/formatting';
+
+function cronToHuman(expr: string): string {
+  const parts = expr.trim().split(/\s+/);
+  if (parts.length !== 5) return expr;
+  const [min, hour, dom, , dow] = parts;
+  const fmt12 = (h: string, m: string) => {
+    const hNum = parseInt(h), mNum = parseInt(m) || 0;
+    const suffix = hNum < 12 ? 'AM' : 'PM';
+    const h12 = hNum === 0 ? 12 : hNum > 12 ? hNum - 12 : hNum;
+    return mNum > 0 ? `${h12}:${String(mNum).padStart(2, '0')} ${suffix}` : `${h12}:00 ${suffix}`;
+  };
+  const DAY_NAMES: Record<string, string> = { '0': 'Sunday', '1': 'Monday', '2': 'Tuesday', '3': 'Wednesday', '4': 'Thursday', '5': 'Friday', '6': 'Saturday' };
+  // Every N minutes
+  if (min.startsWith('*/') && hour === '*') return `Every ${min.slice(2)} minutes`;
+  // Every N hours
+  if (min === '0' && hour.startsWith('*/') && dom === '*') return `Every ${hour.slice(2)} hours`;
+  // Daily at time
+  if (dom === '*' && dow === '*' && !hour.includes('*') && !min.includes('*'))
+    return `Daily at ${fmt12(hour, min)}`;
+  // Weekdays
+  if (dom === '*' && dow === '1-5' && !hour.includes('*') && !min.includes('*'))
+    return `Weekdays at ${fmt12(hour, min)}`;
+  // Weekends
+  if (dom === '*' && (dow === '0,6' || dow === '6,0') && !hour.includes('*') && !min.includes('*'))
+    return `Weekends at ${fmt12(hour, min)}`;
+  // Specific weekday
+  if (dom === '*' && DAY_NAMES[dow] && !hour.includes('*') && !min.includes('*'))
+    return `${DAY_NAMES[dow]}s at ${fmt12(hour, min)}`;
+  // Monthly on Nth
+  if (dow === '*' && !dom.includes('*') && !hour.includes('*') && !min.includes('*'))
+    return `Monthly on ${dom} at ${fmt12(hour, min)}`;
+  return expr;
+}
 
 interface TaskTemplate {
   title?: string;
@@ -212,7 +246,7 @@ export default function CronTab() {
   };
 
   const formatSchedule = (s: CronJob['schedule']) => {
-    if (s.kind === 'cron' && s.expr) return s.expr;
+    if (s.kind === 'cron' && s.expr) return cronToHuman(s.expr);
     if (s.kind === 'every' && s.everyMs) {
       const mins = s.everyMs / 60000;
       return mins >= 60 ? `Every ${(mins / 60).toFixed(0)}h` : `Every ${mins}m`;
@@ -224,22 +258,22 @@ export default function CronTab() {
 
   return (
     <div className="flex-1 overflow-auto p-6">
-      <div className="flex items-center justify-between mb-4">
+      <Flex align="center" justify="between" className="mb-4">
         <div className="text-sm text-mission-control-text-dim">{jobs.length} cron job{jobs.length !== 1 ? 's' : ''}</div>
-        <div className="flex gap-2">
-          <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm">
+        <Flex gap="2">
+          <Button variant="solid" size="2" onClick={() => setShowAddModal(true)}>
             <Plus size={14} /> Add Job
-          </button>
-          <button onClick={loadJobs} disabled={loading} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border rounded-lg text-sm hover:bg-mission-control-border/80">
+          </Button>
+          <Button variant="surface" color="gray" size="2" onClick={loadJobs} disabled={loading}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Flex>
+      </Flex>
 
       {loading && jobs.length === 0 ? (
-        <div className="flex items-center justify-center py-12 text-mission-control-text-dim">
+        <Flex align="center" justify="center" className="py-12 text-mission-control-text-dim">
           <RefreshCw size={24} className="animate-spin mr-3" /> Loading...
-        </div>
+        </Flex>
       ) : jobs.length === 0 ? (
         <div className="text-center py-12 text-mission-control-text-dim">
           <Clock size={48} className="mx-auto opacity-20 mb-4" />
@@ -251,7 +285,7 @@ export default function CronTab() {
             const isExpanded = expandedJob === job.id;
             const jobRuns = runs[job.id] || [];
             return (
-              <div key={job.id} className="bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
+              <div key={job.id} className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden hover:border-mission-control-accent/30 transition-colors">
                 <div
                   className="p-4 flex items-center gap-4 cursor-pointer hover:bg-mission-control-bg/50 transition-colors"
                   onClick={() => expandJob(job.id)}
@@ -262,6 +296,9 @@ export default function CronTab() {
                   aria-label={`${job.name} job - ${isExpanded ? 'collapse' : 'expand'}`}
                 >
                   <button
+                    type="button"
+                    role="switch"
+                    aria-checked={job.enabled}
                     onClick={e => { e.stopPropagation(); toggleJob(job); }}
                     className={`w-10 h-5 rounded-full transition-colors flex-shrink-0 ${
                       job.enabled ? 'bg-mission-control-accent' : 'bg-mission-control-border'
@@ -272,34 +309,34 @@ export default function CronTab() {
                     }`} />
                   </button>
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate flex items-center gap-2">
+                    <div className="text-sm font-semibold text-mission-control-text truncate flex items-center gap-2">
                       {job.name}
                       <span className={`text-xs px-1.5 py-0.5 rounded ${job.taskTemplate ? 'bg-mission-control-accent/15 text-mission-control-accent' : 'bg-mission-control-border text-mission-control-text-dim'}`}>
                         {job.taskTemplate ? 'Task' : 'Message'}
                       </span>
                     </div>
-                    <div className="text-xs text-mission-control-text-dim flex items-center gap-3">
-                      <span>{formatSchedule(job.schedule)}</span>
-                      <span>Next: {formatTimeUntil(job.state.nextRunAtMs)}</span>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="font-mono text-xs text-mission-control-text-dim bg-mission-control-bg px-2 py-0.5 rounded">{formatSchedule(job.schedule)}</span>
+                      <span className="text-[10px] text-mission-control-text-dim tabular-nums">Next: {formatTimeUntil(job.state.nextRunAtMs)}</span>
                       {job.state.lastStatus && (
-                        <span className={job.state.lastStatus === 'ok' ? 'text-success' : job.state.lastStatus === 'error' ? 'text-error' : 'text-mission-control-text-dim'}>
+                        <span className={`text-[10px] tabular-nums ${job.state.lastStatus === 'ok' ? 'text-success' : job.state.lastStatus === 'error' ? 'text-error' : 'text-mission-control-text-dim'}`}>
                           Last: {job.state.lastStatus} {formatTimeAgo(job.state.lastRunAtMs)}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button onClick={e => { e.stopPropagation(); runJob(job.id); }} className="p-2 hover:bg-mission-control-border rounded-lg text-mission-control-text-dim hover:text-mission-control-accent" title="Run now">
+                  <Flex align="center" gap="1">
+                    <button type="button" onClick={e => { e.stopPropagation(); runJob(job.id); }} aria-label="Run job now" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                       <Play size={14} />
                     </button>
-                    <button onClick={e => { e.stopPropagation(); openEdit(job); }} className="p-2 hover:bg-mission-control-border rounded-lg text-mission-control-text-dim hover:text-mission-control-text" title="Edit">
+                    <button type="button" onClick={e => { e.stopPropagation(); openEdit(job); }} aria-label="Edit job" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                       <Edit2 size={14} />
                     </button>
-                    <button onClick={e => { e.stopPropagation(); removeJob(job); }} className="p-2 hover:bg-error-subtle rounded-lg text-mission-control-text-dim hover:text-error" title="Delete">
+                    <button type="button" onClick={e => { e.stopPropagation(); removeJob(job); }} aria-label="Delete job" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors">
                       <Trash2 size={14} />
                     </button>
                     {isExpanded ? <ChevronDown size={16} className="text-mission-control-text-dim" /> : <ChevronRight size={16} className="text-mission-control-text-dim" />}
-                  </div>
+                  </Flex>
                 </div>
 
                 {isExpanded && (
@@ -317,10 +354,10 @@ export default function CronTab() {
                       </div>
                     )}
                     {job.state.lastError && (
-                      <div className="mb-4 p-3 bg-error-subtle border border-error-border rounded-lg text-sm text-error flex items-start gap-2">
+                      <Flex align="start" gap="2" className="mb-4 p-3 bg-error/10 border border-error/30 rounded-lg text-sm text-error">
                         <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                         {job.state.lastError}
-                      </div>
+                      </Flex>
                     )}
                     <div className="text-xs text-mission-control-text-dim uppercase tracking-wide mb-2">Recent Runs</div>
                     {jobRuns.length === 0 ? (
@@ -328,15 +365,15 @@ export default function CronTab() {
                     ) : (
                       <div className="space-y-1 max-h-48 overflow-y-auto">
                         {jobRuns.map((run, i) => (
-                          <div key={i} className="flex items-center gap-3 text-sm py-1">
-                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                          <Flex key={i} align="center" gap="3" className="text-sm py-1">
+                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
                               run.status === 'ok' ? 'bg-success' : run.status === 'error' ? 'bg-error' : 'bg-mission-control-text-dim'
                             }`} />
                             <span className="text-mission-control-text-dim w-24 flex-shrink-0">{new Date(run.ts).toLocaleTimeString()}</span>
                             <span className={run.status === 'error' ? 'text-error' : ''}>{run.status}</span>
                             {run.durationMs && <span className="text-mission-control-text-dim">{(run.durationMs / 1000).toFixed(1)}s</span>}
                             {run.error && <span className="text-error truncate">{run.error}</span>}
-                          </div>
+                          </Flex>
                         ))}
                       </div>
                     )}
@@ -351,7 +388,7 @@ export default function CronTab() {
       {/* Add Job Modal */}
       {showAddModal && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={closeModal}
           onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); closeModal(); } }}
           role="button"
@@ -359,48 +396,58 @@ export default function CronTab() {
           aria-label="Close add cron modal"
         >
           <div
-            className="bg-mission-control-surface rounded-lg border border-mission-control-border p-6 max-w-lg w-full"
+            className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]"
             onClick={e => e.stopPropagation()}
             onKeyDown={e => e.stopPropagation()}
             role="presentation"
           >
-            <h2 className="text-lg font-semibold mb-4">{editingJobId ? 'Edit Cron Job' : 'Add Cron Job'}</h2>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+              <h2 className="text-base font-semibold">{editingJobId ? 'Edit Cron Job' : 'Add Cron Job'}</h2>
+            </div>
+            <div className="px-6 py-4 flex-1 overflow-y-auto">
             <div className="space-y-4">
               <div>
                 <label htmlFor="cron-name" className="block text-sm text-mission-control-text-dim mb-1">Name</label>
-                <input id="cron-name" type="text" value={newJob.name} onChange={e => setNewJob(p => ({ ...p, name: e.target.value }))}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent" placeholder="My cron job" aria-label="Cron job name" />
+                <TextField.Root id="cron-name" type="text" value={newJob.name} onChange={e => setNewJob(p => ({ ...p, name: e.target.value }))}
+                  placeholder="My cron job" aria-label="Cron job name" className="w-full" />
               </div>
               <div>
                 <label htmlFor="cron-description" className="block text-sm text-mission-control-text-dim mb-1">Description</label>
-                <input id="cron-description" type="text" value={newJob.description} onChange={e => setNewJob(p => ({ ...p, description: e.target.value }))}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent" placeholder="Optional description" aria-label="Cron job description" />
+                <TextField.Root id="cron-description" type="text" value={newJob.description} onChange={e => setNewJob(p => ({ ...p, description: e.target.value }))}
+                  placeholder="Optional description" aria-label="Cron job description" className="w-full" />
               </div>
               <div>
                 <label htmlFor="cron-schedule-kind" className="block text-sm text-mission-control-text-dim mb-1">Schedule</label>
-                <div className="flex gap-2">
-                  <select id="cron-schedule-kind" value={newJob.scheduleKind} onChange={e => setNewJob(p => ({ ...p, scheduleKind: e.target.value }))}
-                    className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent" aria-label="Schedule type">
-                    <option value="cron">Cron</option>
-                    <option value="every">Interval (min)</option>
-                    <option value="at">One-time</option>
-                  </select>
-                  <input id="cron-schedule-expr" type="text" value={newJob.expr} onChange={e => setNewJob(p => ({ ...p, expr: e.target.value }))}
-                    className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                <Flex gap="2">
+                  <Select.Root value={newJob.scheduleKind || 'cron'} onValueChange={(val) => setNewJob(p => ({ ...p, scheduleKind: val }))}>
+                    <Select.Trigger id="cron-schedule-kind" aria-label="Schedule type" />
+                    <Select.Content>
+                      <Select.Item value="cron">Cron</Select.Item>
+                      <Select.Item value="every">Interval (min)</Select.Item>
+                      <Select.Item value="at">One-time</Select.Item>
+                    </Select.Content>
+                  </Select.Root>
+                  <TextField.Root id="cron-schedule-expr" type="text" value={newJob.expr} onChange={e => setNewJob(p => ({ ...p, expr: e.target.value }))}
                     placeholder={newJob.scheduleKind === 'cron' ? '*/5 * * * *' : newJob.scheduleKind === 'every' ? '5' : '2026-01-30T09:00'}
-                    aria-label="Schedule expression" />
-                </div>
+                    aria-label="Schedule expression" className="flex-1" />
+                </Flex>
               </div>
               {/* Mode toggle */}
               <div>
                 <label className="block text-sm text-mission-control-text-dim mb-1">Execution Mode</label>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setNewJob(p => ({ ...p, mode: 'task' }))}
-                    className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${newJob.mode === 'task' ? 'bg-mission-control-accent/20 text-mission-control-accent border-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}>
+                <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
+                  <button
+                    type="button"
+                    onClick={() => setNewJob(p => ({ ...p, mode: 'task' }))}
+                    className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium text-center transition-colors ${newJob.mode === 'task' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+                  >
                     Create Task
                   </button>
-                  <button type="button" onClick={() => setNewJob(p => ({ ...p, mode: 'message' }))}
-                    className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${newJob.mode === 'message' ? 'bg-mission-control-accent/20 text-mission-control-accent border-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}>
+                  <button
+                    type="button"
+                    onClick={() => setNewJob(p => ({ ...p, mode: 'message' }))}
+                    className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium text-center transition-colors ${newJob.mode === 'message' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+                  >
                     Message Agent
                   </button>
                 </div>
@@ -413,74 +460,77 @@ export default function CronTab() {
                 <>
                   <div>
                     <label htmlFor="cron-task-title" className="block text-sm text-mission-control-text-dim mb-1">Task Title <span className="text-xs opacity-60">({'{date}'} = current date)</span></label>
-                    <input id="cron-task-title" type="text" value={newJob.taskTitle} onChange={e => setNewJob(p => ({ ...p, taskTitle: e.target.value }))}
-                      className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
-                      placeholder="HR Nightly Training — {date}" />
+                    <TextField.Root id="cron-task-title" type="text" value={newJob.taskTitle} onChange={e => setNewJob(p => ({ ...p, taskTitle: e.target.value }))}
+                      placeholder="HR Nightly Training — {date}" className="w-full" />
                   </div>
                   <div>
                     <label htmlFor="cron-task-planning" className="block text-sm text-mission-control-text-dim mb-1">Planning Notes / Instructions</label>
-                    <textarea id="cron-task-planning" value={newJob.taskPlanningNotes} onChange={e => setNewJob(p => ({ ...p, taskPlanningNotes: e.target.value }))}
-                      rows={3} className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent resize-none"
-                      placeholder="Visit aitmpl.com, discover new skills, check team health..." />
+                    <TextArea id="cron-task-planning" value={newJob.taskPlanningNotes} onChange={e => setNewJob(p => ({ ...p, taskPlanningNotes: e.target.value }))}
+                      rows={3} placeholder="Visit aitmpl.com, discover new skills, check team health..." className="w-full" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label htmlFor="cron-task-assign" className="block text-sm text-mission-control-text-dim mb-1">Assign To</label>
-                      <select id="cron-task-assign" value={newJob.taskAssignTo} onChange={e => setNewJob(p => ({ ...p, taskAssignTo: e.target.value }))}
-                        className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent">
-                        <option value="">Auto (Clara assigns)</option>
-                        <option value="mission-control">Mission Control</option>
-                        <option value="hr">HR</option>
-                        <option value="coder">Coder</option>
-                        <option value="inbox">Inbox</option>
-                        <option value="designer">Designer</option>
-                        <option value="clara">Clara (QC)</option>
-                      </select>
+                      <Select.Root value={newJob.taskAssignTo || '__auto__'} onValueChange={(val) => setNewJob(p => ({ ...p, taskAssignTo: val === '__auto__' ? '' : val }))}>
+                        <Select.Trigger id="cron-task-assign" className="w-full" />
+                        <Select.Content>
+                          <Select.Item value="__auto__">Auto (Clara assigns)</Select.Item>
+                          <Select.Item value="mission-control">Mission Control</Select.Item>
+                          <Select.Item value="hr">HR</Select.Item>
+                          <Select.Item value="coder">Coder</Select.Item>
+                          <Select.Item value="inbox">Inbox</Select.Item>
+                          <Select.Item value="designer">Designer</Select.Item>
+                          <Select.Item value="clara">Clara (QC)</Select.Item>
+                        </Select.Content>
+                      </Select.Root>
                     </div>
                     <div>
                       <label htmlFor="cron-task-priority" className="block text-sm text-mission-control-text-dim mb-1">Priority</label>
-                      <select id="cron-task-priority" value={newJob.taskPriority} onChange={e => setNewJob(p => ({ ...p, taskPriority: e.target.value }))}
-                        className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent">
-                        <option value="p0">P0 — Critical</option>
-                        <option value="p1">P1 — High</option>
-                        <option value="p2">P2 — Normal</option>
-                        <option value="p3">P3 — Low</option>
-                      </select>
+                      <Select.Root value={newJob.taskPriority || 'p2'} onValueChange={(val) => setNewJob(p => ({ ...p, taskPriority: val }))}>
+                        <Select.Trigger id="cron-task-priority" className="w-full" />
+                        <Select.Content>
+                          <Select.Item value="p0">P0 — Critical</Select.Item>
+                          <Select.Item value="p1">P1 — High</Select.Item>
+                          <Select.Item value="p2">P2 — Normal</Select.Item>
+                          <Select.Item value="p3">P3 — Low</Select.Item>
+                        </Select.Content>
+                      </Select.Root>
                     </div>
                   </div>
                   <div>
                     <label htmlFor="cron-task-subtasks" className="block text-sm text-mission-control-text-dim mb-1">Subtasks <span className="text-xs opacity-60">(one per line)</span></label>
-                    <textarea id="cron-task-subtasks" value={newJob.taskSubtasks} onChange={e => setNewJob(p => ({ ...p, taskSubtasks: e.target.value }))}
-                      rows={3} className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent resize-none font-mono"
-                      placeholder={"Check team health metrics\nUpdate drifted soul files\nDocument new skills found"} />
+                    <TextArea id="cron-task-subtasks" value={newJob.taskSubtasks} onChange={e => setNewJob(p => ({ ...p, taskSubtasks: e.target.value }))}
+                      rows={3} className="font-mono w-full" placeholder={"Check team health metrics\nUpdate drifted soul files\nDocument new skills found"} />
                   </div>
                 </>
               ) : (
                 <>
                   <div>
                     <label htmlFor="cron-message" className="block text-sm text-mission-control-text-dim mb-1">Message (what to tell the agent)</label>
-                    <textarea id="cron-message" value={newJob.message} onChange={e => setNewJob(p => ({ ...p, message: e.target.value }))}
-                      rows={3} className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent resize-none"
-                      placeholder="Check for new emails and summarize..." />
+                    <TextArea id="cron-message" value={newJob.message} onChange={e => setNewJob(p => ({ ...p, message: e.target.value }))}
+                      rows={3} placeholder="Check for new emails and summarize..." className="w-full" />
                   </div>
                   <div>
                     <label htmlFor="cron-session-target" className="block text-sm text-mission-control-text-dim mb-1">Session Target</label>
-                    <select id="cron-session-target" value={newJob.sessionTarget} onChange={e => setNewJob(p => ({ ...p, sessionTarget: e.target.value }))}
-                      className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent">
-                      <option value="isolated">Isolated (new session)</option>
-                      <option value="main">Main (shared session)</option>
-                      <option value="mission-control">mission-control</option>
-                      <option value="inbox">inbox</option>
-                      <option value="chief">chief</option>
-                      <option value="coder">coder</option>
-                    </select>
+                    <Select.Root value={newJob.sessionTarget || 'isolated'} onValueChange={(val) => setNewJob(p => ({ ...p, sessionTarget: val }))}>
+                      <Select.Trigger id="cron-session-target" className="w-full" />
+                      <Select.Content>
+                        <Select.Item value="isolated">Isolated (new session)</Select.Item>
+                        <Select.Item value="main">Main (shared session)</Select.Item>
+                        <Select.Item value="mission-control">mission-control</Select.Item>
+                        <Select.Item value="inbox">inbox</Select.Item>
+                        <Select.Item value="chief">chief</Select.Item>
+                        <Select.Item value="coder">coder</Select.Item>
+                      </Select.Content>
+                    </Select.Root>
                   </div>
                 </>
               )}
             </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={closeModal} className="flex-1 px-4 py-2 bg-mission-control-border rounded-lg text-sm">Cancel</button>
-              <button onClick={addJob} className="flex-1 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm">{editingJobId ? 'Save' : 'Create'}</button>
+            </div>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+              <Button variant="surface" color="gray" size="2" onClick={closeModal}>Cancel</Button>
+              <Button variant="solid" size="2" onClick={addJob}>{editingJobId ? 'Save' : 'Create'}</Button>
             </div>
           </div>
         </div>

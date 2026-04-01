@@ -1,0 +1,29 @@
+{
+  "id": "workflow-studio",
+  "name": "Workflow Studio",
+  "version": "1.0.0",
+  "description": "Embedded Workflow Studio for building and managing automation workflows.",
+  "author": "Mission Control Team",
+  "icon": "Workflow",
+  "category": "automation",
+  "core": true,
+  "credentials": [],
+  "views": [
+    {
+      "id": "workflow-studio",
+      "label": "Workflow Studio",
+      "icon": "Workflow",
+      "entrypoint": "./views/WorkflowStudioPanel.tsx"
+    }
+  ],
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+  "permissions": {
+    "ipc": [],
+    "filesystem": [],
+    "network": true,
+    "shell": false
+  }
+}

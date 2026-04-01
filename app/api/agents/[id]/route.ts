@@ -82,7 +82,7 @@ export async function PATCH(
       const tier = Number(body.trust_tier);
       if (!isNaN(tier)) {
         setClauses.push('trust_tier = ?');
-        values.push(body.trust_tier);
+        values.push(tier);
         const perms = TIER_PERMISSIONS_MAP[tier];
         if (perms) {
           setClauses.push('capabilities = ?');

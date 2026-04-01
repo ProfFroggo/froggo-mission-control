@@ -4,6 +4,7 @@ import {
   Search, CheckSquare, Bot, BookOpen, Library, Megaphone, Zap,
   Download, X, ArrowUpDown, Calendar,
 } from 'lucide-react';
+import { Button, TextField, Checkbox, Flex } from '@radix-ui/themes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type SortMode = 'relevance' | 'date' | 'name';
@@ -177,25 +178,26 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
   const totalResults = processedGroups.reduce((s, g) => s + g.total, 0);
 
   return (
-    <div className="flex flex-col h-full">
+    <Flex direction="column" height="100%">
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
+      <Flex align="center" gap="3" className="p-4 border-b border-mission-control-border">
         <form onSubmit={handleSubmit} className="flex items-center gap-3 flex-1">
           <Search size={20} className="text-mission-control-text-dim flex-shrink-0" aria-hidden="true" />
-          <input
-            type="text"
+          <TextField.Root
             value={draftQuery}
             onChange={e => setDraftQuery(e.target.value)}
             placeholder="Search everything..."
-            className="flex-1 bg-transparent outline-none text-lg"
             aria-label="Search query"
+            size="3"
+            className="flex-1"
           />
-          <button
+          <Button
             type="submit"
-            className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm hover:opacity-90 transition-opacity"
+            variant="solid"
+            size="2"
           >
             Search
-          </button>
+          </Button>
         </form>
         {query && (
           <span className="text-sm text-mission-control-text-dim flex-shrink-0">
@@ -203,25 +205,28 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
           </span>
         )}
         {data && (
-          <button
+          <Button
             onClick={exportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-mission-control-border hover:bg-mission-control-surface rounded-lg transition-colors flex-shrink-0"
+            variant="outline"
+            color="gray"
+            size="2"
+            className="flex-shrink-0"
             title="Export as CSV"
           >
             <Download size={14} aria-hidden="true" />
             Export
-          </button>
+          </Button>
         )}
         {onClose && (
           <button
             onClick={onClose}
-            className="text-mission-control-text-dim hover:text-mission-control-text flex-shrink-0"
             aria-label="Close search"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors flex-shrink-0"
           >
             <X size={20} />
           </button>
         )}
-      </div>
+      </Flex>
 
       {/* Body: sidebar + results */}
       <div className="flex flex-1 overflow-hidden">
@@ -229,7 +234,7 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
         <aside className="w-56 flex-shrink-0 border-r border-mission-control-border p-4 overflow-y-auto">
           {/* Type filters */}
           <div className="mb-6">
-            <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-2">
+            <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">
               Result Types
             </div>
             <div className="space-y-1.5">
@@ -238,11 +243,10 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
                   key={cfg.key}
                   className="flex items-center gap-2 cursor-pointer group"
                 >
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={enabledTypes.has(cfg.key)}
-                    onChange={() => toggleType(cfg.key)}
-                    className="rounded"
+                    onCheckedChange={() => toggleType(cfg.key)}
+                    size="2"
                   />
                   <span className="text-mission-control-text-dim group-hover:text-mission-control-text transition-colors" aria-hidden="true">
                     {cfg.icon}
@@ -255,33 +259,35 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
 
           {/* Date range */}
           <div className="mb-6">
-            <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1">
+            <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1">
               <Calendar size={12} aria-hidden="true" />
               Date Range
             </div>
             <div className="space-y-2">
               <div>
                 <label className="text-xs text-mission-control-text-dim mb-0.5 block">From</label>
-                <input
+                <TextField.Root
                   type="date"
                   value={dateFrom}
                   onChange={e => setDateFrom(e.target.value)}
-                  className="w-full text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 outline-none focus:border-mission-control-accent"
+                  size="1"
+                  className="w-full"
                 />
               </div>
               <div>
                 <label className="text-xs text-mission-control-text-dim mb-0.5 block">To</label>
-                <input
+                <TextField.Root
                   type="date"
                   value={dateTo}
                   onChange={e => setDateTo(e.target.value)}
-                  className="w-full text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 outline-none focus:border-mission-control-accent"
+                  size="1"
+                  className="w-full"
                 />
               </div>
               {(dateFrom || dateTo) && (
                 <button
                   onClick={() => { setDateFrom(''); setDateTo(''); }}
-                  className="text-xs text-mission-control-text-dim hover:text-mission-control-text"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   Clear dates
                 </button>
@@ -291,25 +297,26 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
 
           {/* Sort */}
           <div>
-            <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1">
+            <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2 flex items-center gap-1">
               <ArrowUpDown size={12} aria-hidden="true" />
               Sort By
             </div>
             <div className="space-y-1">
-              {(['relevance', 'date', 'name'] as SortMode[]).map(mode => (
-                <button
-                  key={mode}
-                  onClick={() => setSortMode(mode)}
-                  className={`w-full text-left px-2 py-1 text-sm rounded transition-colors capitalize ${
-                    sortMode === mode
-                      ? 'bg-mission-control-accent text-white'
-                      : 'text-mission-control-text-dim hover:bg-mission-control-border'
-                  }`}
-                  aria-pressed={sortMode === mode}
-                >
-                  {mode}
-                </button>
-              ))}
+              <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border flex-col">
+                {(['relevance', 'date', 'name'] as SortMode[]).map(mode => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setSortMode(mode)}
+                    aria-pressed={sortMode === mode}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors w-full capitalize ${
+                      sortMode === mode ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </aside>
@@ -388,6 +395,6 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
           ))}
         </main>
       </div>
-    </div>
+    </Flex>
   );
 }

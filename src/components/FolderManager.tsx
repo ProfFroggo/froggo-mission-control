@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Folder, Plus, Edit2, Trash2, X, Check, FolderOpen, Tag, Zap, Star, Briefcase, User, Package, Flame, Lightbulb, Target, Pin, Bookmark, BookOpen, type LucideIcon } from 'lucide-react';
+import { Button, TextField, Box, Flex, Grid, Text, Heading } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import SmartFolderRuleEditor from './SmartFolderRuleEditor';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -174,50 +175,57 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
   ];
 
   return (
-    <div className="h-full flex flex-col bg-mission-control-surface">
+    <Flex direction="column" height="100%" className="bg-mission-control-surface">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between" p="4" className="border-b border-mission-control-border">
+        <Flex align="center" gap="3">
           <Folder size={20} className="text-mission-control-accent" />
-          <h2 className="text-lg font-semibold">Folder Management</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
+          <Heading size="4" as="h2">Folder Management</Heading>
+        </Flex>
+        <Flex align="center" gap="2">
+          <Button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-accent hover:bg-mission-control-accent-hover text-white rounded-lg transition-colors text-sm"
+            size="2"
+            variant="solid"
           >
             <Plus size={14} />
             New Folder
-          </button>
+          </Button>
           {onClose && (
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+              aria-label="Close"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <X size={16} />
             </button>
           )}
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Create Form */}
       {showCreate && (
-        <div className="p-4 border-b border-mission-control-border bg-mission-control-bg">
-          <div className="space-y-3">
-            <div className="flex gap-3">
+        <Box p="4" className="border-b border-mission-control-border bg-mission-control-bg">
+          <Flex direction="column" gap="3">
+            <Flex gap="3">
               {/* Icon Picker */}
-              <div className="w-24">
-                <span className="block text-xs font-medium mb-1 text-mission-control-text-dim">Icon</span>
+              <Box className="w-24">
+                <Text size="1" weight="medium" mb="1" className="text-mission-control-text-dim" as="div">Icon</Text>
                 <div className="grid grid-cols-4 gap-1 p-1 bg-mission-control-surface border border-mission-control-border rounded-lg">
                   {iconOptions.map((opt) => {
                     const OptIcon = opt.icon;
                     return (
                       <button
                         key={opt.value}
+                        type="button"
                         onClick={() => setFormData({ ...formData, icon: opt.value })}
                         title={opt.label}
-                        className={`flex items-center justify-center p-1.5 rounded transition-colors ${
-                          formData.icon === opt.value ? 'bg-mission-control-accent/20' : 'hover:bg-mission-control-border'
+                        aria-label={opt.label}
+                        className={`flex items-center justify-center p-1.5 rounded-md transition-colors ${
+                          formData.icon === opt.value
+                            ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                            : 'text-mission-control-text-dim hover:text-mission-control-text'
                         }`}
                       >
                         <OptIcon size={16} />
@@ -225,109 +233,106 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                     );
                   })}
                 </div>
-              </div>
+              </Box>
 
               {/* Name & Description */}
-              <div className="flex-1 space-y-2">
-                <div>
+              <Flex direction="column" gap="2" flexGrow="1">
+                <Box>
                   <label htmlFor="folder-name" className="block text-xs font-medium mb-1 text-mission-control-text-dim">Name</label>
-                  <input
+                  <TextField.Root
                     id="folder-name"
-                    type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g., Client Work"
-                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
-                    /* autoFocus removed for accessibility */
+                    size="2"
                   />
-                </div>
-                <div>
+                </Box>
+                <Box>
                   <label htmlFor="folder-description" className="block text-xs font-medium mb-1 text-mission-control-text-dim">Description (optional)</label>
-                  <input
+                  <TextField.Root
                     id="folder-description"
-                    type="text"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="e.g., Work-related discussions"
-                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
+                    size="2"
                   />
-                </div>
-              </div>
+                </Box>
+              </Flex>
 
               {/* Color Picker */}
-              <div className="w-28">
-                <span className="block text-xs font-medium mb-1 text-mission-control-text-dim">Color</span>
-                <div className="grid grid-cols-5 gap-1 p-1 bg-mission-control-surface border border-mission-control-border rounded-lg">
+              <Box className="w-28">
+                <Text size="1" weight="medium" mb="1" className="text-mission-control-text-dim" as="div">Color</Text>
+                <Grid columns="5" gap="1" p="1" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
                   {colorOptions.map((color) => (
                     <button
                       key={color}
+                      type="button"
                       onClick={() => setFormData({ ...formData, color })}
-                      className={`w-6 h-6 rounded transition-all ${
+                      className={`w-6 h-6 rounded transition-[colors,transform] ${
                         formData.color === color ? 'ring-2 ring-white dark:ring-white/80 scale-110' : 'hover:scale-110'
                       }`}
                       style={{ backgroundColor: color }}
                       title={color}
                     />
                   ))}
-                </div>
-              </div>
-            </div>
+                </Grid>
+              </Box>
+            </Flex>
 
             {/* Actions */}
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={cancelCreate}
-                className="px-3 py-1.5 text-sm bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
-              >
+            <Flex justify="end" gap="2">
+              <button type="button" onClick={cancelCreate} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                 Cancel
               </button>
-              <button
-                onClick={handleCreate}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-mission-control-accent hover:bg-mission-control-accent-hover text-white rounded-lg transition-colors"
-              >
+              <Button onClick={handleCreate} size="2" variant="solid">
                 <Check size={14} />
                 Create
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </Flex>
+          </Flex>
+        </Box>
       )}
 
       {/* Folders List */}
-      <div className="flex-1 overflow-y-auto">
+      <Box flexGrow="1" className="overflow-y-auto">
         {loading ? (
-          <div className="flex items-center justify-center h-32">
+          <Flex align="center" justify="center" className="h-32">
             <div className="animate-spin rounded-full h-6 w-6 border-2 border-mission-control-accent border-t-transparent" />
-          </div>
+          </Flex>
         ) : folders.length === 0 ? (
-          <div className="p-8 text-center text-mission-control-text-dim">
+          <Flex direction="column" align="center" p="6" className="text-mission-control-text-dim">
             <FolderOpen size={32} className="mx-auto mb-3 opacity-50" />
-            <p>No folders yet</p>
-            <p className="text-sm mt-1">Create your first folder to organize conversations</p>
-          </div>
+            <Text as="p">No folders yet</Text>
+            <Text size="2" mt="1" as="p">Create your first folder to organize conversations</Text>
+          </Flex>
         ) : (
           <div className="divide-y divide-mission-control-border">
             {folders.map((folder) => (
-              <div
+              <Box
                 key={folder.id}
-                className="p-4 hover:bg-mission-control-bg/50 transition-colors group"
+                p="4"
+                className="hover:bg-mission-control-bg/50 transition-colors group"
               >
                 {editingId === folder.id ? (
                   /* Edit Mode */
-                  <div className="space-y-3">
-                    <div className="flex gap-3">
+                  <Flex direction="column" gap="3">
+                    <Flex gap="3">
                       {/* Icon Picker */}
-                      <div className="w-24">
+                      <Box className="w-24">
                         <div className="grid grid-cols-4 gap-1 p-1 bg-mission-control-surface border border-mission-control-border rounded-lg">
                           {iconOptions.map((opt) => {
                             const OptIcon = opt.icon;
                             return (
                               <button
                                 key={opt.value}
+                                type="button"
                                 onClick={() => setFormData({ ...formData, icon: opt.value })}
                                 title={opt.label}
-                                className={`flex items-center justify-center p-1.5 rounded transition-colors ${
-                                  formData.icon === opt.value ? 'bg-mission-control-accent/20' : 'hover:bg-mission-control-border'
+                                aria-label={opt.label}
+                                className={`flex items-center justify-center p-1.5 rounded-md transition-colors ${
+                                  formData.icon === opt.value
+                                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                                    : 'text-mission-control-text-dim hover:text-mission-control-text'
                                 }`}
                               >
                                 <OptIcon size={16} />
@@ -335,63 +340,56 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                             );
                           })}
                         </div>
-                      </div>
+                      </Box>
 
-                      <div className="flex-1 space-y-2">
-                        <input
-                          type="text"
+                      <Flex direction="column" gap="2" flexGrow="1">
+                        <TextField.Root
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
+                          size="2"
                         />
-                        <input
-                          type="text"
+                        <TextField.Root
                           value={formData.description}
                           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                           placeholder="Description (optional)"
-                          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-mission-control-accent"
+                          size="2"
                         />
-                      </div>
+                      </Flex>
 
-                      <div className="w-28">
-                        <div className="grid grid-cols-5 gap-1 p-1 bg-mission-control-surface border border-mission-control-border rounded-lg">
+                      <Box className="w-28">
+                        <Grid columns="5" gap="1" p="1" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
                           {colorOptions.map((color) => (
                             <button
                               key={color}
+                              type="button"
                               onClick={() => setFormData({ ...formData, color })}
-                              className={`w-6 h-6 rounded transition-all ${
+                              className={`w-6 h-6 rounded transition-[colors,transform] ${
                                 formData.color === color ? 'ring-2 ring-white dark:ring-white/80 scale-110' : 'hover:scale-110'
                               }`}
                               style={{ backgroundColor: color }}
                             />
                           ))}
-                        </div>
-                      </div>
-                    </div>
+                        </Grid>
+                      </Box>
+                    </Flex>
 
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={cancelEdit}
-                        className="px-3 py-1.5 text-sm bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
-                      >
+                    <Flex justify="end" gap="2">
+                      <button type="button" onClick={cancelEdit} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                         Cancel
                       </button>
-                      <button
-                        onClick={() => handleUpdate(folder.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-mission-control-accent hover:bg-mission-control-accent-hover text-white rounded-lg transition-colors"
-                      >
+                      <Button onClick={() => handleUpdate(folder.id)} size="2" variant="solid">
                         <Check size={14} />
                         Save
-                      </button>
-                    </div>
-                  </div>
+                      </Button>
+                    </Flex>
+                  </Flex>
                 ) : (
                   /* View Mode */
-                  <div className="flex items-start gap-3">
+                  <Flex align="start" gap="3">
                     {(() => { const FolderIcon = getIconComponent(folder.icon ?? 'Folder'); return <div className="text-mission-control-text-dim"><FolderIcon size={28} /></div>; })()}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold">{folder.name}</h3>
+                    <Box flexGrow="1" minWidth="0">
+                      <Flex align="center" gap="2" mb="1">
+                        <Heading size="3" as="h3">{folder.name}</Heading>
                         <div
                           className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: folder.color }}
@@ -402,58 +400,70 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                             Smart
                           </span>
                         )}
-                      </div>
+                      </Flex>
                       {folder.description && (
-                        <p className="text-sm text-mission-control-text-dim mb-2">{folder.description}</p>
+                        <Text size="2" className="text-mission-control-text-dim" mb="2" as="p">{folder.description}</Text>
                       )}
-                      <div className="text-xs text-mission-control-text-dim">
+                      <Text size="1" className="text-mission-control-text-dim">
                         {folder.conversation_count} conversation{folder.conversation_count !== 1 ? 's' : ''}
-                      </div>
-                    </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      </Text>
+                    </Box>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {onSelect && (
                         <button
+                          type="button"
                           onClick={() => onSelect(folder.id)}
-                          className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                           title="View conversations"
+                          aria-label="View conversations"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         >
                           <Tag size={14} />
                         </button>
                       )}
                       <button
+                        type="button"
                         onClick={() => setEditingRuleId(folder.id)}
-                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                         title="Smart folder rules"
+                        aria-label="Smart folder rules"
+                        className={`flex items-center justify-center p-1.5 rounded-md border transition-colors ${
+                          folder.is_smart === 1
+                            ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                            : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                        }`}
                       >
-                        <Zap size={14} className={folder.is_smart === 1 ? 'text-mission-control-accent' : ''} />
+                        <Zap size={14} />
                       </button>
                       <button
+                        type="button"
                         onClick={() => startEdit(folder)}
-                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                         title="Edit folder"
+                        aria-label="Edit folder"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <Edit2 size={14} />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleDelete(folder.id, folder.name)}
-                        className="p-2 hover:bg-error-subtle text-error rounded-lg transition-colors"
                         title="Delete folder"
+                        aria-label="Delete folder"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <Trash2 size={14} />
                       </button>
                     </div>
-                  </div>
+                  </Flex>
                 )}
-              </div>
+              </Box>
             ))}
           </div>
         )}
-      </div>
+      </Box>
 
       {/* Smart Folder Rule Editor Modal */}
       {editingRuleId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-4xl h-[90vh] bg-mission-control-surface rounded-lg shadow-2xl overflow-hidden">
+        <Flex align="center" justify="center" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm">
+          <Box className="w-full max-w-4xl h-[90vh] bg-mission-control-surface rounded-2xl shadow-2xl overflow-hidden">
             <SmartFolderRuleEditor
               folderId={editingRuleId}
               folderName={folders.find(f => f.id === editingRuleId)?.name || 'Folder'}
@@ -465,8 +475,8 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
                 loadFolders(); // Reload to update is_smart badge
               }}
             />
-          </div>
-        </div>
+          </Box>
+        </Flex>
       )}
 
       <ConfirmDialog
@@ -479,6 +489,6 @@ export default function FolderManager({ onClose, onSelect }: FolderManagerProps)
         cancelLabel={config.cancelLabel}
         type={config.type}
       />
-    </div>
+    </Flex>
   );
 }

@@ -20,9 +20,11 @@ export default function FeedbackAlternative({ index, text, commentary, onAccept 
         )}
       </div>
       <button
+        type="button"
         onClick={() => onAccept(text)}
-        className="flex-shrink-0 p-1 rounded hover:bg-mission-control-accent/20 text-mission-control-text-dim hover:text-mission-control-accent transition-colors"
         title="Accept this alternative"
+        aria-label="Accept this alternative"
+        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
       >
         <Check className="w-4 h-4" />
       </button>

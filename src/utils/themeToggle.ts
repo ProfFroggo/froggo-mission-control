@@ -14,45 +14,32 @@ export interface ThemeState {
 }
 
 /**
- * Apply theme to document root
+ * Apply theme to document root.
+ * Surface/text colors are managed by the .radix-themes CSS bridge — we only
+ * update the root class and dispatch themeChange so App.tsx can sync Radix appearance.
  */
-export function applyTheme(theme: Theme, accentColor: string) {
+export function applyTheme(theme: Theme, _accentColor: string) {
   const root = document.documentElement;
-  
-  // Determine actual theme
-  let actualTheme = theme;
-  if (theme === 'system') {
-    actualTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
-  
-  // Apply theme class
+
+  const actualTheme: 'dark' | 'light' = theme === 'system'
+    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    : theme;
+
+  // Update root class (used by non-Radix CSS)
   root.classList.remove('dark', 'light');
   root.classList.add(actualTheme);
-  
-  // Apply theme colors
-  if (actualTheme === 'dark') {
-    root.style.setProperty('--mission-control-bg', '#0a0a0a');
-    root.style.setProperty('--mission-control-surface', '#141414');
-    root.style.setProperty('--mission-control-border', '#262626');
-    root.style.setProperty('--mission-control-text', '#fafafa');
-    root.style.setProperty('--mission-control-text-dim', '#a1a1aa');
-  } else {
-    root.style.setProperty('--mission-control-bg', '#fafafa');
-    root.style.setProperty('--mission-control-surface', '#ffffff');
-    root.style.setProperty('--mission-control-border', '#e4e4e7');
-    root.style.setProperty('--mission-control-text', '#18181b');
-    root.style.setProperty('--mission-control-text-dim', '#71717a');
-  }
 
-  // Apply accent color
-  root.style.setProperty('--mission-control-accent', accentColor);
+  // Clear any stale inline vars so the .radix-themes bridge takes over
+  const bridgeVars = [
+    '--mission-control-bg', '--mission-control-surface', '--mission-control-border',
+    '--mission-control-text', '--mission-control-text-dim',
+    '--mission-control-accent', '--mission-control-accent-dim',
+    '--mission-control-bg-alt', '--mission-control-bg0', '--mission-control-card',
+  ];
+  bridgeVars.forEach(v => root.style.removeProperty(v));
 
-  // Generate accent-dim (slightly darker)
-  const hex = accentColor.replace('#', '');
-  const r = Math.max(0, parseInt(hex.slice(0, 2), 16) - 30);
-  const g = Math.max(0, parseInt(hex.slice(2, 4), 16) - 30);
-  const b = Math.max(0, parseInt(hex.slice(4, 6), 16) - 30);
-  root.style.setProperty('--mission-control-accent-dim', `rgb(${r}, ${g}, ${b})`);
+  // Notify App.tsx to sync Radix <Theme appearance>
+  window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme: actualTheme } }));
 }
 
 /**

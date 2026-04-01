@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pencil, Trash2, Plus, Link2 } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import { useMemoryStore } from '../../store/memoryStore';
 import { useWritingStore } from '../../store/writingStore';
 import { useResearchStore } from '../../store/researchStore';
@@ -7,10 +8,10 @@ import FactForm from './FactForm';
 import ConfirmDialog, { useConfirmDialog } from '../ConfirmDialog';
 
 const statusBadge: Record<string, string> = {
-  verified: 'bg-success-subtle text-success',
-  unverified: 'bg-warning-subtle text-warning',
-  disputed: 'bg-error-subtle text-error',
-  'needs-source': 'bg-info-subtle text-info',
+  verified: 'bg-success/10 text-success',
+  unverified: 'bg-warning/10 text-warning',
+  disputed: 'bg-error/10 text-error',
+  'needs-source': 'bg-info/10 text-info',
 };
 
 const statusLabel: Record<string, string> = {
@@ -53,7 +54,7 @@ export default function FactList() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <Flex direction="column" height="100%">
       <div className="flex-1 overflow-y-auto space-y-1 p-2">
         {facts.length === 0 && editingId !== 'new-fact' && (
           <p className="text-[11px] text-mission-control-text-dim text-center py-4">No facts yet</p>
@@ -72,7 +73,7 @@ export default function FactList() {
               key={fact.id}
               className="group p-2 rounded bg-mission-control-bg/30 hover:bg-mission-control-border/40 transition-colors"
             >
-              <div className="flex items-start justify-between gap-1">
+              <Flex align="start" justify="between" gap="1">
                 <div className="flex items-start gap-1.5 flex-1 min-w-0">
                   <span
                     className={`text-[9px] font-bold px-1 py-0.5 rounded flex-shrink-0 ${statusBadge[fact.status] ?? statusBadge.unverified}`}
@@ -89,21 +90,21 @@ export default function FactList() {
                 </div>
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                   <button
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     onClick={() => setEditingId(fact.id)}
-                    className="p-0.5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
                     title="Edit"
                   >
                     <Pencil size={11} />
                   </button>
                   <button
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     onClick={() => handleDelete(fact.id)}
-                    className="p-0.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                     title="Delete"
                   >
                     <Trash2 size={11} />
                   </button>
                 </div>
-              </div>
+              </Flex>
               {fact.source && (
                 <p className="text-[9px] text-mission-control-text-dim mt-0.5 ml-5">source: {fact.source}</p>
               )}
@@ -122,8 +123,8 @@ export default function FactList() {
       {editingId !== 'new-fact' && (
         <div className="p-2 border-t border-mission-control-border flex-shrink-0">
           <button
+            className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             onClick={() => setEditingId('new-fact')}
-            className="flex items-center gap-1.5 w-full px-2 py-1 rounded text-xs text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-colors"
           >
             <Plus size={14} />
             Add Fact
@@ -146,6 +147,6 @@ export default function FactList() {
         }}
         {...deleteDialog.config}
       />
-    </div>
+    </Flex>
   );
 }

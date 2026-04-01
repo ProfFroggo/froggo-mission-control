@@ -27,6 +27,7 @@ import {
   Edit3,
   Check,
 } from 'lucide-react';
+import { Badge, Button, Spinner, TextField, Select, Checkbox, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { scheduleApi, approvalApi, inboxApi } from '../lib/api';
 
@@ -67,7 +68,7 @@ interface Mention {
   is_spam: boolean;
 }
 
-type FilterTab = 'all' | 'hot' | 'pending' | 'replied' | 'ignored' | 'replies' | 'quotes' | 'direct' | 'spam';
+type FilterTab = 'needs-action' | 'in-progress' | 'done' | 'archive';
 
 interface ReplyTemplate {
   id: string;
@@ -81,7 +82,8 @@ const LS_PRIORITY_KEY = 'x-reply-priority-accounts';
 const LS_IGNORED_KEY = 'x-reply-ignored-accounts';
 const LS_TEMPLATE_KEY = 'x-reply-templates';
 const LS_ENGAGE_SETTINGS_KEY = 'x-engage-settings';
-const POLL_INTERVAL = 60_000; // auto-refresh mentions every 60s
+const POLL_INTERVAL = 60_000; // auto-refresh mentions from DB every 60s
+const X_FETCH_INTERVAL = 15 * 60_000; // fetch new mentions from X API every 15 min
 
 const DEFAULT_TEMPLATES: ReplyTemplate[] = [
   { id: 'tpl-1', name: 'Agree + Add', body: 'Totally agree, {{username}}. Building on that — [add your point here].' },
@@ -204,9 +206,9 @@ function isLikelySpam(text: string, username: string, followers?: number): boole
 }
 
 function sentimentBadgeClasses(s: 'positive' | 'negative' | 'neutral'): string {
-  if (s === 'positive') return 'bg-success-subtle text-success';
-  if (s === 'negative') return 'bg-error-subtle text-error';
-  return 'bg-mission-control-surface text-mission-control-text-dim';
+  if (s === 'positive') return 'bg-success/10 text-success';
+  if (s === 'negative') return 'bg-error/10 text-error';
+  return 'bg-mission-control-border/50 text-mission-control-text-dim';
 }
 
 /** Parse metadata blob and extract engagement metrics */
@@ -293,7 +295,7 @@ export const XEngageView: React.FC = () => {
   const [fetching, setFetching] = useState(false);
 
   // Filters
-  const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
+  const [activeFilter, setActiveFilter] = useState<FilterTab>('needs-action');
   const [minLikes, setMinLikes] = useState(10);
   const [minRetweets, setMinRetweets] = useState(5);
 
@@ -389,9 +391,20 @@ export const XEngageView: React.FC = () => {
 
   useEffect(() => {
     loadMentions();
-    // Auto-refresh polling
+    // Auto-refresh from local DB every 60s
     const interval = setInterval(loadMentions, POLL_INTERVAL);
     return () => clearInterval(interval);
+  }, [loadMentions]);
+
+  // Auto-fetch new mentions from X API every 15 minutes
+  useEffect(() => {
+    const xFetchInterval = setInterval(async () => {
+      try {
+        await fetch('/api/x/mentions/process', { method: 'POST' });
+        await loadMentions();
+      } catch { /* non-critical */ }
+    }, X_FETCH_INTERVAL);
+    return () => clearInterval(xFetchInterval);
   }, [loadMentions]);
 
   // Load reply approvals to show status on cards
@@ -441,38 +454,7 @@ export const XEngageView: React.FC = () => {
   const fetchNewMentions = async () => {
     setFetching(true);
     try {
-      const res = await fetch('/api/x/mentions');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.mentions?.length > 0) {
-          for (const m of data.mentions) {
-            try {
-              await inboxApi.create({
-                type: 'x-mention',
-                title: `@${m.author?.username || 'unknown'}: ${(m.text || '').slice(0, 80)}`,
-                content: m.text,
-                channel: 'x-twitter',
-                status: 'pending',
-                metadata: {
-                  tweet_id: m.id,
-                  author_id: m.author?.id || m.author_id,
-                  author_username: m.author?.username || 'unknown',
-                  author_name: m.author?.name || 'Unknown',
-                  author_followers: m.author?.public_metrics?.followers_count,
-                  conversation_id: m.conversation_id,
-                  in_reply_to_user_id: m.in_reply_to_user_id || '',
-                  mention_type: m.mention_type || 'mention',
-                  is_reply_to_us: m.is_reply_to_us || false,
-                  parent_tweet: m.parent_tweet || null,
-                  reply_status: 'pending',
-                  public_metrics: m.public_metrics || {},
-                  created_at: new Date(m.created_at).getTime(),
-                },
-              });
-            } catch { /* duplicate or DB error — skip */ }
-          }
-        }
-      }
+      await fetch('/api/x/mentions/process', { method: 'POST' });
       await loadMentions();
     } catch {
       await loadMentions();
@@ -799,24 +781,20 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
 
   const isHot = (m: Mention): boolean => m.like_count >= minLikes || m.retweet_count >= minRetweets;
 
-  // Filter out ignored accounts + spam (unless explicitly viewing those filters)
+  // Filter out ignored accounts + spam unless viewing archive
   const visibleMentions = allMentions.filter(m => {
     const handle = m.author_username.toLowerCase();
-    if (activeFilter !== 'ignored' && activeFilter !== 'spam' && ignoredAccounts.includes(handle)) return false;
-    if (activeFilter !== 'spam' && m.is_spam) return false;
+    if (activeFilter !== 'archive' && ignoredAccounts.includes(handle)) return false;
+    if (activeFilter !== 'archive' && m.is_spam) return false;
     return true;
   });
 
   const filteredMentions = visibleMentions.filter(m => {
     switch (activeFilter) {
-      case 'hot': return isHot(m);
-      case 'pending': return m.reply_status === 'pending';
-      case 'replied': return m.reply_status === 'replied';
-      case 'ignored': return m.reply_status === 'ignored' || ignoredAccounts.includes(m.author_username.toLowerCase());
-      case 'spam': return m.is_spam;
-      case 'replies': return m.mention_type === 'reply';
-      case 'quotes': return m.mention_type === 'quote';
-      case 'direct': return m.mention_type === 'mention';
+      case 'needs-action': return m.reply_status === 'pending';
+      case 'in-progress': return m.reply_status === 'considering' || isHot(m);
+      case 'done': return m.reply_status === 'replied';
+      case 'archive': return m.reply_status === 'ignored' || ignoredAccounts.includes(m.author_username.toLowerCase()) || m.is_spam;
       default: return true;
     }
   });
@@ -829,18 +807,13 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
     return b.created_at - a.created_at;
   });
 
-  // Filter counts (exclude ignored accounts from non-ignored counts)
-  const nonIgnored = allMentions.filter(m => !ignoredAccounts.includes(m.author_username.toLowerCase()));
+  // Filter counts
+  const nonIgnored = allMentions.filter(m => !ignoredAccounts.includes(m.author_username.toLowerCase()) && !m.is_spam);
   const counts: Record<FilterTab, number> = {
-    all: nonIgnored.length,
-    hot: nonIgnored.filter(isHot).length,
-    pending: nonIgnored.filter(m => m.reply_status === 'pending').length,
-    replied: nonIgnored.filter(m => m.reply_status === 'replied').length,
-    ignored: allMentions.filter(m => m.reply_status === 'ignored' || ignoredAccounts.includes(m.author_username.toLowerCase())).length,
-    spam: allMentions.filter(m => m.is_spam).length,
-    replies: nonIgnored.filter(m => !m.is_spam && m.mention_type === 'reply').length,
-    quotes: nonIgnored.filter(m => !m.is_spam && m.mention_type === 'quote').length,
-    direct: nonIgnored.filter(m => !m.is_spam && m.mention_type === 'mention').length,
+    'needs-action': nonIgnored.filter(m => m.reply_status === 'pending').length,
+    'in-progress': nonIgnored.filter(m => m.reply_status === 'considering' || isHot(m)).length,
+    'done': nonIgnored.filter(m => m.reply_status === 'replied').length,
+    'archive': allMentions.filter(m => m.reply_status === 'ignored' || ignoredAccounts.includes(m.author_username.toLowerCase()) || m.is_spam).length,
   };
 
   // ─── Stats bar data ────────────────────────────────────────────────────────
@@ -878,65 +851,76 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
     const mentionTranslation = mentionMeta.ai_replies?.mention_translation;
     const judgment = mentionMeta.ai_judgment;
 
+    const sentimentDot = mention.sentiment === 'positive'
+      ? 'bg-success'
+      : mention.sentiment === 'negative'
+      ? 'bg-error'
+      : 'bg-mission-control-border';
+
     return (
       <div
         key={mention.id}
-        className="rounded-xl border border-mission-control-border bg-mission-control-surface p-3 mb-2"
+        className="rounded-xl border border-mission-control-border bg-mission-control-surface p-3 mb-2 hover:border-mission-control-accent/30 transition-colors"
       >
         {/* Row 1: Author + badges + date */}
-        <div className="flex items-center gap-2 mb-1.5 text-xs">
+        <Flex align="center" gap="2" className="mb-1.5">
           {isPriority && <Star size={11} className="text-warning flex-shrink-0" />}
-          <span className="font-medium text-mission-control-text">@{mention.author_username}</span>
-          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
+          {/* Sentiment dot */}
+          <span
+            title={`Sentiment: ${mention.sentiment}`}
+            className={`w-2 h-2 rounded-full flex-shrink-0 ${sentimentDot}`}
+          />
+          <span className="text-sm font-semibold text-mission-control-text">@{mention.author_username}</span>
+          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
             mention.mention_type === 'reply'
-              ? mention.is_reply_to_us ? 'bg-success-subtle text-success' : 'bg-info-subtle text-info'
-              : mention.mention_type === 'quote' ? 'bg-warning-subtle text-warning'
-              : 'bg-mission-control-bg text-mission-control-text-dim'
+              ? mention.is_reply_to_us ? 'bg-success/10 text-success' : 'bg-info/10 text-info'
+              : mention.mention_type === 'quote' ? 'bg-warning/10 text-warning'
+              : 'bg-mission-control-border/50 text-mission-control-text-dim'
           }`}>
             {mention.mention_type === 'reply' ? (mention.is_reply_to_us ? 'Reply' : 'Tagged') : mention.mention_type === 'quote' ? 'Quote' : 'Mention'}
           </span>
-          {mention.author_followers != null && <span className="text-mission-control-text-dim">{mention.author_followers.toLocaleString()}</span>}
+          {mention.author_followers != null && <span className="text-xs text-mission-control-text-dim">{mention.author_followers.toLocaleString()}</span>}
           {judgment?.confidence != null && (
-            <span className={`px-1 py-0.5 rounded text-[9px] ${judgment.confidence >= 0.8 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${judgment.confidence >= 0.8 ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
               {Math.round(judgment.confidence * 100)}%
             </span>
           )}
-          {judgment?.safety_flags?.length > 0 && <span className="text-[9px] text-error">flagged</span>}
-          {lang && lang !== 'en' && <span className="px-1 py-0.5 rounded text-[9px] bg-info-subtle text-info">{lang.toUpperCase()}</span>}
+          {judgment?.safety_flags?.length > 0 && <span className="text-xs text-error">flagged</span>}
+          {lang && lang !== 'en' && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info">{lang.toUpperCase()}</span>}
           <span className="ml-auto text-mission-control-text-dim">
             {new Date(mention.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
           <a href={`https://twitter.com/${mention.author_username}/status/${mention.tweet_id}`} target="_blank" rel="noopener noreferrer" className="text-info hover:underline">X</a>
-        </div>
+        </Flex>
 
         {/* Parent context (compact) */}
         {mention.parent_tweet?.text && (
-          <div className="mb-1.5 px-2 py-1.5 rounded border border-mission-control-border bg-mission-control-bg text-[11px] text-mission-control-text-dim line-clamp-2">
+          <div className="mb-1.5 px-2 py-1.5 rounded border border-mission-control-border bg-mission-control-bg text-xs text-mission-control-text-dim line-clamp-2">
             <MessageCircle size={9} className="inline mr-1" />
             {mention.parent_tweet.author?.username ? `@${mention.parent_tweet.author.username}: ` : ''}{mention.parent_tweet.text}
           </div>
         )}
 
         {/* Tweet text */}
-        <div className="text-sm text-mission-control-text mb-1.5 whitespace-pre-wrap">{mention.text}</div>
+        <div className="text-sm text-mission-control-text leading-relaxed mt-2 mb-1.5 whitespace-pre-wrap">{mention.text}</div>
         {mentionTranslation && <div className="text-xs text-mission-control-text-dim italic mb-1.5">{mentionTranslation}</div>}
 
         {/* Metrics row */}
-        <div className="flex items-center gap-3 text-[11px] text-mission-control-text-dim mb-2">
-          <span className="flex items-center gap-0.5"><Heart size={10} /> {mention.like_count}</span>
-          <span className="flex items-center gap-0.5"><Repeat2 size={10} /> {mention.retweet_count}</span>
-          <span className="flex items-center gap-0.5"><MessageCircle size={10} /> {mention.reply_count}</span>
+        <Flex align="center" gap="3" className="mb-2">
+          <span className="inline-flex items-center gap-1 text-[10px] text-mission-control-text-dim tabular-nums"><Heart size={10} /> {mention.like_count}</span>
+          <span className="inline-flex items-center gap-1 text-[10px] text-mission-control-text-dim tabular-nums"><Repeat2 size={10} /> {mention.retweet_count}</span>
+          <span className="inline-flex items-center gap-1 text-[10px] text-mission-control-text-dim tabular-nums"><MessageCircle size={10} /> {mention.reply_count}</span>
           {mention.reply_status === 'replied' && (
-            <span className="text-success flex items-center gap-0.5"><CheckCircle size={10} /> Replied</span>
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success"><CheckCircle size={10} /> Replied</span>
           )}
           {pendingReplies[mention.id] && mention.reply_status !== 'replied' && (
-            <span className="text-info flex items-center gap-0.5"><Clock size={10} /> Reply queued</span>
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-info"><Clock size={10} /> Reply queued</span>
           )}
-        </div>
+        </Flex>
 
         {/* Show sent reply when replied */}
         {(mention.reply_status === 'replied' || pendingReplies[mention.id]?.status === 'sent') && pendingReplies[mention.id] && (
-          <div className="mb-2 px-2.5 py-1.5 text-xs rounded-lg border border-success bg-success-subtle/30 text-mission-control-text">
+          <div className="mb-2 px-2.5 py-1.5 text-xs rounded-lg border border-success bg-success/10/30 text-mission-control-text">
             <span className="text-success font-medium mr-1.5">Your reply:</span>
             {pendingReplies[mention.id].text}
           </div>
@@ -946,10 +930,10 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
         {mention.reply_status !== 'replied' && !pendingReplies[mention.id] && (
           <>
             {aiLoading.has(mention.id) ? (
-              <div className="flex items-center gap-2 text-xs text-mission-control-text-dim py-1">
-                <div className="w-3 h-3 border border-info border-t-transparent rounded-full animate-spin" />
+              <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim py-1">
+                <Spinner size="1" />
                 Generating...
-              </div>
+              </Flex>
             ) : aiData?.replies?.length ? (
               <div className="space-y-1 mb-2">
                 {aiData.replies.map((reply, idx) => {
@@ -963,34 +947,35 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                       onClick={() => { setSelectedMention(mention.id); setReplyText(reply); }}
                       className={`flex items-center w-full rounded-lg border transition-colors cursor-pointer ${
                         isActive
-                          ? 'border-info bg-info-subtle/50'
+                          ? 'border-info bg-info/10/50'
                           : 'border-mission-control-border bg-mission-control-bg hover:border-info/50'
                       }`}
                     >
                       <div className="flex-1 min-w-0">
                         {isEditing ? (
-                          <input
-                            type="text"
+                          <TextField.Root
                             value={replyText}
                             onChange={(e) => setReplyText(e.target.value)}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-full px-2.5 py-1.5 text-xs bg-transparent text-mission-control-text focus:outline-none"
                             maxLength={280}
                             autoFocus
+                            size="1"
+                            className="w-full"
                           />
                         ) : (
                           <div className="px-2.5 py-1.5 text-xs">
-                            {isRec && !isSelected && <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-info text-white mr-1.5">BEST</span>}
+                            {isRec && !isSelected && <span className="text-xs font-bold px-1 py-0.5 rounded bg-info text-info mr-1.5">BEST</span>}
                             <span className="text-mission-control-text">{reply}</span>
-                            {replyEng && lang !== 'en' && <span className="block text-[10px] text-mission-control-text-dim italic mt-0.5">EN: {replyEng}</span>}
+                            {replyEng && lang !== 'en' && <span className="block text-xs text-mission-control-text-dim italic mt-0.5">EN: {replyEng}</span>}
                           </div>
                         )}
                       </div>
                       {isActive && (
                         <button
+                          type="button"
                           onClick={(e) => { e.stopPropagation(); setReplyText(reply); }}
-                          className="flex-shrink-0 p-1.5 mr-1 text-mission-control-text-dim hover:text-info"
                           title="Edit reply"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors flex-shrink-0 mr-1"
                         >
                           <Edit3 size={11} />
                         </button>
@@ -1000,29 +985,32 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                 })}
               </div>
             ) : (
-              <button onClick={() => generateAIReplies([mention])} className="text-xs text-info hover:underline mb-2 flex items-center gap-1">
+              <button type="button" onClick={() => generateAIReplies([mention])} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors mb-2">
                 <Zap size={10} /> Generate replies
               </button>
             )}
 
             {/* Actions — always visible */}
-            <div className="flex items-center gap-1.5 pt-1.5 border-t border-mission-control-border">
-              <button
+            <Flex align="center" gap="2" className="pt-1.5 border-t border-mission-control-border">
+              <Button
                 onClick={() => {
                   const text = activeReplyText;
                   if (!text) { setSelectedMention(mention.id); return; }
                   handleApproveReply(mention, text);
                 }}
                 disabled={!activeReplyText}
-                className="px-3 py-1 text-xs bg-success/10 text-success hover:bg-success/20 rounded-lg transition-colors disabled:opacity-40 flex items-center gap-1"
+                variant="soft"
+                color="grass"
+                size="1"
               >
                 <CheckCircle size={11} /> Approve
-              </button>
+              </Button>
               <div className="relative">
                 <button
+                  type="button"
                   onClick={() => setShowSchedulePicker(showSchedulePicker === mention.id ? null : mention.id)}
                   disabled={!activeReplyText}
-                  className="px-3 py-1 text-xs text-info hover:bg-info/10 rounded-lg transition-colors disabled:opacity-40 flex items-center gap-1"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Clock size={11} /> Schedule
                 </button>
@@ -1037,7 +1025,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                       min={new Date(Date.now() + 300000).toISOString().slice(0, 16)}
                       className="px-2 py-1 text-xs border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
                     />
-                    <button
+                    <Button
                       onClick={() => {
                         if (scheduleTime && activeReplyText) {
                           handleScheduleReply(mention, activeReplyText, new Date(scheduleTime).getTime());
@@ -1046,35 +1034,40 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                         }
                       }}
                       disabled={!scheduleTime}
-                      className="px-2 py-1 text-xs bg-info text-white rounded disabled:opacity-40"
+                      variant="solid"
+                      color="blue"
+                      size="1"
                     >
                       Set
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
               <button
+                type="button"
                 onClick={() => updateStatus(mention.id, 'ignored')}
-                className="px-3 py-1 text-xs text-mission-control-text-dim hover:text-error hover:bg-error/10 rounded-lg transition-colors flex items-center gap-1"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <Ban size={11} /> Reject
               </button>
               <button
+                type="button"
                 onClick={() => togglePriority(mention.author_username)}
-                className="p-1 rounded hover:bg-mission-control-bg-alt transition-colors ml-auto"
                 title={isPriority ? 'Remove priority' : 'Priority'}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors ml-auto"
               >
-                {isPriority ? <StarOff size={12} className="text-warning" /> : <Star size={12} className="text-mission-control-text-dim" />}
+                {isPriority ? <StarOff size={12} /> : <Star size={12} />}
               </button>
               <button
+                type="button"
                 onClick={() => toggleIgnored(mention.author_username)}
-                className="p-1 rounded hover:bg-mission-control-bg-alt transition-colors"
                 title="Mute user"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
-                <UserX size={12} className="text-mission-control-text-dim" />
+                <UserX size={12} />
               </button>
-              {isSelected && <span className="text-[10px] text-mission-control-text-dim ml-1">{replyText.length}/280</span>}
-            </div>
+              {isSelected && <span className="text-xs text-mission-control-text-dim ml-1">{replyText.length}/280</span>}
+            </Flex>
           </>
         )}
       </div>
@@ -1086,59 +1079,57 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-info border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-mission-control-text-dim">Loading mentions...</p>
-        </div>
+        <Spinner size="3" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
-      <div className="p-4 border-b border-mission-control-border">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
+      <div className="px-4 py-3 border-b border-mission-control-border flex-shrink-0">
+        <Flex align="center" justify="between" className="mb-3">
+          <Flex align="center" gap="2">
             <Inbox size={20} className="text-info" />
             <div className="text-lg font-semibold text-mission-control-text">Engagement Inbox</div>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className={`p-2 rounded-lg transition-colors ${showSettings ? 'bg-info-subtle text-info' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt'}`}
             title="Engagement settings"
+            className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${
+              showSettings
+                ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Settings size={16} />
           </button>
-          <button
+          <Button
             onClick={fetchNewMentions}
             disabled={fetching}
-            className="px-4 py-2 bg-info text-white rounded-lg hover:bg-info/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+            variant="solid"
+            color="blue"
+            size="2"
           >
-            {fetching ? (
-              <>
-                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                Fetching...
-              </>
-            ) : (
-              <><RefreshCw size={16} /> Fetch New</>
-            )}
-          </button>
-          </div>
-        </div>
+            {fetching ? <Spinner size="1" /> : <RefreshCw size={16} />}
+            {fetching ? 'Fetching...' : 'Fetch New'}
+          </Button>
+          </Flex>
+        </Flex>
 
         {/* Stats bar + quick actions */}
-        <div className="flex items-center justify-between px-3 py-1.5 mb-3 rounded-lg border border-mission-control-border bg-mission-control-surface text-xs text-mission-control-text-dim">
-          <div className="flex items-center gap-4">
+        <Flex align="center" justify="between" className="px-3 py-1.5 mb-3 rounded-lg border border-mission-control-border bg-mission-control-surface text-xs text-mission-control-text-dim">
+          <Flex align="center" gap="4">
             <span className="whitespace-nowrap">Total: <span className="text-mission-control-text font-medium">{engageStats.total}</span></span>
             <span className="whitespace-nowrap">Pending: <span className="text-mission-control-text font-medium">{engageStats.pendingNoApproval}</span></span>
             <span className="whitespace-nowrap">Queued: <span className="text-info font-medium">{engageStats.queued}</span></span>
             <span className="whitespace-nowrap">Replied: <span className="text-success font-medium">{engageStats.replied}</span></span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {counts.spam > 0 && (
+          </Flex>
+          <Flex align="center" gap="2">
+            {counts['archive'] > 0 && (
               <button
+                type="button"
                 onClick={async () => {
                   const spamMentions = allMentions.filter(m => m.is_spam);
                   for (const m of spamMentions) {
@@ -1151,13 +1142,14 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                   showToast('success', `${spamMentions.length} spam ignored`);
                   loadMentions();
                 }}
-                className="px-2 py-1 text-xs text-error hover:bg-error/10 rounded transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
-                Ignore all spam ({counts.spam})
+                Ignore all spam ({counts['archive']})
               </button>
             )}
-            {filteredMentions.length > 0 && activeFilter === 'pending' && (
+            {filteredMentions.length > 0 && activeFilter === 'needs-action' && (
               <button
+                type="button"
                 onClick={async () => {
                   const pending = filteredMentions.filter(m => m.reply_status === 'pending');
                   for (const m of pending) {
@@ -1170,88 +1162,50 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                   showToast('success', `${pending.length} mentions ignored`);
                   loadMentions();
                 }}
-                className="px-2 py-1 text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt rounded transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 Ignore all pending
               </button>
             )}
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
-        {/* Filter pills — two rows: status + type */}
-        <div className="space-y-2 mb-3">
-          {/* Status filters */}
-          <div className="flex gap-2 flex-wrap">
-            {(['all', 'hot', 'pending', 'replied', 'ignored', 'spam'] as FilterTab[]).map(tab => {
-              const label = tab === 'hot' ? 'Hot' : tab === 'spam' ? 'Spam' : tab.charAt(0).toUpperCase() + tab.slice(1);
-              const icon = tab === 'hot' ? <TrendingUp size={12} className="mr-0.5" />
-                : tab === 'spam' ? <Ban size={12} className="mr-0.5" />
-                : null;
+        {/* Filter tabs — 4 workflow stages */}
+        <div className="border-b border-mission-control-border -mx-4">
+          <div className="flex items-center px-4">
+            {([
+              { id: 'needs-action' as FilterTab, label: 'Needs Action', icon: <Inbox size={12} /> },
+              { id: 'in-progress' as FilterTab, label: 'In Progress',  icon: <Clock size={12} /> },
+              { id: 'done'        as FilterTab, label: 'Done',         icon: <CheckCircle size={12} /> },
+              { id: 'archive'     as FilterTab, label: 'Archive',      icon: <EyeOff size={12} /> },
+            ]).map(tab => {
+              const isActive = activeFilter === tab.id;
               return (
                 <button
-                  key={tab}
-                  onClick={() => setActiveFilter(tab)}
-                  className={`px-3 py-1 text-sm rounded-lg transition-colors flex items-center ${
-                    activeFilter === tab
-                      ? 'bg-info-subtle text-info font-medium'
-                      : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-surface/80 border border-mission-control-border'
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveFilter(tab.id)}
+                  className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors focus-visible:outline-none ${
+                    isActive
+                      ? 'border-mission-control-accent text-mission-control-accent'
+                      : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
                   }`}
                 >
-                  {icon}{label} ({counts[tab]})
+                  {tab.icon}
+                  {tab.label}
+                  {counts[tab.id] > 0 && (
+                    <span className={`px-1.5 py-0.5 rounded-full text-xs font-mono tabular-nums ${
+                      isActive
+                        ? 'bg-mission-control-accent/20 text-mission-control-accent'
+                        : 'bg-mission-control-border text-mission-control-text-dim'
+                    }`}>{counts[tab.id]}</span>
+                  )}
                 </button>
               );
             })}
           </div>
-          {/* Type filters */}
-          <div className="flex gap-2 flex-wrap">
-            <span className="text-xs text-mission-control-text-dim self-center mr-1">Type:</span>
-            {([
-              { id: 'replies' as FilterTab, label: 'Replies', icon: <MessageCircle size={12} className="mr-0.5" /> },
-              { id: 'quotes' as FilterTab, label: 'Quotes', icon: <Repeat2 size={12} className="mr-0.5" /> },
-              { id: 'direct' as FilterTab, label: 'Direct Mentions', icon: <Heart size={12} className="mr-0.5" /> },
-            ]).map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveFilter(tab.id)}
-                className={`px-3 py-1 text-xs rounded-lg transition-colors flex items-center ${
-                  activeFilter === tab.id
-                    ? 'bg-info-subtle text-info font-medium'
-                    : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-surface/80 border border-mission-control-border'
-                }`}
-              >
-                {tab.icon}{tab.label} ({counts[tab.id]})
-              </button>
-            ))}
-          </div>
         </div>
 
-        {/* Hot filter thresholds — only visible when Hot is active */}
-        {activeFilter === 'hot' && (
-          <div className="flex flex-wrap items-center gap-4 mb-3">
-            <div className="flex items-center gap-2">
-              <label htmlFor="engage-min-likes" className="text-xs text-mission-control-text-dim">Min Likes:</label>
-              <input
-                id="engage-min-likes"
-                type="number"
-                value={minLikes}
-                onChange={(e) => setMinLikes(parseInt(e.target.value) || 0)}
-                className="w-20 px-2 py-1 text-sm border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
-                min="0"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor="engage-min-retweets" className="text-xs text-mission-control-text-dim">Min Retweets:</label>
-              <input
-                id="engage-min-retweets"
-                type="number"
-                value={minRetweets}
-                onChange={(e) => setMinRetweets(parseInt(e.target.value) || 0)}
-                className="w-20 px-2 py-1 text-sm border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
-                min="0"
-              />
-            </div>
-          </div>
-        )}
 
         {/* Settings panel */}
         {showSettings && (
@@ -1265,72 +1219,64 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
               {/* Default reply tier */}
               <div>
                 <label className="text-xs text-mission-control-text-dim mb-1 block">Default Reply Approval Tier</label>
-                <select
-                  value={settings.defaultReplyTier}
-                  onChange={(e) => {
-                    const tier = Number(e.target.value) as 1 | 3;
-                    updateSetting('defaultReplyTier', tier);
-                  }}
-                  className="w-full px-3 py-2 text-sm border border-mission-control-border rounded-lg bg-mission-control-bg text-mission-control-text"
+                <Select.Root
+                  value={String(settings.defaultReplyTier)}
+                  onValueChange={(v) => updateSetting('defaultReplyTier', Number(v) as 1 | 3)}
                 >
-                  <option value={3}>Tier 3 — Standard review</option>
-                  <option value={1}>Tier 1 — Fast-track (minimal review)</option>
-                </select>
+                  <Select.Trigger className="w-full" />
+                  <Select.Content>
+                    <Select.Item value="3">Tier 3 — Standard review</Select.Item>
+                    <Select.Item value="1">Tier 1 — Fast-track (minimal review)</Select.Item>
+                  </Select.Content>
+                </Select.Root>
               </div>
 
               {/* Auto-ignore low engagement */}
               <div>
                 <label className="text-xs text-mission-control-text-dim mb-1 block">Auto-Ignore Low Engagement</label>
-                <div className="flex items-center gap-3">
+                <Flex align="center" gap="3">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={settings.autoIgnoreLowEngagement}
-                      onChange={(e) => updateSetting('autoIgnoreLowEngagement', e.target.checked)}
-                      className="rounded"
+                      onCheckedChange={(val) => updateSetting('autoIgnoreLowEngagement', val === true)}
                     />
                     <span className="text-sm text-mission-control-text">Ignore accounts with fewer than</span>
                   </label>
-                  <input
+                  <TextField.Root
                     type="number"
-                    value={settings.lowEngagementThreshold}
+                    value={String(settings.lowEngagementThreshold)}
                     onChange={(e) => updateSetting('lowEngagementThreshold', parseInt(e.target.value) || 0)}
-                    className="w-16 px-2 py-1 text-sm border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
                     min="0"
+                    size="1"
+                    style={{ width: 64 }}
                   />
                   <span className="text-xs text-mission-control-text-dim">followers</span>
-                </div>
+                </Flex>
               </div>
 
               {/* Show sentiment */}
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={settings.showSentiment}
-                  onChange={(e) => updateSetting('showSentiment', e.target.checked)}
-                  className="rounded"
+                  onCheckedChange={(val) => updateSetting('showSentiment', val === true)}
                 />
                 <span className="text-sm text-mission-control-text">Show sentiment badges</span>
               </label>
 
               {/* Show notes */}
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={settings.showNotes}
-                  onChange={(e) => updateSetting('showNotes', e.target.checked)}
-                  className="rounded"
+                  onCheckedChange={(val) => updateSetting('showNotes', val === true)}
                 />
                 <span className="text-sm text-mission-control-text">Show notes on cards</span>
               </label>
 
               {/* Auto-ignore bots */}
               <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={settings.autoIgnoreBots}
-                  onChange={(e) => updateSetting('autoIgnoreBots', e.target.checked)}
-                  className="rounded"
+                  onCheckedChange={(val) => updateSetting('autoIgnoreBots', val === true)}
                 />
                 <span className="text-sm text-mission-control-text">Auto-ignore suspected bots</span>
               </label>
@@ -1343,15 +1289,16 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
         {/* Priority accounts collapsible */}
         <div className="flex-1 min-w-[200px]">
           <button
+            type="button"
             onClick={() => setShowPriorityPanel(v => !v)}
-            className="flex items-center gap-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Star size={12} className="text-warning" />
             Priority accounts
             {priorityAccounts.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-xs bg-warning-subtle text-warning">
+              <Badge color="amber" variant="soft" radius="full" size="1">
                 {priorityAccounts.length}
-              </span>
+              </Badge>
             )}
             {showPriorityPanel ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           </button>
@@ -1360,33 +1307,35 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
               <p className="text-xs text-mission-control-text-dim mb-2">
                 Priority accounts always appear first in the list.
               </p>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
+              <Flex gap="2" className="mb-2">
+                <TextField.Root
                   value={priorityInput}
                   onChange={e => setPriorityInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleAddPriority(); }}
+                  onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') handleAddPriority(); }}
                   placeholder="@username"
-                  className="flex-1 px-2 py-1 text-xs border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
+                  size="1"
+                  className="flex-1"
                 />
-                <button
+                <Button
                   onClick={handleAddPriority}
                   disabled={!priorityInput.trim()}
-                  className="px-3 py-1 text-xs rounded bg-info text-white disabled:opacity-50 transition-colors"
+                  variant="solid"
+                  color="blue"
+                  size="1"
                 >
                   Add
-                </button>
-              </div>
+                </Button>
+              </Flex>
               {priorityAccounts.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {priorityAccounts.map(h => (
                     <span
                       key={h}
-                      className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-mission-control-border bg-warning-subtle text-warning"
+                      className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-mission-control-border bg-warning/10 text-warning"
                     >
                       @{h}
-                      <button onClick={() => handleRemovePriority(h)} aria-label={`Remove @${h}`}>
-                        <span className="text-[10px]">&times;</span>
+                      <button type="button" onClick={() => handleRemovePriority(h)} aria-label={`Remove @${h}`} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+                        <span className="text-xs">&times;</span>
                       </button>
                     </span>
                   ))}
@@ -1399,15 +1348,16 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
         {/* Ignored accounts collapsible */}
         <div className="flex-1 min-w-[200px]">
           <button
+            type="button"
             onClick={() => setShowIgnoredPanel(v => !v)}
-            className="flex items-center gap-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <UserX size={12} className="text-error" />
             Ignored accounts
             {ignoredAccounts.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-xs bg-error-subtle text-error">
+              <Badge color="red" variant="soft" radius="full" size="1">
                 {ignoredAccounts.length}
-              </span>
+              </Badge>
             )}
             {showIgnoredPanel ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           </button>
@@ -1416,33 +1366,35 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
               <p className="text-xs text-mission-control-text-dim mb-2">
                 Mentions from ignored accounts are hidden from all filters except Ignored.
               </p>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
+              <Flex gap="2" className="mb-2">
+                <TextField.Root
                   value={ignoredInput}
                   onChange={e => setIgnoredInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleAddIgnored(); }}
+                  onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') handleAddIgnored(); }}
                   placeholder="@username"
-                  className="flex-1 px-2 py-1 text-xs border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
+                  size="1"
+                  className="flex-1"
                 />
-                <button
+                <Button
                   onClick={handleAddIgnored}
                   disabled={!ignoredInput.trim()}
-                  className="px-3 py-1 text-xs rounded bg-error/80 text-white disabled:opacity-50 transition-colors"
+                  variant="soft"
+                  color="red"
+                  size="1"
                 >
                   Ignore
-                </button>
-              </div>
+                </Button>
+              </Flex>
               {ignoredAccounts.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {ignoredAccounts.map(h => (
                     <span
                       key={h}
-                      className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-mission-control-border bg-error-subtle text-error"
+                      className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border border-mission-control-border bg-error/10 text-error"
                     >
                       @{h}
-                      <button onClick={() => handleRemoveIgnored(h)} aria-label={`Unignore @${h}`}>
-                        <span className="text-[10px]">&times;</span>
+                      <button type="button" onClick={() => handleRemoveIgnored(h)} aria-label={`Unignore @${h}`} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+                        <span className="text-xs">&times;</span>
                       </button>
                     </span>
                   ))}
@@ -1478,7 +1430,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
           sortedMentions.map(renderMentionCard)
         )}
       </div>
-    </div>
+    </Flex>
   );
 };
 

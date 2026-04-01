@@ -95,11 +95,15 @@ export async function POST(req: NextRequest) {
     }
 
     const created = db.prepare('SELECT * FROM x_posts WHERE id = ?').get(id) as Record<string, unknown>;
+    const safeJson = (v: unknown, fallback: unknown = null) => {
+      if (!v || typeof v !== 'string') return fallback;
+      try { return JSON.parse(v); } catch { return fallback; }
+    };
     const post = {
       ...created,
-      thread_tweets: created.thread_tweets ? JSON.parse(created.thread_tweets as string) : null,
-      media_ids: created.media_ids ? JSON.parse(created.media_ids as string) : null,
-      metadata: created.metadata ? JSON.parse(created.metadata as string) : {},
+      thread_tweets: safeJson(created.thread_tweets),
+      media_ids: safeJson(created.media_ids),
+      metadata: safeJson(created.metadata, {}),
     };
 
     return NextResponse.json({ ok: true, post, approval_id: approvalId }, { status: 201 });
@@ -147,11 +151,15 @@ export async function PATCH(req: NextRequest) {
     }
 
     const updated = db.prepare('SELECT * FROM x_posts WHERE id = ?').get(id) as Record<string, unknown>;
+    const safeJson2 = (v: unknown, fallback: unknown = null) => {
+      if (!v || typeof v !== 'string') return fallback;
+      try { return JSON.parse(v); } catch { return fallback; }
+    };
     const post = {
       ...updated,
-      thread_tweets: updated.thread_tweets ? JSON.parse(updated.thread_tweets as string) : null,
-      media_ids: updated.media_ids ? JSON.parse(updated.media_ids as string) : null,
-      metadata: updated.metadata ? JSON.parse(updated.metadata as string) : {},
+      thread_tweets: safeJson2(updated.thread_tweets),
+      media_ids: safeJson2(updated.media_ids),
+      metadata: safeJson2(updated.metadata, {}),
     };
 
     return NextResponse.json({ ok: true, post });

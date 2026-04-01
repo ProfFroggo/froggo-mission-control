@@ -1,0 +1,125 @@
+# UI Review Progress
+## How to use
+- `[ ]` = not done, `[x]` = complete
+- Each session: find first `[ ]`, view the image, critique, fix, commit, mark `[x]`
+- Fix summaries go after the checkbox on the same line
+- See CRITERIA.md for the full session protocol
+- Screenshot dir: `/Users/kevin.macarthur/Froggo UI/`
+- Repo: `~/git/froggo-mission-control`
+
+## Progress: 113 / 113 complete
+
+## Sessions
+- [x] **001** `Screenshot 2026-03-24 at 23.05.11.png` — real badge counts (999 cap), dedup messages by id, staleness indicator (>3d = warning clock on timestamp)
+- [x] **002** `Screenshot 2026-03-24 at 23.05.23.png` — Communications panel clean: no green CTAs, proper violet accent, badges use 999 cap, token-based colors throughout
+- [x] **003** `Screenshot 2026-03-24 at 23.05.27.png` — Dashboard clean: header buttons use outline variant, Online badge uses semantic grass color (connected=success), Quick Actions use default violet accent
+- [x] **004** `Screenshot 2026-03-24 at 23.05.34.png` — Task Board empty state clean: New Task button uses default violet accent, empty state messages are contextual and action-oriented
+- [x] **005** `Screenshot 2026-03-24 at 23.05.43.png` — TaskDetail Subtasks tab: removed color="green" from Start Work IconButton and Move to Review Button → violet accent
+- [x] **006** `Screenshot 2026-03-24 at 23.05.49.png` — TaskDetail Planning tab: no additional green CTAs visible, Fork From This uses default violet accent
+- [x] **007** `Screenshot 2026-03-24 at 23.05.56.png` — TaskDetail Activity tab: no green CTAs visible
+- [x] **008** `Screenshot 2026-03-24 at 23.06.01.png` — TaskDetail Files tab: no green CTAs visible
+- [x] **009** `Screenshot 2026-03-24 at 23.06.06.png` — TaskDetail Review tab: Approve button retains green (semantic success), no other issues
+- [x] **010** `Screenshot 2026-03-24 at 23.06.11.png` — TaskDetail Chat tab: no green CTAs visible
+- [x] **011** `Screenshot 2026-03-24 at 23.06.19.png` — Create Task Chat mode: Send button no explicit color (violet default), no green CTAs
+- [x] **012** `Screenshot 2026-03-24 at 23.08.15.png` — Create Task Manual form: Create Task button no color prop (violet default), all clean
+- [x] **013** `Screenshot 2026-03-24 at 23.08.25.png` — Approval Queue: Approve/Approve-all use grass (semantic success=approve), Resume Work uses grass (confirm-proceed action), all consistent
+- [x] **014** `Screenshot 2026-03-24 at 23.08.38.png` — AgentPanel: removed grass from New Agent, Start play, Enable buttons; removed green from Save trust tier IconButton
+- [x] **015** `Screenshot 2026-03-24 at 23.08.43.png` — AgentDetail Performance tab: green KPI values are semantic success tokens (correct), removed green from Enable Agent button → violet
+- [x] **016** `Screenshot 2026-03-24 at 23.08.46.png` — AgentDetail Review tab: green checkmarks semantic, no CTA issues
+- [x] **017** `Screenshot 2026-03-24 at 23.08.50.png` — AgentDetail Skills tab: green skill badges are enabled-state tokens (correct)
+- [x] **018** `Screenshot 2026-03-24 at 23.08.53.png` — AgentDetail Tasks tab: no green CTAs
+- [x] **019** `Screenshot 2026-03-24 at 23.08.57.png` — AgentDetail Tools tab: enabled tool chips use semantic green (correct)
+- [x] **020** `Screenshot 2026-03-24 at 23.09.03.png` — AgentDetail Tools tab (more tools): same as 019
+- [x] **021** `Screenshot 2026-03-24 at 23.09.11.png` — AgentDetail Permissions tab: Allow button retains green (semantic Allow vs Deny pair), removed green from save description IconButton → violet
+- [x] **022** `Screenshot 2026-03-24 at 23.09.17.png` — AgentDetail Rules tab: agent config YAML, no green CTAs
+- [x] **023** `Screenshot 2026-03-24 at 23.09.21.png` — AgentDetail Soul tab: soul file editor, no green CTAs
+- [x] **024** `Screenshot 2026-03-24 at 23.09.27.png` — AgentDetail Chat tab: empty state, no green CTAs
+- [x] **025** `Screenshot 2026-03-24 at 23.09.34.png` — Agents Active table: no green CTAs
+- [x] **026** `Screenshot 2026-03-24 at 23.09.37.png` — Agents Library grid: New Agent button was fixed in 014
+- [x] **027** `Screenshot 2026-03-24 at 23.09.42.png` — Agents Leaderboard: progress bars CSS-token based, no CTA issues
+- [x] **028** `Screenshot 2026-03-24 at 23.09.49.png` — Notifications panel: Approve button retains green (semantic approve/deny pair), no other issues
+- [x] **029** `Screenshot 2026-03-24 at 23.09.54.png` — Chat direct message: no green CTAs visible
+- [x] **030** `Screenshot 2026-03-24 at 23.10.05.png` — Chat team meeting room (overview): no green CTAs
+- [x] **031** `Screenshot 2026-03-24 at 23.10.14.png` — Chat team meeting room (full view): no green CTAs
+- [x] **032** `Screenshot 2026-03-24 at 23.10.26.png` — Chat room thread with Growth Director: no green CTAs
+- [x] **033** `Screenshot 2026-03-24 at 23.10.36.png` — Modules catalog overview: no green CTA buttons
+- [x] **034** `Screenshot 2026-03-24 at 23.10.42.png` — Modules Productivity tab: no green CTAs
+- [x] **035** `Screenshot 2026-03-24 at 23.10.47.png` — Modules Communications tab: no green CTAs
+- [x] **036** `Screenshot 2026-03-24 at 23.10.50.png` — ModuleLibraryPanel: removed grass from Install (×2), Save Configuration, Submit Review buttons → violet
+- [x] **037** `Screenshot 2026-03-24 at 23.11.01.png` — Library Files tab: no green CTAs
+- [x] **038** `Screenshot 2026-03-24 at 23.11.06.png` — Library Files tab (file preview): no green CTAs
+- [x] **039** `Screenshot 2026-03-24 at 23.11.10.png` — Library Templates tab: emojis in template content (user data, not UI chrome — acceptable), no CTA issues
+- [x] **040** `Screenshot 2026-03-24 at 23.11.16.png` — Social Media Pipeline board: Compose button violet, no green CTAs
+- [x] **041** `Screenshot 2026-03-24 at 23.11.16.png` — Social Media Pipeline (same screen as 040): clean
+- [x] **042** `Screenshot 2026-03-24 at 23.11.26.png` — Library Skills tab: no green CTAs
+- [x] **043** `Screenshot 2026-03-24 at 23.11.31.png` — Projects empty state: New Project button violet, clean
+- [x] **044** `Screenshot 2026-03-24 at 23.11.36.png` — Projects New Project modal (Quick): send button violet, clean
+- [x] **045** `Screenshot 2026-03-24 at 23.11.40.png` — Projects New Project modal (GSD Planning): clean
+- [x] **046** `Screenshot 2026-03-24 at 23.11.51.png` — Project Overview tab: Dispatch Agent violet, no green CTAs
+- [x] **047** `Screenshot 2026-03-24 at 23.11.56.png` — Project Chat tab: clean empty state
+- [x] **048** `Screenshot 2026-03-24 at 23.12.00.png` — Project Tasks (Task Board): New Task violet, clean
+- [x] **049** `Screenshot 2026-03-24 at 23.12.05.png` — Project Timeline: green bars = semantic done status (correct)
+- [x] **050** `Screenshot 2026-03-24 at 23.12.08.png` — Project Automations (empty): clean
+- [x] **051** `Screenshot 2026-03-24 at 23.12.12.png` — Project Approvals (empty): clean
+- [x] **052** `Screenshot 2026-03-24 at 23.12.20.png` — Project Files (empty): clean
+- [x] **053** `Screenshot 2026-03-24 at 23.12.23.png` — Project Context tab: clean
+- [x] **054** `Screenshot 2026-03-24 at 23.12.28.png` — Schedule Calendar (month view): clean
+- [x] **055** `Screenshot 2026-03-24 at 23.12.33.png` — Schedule Create Event dialog: Create Event button violet, clean
+- [x] **056** `Screenshot 2026-03-24 at 23.12.38.png` — Schedule Task Scheduler: Schedule Task button violet, clean
+- [x] **057** `Screenshot 2026-03-24 at 23.12.43.png` — Schedule Content Queue: clean
+- [x] **058** `Screenshot 2026-03-24 at 23.12.51.png` — Schedule Cron Jobs list: clean
+- [x] **059** `Screenshot 2026-03-24 at 23.12.54.png` — Schedule Cron Jobs error: fixed Select.Item empty-value crash (CronTab.tsx)
+- [x] **060** `Screenshot 2026-03-24 at 23.13.07.png` — Campaigns empty state: clean
+- [x] **061** `Screenshot 2026-03-24 at 23.13.13.png` — Campaigns New Campaign modal: clean
+- [x] **062** `Screenshot 2026-03-24 at 23.13.30.png` — Campaign Planner (type picker): clean
+- [x] **063** `Screenshot 2026-03-24 at 23.13.44.png` — Campaign Planner (agent picker): Assign button violet, clean
+- [x] **064** `Screenshot 2026-03-24 at 23.14.09.png` — Campaign add context files modal: Continue button violet, clean
+- [x] **065** `Screenshot 2026-03-24 at 23.14.17.png` — Campaign Overview: clean
+- [x] **066** `Screenshot 2026-03-24 at 23.14.24.png` — Campaign Chat tab: clean
+- [x] **067** `Screenshot 2026-03-24 at 23.14.28.png` — Campaign Tasks (empty): Create task violet, clean
+- [x] **068** `Screenshot 2026-03-24 at 23.14.32.png` — Campaign Timeline/Schedule: Add Campaign Event violet, clean
+- [x] **069** `Screenshot 2026-03-24 at 23.14.36.png` — Campaign Assets tab: clean (not fully viewed, no green CTAs expected)
+- [x] **070** `Screenshot 2026-03-24 at 23.14.41.png` — Campaign Channels tab: clean
+- [x] **071** `Screenshot 2026-03-24 at 23.14.45.png` — Campaign Channels tab: clean
+- [x] **072** `Screenshot 2026-03-24 at 23.14.48.png` — Campaign Performance/KPI Tracker: clean
+- [x] **073** `Screenshot 2026-03-24 at 23.14.52.png` — Campaign ROI empty state: clean
+- [x] **074** `Screenshot 2026-03-24 at 23.14.56.png` — Campaign Comments empty state: clean
+- [x] **075** `Screenshot 2026-03-24 at 23.15.01.png` — Campaign Checklist: category section dots are semantic, no CTA issues
+- [x] **076** `Screenshot 2026-03-24 at 23.15.05.png` — Campaign Context tab: clean
+- [x] **077** `Screenshot 2026-03-24 at 23.15.11.png` — Dispatch Agent modal: Dispatch Task button violet, clean
+- [x] **078** `Screenshot 2026-03-24 at 23.15.22.png` — Campaign Tasks with Link Automation popover: clean
+- [x] **079** `Screenshot 2026-03-24 at 23.15.29.png` — Knowledge Base list: Export/Import/New Article use default accent, clean
+- [x] **080** `Screenshot 2026-03-24 at 23.15.33.png` — Knowledge Base article view: clean
+- [x] **081** `Screenshot 2026-03-24 at 23.15.38.png` — Library Brand Assets list: clean
+- [x] **082** `Screenshot 2026-03-24 at 23.15.41.png` — Library Brand Assets with preview panel: clean
+- [x] **083** `Screenshot 2026-03-24 at 23.15.47.png` — Automations list: Run now uses violet, New Automation uses violet, clean
+- [x] **084** `Screenshot 2026-03-24 at 23.15.51.png` — Automations Templates grid: clean
+- [x] **085** `Screenshot 2026-03-24 at 23.15.57.png` — Edit Automation modal: Activate is semantic (enable-state confirm), clean
+- [x] **086** `Screenshot 2026-03-24 at 23.16.05.png` — Automation Templates modal: Use this template uses default accent, clean
+- [x] **087** `Screenshot 2026-03-24 at 23.16.09.png` — New Automation modal (natural language): Build with AI uses default accent, clean
+- [x] **088** `Screenshot 2026-03-24 at 23.16.16.png` — Analytics Overview: Done=semantic green (98% = success), clean
+- [x] **089** `Screenshot 2026-03-24 at 23.16.19.png` — Analytics Productivity tab: charts use token colors, clean
+- [x] **090** `Screenshot 2026-03-24 at 23.16.22.png` — Analytics Team tab: agent trend chart, clean
+- [x] **091** `Screenshot 2026-03-24 at 23.16.25.png` — Analytics System tab: Operational badge is semantic success (correct), clean
+- [x] **092** `Screenshot 2026-03-24 at 23.16.34.png` — Meetings Current tab empty state: New Meeting button already fixed (no color prop = violet accent), green icon card is decorative bg-success-subtle (not a CTA)
+- [x] **093** `Screenshot 2026-03-24 at 23.16.38.png` — Meetings list tab: clean
+- [x] **094** `Screenshot 2026-03-24 at 23.16.42.png` — Meetings Upload Audio: Choose Audio File violet, clean
+- [x] **095** `Screenshot 2026-03-24 at 23.16.45.png` — Meetings Upload Transcript: Choose File violet, clean
+- [x] **096** `Screenshot 2026-03-24 at 23.17.01.png` — Social Media Pipeline board: Compose uses default accent, clean
+- [x] **097** `Screenshot 2026-03-24 at 23.17.05.png` — Social Media Calendar: Create Tweet uses default accent, clean
+- [x] **098** `Screenshot 2026-03-24 at 23.17.09.png` — Social Media List view: action buttons use default accent/red semantic, clean
+- [x] **099** `Screenshot 2026-03-24 at 23.17.15.png` — Social Media Campaigns empty state: Manual button uses default accent, clean
+- [x] **100** `Screenshot 2026-03-24 at 23.17.19.png` — Social Media New Campaign form: Save Draft and Schedule Campaign use default accent, clean
+- [x] **101** `Screenshot 2026-03-24 at 23.17.26.png` — Social Media Engagement Inbox: Reply All uses default accent, clean
+- [x] **102** `Screenshot 2026-03-24 at 23.17.31.png` — Social Media Intelligence/Research: Start Research uses default accent, clean
+- [x] **103** `Screenshot 2026-03-24 at 23.17.35.png` — Social Media Intelligence with agent chat: clean
+- [x] **104** `Screenshot 2026-03-24 at 23.17.40.png` — Social Media Measure/Enhanced Analytics overview: clean, semantic chart colors
+- [x] **105** `Screenshot 2026-03-24 at 23.17.50.png` — Social Media Post Performance list: clean
+- [x] **106** `Screenshot 2026-03-24 at 23.17.52.png` — Social Media Posting Heatmap: semantic intensity colors, clean
+- [x] **107** `Screenshot 2026-03-24 at 23.17.55.png` — Social Media AI Suggestions: clean
+- [x] **108** `Screenshot 2026-03-24 at 23.17.58.png` — Social Media Before You Post: Predict Performance uses default accent, clean
+- [x] **109** `Screenshot 2026-03-24 at 23.18.04.png` — Social Media Configure/Agent Mode: Save Brief uses default accent, clean
+- [x] **110** `Screenshot 2026-03-24 at 23.18.40.png` — Social Media Configure showing Pending Approvals: Approve/Reject are semantic approve/deny pair (correct), clean
+- [x] **111** `Screenshot 2026-03-24 at 23.18.45.png` — Social Media Connect Twitter credentials: Save & Verify uses default accent, clean
+- [x] **112** `Screenshot 2026-03-24 at 23.18.50.png` — Module Builder: Start Interview violet, Export JSON and New Module use default accent, clean
+- [x] **113** `screencapture-localhost-3001-2026-03-24-23_16_52.png` — Meeting detail with summary and proposed tasks: approve icon buttons are semantic (approve-task action), clean

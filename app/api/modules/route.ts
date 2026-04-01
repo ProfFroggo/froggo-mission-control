@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(rows.map(parseRow));
   } catch (error) {
     console.error('GET /api/modules error:', error);
-    return NextResponse.json([], { status: 200 });
+    return NextResponse.json({ error: 'Failed to load modules' }, { status: 500 });
   }
 }
 

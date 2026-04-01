@@ -20,6 +20,7 @@
  * ```
  */
 
+import { Flex } from '@radix-ui/themes';
 import { Skeleton, SkeletonText } from './Skeleton';
 import { Spinner } from './LoadingStates';
 import { LucideIcon } from 'lucide-react';
@@ -66,20 +67,20 @@ export default function WidgetLoading({
   return (
     <div className={`p-4 space-y-3 ${className}`}>
       {/* Header skeleton */}
-      <div className="flex items-center gap-3 mb-4">
+      <Flex align="center" gap="3" className="mb-4">
         <Skeleton className={`${compact ? 'w-6 h-6' : 'w-8 h-8'} rounded-lg`} />
         <Skeleton className={`h-${compact ? '4' : '5'} w-1/3`} />
-      </div>
-      
+      </Flex>
+
       {/* Content skeleton lines */}
       <SkeletonText lines={lines} />
-      
+
       {/* Footer/action skeleton */}
       {!compact && (
-        <div className="flex gap-2 pt-2">
+        <Flex gap="2" className="pt-2">
           <Skeleton className="h-8 w-20 rounded-lg" />
           <Skeleton className="h-8 w-16 rounded-lg" />
-        </div>
+        </Flex>
       )}
     </div>
   );
@@ -90,11 +91,11 @@ export default function WidgetLoading({
  */
 export function WidgetHeaderSkeleton({ className = '' }: { className?: string }) {
   return (
-    <div className={`flex items-center gap-3 p-4 border-b border-mission-control-border ${className}`}>
+    <Flex align="center" gap="3" className={`p-4 border-b border-mission-control-border ${className}`}>
       <Skeleton className="w-8 h-8 rounded-lg" />
       <Skeleton className="h-5 w-1/3" />
       <Skeleton className="h-4 w-16 ml-auto" />
-    </div>
+    </Flex>
   );
 }
 
@@ -105,13 +106,13 @@ export function WidgetListSkeleton({ count = 3, className = '' }: { count?: numb
   return (
     <div className={`space-y-2 p-4 ${className}`}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 py-2">
+        <Flex key={i} align="center" gap="3" className="py-2">
           <Skeleton className="w-8 h-8 rounded-lg flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <Skeleton className="h-4 w-3/4 mb-1" />
             <Skeleton className="h-3 w-1/2" />
           </div>
-        </div>
+        </Flex>
       ))}
     </div>
   );
@@ -123,13 +124,13 @@ export function WidgetListSkeleton({ count = 3, className = '' }: { count?: numb
 export function WidgetCardSkeleton({ className = '' }: { className?: string }) {
   return (
     <div className={`p-4 ${className}`}>
-      <div className="flex items-start gap-3 mb-3">
+      <Flex align="start" gap="3" className="mb-3">
         <Skeleton className="w-10 h-10 rounded-full" />
         <div className="flex-1">
           <Skeleton className="h-5 w-2/3 mb-2" />
           <Skeleton className="h-3 w-1/2" />
         </div>
-      </div>
+      </Flex>
       <SkeletonText lines={2} />
     </div>
   );
@@ -142,14 +143,14 @@ export function WidgetStatsSkeleton({ items = 4, className = '' }: { items?: num
   return (
     <div className={`p-4 space-y-4 ${className}`}>
       {Array.from({ length: items }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3">
+        <Flex key={i} align="center" gap="3">
           <Skeleton className="w-8 h-8 rounded-lg" />
           <div className="flex-1">
             <Skeleton className="h-4 w-24 mb-1" />
             <Skeleton className="h-3 w-16" />
           </div>
           <Skeleton className="h-6 w-12 rounded-lg" />
-        </div>
+        </Flex>
       ))}
     </div>
   );

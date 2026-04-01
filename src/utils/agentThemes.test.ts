@@ -136,7 +136,7 @@ describe('agentThemes utilities', () => {
     it('should return hardcoded theme for known agents', () => {
       const mission-controlTheme = getAgentTheme('mission-control');
       expect(mission-controlTheme.color).toBe('#4CAF50');
-      expect(mission-controlTheme.border).toBe('border-green-500/40');
+      expect(mission-controlTheme.border).toBe('border-[#4CAF5066]');
     });
 
     it('should return hardcoded theme for case-insensitive known agents', () => {
@@ -185,7 +185,7 @@ describe('agentThemes utilities', () => {
     it('should have matching color values across properties', () => {
       Object.entries(agentThemes).forEach(([_agent, theme]) => {
         expect(theme.color).toMatch(/^#[0-9A-Fa-f]{6}$/);
-        // Hardcoded themes use Tailwind classes for dot (e.g. 'bg-green-400'), not raw hex
+        // Hardcoded themes use arbitrary Tailwind hex classes for dot (e.g. 'bg-[#4CAF50]'), not raw hex
         expect(theme.dot).toBeDefined();
       });
     });

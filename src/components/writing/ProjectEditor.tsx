@@ -188,20 +188,22 @@ export default function ProjectEditor() {
           {/* Collapse toggle buttons */}
           <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
             <button
+              type="button"
               onClick={toggleChaptersPanel}
-              className="p-1.5 rounded transition-colors bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
               title={isChaptersCollapsed ? 'Show chapters sidebar' : 'Hide chapters sidebar'}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               {isChaptersCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
             </button>
             <button
+              type="button"
               onClick={toggleChatPanel}
-              className={`p-1.5 rounded transition-colors ${
-                isChatCollapsed
-                  ? 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
-                  : 'bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30'
-              }`}
               title={isChatCollapsed ? 'Show chat pane' : 'Hide chat pane'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                isChatCollapsed
+                  ? 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+                  : 'bg-mission-control-accent/10 text-mission-control-accent'
+              }`}
             >
               <MessageSquare size={16} />
             </button>
@@ -211,25 +213,27 @@ export default function ProjectEditor() {
           <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
             {activeChapterId && (
               <button
+                type="button"
                 onClick={toggleVersion}
-                className={`p-1.5 rounded transition-colors ${
-                  versionOpen
-                    ? 'bg-mission-control-accent/20 text-mission-control-accent'
-                    : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
-                }`}
                 title={versionOpen ? 'Hide version history' : 'Show version history'}
+                className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                  versionOpen
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+                }`}
               >
                 <History size={16} />
               </button>
             )}
             <button
+              type="button"
               onClick={toggleContext}
-              className={`p-1.5 rounded transition-colors ${
-                contextOpen
-                  ? 'bg-mission-control-accent/20 text-mission-control-accent'
-                  : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
-              }`}
               title={contextOpen ? 'Hide context panel' : 'Show context panel'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                contextOpen
+                  ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+              }`}
             >
               <BookOpen size={16} />
             </button>

@@ -1,9 +1,54 @@
-import { memo, useState, type ComponentPropsWithoutRef } from 'react';
+import { memo, lazy, Suspense, useState, type ComponentPropsWithoutRef, type CSSProperties } from 'react';
+import SyntaxHighlighter from 'react-syntax-highlighter/dist/cjs/prism-light';
+import javascript from 'react-syntax-highlighter/dist/cjs/languages/prism/javascript';
+import typescript from 'react-syntax-highlighter/dist/cjs/languages/prism/typescript';
+import jsx from 'react-syntax-highlighter/dist/cjs/languages/prism/jsx';
+import tsx from 'react-syntax-highlighter/dist/cjs/languages/prism/tsx';
+import python from 'react-syntax-highlighter/dist/cjs/languages/prism/python';
+import bash from 'react-syntax-highlighter/dist/cjs/languages/prism/bash';
+import json from 'react-syntax-highlighter/dist/cjs/languages/prism/json';
+import css from 'react-syntax-highlighter/dist/cjs/languages/prism/css';
+import markdown from 'react-syntax-highlighter/dist/cjs/languages/prism/markdown';
+import sql from 'react-syntax-highlighter/dist/cjs/languages/prism/sql';
+import yaml from 'react-syntax-highlighter/dist/cjs/languages/prism/yaml';
+import rust from 'react-syntax-highlighter/dist/cjs/languages/prism/rust';
+import go from 'react-syntax-highlighter/dist/cjs/languages/prism/go';
+
+SyntaxHighlighter.registerLanguage('javascript', javascript);
+SyntaxHighlighter.registerLanguage('js', javascript);
+SyntaxHighlighter.registerLanguage('typescript', typescript);
+SyntaxHighlighter.registerLanguage('ts', typescript);
+SyntaxHighlighter.registerLanguage('jsx', jsx);
+SyntaxHighlighter.registerLanguage('tsx', tsx);
+SyntaxHighlighter.registerLanguage('python', python);
+SyntaxHighlighter.registerLanguage('py', python);
+SyntaxHighlighter.registerLanguage('bash', bash);
+SyntaxHighlighter.registerLanguage('sh', bash);
+SyntaxHighlighter.registerLanguage('shell', bash);
+SyntaxHighlighter.registerLanguage('json', json);
+SyntaxHighlighter.registerLanguage('css', css);
+SyntaxHighlighter.registerLanguage('markdown', markdown);
+SyntaxHighlighter.registerLanguage('md', markdown);
+SyntaxHighlighter.registerLanguage('sql', sql);
+SyntaxHighlighter.registerLanguage('yaml', yaml);
+SyntaxHighlighter.registerLanguage('yml', yaml);
+SyntaxHighlighter.registerLanguage('rust', rust);
+SyntaxHighlighter.registerLanguage('rs', rust);
+SyntaxHighlighter.registerLanguage('go', go);
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Copy, Check, ExternalLink, FileCode, GitBranch, FileJson, FileText as FileTextIcon } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 import { copyToClipboard } from '../utils/clipboard';
 import { sanitizeUrl } from '../utils/sanitize';
+import { detectToolUIType } from './tool-ui/detectToolUIType';
+
+// Lazy-load ToolUIRenderer — it transitively imports recharts (~300KB),
+// diff (~40KB), and 50+ lucide icons. Only needed when a JSON code block
+// has an @type field, which is a rare conditional path.
+const ToolUIRenderer = lazy(() =>
+  import('./tool-ui/ToolUIRenderer').then(m => ({ default: m.ToolUIRenderer }))
+);
 
 interface MentionData {
   ids: string[];
@@ -50,8 +95,8 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
 
           // Tables
           table: ({ children }) => (
-            <div className="my-3 overflow-x-auto rounded-lg border border-mission-control-border">
-              <table className="w-full text-sm">{children}</table>
+            <div className="my-3 overflow-x-auto">
+              <table className="w-full text-sm border border-mission-control-border rounded-lg overflow-hidden">{children}</table>
             </div>
           ),
           thead: ({ children }) => <thead className="bg-mission-control-surface">{children}</thead>,
@@ -60,8 +105,8 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
             const rowIndex = (props as Record<string, unknown>)['data-row-index'];
             return <tr className={typeof rowIndex === 'number' && rowIndex % 2 !== 0 ? 'bg-mission-control-surface/30' : ''}>{children}</tr>;
           },
-          th: ({ children }) => <th className="px-3 py-2 text-left font-medium text-mission-control-text border-b border-mission-control-border whitespace-nowrap">{children}</th>,
-          td: ({ children }) => <td className="px-3 py-2 text-mission-control-text border-t border-mission-control-border/50">{children}</td>,
+          th: ({ children }) => <th className="bg-mission-control-border/30 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim px-3 py-2 text-left border-b border-mission-control-border whitespace-nowrap">{children}</th>,
+          td: ({ children }) => <td className="px-3 py-2 border-b border-mission-control-border/40 text-mission-control-text">{children}</td>,
 
           // Blockquotes
           blockquote: ({ children }) => (
@@ -69,7 +114,7 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
           ),
 
           // Horizontal rule
-          hr: () => <hr className="my-3 border-mission-control-border" />,
+          hr: () => <hr className="my-4 border-mission-control-border/40" />,
 
           // Code
           code: ({ className, children, ...props }) => {
@@ -80,6 +125,21 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
               const lang = match?.[1] || '';
               const code = String(children).replace(/\n$/, '');
 
+              // Tool-UI: render JSON blocks with @type field as interactive components
+              // ToolUIRenderer is lazy-loaded — only downloads recharts/diff when needed
+              if (!streaming && lang.toLowerCase() === 'json') {
+                try {
+                  const parsed = JSON.parse(code);
+                  if (detectToolUIType(parsed)) {
+                    return (
+                      <Suspense fallback={<div className="animate-pulse bg-mission-control-border rounded-lg h-24" />}>
+                        <ToolUIRenderer jsonString={code} />
+                      </Suspense>
+                    );
+                  }
+                } catch { /* not valid JSON — fall through */ }
+              }
+
               if (!streaming && onArtifactOpen && PREVIEWABLE_LANGS.has(lang.toLowerCase())) {
                 return <ArtifactCard lang={lang} code={code} onOpen={onArtifactOpen} />;
               }
@@ -87,7 +147,7 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
             }
 
             return (
-              <code className="px-1.5 py-0.5 bg-mission-control-border rounded text-sm font-mono text-mission-control-accent font-semibold" {...props}>
+              <code className="bg-mission-control-bg font-mono text-xs px-1.5 py-0.5 rounded text-mission-control-accent" {...props}>
                 {children}
               </code>
             );
@@ -109,7 +169,7 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
           img: (props: ComponentPropsWithoutRef<'img'>) => {
             const safe = typeof props.src === 'string' ? sanitizeUrl(props.src) : null;
             if (!safe) return null;
-            return <img {...props} src={safe} className="max-w-full rounded-lg my-2 block" style={{ maxHeight: 480, objectFit: 'contain' }} />;
+            return <img {...props} src={safe} alt={props.alt || 'Image'} className="max-w-full rounded-lg my-2 block" style={{ maxHeight: 480, objectFit: 'contain' }} />;
           },
 
           // Strong / Em
@@ -168,36 +228,107 @@ function ArtifactCard({ lang, code, onOpen }: { lang: string; code: string; onOp
       <span className="text-xs font-medium text-mission-control-text flex-1 truncate">{title}</span>
       <span className="text-xs text-mission-control-text-dim font-mono opacity-60">{lang.toUpperCase()}</span>
       <span className="text-xs text-mission-control-text-dim opacity-50">{lineCount}L</span>
-      <button onClick={async () => { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-        className="p-1 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors opacity-0 group-hover:opacity-100" title="Copy code">
+      <button
+        type="button"
+        onClick={async () => { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+        title="Copy code"
+        aria-label="Copy code"
+        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors opacity-0 group-hover:opacity-100"
+      >
         {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
       </button>
       {onOpen && (
-        <button onClick={() => onOpen(lang, code)}
-          className="flex items-center gap-1 px-2 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 text-xs rounded hover:bg-mission-control-accent hover:text-white transition-colors">
+        <Button
+          onClick={() => onOpen(lang, code)}
+          size="1"
+          variant="soft"
+         
+        >
           <ExternalLink size={11} /> Open
-        </button>
+        </Button>
       )}
     </div>
   );
 }
 
-function CodeBlock({ code, language }: { code: string; language: string }) {
+// Mission Control syntax theme — maps Prism token types to CSS variables
+const MC_THEME: Record<string, CSSProperties> = {
+  'code[class*="language-"]': { color: 'var(--color-mission-control-text, #e2e8f0)', background: 'transparent', fontFamily: 'inherit', fontSize: 'inherit', lineHeight: '1.6', whiteSpace: 'pre' },
+  'pre[class*="language-"]': { color: 'var(--color-mission-control-text, #e2e8f0)', background: 'transparent', margin: 0, padding: 0, overflow: 'auto' },
+  'token.comment': { color: '#6b7a8d', fontStyle: 'italic' },
+  'token.prolog': { color: '#6b7a8d' },
+  'token.doctype': { color: '#6b7a8d' },
+  'token.cdata': { color: '#6b7a8d' },
+  'token.punctuation': { color: '#94a3b8' },
+  'token.property': { color: '#7dd3fc' },
+  'token.tag': { color: '#86efac' },
+  'token.boolean': { color: '#f97316' },
+  'token.number': { color: '#fb923c' },
+  'token.constant': { color: '#fb923c' },
+  'token.symbol': { color: '#fb923c' },
+  'token.deleted': { color: '#f87171' },
+  'token.selector': { color: '#86efac' },
+  'token.attr-name': { color: '#7dd3fc' },
+  'token.string': { color: '#86efac' },
+  'token.char': { color: '#86efac' },
+  'token.builtin': { color: '#818cf8' },
+  'token.inserted': { color: '#86efac' },
+  'token.operator': { color: '#94a3b8' },
+  'token.entity': { color: '#fbbf24', cursor: 'help' },
+  'token.url': { color: '#7dd3fc', textDecoration: 'underline' },
+  'token.atrule': { color: '#a78bfa' },
+  'token.attr-value': { color: '#86efac' },
+  'token.keyword': { color: '#c084fc' },
+  'token.function': { color: '#60a5fa' },
+  'token.class-name': { color: '#fcd34d' },
+  'token.regex': { color: '#fb923c' },
+  'token.important': { color: '#f97316', fontWeight: 'bold' },
+  'token.variable': { color: '#e2e8f0' },
+  'token.bold': { fontWeight: 'bold' },
+  'token.italic': { fontStyle: 'italic' },
+};
+
+const KNOWN_LANGS = new Set(['javascript','js','typescript','ts','jsx','tsx','python','py','bash','sh','shell','json','css','markdown','md','sql','yaml','yml','rust','rs','go']);
+
+export function CodeBlock({ code, language }: { code: string; language: string }) {
   const [copied, setCopied] = useState(false);
+  const lang = language || 'text';
+  const useSyntax = KNOWN_LANGS.has(lang.toLowerCase());
 
   return (
-    <div className="relative my-3 rounded-lg overflow-hidden bg-mission-control-bg border border-mission-control-border shadow-sm">
-      <div className="flex items-center justify-between px-3 py-2 bg-mission-control-surface/50 border-b border-mission-control-border/50">
-        <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">{language || 'code'}</span>
-        <button onClick={async () => { const ok = await copyToClipboard(code); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); } }}
-          className="flex items-center gap-1.5 px-2 py-1 text-xs rounded text-mission-control-text-dim hover:bg-mission-control-border/50 hover:text-mission-control-text transition-all" title="Copy code">
-          {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+    <div className="relative my-3 rounded-lg overflow-hidden bg-mission-control-bg border border-mission-control-border shadow-sm group/code">
+      {/* Header bar: language label left, copy button right */}
+      <div className="flex items-center justify-between px-4 py-1.5 bg-mission-control-border/20 border-b border-mission-control-border/50">
+        <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-mission-control-text-dim select-none">
+          {lang}
+        </span>
+        <button
+          type="button"
+          onClick={async () => { const ok = await copyToClipboard(code); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); } }}
+          title="Copy code"
+          aria-label="Copy code to clipboard"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors opacity-0 group-hover/code:opacity-100"
+        >
+          {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
           <span>{copied ? 'Copied!' : 'Copy'}</span>
         </button>
       </div>
-      <pre className="p-4 overflow-x-auto text-sm leading-relaxed">
-        <code className="font-mono text-mission-control-text break-words whitespace-pre-wrap">{code}</code>
-      </pre>
+      {useSyntax ? (
+        <SyntaxHighlighter
+          language={lang.toLowerCase()}
+          style={MC_THEME}
+          customStyle={{ margin: 0, padding: '1rem', background: 'transparent', fontSize: '0.8125rem', lineHeight: '1.6' }}
+          codeTagProps={{ style: { fontFamily: 'var(--font-mono, ui-monospace, monospace)', whiteSpace: 'pre' } }}
+          wrapLongLines={false}
+          PreTag="div"
+        >
+          {code}
+        </SyntaxHighlighter>
+      ) : (
+        <pre className="p-4 overflow-x-auto text-sm leading-relaxed">
+          <code className="font-mono text-mission-control-text whitespace-pre">{code}</code>
+        </pre>
+      )}
     </div>
   );
 }

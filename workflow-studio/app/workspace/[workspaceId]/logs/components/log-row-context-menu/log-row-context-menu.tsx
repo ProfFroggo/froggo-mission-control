@@ -1,0 +1,101 @@
+'use client'
+
+import { memo } from 'react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/emcn'
+import { Copy, Eye, ListFilter, SquareArrowUpRight, X } from '@/components/emcn/icons'
+import type { WorkflowLog } from '@/stores/logs/filters/types'
+
+interface LogRowContextMenuProps {
+  isOpen: boolean
+  position: { x: number; y: number }
+  onClose: () => void
+  log: WorkflowLog | null
+  onCopyExecutionId: () => void
+  onOpenWorkflow: () => void
+  onOpenPreview: () => void
+  onToggleWorkflowFilter: () => void
+  onClearAllFilters: () => void
+  isFilteredByThisWorkflow: boolean
+  hasActiveFilters: boolean
+}
+
+/**
+ * Context menu for log rows.
+ * Provides quick actions for copying data, navigation, and filtering.
+ */
+export const LogRowContextMenu = memo(function LogRowContextMenu({
+  isOpen,
+  position,
+  onClose,
+  log,
+  onCopyExecutionId,
+  onOpenWorkflow,
+  onOpenPreview,
+  onToggleWorkflowFilter,
+  onClearAllFilters,
+  isFilteredByThisWorkflow,
+  hasActiveFilters,
+}: LogRowContextMenuProps) {
+  const hasExecutionId = Boolean(log?.executionId)
+  const hasWorkflow = Boolean(log?.workflow?.id || log?.workflowId)
+
+  return (
+    <DropdownMenu open={isOpen} onOpenChange={(open) => !open && onClose()} modal={false}>
+      <DropdownMenuTrigger asChild>
+        <div
+          style={{
+            position: 'fixed',
+            left: `${position.x}px`,
+            top: `${position.y}px`,
+            width: '1px',
+            height: '1px',
+            pointerEvents: 'none',
+          }}
+          tabIndex={-1}
+          aria-hidden
+        />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align='start'
+        side='bottom'
+        sideOffset={4}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
+        <DropdownMenuItem disabled={!hasExecutionId} onSelect={onCopyExecutionId}>
+          <Copy />
+          Copy Execution ID
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+        <DropdownMenuItem disabled={!hasWorkflow} onSelect={onOpenWorkflow}>
+          <SquareArrowUpRight />
+          Open Workflow
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!hasExecutionId} onSelect={onOpenPreview}>
+          <Eye />
+          Open Snapshot
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+        {!isFilteredByThisWorkflow && (
+          <DropdownMenuItem disabled={!hasWorkflow} onSelect={onToggleWorkflowFilter}>
+            <ListFilter />
+            Filter by Workflow
+          </DropdownMenuItem>
+        )}
+        {hasActiveFilters && (
+          <DropdownMenuItem onSelect={onClearAllFilters}>
+            <X />
+            Clear Filters
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+})

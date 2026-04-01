@@ -3,6 +3,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useMemo } from 'react';
 import { TrendingUp, DollarSign, Users, MousePointerClick, Eye, Repeat2, BarChart2 } from 'lucide-react';
+import { Flex, Heading } from '@radix-ui/themes';
 import type { Campaign, CampaignMetrics } from '../types/campaigns';
 
 interface CampaignROIDashboardProps {
@@ -23,10 +24,10 @@ function ROIRing({ roi }: { roi: number }) {
 
   const color =
     roi >= 100
-      ? 'var(--color-success, #22c55e)'
+      ? 'var(--color-success)'
       : roi >= 50
-      ? 'var(--color-warning, #eab308)'
-      : 'var(--color-error, #ef4444)';
+      ? 'var(--color-warning)'
+      : 'var(--color-error)';
 
   const label = roi >= 100 ? 'Strong' : roi >= 50 ? 'Moderate' : 'Weak';
 
@@ -39,7 +40,7 @@ function ROIRing({ roi }: { roi: number }) {
           style={{ transform: 'rotate(-90deg)' }}
         >
           <circle
-            stroke="var(--mission-control-border, #2a2a2a)"
+            stroke="var(--mission-control-border)"
             fill="transparent"
             strokeWidth={STROKE}
             r={normalizedRadius}
@@ -60,10 +61,10 @@ function ROIRing({ roi }: { roi: number }) {
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xl font-bold leading-none" style={{ color }}>
+          <span className="text-xl font-bold leading-none tabular-nums" style={{ color }}>
             {roi > 0 ? `+${Math.round(roi)}` : Math.round(roi)}%
           </span>
-          <span className="text-[10px] text-mission-control-text-dim mt-0.5">ROI</span>
+          <span className="text-xs text-mission-control-text-dim mt-0.5">ROI</span>
         </div>
       </div>
       <span
@@ -112,7 +113,7 @@ function AttributionPie({ slices }: { slices: PieSlice[] }) {
   }, [slices]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="flex items-center gap-6">
+    <Flex align="center" gap="6">
       <svg width={SIZE} height={SIZE} style={{ flexShrink: 0 }}>
         {paths.map((p, i) => (
           <path
@@ -127,14 +128,14 @@ function AttributionPie({ slices }: { slices: PieSlice[] }) {
       </svg>
       <div className="flex flex-col gap-1.5">
         {slices.map((sl, i) => (
-          <div key={i} className="flex items-center gap-2">
+          <Flex key={i} align="center" gap="2">
             <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: sl.color }} />
             <span className="text-xs text-mission-control-text">{sl.label}</span>
             <span className="text-xs text-mission-control-text-dim ml-auto pl-4">{sl.pct}%</span>
-          </div>
+          </Flex>
         ))}
       </div>
-    </div>
+    </Flex>
   );
 }
 
@@ -158,30 +159,30 @@ function ComparisonBar({
   return (
     <div className="space-y-1.5">
       <span className="text-xs text-mission-control-text-dim">{label}</span>
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] text-mission-control-text-dim w-16 text-right flex-shrink-0">Current</span>
+      <Flex align="center" gap="2">
+        <span className="text-xs text-mission-control-text-dim w-16 text-right flex-shrink-0">Current</span>
         <div className="flex-1 h-2 rounded-full bg-mission-control-border overflow-hidden">
           <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${currentPct}%`, backgroundColor: 'var(--mission-control-accent, #6366f1)' }}
+            className="h-full rounded-full transition-colors duration-500"
+            style={{ width: `${currentPct}%`, backgroundColor: 'var(--mission-control-accent)' }}
           />
         </div>
         <span className="text-xs font-medium text-mission-control-text w-16 flex-shrink-0">
           {fmt(current)}
         </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] text-mission-control-text-dim w-16 text-right flex-shrink-0">Previous</span>
+      </Flex>
+      <Flex align="center" gap="2">
+        <span className="text-xs text-mission-control-text-dim w-16 text-right flex-shrink-0">Previous</span>
         <div className="flex-1 h-2 rounded-full bg-mission-control-border overflow-hidden">
           <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${previousPct}%`, backgroundColor: 'var(--mission-control-text-dim, #888)' }}
+            className="h-full rounded-full transition-colors duration-500"
+            style={{ width: `${previousPct}%`, backgroundColor: 'var(--mission-control-text-dim)' }}
           />
         </div>
         <span className="text-xs font-medium text-mission-control-text-dim w-16 flex-shrink-0">
           {fmt(previous)}
         </span>
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -200,9 +201,9 @@ function MetricPill({
     <div className="flex flex-col gap-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2.5 min-w-[90px]">
       <div className="flex items-center gap-1.5">
         <Icon size={12} className="text-mission-control-text-dim flex-shrink-0" />
-        <span className="text-[10px] text-mission-control-text-dim uppercase tracking-wider truncate">{label}</span>
+        <span className="text-xs text-mission-control-text-dim uppercase tracking-wider truncate">{label}</span>
       </div>
-      <span className="text-sm font-semibold text-mission-control-text">{value}</span>
+      <span className="text-sm font-semibold tabular-nums text-mission-control-text">{value}</span>
     </div>
   );
 }
@@ -237,17 +238,17 @@ export default function CampaignROIDashboard({ campaign, previousCampaign }: Cam
     {
       label: 'Social',
       pct: metrics.attributionSocial ?? 40,
-      color: 'var(--mission-control-accent, #6366f1)',
+      color: 'var(--mission-control-accent)',
     },
     {
       label: 'Email',
       pct: metrics.attributionEmail ?? 30,
-      color: 'var(--color-success, #22c55e)',
+      color: 'var(--color-success)',
     },
     {
       label: 'Organic',
       pct: metrics.attributionOrganic ?? 30,
-      color: 'var(--color-warning, #eab308)',
+      color: 'var(--color-warning)',
     },
   ];
 
@@ -259,12 +260,12 @@ export default function CampaignROIDashboard({ campaign, previousCampaign }: Cam
 
   if (!hasMetrics) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-        <BarChart2 size={28} className="text-mission-control-text-dim" />
-        <p className="text-sm text-mission-control-text-dim">No metrics data yet.</p>
+      <div className="flex flex-col items-center justify-center h-full py-16 gap-3 text-center">
+        <BarChart2 size={32} className="text-mission-control-text-dim opacity-40" />
+        <p className="text-sm font-medium text-mission-control-text">No metrics data yet</p>
         <p className="text-xs text-mission-control-text-dim">
           Update the campaign&apos;s{' '}
-          <code className="px-1 py-0.5 rounded bg-mission-control-border text-mission-control-text text-[10px]">
+          <code className="px-1 py-0.5 rounded bg-mission-control-border text-mission-control-text text-xs">
             metrics
           </code>{' '}
           field to see ROI analytics.
@@ -309,9 +310,9 @@ export default function CampaignROIDashboard({ campaign, previousCampaign }: Cam
       {/* Comparison bar vs previous campaign */}
       {previousCampaign && (
         <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-4">
-          <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
+          <Heading size="1" weight="medium" className="text-mission-control-text-dim uppercase tracking-wider">
             vs Previous campaign — {previousCampaign.name}
-          </h3>
+          </Heading>
           <div className="space-y-3">
             {((metrics.impressions ?? 0) > 0 || (prevMetrics.impressions ?? 0) > 0) && (
               <ComparisonBar
@@ -348,9 +349,9 @@ export default function CampaignROIDashboard({ campaign, previousCampaign }: Cam
 
       {/* Attribution breakdown */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-        <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-4">
+        <Heading size="1" weight="medium" className="text-mission-control-text-dim uppercase tracking-wider mb-4">
           Attribution breakdown
-        </h3>
+        </Heading>
         <AttributionPie slices={attributionSlices} />
       </div>
     </div>

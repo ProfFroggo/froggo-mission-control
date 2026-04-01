@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Inbox, Calendar, AlertCircle, CheckCircle, ChevronRight, Sparkles, Cloud, Activity, Bot, Users, AtSign } from 'lucide-react';
+import { Sun, Moon, Inbox, Calendar, AlertCircle, CheckCircle, ChevronRight, Sparkles, Cloud, Activity, Bot, Users, AtSign, MessageSquare, Heart } from 'lucide-react';
+import { Button, Flex, Heading, Spinner } from '@radix-ui/themes';
 import { gateway } from '../lib/gateway';
 
 interface TwitterMention {
@@ -406,8 +407,9 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
 
   if (loading) {
     return (
-      <div className="fixed inset-0 modal-backdrop backdrop-blur-sm z-50 flex items-center justify-center">
-        <div className="animate-pulse text-mission-control-accent text-xl">Loading your brief...</div>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center gap-3">
+        <Spinner size="3" />
+        <span className="text-sm text-mission-control-text-dim">Loading your brief...</span>
       </div>
     );
   }
@@ -415,16 +417,13 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
   if (!brief) {
     // Fallback if brief failed to load - show dismiss button
     return (
-      <div className="fixed inset-0 modal-backdrop backdrop-blur-lg z-50 flex items-center justify-center p-4">
-        <div className="glass-modal rounded-3xl shadow-2xl max-w-lg w-full p-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">Good morning 👋</h1>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl max-w-lg w-full p-8 text-center overflow-hidden">
+          <Heading size="6" weight="bold" mb="4">Good morning</Heading>
           <p className="text-mission-control-text-dim mb-6">Couldn&apos;t load your brief data.</p>
-          <button
-            onClick={onDismiss}
-            className="px-6 py-3 bg-mission-control-accent text-white rounded-lg font-medium hover:bg-mission-control-accent/80 transition-colors"
-          >
+          <Button variant="solid" color="violet" size="3" onClick={onDismiss}>
             Continue to Dashboard
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -433,16 +432,16 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
   const hasItems = brief.pendingApprovals > 0 || brief.upcomingEvents.length > 0 || brief.urgentItems.length > 0;
 
   return (
-    <div 
-      className="fixed inset-0 modal-backdrop backdrop-blur-lg z-50 flex items-center justify-center p-4"
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={onDismiss}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDismiss(); } }}
       role="button"
       tabIndex={0}
       aria-label="Close modal"
     >
-      <div 
-        className="glass-modal rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden"
+      <div
+        className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
         role="presentation"
@@ -450,7 +449,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         {/* Header */}
         <div className="p-8 text-center border-b border-mission-control-border bg-gradient-to-br from-mission-control-accent/10 to-transparent">
           <div className="mb-4">{getIcon()}</div>
-          <h1 className="text-3xl font-bold mb-2">{brief.greeting} 👋</h1>
+          <Heading size="7" weight="bold" mb="2">{brief.greeting}</Heading>
           <p className="text-mission-control-text-dim">
             {hasItems ? "Here's what needs your attention" : "All clear! Nothing urgent right now."}
           </p>
@@ -460,11 +459,11 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
         <div className="p-6 space-y-4">
           {/* Urgent Items */}
           {brief.urgentItems.length > 0 && (
-            <div className="p-4 bg-error-subtle border border-error-border rounded-lg">
-              <div className="flex items-center gap-2 text-error mb-2">
+            <div className="p-4 bg-error/10 border border-error/30 rounded-lg">
+              <Flex align="center" gap="2" className="text-error mb-2">
                 <AlertCircle size={16} />
                 <span className="font-medium">Needs attention</span>
-              </div>
+              </Flex>
               <ul className="space-y-1 text-sm">
                 {brief.urgentItems.map((item, i) => (
                   <li key={i} className="text-error">• {item}</li>
@@ -476,36 +475,35 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {/* Pending Approvals */}
           {brief.pendingApprovals > 0 && (
             <button
+              type="button"
               onClick={() => { onDismiss(); onNavigate('inbox'); }}
-              className="w-full p-4 bg-mission-control-bg rounded-lg hover:bg-mission-control-border transition-colors text-left group"
+              className="w-full flex items-center justify-between p-4 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors text-left"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-mission-control-accent/20 rounded-lg">
-                    <Inbox size={20} className="text-mission-control-accent" />
-                  </div>
-                  <div>
-                    <div className="font-medium">{brief.pendingApprovals} pending approval{brief.pendingApprovals > 1 ? 's' : ''}</div>
-                    <div className="text-sm text-mission-control-text-dim">Tweets, emails, actions waiting</div>
-                  </div>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-mission-control-accent/20 rounded-lg">
+                  <Inbox size={20} className="text-mission-control-accent" />
                 </div>
-                <ChevronRight size={20} className="text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors" />
+                <div>
+                  <div className="font-medium text-mission-control-text">{brief.pendingApprovals} pending approval{brief.pendingApprovals > 1 ? 's' : ''}</div>
+                  <div className="text-sm text-mission-control-text-dim">Tweets, emails, actions waiting</div>
+                </div>
               </div>
+              <ChevronRight size={20} className="text-mission-control-text-dim" />
             </button>
           )}
 
           {/* Gibraltar Weather */}
           {brief.weather && (
             <div className="p-4 bg-mission-control-bg rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <Cloud size={16} className="text-info" />
-                <span className="font-medium">Gibraltar Weather</span>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <Cloud size={12} className="text-mission-control-text-dim" />
+                Gibraltar Weather
               </div>
               <div className="space-y-1">
-                <div className="flex items-center justify-between">
+                <Flex align="center" justify="between">
                   <span className="text-lg font-semibold">{brief.weather.temp}</span>
                   <span className="text-mission-control-text-dim">{brief.weather.condition}</span>
-                </div>
+                </Flex>
                 <div className="text-sm text-mission-control-text-dim">{brief.weather.forecast}</div>
               </div>
             </div>
@@ -514,9 +512,9 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {/* Overnight Activity */}
           {brief.overnightActivity && (
             <div className="p-4 bg-mission-control-bg rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <Activity size={16} className="text-review" />
-                <span className="font-medium">While You Slept</span>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <Activity size={12} className="text-mission-control-text-dim" />
+                While You Slept
               </div>
               <div className="space-y-2">
                 <p className="text-sm">{brief.overnightActivity.summary}</p>
@@ -536,38 +534,38 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {/* Session Activity Stats */}
           {brief.sessionStats && (
             <div className="p-4 bg-mission-control-bg rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <Users size={16} className="text-cyan-400" />
-                <span className="font-medium">Session Activity</span>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <Users size={12} className="text-mission-control-text-dim" />
+                Session Activity
               </div>
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
+                <Flex align="center" justify="between" className="text-sm">
                   <span className="text-mission-control-text-dim">Total Sessions</span>
                   <span className="font-semibold">{brief.sessionStats.total}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
+                </Flex>
+                <Flex align="center" justify="between" className="text-sm">
                   <span className="text-mission-control-text-dim">Active (30 min)</span>
                   <span className="font-semibold text-success">{brief.sessionStats.active}</span>
-                </div>
+                </Flex>
                 
                 {/* Session Types */}
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-mission-control-border">
-                  <div className="flex items-center justify-between text-xs">
+                  <Flex align="center" justify="between" className="text-xs">
                     <span className="text-mission-control-text-dim">Direct</span>
                     <span className="font-medium">{brief.sessionStats.byType.direct}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
+                  </Flex>
+                  <Flex align="center" justify="between" className="text-xs">
                     <span className="text-mission-control-text-dim">Group</span>
                     <span className="font-medium">{brief.sessionStats.byType.group}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
+                  </Flex>
+                  <Flex align="center" justify="between" className="text-xs">
                     <span className="text-mission-control-text-dim">Cron</span>
                     <span className="font-medium">{brief.sessionStats.byType.cron}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
+                  </Flex>
+                  <Flex align="center" justify="between" className="text-xs">
                     <span className="text-mission-control-text-dim">Agents</span>
                     <span className="font-medium">{brief.sessionStats.byType.subagent}</span>
-                  </div>
+                  </Flex>
                 </div>
 
                 {/* Top Channels */}
@@ -576,7 +574,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                     <div className="text-xs text-mission-control-text-dim mb-2">By Channel</div>
                     <div className="flex gap-2 flex-wrap">
                       {brief.sessionStats.channels.slice(0, 4).map((channel, i) => (
-                        <span key={i} className="px-2 py-1 bg-cyan-500/20 text-cyan-300 rounded text-xs">
+                        <span key={i} className="px-2 py-1 bg-info/10 text-info rounded text-xs">
                           {channel.name} ({channel.count})
                         </span>
                       ))}
@@ -590,15 +588,15 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {/* Agent Activity Stats */}
           {brief.agentStats && (brief.agentStats.activeAgents > 0 || brief.agentStats.busyAgents.length > 0) && (
             <div className="p-4 bg-mission-control-bg rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <Bot size={16} className="text-success" />
-                <span className="font-medium">Agent Activity</span>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <Bot size={12} className="text-mission-control-text-dim" />
+                Agent Activity
               </div>
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
+                <Flex align="center" justify="between" className="text-sm">
                   <span className="text-mission-control-text-dim">Active Agents</span>
                   <span className="font-semibold text-success">{brief.agentStats.activeAgents} / {brief.agentStats.totalAgents}</span>
-                </div>
+                </Flex>
 
                 {/* Busy Agents */}
                 {brief.agentStats.busyAgents.length > 0 && (
@@ -606,7 +604,7 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
                     <div className="text-xs text-mission-control-text-dim mb-2">Working On Tasks</div>
                     <div className="flex gap-2 flex-wrap">
                       {brief.agentStats.busyAgents.map((agent, i) => (
-                        <span key={i} className="px-2 py-1 bg-success-subtle text-success rounded text-xs">
+                        <span key={i} className="px-2 py-1 bg-success/10 text-success rounded text-xs">
                           {agent}
                         </span>
                       ))}
@@ -632,16 +630,16 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {/* Upcoming Events */}
           {brief.upcomingEvents.length > 0 && (
             <div className="p-4 bg-mission-control-bg rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar size={16} className="text-mission-control-accent" />
-                <span className="font-medium">Today&apos;s Schedule</span>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <Calendar size={12} className="text-mission-control-text-dim" />
+                Today&apos;s Schedule
               </div>
               <div className="space-y-2">
                 {brief.upcomingEvents.map((event, i) => (
-                  <div key={i} className="flex items-center justify-between text-sm">
+                  <Flex key={i} align="center" justify="between" className="text-sm">
                     <span className="truncate">{event.title}</span>
                     <span className="text-mission-control-text-dim ml-2">{event.time}</span>
-                  </div>
+                  </Flex>
                 ))}
               </div>
             </div>
@@ -650,31 +648,31 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {/* Twitter Mentions */}
           {brief.mentions && brief.mentions.length > 0 && (
             <div className="p-4 bg-mission-control-bg rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <AtSign size={16} className="text-info" />
-                <span className="font-medium">Recent Mentions</span>
-                <span className="text-xs text-mission-control-text-dim ml-auto">(last 24h)</span>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <AtSign size={12} className="text-mission-control-text-dim" />
+                Recent Mentions
+                <span className="ml-auto normal-case font-normal text-mission-control-text-dim">(last 24h)</span>
               </div>
               <div className="space-y-3">
                 {brief.mentions.map((mention) => (
-                  <div key={mention.id} className="p-3 bg-mission-control-bg/30 rounded-lg border border-mission-control-border hover:border-info-border transition-colors">
-                    <div className="flex items-start gap-2 mb-2">
+                  <div key={mention.id} className="p-3 bg-mission-control-surface rounded-lg border border-mission-control-border hover:border-info/30 transition-colors">
+                    <Flex align="start" gap="2" className="mb-2">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <Flex align="center" gap="2">
                           <span className="font-medium text-sm truncate">{mention.author.name}</span>
                           <span className="text-xs text-mission-control-text-dim truncate">@{mention.author.username}</span>
-                        </div>
+                        </Flex>
                       </div>
                       <span className="text-xs text-mission-control-text-dim whitespace-nowrap">
                         {new Date(mention.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                       </span>
-                    </div>
+                    </Flex>
                     <p className="text-sm text-mission-control-text line-clamp-2">{mention.text}</p>
                     {((mention.likeCount ?? 0) > 0 || (mention.replyCount ?? 0) > 0) && (
-                      <div className="flex gap-3 mt-2 text-xs text-mission-control-text-dim">
-                        {(mention.replyCount ?? 0) > 0 && <span>💬 {mention.replyCount}</span>}
-                        {(mention.likeCount ?? 0) > 0 && <span>❤️ {mention.likeCount}</span>}
-                      </div>
+                      <Flex gap="3" className="mt-2 text-xs text-mission-control-text-dim">
+                        {(mention.replyCount ?? 0) > 0 && <span className="flex items-center gap-1"><MessageSquare size={12} /> {mention.replyCount}</span>}
+                        {(mention.likeCount ?? 0) > 0 && <span className="flex items-center gap-1"><Heart size={12} /> {mention.likeCount}</span>}
+                      </Flex>
                     )}
                   </div>
                 ))}
@@ -686,24 +684,18 @@ export default function MorningBrief({ onDismiss, onNavigate }: MorningBriefProp
           {!hasItems && (
             <div className="p-6 text-center">
               <CheckCircle size={48} className="text-success mx-auto mb-3" />
-              <p className="text-lg font-medium text-success">You&apos;re all caught up!</p>
+              <p className="text-sm font-semibold text-success">You&apos;re all caught up!</p>
               <p className="text-sm text-mission-control-text-dim">No pending items or upcoming events</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-mission-control-border bg-mission-control-bg">
-          <button
-            onClick={onDismiss}
-            className="w-full py-3 bg-mission-control-accent text-white rounded-lg font-medium hover:bg-mission-control-accent/90 transition-colors"
-          >
+        <div className="p-4 border-t border-mission-control-border bg-mission-control-bg flex flex-col gap-2">
+          <Button variant="solid" color="violet" size="3" onClick={onDismiss} className="w-full">
             {hasItems ? "Let's get to work" : "Start your day"}
-          </button>
-          <button
-            onClick={onDismiss}
-            className="w-full py-2 text-mission-control-text-dim text-sm hover:text-mission-control-text mt-2"
-          >
+          </Button>
+          <button type="button" onClick={onDismiss} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors w-full justify-center">
             Don&apos;t show again today
           </button>
         </div>

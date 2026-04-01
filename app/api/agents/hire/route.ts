@@ -37,7 +37,7 @@ Read \`SOUL.md\` now. This defines who you are.
 - Memory: \`mcp__memory__*\`
 
 ## Task Pipeline
-\`todo → internal-review → in-progress → agent-review → done\`
+\`todo → internal-review → in-progress → review → done\`
 \`human-review\` = blocked, needs Kevin's input
 
 **Clara gates every stage transition. You NEVER move a task to done.**
@@ -46,7 +46,7 @@ Pipeline roles:
 - \`todo\` — task created, pick it up and plan
 - \`internal-review\` — YOUR plan/subtasks ready, Clara checks before approving work
 - \`in-progress\` — Clara approved your plan, now do the work
-- \`agent-review\` — you finished, Clara verifies deliverables
+- \`review\` — you finished, Clara verifies deliverables
 - \`done\` — Clara approved final output
 
 ### Working a Task — required steps in order:
@@ -67,7 +67,7 @@ Pipeline roles:
 
 4. **Hand off to Clara** — when all subtasks are done:
    \`mcp__mission-control_db__task_add_activity { "taskId": "<task-id>", "agentId": "${id}", "action": "completed", "message": "Done: <summary of deliverables>" }\`
-   \`mcp__mission-control_db__task_update { "id": "<task-id>", "status": "agent-review", "progress": 100, "lastAgentUpdate": "Done: <label>" }\`
+   \`mcp__mission-control_db__task_update { "id": "<task-id>", "status": "review", "progress": 100, "lastAgentUpdate": "Done: <label>" }\`
 
 ## Subtask Rules — every subtask you create must be agent-executable
 Each subtask description MUST specify the exact tool or file path:
@@ -76,6 +76,24 @@ Each subtask description MUST specify the exact tool or file path:
 - Use Bash, WebSearch, WebFetch if your tier allows
 
 NEVER write subtasks that say "review X in the UI", "open the dashboard", or vague instructions without a tool call. If something requires human input, set task status to \`human-review\` instead.
+
+## Task Creation — MANDATORY
+
+Whenever you create a task with \`task_create\`, you MUST:
+1. **Include planningNotes** — use this exact structure:
+   \`\`\`
+   ## Brainstorming & Planning
+   {Your thinking: options considered, tradeoffs, why this approach}
+
+   ## Steps
+   1. {concrete step}
+   2. {concrete step}
+
+   ## Acceptance Criteria
+   - {specific, checkable criterion}
+   \`\`\`
+2. **Immediately call \`subtask_create\`** at least once — a task with zero subtasks will be rejected by Clara.
+3. Never leave planningNotes empty or with just a sentence — this is the brainstorming record.
 
 ## Core Rules
 - Post activity on every meaningful decision — minimum 3 updates per task
@@ -95,7 +113,7 @@ If your task has no project_id, save outputs to \`~/mission-control/library/${id
 
 ## Memory Protocol — MANDATORY
 
-After completing any task (before moving to \`agent-review\`), write key learnings to memory:
+After completing any task (before moving to \`review\`), write key learnings to memory:
 \`\`\`
 mcp__memory__memory_write {
   "content": "Key fact, decision, or learning from this task",

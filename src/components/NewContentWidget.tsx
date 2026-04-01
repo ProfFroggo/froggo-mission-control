@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FileText, Image, FileBarChart, AlertCircle, Sparkles } from 'lucide-react';
 import { libraryApi } from '../lib/api';
+import { Box, Flex } from '@radix-ui/themes';
 
 interface LibraryFile {
   id: string;
@@ -90,98 +91,98 @@ export default function NewContentWidget() {
 
   if (loading && totalNew === 0) {
     return (
-      <div className="p-6 animate-pulse">
-        <div className="h-8 w-8 bg-mission-control-border/50 rounded-full mb-4" />
-        <div className="space-y-2">
-          <div className="h-4 bg-mission-control-border/50 rounded" />
-          <div className="h-4 bg-mission-control-border/50 rounded" />
-          <div className="h-4 bg-mission-control-border/50 rounded" />
-        </div>
-      </div>
+      <Box p="6" className="animate-pulse">
+        <Box className="h-8 w-8 bg-mission-control-border/50 rounded-full mb-4" />
+        <Box className="space-y-2">
+          <Box className="h-4 bg-mission-control-border/50 rounded" />
+          <Box className="h-4 bg-mission-control-border/50 rounded" />
+          <Box className="h-4 bg-mission-control-border/50 rounded" />
+        </Box>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6">
-        <div className="flex items-center gap-2 text-error mb-2">
+      <Box p="6">
+        <Flex align="center" gap="2" mb="2" className="text-error">
           <AlertCircle size={20} />
           <span className="text-sm">{error}</span>
-        </div>
-      </div>
+        </Flex>
+      </Box>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <Sparkles 
-          size={28} 
-          className={totalNew > 0 ? 'text-review' : 'text-mission-control-text-dim'} 
+    <Box p="6">
+      <Flex align="center" justify="between" mb="4">
+        <Sparkles
+          size={28}
+          className={totalNew > 0 ? 'text-review' : 'text-mission-control-text-dim'}
         />
         {totalNew > 0 && (
-          <span className="px-3 py-1 bg-purple-500 text-white text-sm font-bold rounded-full shadow-lg">
+          <span className="px-3 py-1 text-white text-sm font-bold rounded-full shadow-lg" style={{ background: 'var(--color-review)' }}>
             {totalNew}
           </span>
         )}
-      </div>
-      
-      <div className="text-3xl font-bold mb-3 bg-gradient-to-br from-mission-control-text to-purple-400 bg-clip-text text-transparent">
+      </Flex>
+
+      <Box className="text-3xl font-bold mb-3 text-mission-control-text">
         {totalNew} New
-      </div>
-      
-      <div className="space-y-2.5">
+      </Box>
+
+      <Box className="space-y-2.5">
         {/* Files */}
-        <div className="flex items-center justify-between p-2.5 rounded-lg bg-mission-control-bg/30 border border-mission-control-border/30">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" p="2" className="rounded-lg bg-mission-control-bg/30 border border-mission-control-border/30">
+          <Flex align="center" gap="2">
             <FileText size={16} className="text-success" />
             <span className="text-sm text-mission-control-text-dim">Files</span>
-          </div>
+          </Flex>
           <span className={`text-sm font-bold ${
             counts.files > 0 ? 'text-success' : 'text-mission-control-text-dim'
           }`}>
             {counts.files}
           </span>
-        </div>
+        </Flex>
 
         {/* Images */}
-        <div className="flex items-center justify-between p-2.5 rounded-lg bg-mission-control-bg/30 border border-mission-control-border/30">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" p="2" className="rounded-lg bg-mission-control-bg/30 border border-mission-control-border/30">
+          <Flex align="center" gap="2">
             <Image size={16} className="text-review" />
             <span className="text-sm text-mission-control-text-dim">Images</span>
-          </div>
+          </Flex>
           <span className={`text-sm font-bold ${
             counts.images > 0 ? 'text-review' : 'text-mission-control-text-dim'
           }`}>
             {counts.images}
           </span>
-        </div>
+        </Flex>
 
         {/* Reports */}
-        <div className="flex items-center justify-between p-2.5 rounded-lg bg-mission-control-bg/30 border border-mission-control-border/30">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" p="2" className="rounded-lg bg-mission-control-bg/30 border border-mission-control-border/30">
+          <Flex align="center" gap="2">
             <FileBarChart size={16} className="text-info" />
             <span className="text-sm text-mission-control-text-dim">Reports</span>
-          </div>
+          </Flex>
           <span className={`text-sm font-bold ${
             counts.reports > 0 ? 'text-info' : 'text-mission-control-text-dim'
           }`}>
             {counts.reports}
           </span>
-        </div>
-      </div>
+        </Flex>
+      </Box>
 
       {totalNew === 0 && (
-        <div className="mt-4 text-xs text-mission-control-text-dim text-center">
+        <Box mt="4" className="text-xs text-mission-control-text-dim text-center">
           No new content (24h)
-        </div>
+        </Box>
       )}
-      
+
       {totalNew > 0 && (
-        <div className="mt-4 text-xs text-review text-center">
+        <Box mt="4" className="text-xs text-review text-center">
           Last 24 hours
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

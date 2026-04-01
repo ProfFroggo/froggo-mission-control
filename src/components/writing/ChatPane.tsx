@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { MessageSquare, Trash2 } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import { gateway } from '../../lib/gateway';
 import { buildMemoryContext, buildChapterContext, buildOutlineContext } from '../../lib/writingContext';
 import { useChatPaneStore, type ChatMessage as ChatMessageType } from '../../store/chatPaneStore';
@@ -163,20 +164,22 @@ export default function ChatPane() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-surface border-r border-mission-control-border dark">
+    <Flex direction="column" height="100%" className="bg-mission-control-surface border-r border-mission-control-border dark">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2">
+      <div className="px-4 py-3 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
+        <Flex align="center" gap="2">
           <MessageSquare size={14} className="text-mission-control-text-dim" />
-          <span className="text-xs font-medium text-mission-control-text-dim">
-            Chat{agentNames[selectedAgent] ? ` - ${agentNames[selectedAgent]}` : ''}
+          <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
+            Chat{agentNames[selectedAgent] ? ` — ${agentNames[selectedAgent]}` : ''}
           </span>
-        </div>
+        </Flex>
         {messages.length > 0 && (
           <button
+            type="button"
             onClick={handleClearChat}
-            className="p-1 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
             title="Clear conversation"
+            aria-label="Clear conversation"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <Trash2 size={12} />
           </button>
@@ -223,6 +226,6 @@ export default function ChatPane() {
 
       {/* Input */}
       <ChatInput onSend={handleSendMessage} disabled={streaming} />
-    </div>
+    </Flex>
   );
 }

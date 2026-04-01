@@ -16,7 +16,7 @@ interface BudgetRow {
 
 type Period = 'daily' | 'weekly' | 'monthly';
 
-function periodStartMs(period: Period): number {
+export function periodStartMs(period: Period): number {
   const now = new Date();
   switch (period) {
     case 'daily': {

@@ -24,6 +24,7 @@ export default {
           'accent-dim': 'var(--mission-control-accent-dim, #16a34a)',
           text: 'var(--mission-control-text, #fafafa)',
           'text-dim': 'var(--mission-control-text-dim, #a1a1aa)',
+          muted: 'var(--mission-control-text-dim, #a1a1aa)',
           'bg-alt': 'var(--mission-control-bg-alt, #1a1a1a)',
           'bg0': 'var(--mission-control-bg0, #0a0a0a)',
           'card': 'var(--mission-control-card, #141414)',

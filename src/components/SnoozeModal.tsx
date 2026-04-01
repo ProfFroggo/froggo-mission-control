@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Clock, Calendar, Moon, Sunrise, Coffee, AlertCircle, Trash2 } from 'lucide-react';
+import { Button, Flex, TextField } from '@radix-ui/themes';
 import BaseModal, { BaseModalHeader, BaseModalBody, BaseModalFooter } from './BaseModal';
 
 interface SnoozeModalProps {
@@ -221,14 +222,14 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
             {currentSnooze && (
               <div className={`mb-4 p-3 rounded-lg border-2 ${
                 isExpired 
-                  ? 'bg-error-subtle border-error-border' 
-                  : 'bg-warning-subtle border-warning-border'
+                  ? 'bg-error/10 border-error/30' 
+                  : 'bg-warning/10 border-warning/30'
               }`}>
-                <div className="flex items-start gap-2">
+                <Flex align="start" gap="2">
                   <AlertCircle size={16} className={isExpired ? 'text-error mt-0.5' : 'text-warning mt-0.5'} />
                   <div className="flex-1">
                     <p className={`font-medium ${isExpired ? 'text-error' : 'text-warning'}`}>
-                      {isExpired ? '⏰ Reminder!' : 'Currently Snoozed'}
+                      {isExpired ? 'Reminder!' : 'Currently Snoozed'}
                     </p>
                     <p className="text-sm text-mission-control-text-dim mt-1">
                       {isExpired ? 'Expired ' : 'Until '}{formatSnoozeTime(currentSnooze.snooze_until)}
@@ -239,16 +240,18 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
                       </p>
                     )}
                   </div>
-                  <button
+                  <Button
                     onClick={handleUnsnooze}
                     disabled={submitting}
                     type="button"
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-error-subtle text-error border border-error-border hover:bg-error-subtle rounded-lg transition-colors text-sm disabled:opacity-50"
+                    variant="outline"
+                    color="red"
+                    size="1"
                   >
                     <Trash2 size={14} />
                     Remove
-                  </button>
-                </div>
+                  </Button>
+                </Flex>
               </div>
             )}
 
@@ -259,16 +262,19 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
                 {QUICK_OPTIONS.map((option) => {
                   const Icon = option.icon;
                   return (
-                    <button
+                    <Button
                       key={option.label}
                       onClick={() => handleQuickSnooze(option)}
                       disabled={submitting}
                       type="button"
-                      className="flex items-center gap-2 p-3 bg-mission-control-bg hover:bg-mission-control-border border border-mission-control-border rounded-lg transition-colors disabled:opacity-50"
+                      variant="outline"
+                      color="gray"
+                      size="2"
+                      className="justify-start"
                     >
-                      <Icon size={16} className="text-mission-control-accent" />
+                      <Icon size={16} />
                       <span className="text-sm">{option.label}</span>
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -280,34 +286,38 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <div>
                   <label htmlFor="snooze-date" className="text-xs text-mission-control-text-dim block mb-1">Date</label>
-                  <input
+                  <TextField.Root
                     id="snooze-date"
                     type="date"
                     value={customDate}
                     onChange={(e) => setCustomDate(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
-                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                    size="2"
+                    className="w-full"
                   />
                 </div>
                 <div>
                   <label htmlFor="snooze-time" className="text-xs text-mission-control-text-dim block mb-1">Time</label>
-                  <input
+                  <TextField.Root
                     id="snooze-time"
                     type="time"
                     value={customTime}
                     onChange={(e) => setCustomTime(e.target.value)}
-                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                    size="2"
+                    className="w-full"
                   />
                 </div>
               </div>
-              <button
+              <Button
                 onClick={handleCustomSnooze}
                 disabled={submitting || !customDate || !customTime}
                 type="button"
-                className="w-full px-4 py-2 bg-mission-control-accent hover:bg-mission-control-accent-hover text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                variant="solid"
+                size="2"
+                className="w-full"
               >
                 Set Custom Snooze
-              </button>
+              </Button>
             </div>
 
             {/* Optional Reason */}
@@ -315,19 +325,19 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
               <label htmlFor="snooze-reason" className="text-sm font-medium text-mission-control-text-dim block mb-2">
                 Reason (Optional)
               </label>
-              <input
+              <TextField.Root
                 id="snooze-reason"
-                type="text"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="e.g., Waiting for response, Follow up later..."
-                className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                size="2"
+                className="w-full"
               />
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="mb-4 p-3 bg-error-subtle border border-error-border rounded-lg">
+              <div className="mb-4 p-3 bg-error/10 border border-error/30 rounded-lg">
                 <p className="text-sm text-error">{error}</p>
               </div>
             )}
@@ -339,7 +349,7 @@ export default function SnoozeModal({ sessionKey, sessionName, onClose }: Snooze
         <button
           onClick={onClose}
           type="button"
-          className="px-4 py-2 bg-mission-control-border hover:bg-mission-control-bg text-mission-control-text rounded-lg transition-colors"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           Cancel
         </button>

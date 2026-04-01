@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { PieChart, TrendingUp, AlertTriangle, Check } from 'lucide-react';
+import { TextField, Flex } from '@radix-ui/themes';
 import { CHART_COLORS } from '../lib/chartTheme';
+import { fetchXAnalytics } from '../hooks/useXAnalytics';
 
 interface ContentMixData {
   type: string;
@@ -38,7 +40,7 @@ export const XContentMixTracker: React.FC = () => {
   const [mixData, setMixData] = useState<ContentMixData[]>([
     { type: 'Educational', count: 0, target: 40, color: CHART_COLORS.blue, totalLikes: 0, totalRetweets: 0, totalReplies: 0 },
     { type: 'Meme', count: 0, target: 30, color: CHART_COLORS.amber, totalLikes: 0, totalRetweets: 0, totalReplies: 0 },
-    { type: 'Thread', count: 0, target: 20, color: CHART_COLORS.green, totalLikes: 0, totalRetweets: 0, totalReplies: 0 },
+    { type: 'Thread', count: 0, target: 20, color: CHART_COLORS.accent, totalLikes: 0, totalRetweets: 0, totalReplies: 0 },
     { type: 'Announcement', count: 0, target: 10, color: CHART_COLORS.purple, totalLikes: 0, totalRetweets: 0, totalReplies: 0 },
   ]);
   const [loading, setLoading] = useState(true);
@@ -53,12 +55,11 @@ export const XContentMixTracker: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/x/analytics');
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `API error: ${res.status}`);
+      // Use shared fetch with in-flight deduplication + caching
+      const data = await fetchXAnalytics();
+      if (!data.ok) {
+        throw new Error('API returned error');
       }
-      const data = await res.json();
       const tweets: any[] = data.tweets ?? [];
 
       // Filter by period
@@ -146,16 +147,16 @@ export const XContentMixTracker: React.FC = () => {
     return (
       <div key={item.type} className="mb-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" className="mb-2">
+          <Flex align="center" gap="2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
             <span className="text-sm font-medium text-mission-control-text">{item.type}</span>
             <span className="text-xs text-mission-control-text-dim">({item.count} posts)</span>
             <span className="text-xs text-mission-control-text-dim">
               avg {getAvgEngagement(item)} eng/post
             </span>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <span className="text-xs text-mission-control-text-dim">
               {currentPercent.toFixed(1)}% / {item.target}%
             </span>
@@ -164,15 +165,15 @@ export const XContentMixTracker: React.FC = () => {
             ) : (
               <Check size={14} className="text-success" />
             )}
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Progress bars */}
         <div className="space-y-1">
           {/* Current */}
           <div className="relative h-6 bg-mission-control-surface rounded overflow-hidden">
             <div
-              className="absolute h-full transition-all duration-300"
+              className="absolute h-full transition-colors duration-300"
               style={{
                 width: `${Math.min(currentPercent, 100)}%`,
                 backgroundColor: item.color,
@@ -187,7 +188,7 @@ export const XContentMixTracker: React.FC = () => {
           {/* Target */}
           <div className="relative h-2 bg-mission-control-surface rounded overflow-hidden">
             <div
-              className="absolute h-full transition-all duration-300"
+              className="absolute h-full transition-colors duration-300"
               style={{
                 width: `${item.target}%`,
                 backgroundColor: item.color,
@@ -212,14 +213,15 @@ export const XContentMixTracker: React.FC = () => {
           <label htmlFor={`target-${item.type}`} className="text-xs text-mission-control-text-dim">
             Target:
           </label>
-          <input
+          <TextField.Root
             id={`target-${item.type}`}
             type="number"
-            value={item.target}
+            value={String(item.target)}
             onChange={e => updateTarget(item.type, parseInt(e.target.value) || 0)}
-            className="w-16 px-2 py-1 text-xs border border-mission-control-border rounded"
             min="0"
             max="100"
+            size="1"
+            style={{ width: '4rem' }}
           />
           <span className="text-xs text-mission-control-text-dim">%</span>
         </div>
@@ -237,11 +239,11 @@ export const XContentMixTracker: React.FC = () => {
   const statusClasses = (status: string) => {
     switch (status) {
       case 'on-target':
-        return 'bg-success-subtle border-success-border';
+        return 'bg-success/10 border-success/30';
       case 'minor-deviation':
-        return 'bg-warning-subtle border-warning-border';
+        return 'bg-warning/10 border-warning/30';
       default:
-        return 'bg-error-subtle border-error-border';
+        return 'bg-error/10 border-error/30';
     }
   };
 
@@ -249,10 +251,10 @@ export const XContentMixTracker: React.FC = () => {
   const totalPosts = getTotalPosts();
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-surface p-6">
+    <Flex direction="column" height="100%" p="5" className="bg-mission-control-surface">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between" className="mb-6">
+        <Flex align="center" gap="3">
           <PieChart className="text-info" size={24} />
           <div>
             <h2 className="text-lg font-semibold text-mission-control-text">Content Mix Tracker</h2>
@@ -260,39 +262,49 @@ export const XContentMixTracker: React.FC = () => {
               Analyze your content type distribution from real tweet data
             </p>
           </div>
-        </div>
+        </Flex>
 
         {/* Period selector */}
-        <div className="flex gap-2">
+        <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
           <button
+            type="button"
             onClick={() => setPeriod('week')}
-            className={`px-3 py-1.5 text-sm rounded ${period === 'week' ? 'bg-info text-white' : 'border border-mission-control-border text-mission-control-text hover:bg-mission-control-surface'}`}
+            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+              period === 'week'
+                ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+            }`}
           >
             Last Week
           </button>
           <button
+            type="button"
             onClick={() => setPeriod('month')}
-            className={`px-3 py-1.5 text-sm rounded ${period === 'month' ? 'bg-info text-white' : 'border border-mission-control-border text-mission-control-text hover:bg-mission-control-surface'}`}
+            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+              period === 'month'
+                ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+            }`}
           >
             Last Month
           </button>
         </div>
-      </div>
+      </Flex>
 
       {/* Error state */}
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-error-subtle text-error text-sm flex items-center gap-2">
+        <Flex align="center" gap="2" className="mb-4 p-3 rounded-lg bg-error/10 text-error text-sm">
           <AlertTriangle size={16} />
           {error}
-          <button onClick={loadContentMix} className="ml-auto underline text-xs">
+          <button type="button" onClick={loadContentMix} className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm text-error hover:bg-error/10 transition-colors">
             Retry
           </button>
-        </div>
+        </Flex>
       )}
 
       {/* Overall status card */}
       <div className={`mb-6 p-4 rounded-lg border-2 ${statusClasses(status)}`}>
-        <div className="flex items-center gap-2 mb-1">
+        <Flex align="center" gap="2" className="mb-1">
           {status === 'on-target' ? (
             <>
               <Check className="text-success" size={20} />
@@ -309,7 +321,7 @@ export const XContentMixTracker: React.FC = () => {
               <span className="font-medium text-error">Major Deviation</span>
             </>
           )}
-        </div>
+        </Flex>
         <p className="text-sm text-mission-control-text-dim">
           {totalPosts} tweets analyzed from the last {period === 'week' ? '7 days' : '30 days'}
         </p>
@@ -357,6 +369,6 @@ export const XContentMixTracker: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </Flex>
   );
 };

@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { Button, IconButton, Select, TextArea, TextField, Box, Flex } from '@radix-ui/themes';
+import TabNav from './TabNav';
 import { X, BookOpen, Cpu, Wrench, Key, FileText, Check, AlertCircle, Plus, Link, Upload, Shield, ChevronDown, ChevronRight, Server, Trash2, UserMinus, PowerOff, Power, BarChart2, MessageSquare, Send, BarChart } from 'lucide-react';
 import { agentApi, catalogApi, settingsApi, libraryApi } from '../lib/api';
 import { showToast } from './Toast';
@@ -683,7 +685,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
   if (!isOpen) return null;
 
   const TABS: { id: Tab; label: string; dirty: boolean }[] = [
-    { id: 'soul',        label: 'Soul',        dirty: soulDirty },
+    { id: 'soul',        label: 'Personality', dirty: soulDirty },
     { id: 'model',       label: 'Model',       dirty: modelDirty },
     { id: 'skills',      label: 'Skills',      dirty: skillsDirty },
     { id: 'tools',       label: 'Tools',       dirty: toolsDirty || mcpDirty },
@@ -695,72 +697,92 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
   const inputBase = 'w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent';
 
   return (
-    <div
-      className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4"
+    <Flex
+      align="center"
+      justify="center"
+      p="4"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       aria-hidden="true"
     >
-      <div
-        className="glass-modal rounded-lg max-w-2xl w-full max-h-[88vh] overflow-hidden flex flex-col"
+      <Flex
+        direction="column"
+        className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden"
         onClick={e => e.stopPropagation()}
         role="presentation"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border">
-          <h2 className="text-sm font-bold">{agentName}</h2>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-semibold text-mission-control-text">{agentName}</h2>
+                {(agentStatus === 'active' || agentStatus === 'busy') ? (
+                  <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-success/10 text-success border border-success/20">
+                    online
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-border/40 text-mission-control-text-dim">
+                    offline
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-mission-control-text-dim mt-0.5">Agent configuration</p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
             <X size={16} />
           </button>
         </div>
 
         {/* Section tabs — Metrics | Configure | Chat */}
-        <div className="flex border-b border-mission-control-border px-5 pt-1">
-          {([
-            { id: 'metrics'   as Section, label: 'Metrics',   icon: BarChart },
-            { id: 'configure' as Section, label: 'Configure', icon: Wrench },
-            { id: 'chat'      as Section, label: 'Chat',      icon: MessageSquare },
-          ]).map(s => (
-            <button key={s.id} type="button" onClick={() => setSection(s.id)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
-                section === s.id
-                  ? 'border-mission-control-accent text-mission-control-accent'
-                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
-            >
-              <s.icon size={13} />{s.label}
-            </button>
-          ))}
-        </div>
+        <Box className="border-b border-mission-control-border">
+          <TabNav
+            tabs={[
+              { id: 'metrics',   label: 'Metrics',   icon: BarChart },
+              { id: 'configure', label: 'Configure', icon: Wrench },
+              { id: 'chat',      label: 'Chat',      icon: MessageSquare },
+            ]}
+            activeTab={section}
+            onTabChange={(id) => setSection(id as Section)}
+            paddingX="px-5"
+          />
+        </Box>
 
         {/* Configure sub-tabs */}
         {section === 'configure' && (
-          <div className="flex gap-1 px-5 pt-2 border-b border-mission-control-border overflow-x-auto min-h-[38px]">
-            {TABS.map(t => (
-              <button key={t.id} type="button" onClick={() => setTab(t.id)}
-                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-t-lg transition-colors relative whitespace-nowrap ${
-                  tab === t.id
-                    ? 'bg-mission-control-bg0 text-mission-control-text border border-b-0 border-mission-control-border -mb-px'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
-              >
-                {t.label}
-                {t.dirty && <span className="w-1.5 h-1.5 rounded-full bg-warning absolute top-1 right-1" />}
-              </button>
-            ))}
+          <div className="border-b border-mission-control-border overflow-x-auto">
+            <Flex px="5">
+              {TABS.map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
+                    tab === t.id
+                      ? 'border-mission-control-accent text-mission-control-accent'
+                      : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}
+                >
+                  {t.label}
+                  {t.dirty && <span className="w-1.5 h-1.5 rounded-full bg-warning" />}
+                </button>
+              ))}
+            </Flex>
           </div>
         )}
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {/* ── METRICS SECTION ── */}
           {section === 'metrics' && (
             <div className="space-y-4">
               {metricsLoading ? (
-                <div className="flex items-center justify-center py-12 text-mission-control-text-dim text-sm">Loading metrics…</div>
+                <Flex align="center" justify="center" py="6" className="text-mission-control-text-dim text-sm">Loading metrics…</Flex>
               ) : metrics ? (
                 <AgentMetricsCard agentId={agentId} agentName={agentName} metrics={{ ...(metrics as any), _role: ({ 'mission-control': 'orchestrator', 'hr': 'hr', 'clara': 'qc', 'inbox': 'inbox' } as Record<string, string>)[agentId] }} />
               ) : (
-                <div className="flex items-center justify-center py-12 text-mission-control-text-dim text-sm">No metrics yet</div>
+                <Flex align="center" justify="center" py="6" className="text-mission-control-text-dim text-sm">No metrics yet</Flex>
               )}
             </div>
           )}
@@ -773,7 +795,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                   <p className="text-xs text-mission-control-text-dim text-center py-8">Start a conversation with {agentName}</p>
                 )}
                 {chatMessages.map((m, i) => (
-                  <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <Flex key={i} className={m.role === 'user' ? 'justify-end' : 'justify-start'}>
                     <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
                       m.role === 'user'
                         ? 'bg-mission-control-accent text-white rounded-br-sm'
@@ -784,54 +806,64 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                         : <span>{m.content}</span>
                       }
                     </div>
-                  </div>
+                  </Flex>
                 ))}
                 <div ref={chatEndRef} />
               </div>
-              <div className="flex gap-2 pt-2 border-t border-mission-control-border">
-                <input
-                  type="text"
+              <Flex gap="2" pt="2" className="border-t border-mission-control-border">
+                <TextField.Root
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
                   placeholder={`Message ${agentName}…`}
-                  className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="flex-1"
                   disabled={chatSending}
                 />
-                <button type="button" onClick={sendChatMessage} disabled={chatSending || !chatInput.trim()}
-                  className="p-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 disabled:opacity-40 transition-colors">
+                <IconButton variant="solid" size="2" onClick={sendChatMessage} disabled={chatSending || !chatInput.trim()}>
                   <Send size={14} />
-                </button>
-              </div>
+                </IconButton>
+              </Flex>
             </div>
           )}
 
           {/* ── CONFIGURE SECTION ── */}
           {section === 'configure' && (
           loading ? (
-            <div className="flex items-center justify-center py-12 text-mission-control-text-dim text-sm">Loading…</div>
+            <Flex align="center" justify="center" py="6" className="text-mission-control-text-dim text-sm">Loading…</Flex>
           ) : (
             <>
               {/* ── SOUL ── */}
               {tab === 'soul' && (
                 <div className="space-y-3">
-                  <p className="text-xs text-mission-control-text-dim">Defines {agentName}'s personality, responsibilities, and behavior rules.</p>
+                  <p className="text-xs text-mission-control-text-dim/70">Defines {agentName}'s personality, responsibilities, and behavior rules.</p>
                   {showRestartBanner && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded text-warning text-xs">
+                    <Flex align="center" gap="2" px="3" py="2" className="bg-warning/10 border border-warning/30 rounded-lg text-warning text-xs">
                       <AlertCircle size={12} />
                       Restart {agentName} for changes to take effect.
-                      <button type="button" onClick={() => setShowRestartBanner(false)} className="ml-auto opacity-60 hover:opacity-100">✕</button>
-                    </div>
+                      <button type="button" onClick={() => setShowRestartBanner(false)} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors ml-auto">
+                        <X size={10} />
+                      </button>
+                    </Flex>
                   )}
                   <textarea
-                    className={`${inputBase} h-72 font-mono resize-none`}
+                    className="w-full font-mono text-sm bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-3 text-mission-control-text placeholder:text-mission-control-text-dim/50 resize-y focus:outline-none focus:border-[var(--mission-control-accent)] min-h-[300px]"
+                    style={{ minHeight: '300px' }}
                     value={soul}
                     onChange={e => { setSoul(e.target.value); setSoulDirty(true); }}
                     placeholder="No SOUL.md found for this agent."
+                    spellCheck={false}
                   />
-                  <button type="button" onClick={saveSoul} disabled={!soulDirty || saving} className="btn-primary text-sm disabled:opacity-40">
-                    {saving ? 'Saving…' : 'Save Soul'}
-                  </button>
+                  <div className="flex items-center justify-end gap-2">
+                    {soulDirty && (
+                      <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={() => setSoulDirty(false)} disabled={saving}>
+                        <X size={13} /> Discard
+                      </button>
+                    )}
+                    <Button variant="solid" size="2" onClick={saveSoul} disabled={!soulDirty || saving}>
+                      {saving ? 'Saving…' : 'Save soul'}
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -841,12 +873,9 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                   <p className="text-xs text-mission-control-text-dim">All agents run Claude directly via Anthropic's API. Select the model tier for this agent.</p>
                   <div className="space-y-2">
                     {CLAUDE_MODELS.map(m => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => { setModel(m.id); setModelDirty(true); }}
-                        className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg border text-left transition-all ${
-                          model === m.id ? 'border-mission-control-accent bg-mission-control-accent/10' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/50'
+                      <button key={m.id} type="button" onClick={() => { setModel(m.id); setModelDirty(true); }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-colors ${
+                          model === m.id ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'
                         }`}
                       >
                         <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${model === m.id ? 'border-mission-control-accent' : 'border-mission-control-border'}`}>
@@ -859,100 +888,85 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                       </button>
                     ))}
                   </div>
-                  <button type="button" onClick={saveModel} disabled={!modelDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+                  <Button variant="solid" size="2" onClick={saveModel} disabled={!modelDirty || saving}>
                     {saving ? 'Saving…' : 'Save Model'}
-                  </button>
+                  </Button>
                 </div>
               )}
 
               {/* ── SKILLS ── */}
               {tab === 'skills' && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <p className="text-xs text-mission-control-text-dim">
                       Skills auto-load into context before relevant tasks.
                       <span className="ml-1 text-mission-control-accent">{activeSkills.length}/{allSkills.length} active</span>
                     </p>
                     {addSkillMode === null && (
                       <div className="relative group">
-                        <button
-                          type="button"
-                          className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-lg hover:bg-mission-control-accent/20 transition-colors"
-                          onClick={() => setAddSkillMode('url')}
-                        >
-                          <Plus size={11} /> Add Skill <ChevronDown size={11} />
-                        </button>
+                        <Button variant="soft" size="2" onClick={() => setAddSkillMode('url')}>
+                          <Plus size={12} /> Add Skill <ChevronDown size={12} />
+                        </Button>
                       </div>
                     )}
-                  </div>
+                  </Flex>
 
                   {/* Add skill form */}
                   {addSkillMode !== null && (
                     <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
-                      <div className="flex items-center justify-between">
+                      <Flex align="center" justify="between">
                         <span className="text-xs font-medium text-mission-control-text">New Skill</span>
-                        <button type="button" onClick={() => setAddSkillMode(null)} className="text-mission-control-text-dim hover:text-mission-control-text text-xs">Cancel</button>
-                      </div>
+                        <button type="button" onClick={() => setAddSkillMode(null)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">Cancel</button>
+                      </Flex>
 
-                      <input
-                        className={`${inputBase} text-xs`}
+                      <TextField.Root
                         placeholder="Skill name"
                         value={addSkillName}
                         onChange={e => setAddSkillName(e.target.value)}
+                        size="1"
+                        className="w-full"
                       />
 
                       {/* Source type toggle */}
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setAddSkillMode('url')}
-                          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded border transition-colors ${addSkillMode === 'url' ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}
-                        >
+                      <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
+                        <button type="button" onClick={() => setAddSkillMode('url')}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${addSkillMode === 'url' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}>
                           <Link size={10} /> From URL
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setAddSkillMode('text')}
-                          className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded border transition-colors ${addSkillMode === 'text' ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}
-                        >
+                        <button type="button" onClick={() => setAddSkillMode('text')}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${addSkillMode === 'text' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}>
                           <FileText size={10} /> Write / Paste
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => { setAddSkillMode('text'); fileInputRef.current?.click(); }}
-                          className="flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-                        >
+                        <button type="button" onClick={() => { setAddSkillMode('text'); fileInputRef.current?.click(); }}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-mission-control-text-dim hover:text-mission-control-text transition-colors">
                           <Upload size={10} /> Upload .md
                         </button>
                         <input ref={fileInputRef} type="file" accept=".md,text/markdown,text/plain" className="hidden" onChange={handleFileUpload} />
                       </div>
 
                       {addSkillMode === 'url' && (
-                        <input
-                          className={`${inputBase} text-xs`}
+                        <TextField.Root
                           placeholder="https://example.com/skill.md"
                           value={addSkillUrl}
                           onChange={e => setAddSkillUrl(e.target.value)}
+                          size="1"
+                          className="w-full font-mono"
                         />
                       )}
 
                       {addSkillMode === 'text' && (
-                        <textarea
-                          className={`${inputBase} h-36 font-mono text-xs resize-none`}
+                        <TextArea
+                          variant="soft"
+                          className="h-36 font-mono text-xs resize-none w-full"
                           placeholder={`# Skill Name\n\nDescribe what this skill does and when to use it...`}
                           value={addSkillContent}
                           onChange={e => setAddSkillContent(e.target.value)}
                         />
                       )}
 
-                      <button
-                        type="button"
-                        onClick={handleAddSkill}
-                        disabled={addSkillWorking}
-                        className="btn-primary text-xs py-1.5 disabled:opacity-40"
-                      >
+                      <Button variant="solid" size="2" onClick={handleAddSkill} disabled={addSkillWorking}>
                         {addSkillWorking ? 'Creating…' : 'Create Skill'}
-                      </button>
+                      </Button>
                     </div>
                   )}
 
@@ -964,12 +978,8 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                       {allSkills.map(skill => {
                         const on = activeSkills.includes(skill.slug);
                         return (
-                          <button
-                            key={skill.id}
-                            type="button"
-                            onClick={() => toggleSkill(skill.slug)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all ${on ? 'border-success/40 bg-success/5' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30'}`}
-                          >
+                          <button key={skill.id} type="button" onClick={() => toggleSkill(skill.slug)}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${on ? 'bg-success/10 border-success/30' : 'border-mission-control-border hover:border-mission-control-accent/30 hover:bg-mission-control-accent/5'}`}>
                             <div className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${on ? 'bg-success border-success' : 'border-mission-control-border'}`}>
                               {on && <Check size={10} className="text-white" />}
                             </div>
@@ -981,9 +991,9 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                     </div>
                   )}
 
-                  <button type="button" onClick={saveSkills} disabled={!skillsDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+                  <Button variant="solid" size="2" onClick={saveSkills} disabled={!skillsDirty || saving}>
                     {saving ? 'Saving…' : 'Save Skills'}
-                  </button>
+                  </Button>
                 </div>
               )}
 
@@ -996,26 +1006,19 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                     const someOn = server.tools.some(t => activeTools.includes(t));
                     return (
                       <div key={server.id} className="border border-mission-control-border rounded-lg overflow-hidden">
-                        <div className="flex items-center justify-between px-3 py-2.5 bg-mission-control-surface border-b border-mission-control-border">
+                        <Flex align="center" justify="between" px="3" py="2" className="bg-mission-control-surface border-b border-mission-control-border">
                           <span className="text-sm font-medium text-mission-control-text">{server.label}</span>
-                          <button
-                            type="button"
-                            onClick={() => toggleServer(server.tools, !allOn)}
-                            className={`text-xs px-2 py-0.5 rounded transition-colors ${allOn ? 'bg-success/20 text-success' : someOn ? 'bg-warning/20 text-warning' : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-surface'}`}
-                          >
+                          <button type="button" onClick={() => toggleServer(server.tools, !allOn)}
+                            className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${allOn ? 'bg-success/10 border-success/30 text-success' : someOn ? 'bg-warning/10 border-warning/30 text-warning' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}>
                             {allOn ? 'All on' : someOn ? 'Partial' : 'All off'} — toggle all
                           </button>
-                        </div>
+                        </Flex>
                         <div className="divide-y divide-mission-control-border">
                           {server.tools.map(tool => {
                             const on = activeTools.includes(tool);
                             return (
-                              <button
-                                key={tool}
-                                type="button"
-                                onClick={() => toggleTool(tool)}
-                                className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-mission-control-surface/50 transition-colors"
-                              >
+                              <button key={tool} type="button" onClick={() => toggleTool(tool)}
+                                className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors ${on ? 'bg-mission-control-accent/5' : 'hover:bg-mission-control-accent/5'}`}>
                                 <div className={`flex-shrink-0 w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${on ? 'bg-mission-control-accent border-mission-control-accent' : 'border-mission-control-border'}`}>
                                   {on && <Check size={9} className="text-white" />}
                                 </div>
@@ -1027,32 +1030,28 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                       </div>
                     );
                   })}
-                  <button type="button" onClick={saveTools} disabled={!toolsDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+                  <Button variant="solid" size="2" onClick={saveTools} disabled={!toolsDirty || saving}>
                     {saving ? 'Saving…' : 'Save Tool Access'}
-                  </button>
+                  </Button>
 
                   {/* ── Custom MCP Servers ── */}
                   <div className="border-t border-mission-control-border pt-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
+                    <Flex align="center" justify="between">
+                      <Flex align="center" gap="2">
                         <Server size={13} className="text-mission-control-text-dim" />
                         <span className="text-xs font-medium text-mission-control-text">Custom MCP Servers</span>
-                      </div>
+                      </Flex>
                       {!showAddMcp && (
-                        <button
-                          type="button"
-                          onClick={() => setShowAddMcp(true)}
-                          className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-lg hover:bg-mission-control-accent/20 transition-colors"
-                        >
-                          <Plus size={11} /> Add Server
-                        </button>
+                        <Button variant="soft" size="2" onClick={() => setShowAddMcp(true)}>
+                          <Plus size={12} /> Add Server
+                        </Button>
                       )}
-                    </div>
+                    </Flex>
 
                     {mcpServers.length > 0 && (
                       <div className="space-y-2">
                         {mcpServers.map(server => (
-                          <div key={server.id} className="flex items-center justify-between border border-mission-control-border rounded-lg px-3 py-2">
+                          <Flex key={server.id} align="center" justify="between" className="border border-mission-control-border rounded-lg px-3 py-2">
                             <div className="min-w-0">
                               <span className="text-xs font-medium text-mission-control-text">{server.name}</span>
                               <p className="text-xs text-mission-control-text-dim font-mono mt-0.5 truncate">
@@ -1061,14 +1060,10 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                                   : `http: ${server.url}`}
                               </p>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => removeMcpServer(server.id)}
-                              className="flex-shrink-0 ml-3 text-mission-control-text-dim hover:text-error transition-colors"
-                            >
+                            <button type="button" onClick={() => removeMcpServer(server.id)} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0 ml-3">
                               <Trash2 size={13} />
                             </button>
-                          </div>
+                          </Flex>
                         ))}
                       </div>
                     )}
@@ -1079,69 +1074,73 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
 
                     {showAddMcp && (
                       <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
-                        <div className="flex items-center justify-between">
+                        <Flex align="center" justify="between">
                           <span className="text-xs font-medium text-mission-control-text">New MCP Server</span>
-                          <button type="button" onClick={() => { setShowAddMcp(false); setNewMcp({ name: '', transport: 'stdio', command: 'npx', args: '', url: '', env: '' }); }} className="text-mission-control-text-dim hover:text-mission-control-text text-xs">Cancel</button>
-                        </div>
-                        <input
-                          className={`${inputBase} text-xs`}
+                          <button type="button" onClick={() => { setShowAddMcp(false); setNewMcp({ name: '', transport: 'stdio', command: 'npx', args: '', url: '', env: '' }); }} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">Cancel</button>
+                        </Flex>
+                        <TextField.Root
                           placeholder="Server name (e.g. Filesystem MCP)"
                           value={newMcp.name}
                           onChange={e => setNewMcp(m => ({ ...m, name: e.target.value }))}
+                          size="1"
+                          className="w-full"
                         />
-                        <select
-                          className={`${inputBase} text-xs`}
-                          value={newMcp.transport}
-                          onChange={e => setNewMcp(m => ({ ...m, transport: e.target.value as 'stdio' | 'http' }))}
-                        >
-                          <option value="stdio">stdio — local process</option>
-                          <option value="http">HTTP / SSE — remote endpoint</option>
-                        </select>
+                        <Select.Root value={newMcp.transport} onValueChange={val => setNewMcp(m => ({ ...m, transport: val as 'stdio' | 'http' }))}>
+                          <Select.Trigger className="w-full" />
+                          <Select.Content>
+                            <Select.Item value="stdio">stdio — local process</Select.Item>
+                            <Select.Item value="http">HTTP / SSE — remote endpoint</Select.Item>
+                          </Select.Content>
+                        </Select.Root>
                         {newMcp.transport === 'stdio' ? (
                           <>
-                            <input
-                              className={`${inputBase} text-xs font-mono`}
+                            <TextField.Root
                               placeholder="Command (e.g. npx, node, python)"
                               value={newMcp.command}
                               onChange={e => setNewMcp(m => ({ ...m, command: e.target.value }))}
+                              size="1"
+                              className="w-full font-mono"
                             />
-                            <input
-                              className={`${inputBase} text-xs font-mono`}
+                            <TextField.Root
                               placeholder="Arguments (e.g. -y @modelcontextprotocol/server-filesystem /path)"
                               value={newMcp.args}
                               onChange={e => setNewMcp(m => ({ ...m, args: e.target.value }))}
+                              size="1"
+                              className="w-full font-mono"
                             />
                           </>
                         ) : (
-                          <input
-                            className={`${inputBase} text-xs font-mono`}
+                          <TextField.Root
                             placeholder="URL (e.g. https://mcp.example.com)"
                             value={newMcp.url}
                             onChange={e => setNewMcp(m => ({ ...m, url: e.target.value }))}
+                            size="1"
+                            className="w-full font-mono"
                           />
                         )}
-                        <textarea
-                          className={`${inputBase} text-xs font-mono resize-none`}
+                        <TextArea
+                          variant="soft"
+                          className="text-xs font-mono resize-none w-full"
                           placeholder={'Environment variables (optional):\nAPI_KEY=your-key\nBASE_URL=https://...'}
                           rows={3}
                           value={newMcp.env}
                           onChange={e => setNewMcp(m => ({ ...m, env: e.target.value }))}
                         />
-                        <button
-                          type="button"
+                        <Button
+                          variant="solid"
+                          size="2"
                           onClick={addMcpServer}
                           disabled={!newMcp.name.trim() || (newMcp.transport === 'stdio' ? !newMcp.command.trim() : !newMcp.url.trim())}
-                          className="btn-primary text-xs disabled:opacity-40"
                         >
                           Add Server
-                        </button>
+                        </Button>
                       </div>
                     )}
 
                     {mcpDirty && (
-                      <button type="button" onClick={saveMcp} disabled={saving} className="btn-primary text-sm disabled:opacity-40">
+                      <Button variant="solid" size="2" onClick={saveMcp} disabled={saving}>
                         {saving ? 'Saving…' : 'Save MCP Servers'}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -1150,66 +1149,60 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
               {/* ── API KEYS ── */}
               {tab === 'api' && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                  <Flex align="center" justify="between">
                     <p className="text-xs text-mission-control-text-dim">Grant {agentName} access to API keys and credentials.</p>
                     {!showAddKey && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAddKey(true)}
-                        className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-lg hover:bg-mission-control-accent/20 transition-colors"
-                      >
-                        <Plus size={11} /> Add Credential
-                      </button>
+                      <Button variant="soft" size="2" onClick={() => setShowAddKey(true)}>
+                        <Plus size={12} /> Add Credential
+                      </Button>
                     )}
-                  </div>
+                  </Flex>
 
                   {/* Inline add form */}
                   {showAddKey && (
                     <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
-                      <div className="flex items-center justify-between">
+                      <Flex align="center" justify="between">
                         <span className="text-xs font-medium text-mission-control-text">New Credential</span>
-                        <button type="button" onClick={() => { setShowAddKey(false); setNewKey({ name: '', service: '', key: '' }); }} className="text-mission-control-text-dim hover:text-mission-control-text text-xs">Cancel</button>
-                      </div>
-                      <select
-                        className={`${inputBase} text-xs`}
-                        onChange={e => {
-                          const preset = API_PRESETS.find(p => p.service === e.target.value);
+                        <button type="button" onClick={() => { setShowAddKey(false); setNewKey({ name: '', service: '', key: '' }); }} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">Cancel</button>
+                      </Flex>
+                      <Select.Root onValueChange={val => {
+                          const preset = API_PRESETS.find(p => p.service === val || p.label === val);
                           if (preset) setNewKey(k => ({ ...k, service: preset.service, name: preset.service ? preset.label : k.name }));
-                        }}
-                      >
-                        {API_PRESETS.map(p => (
-                          <option key={p.label} value={p.service}>{p.label}</option>
-                        ))}
-                      </select>
-                      <input
-                        className={`${inputBase} text-xs`}
+                        }}>
+                        <Select.Trigger className="w-full" placeholder="Select preset..." />
+                        <Select.Content>
+                          {API_PRESETS.map(p => (
+                            <Select.Item key={p.label} value={p.service || p.label}>{p.label}</Select.Item>
+                          ))}
+                        </Select.Content>
+                      </Select.Root>
+                      <TextField.Root
                         placeholder="Label (e.g. OpenAI Production)"
                         value={newKey.name}
                         onChange={e => setNewKey(k => ({ ...k, name: e.target.value }))}
+                        size="1"
+                        className="w-full"
                       />
-                      <input
-                        className={`${inputBase} text-xs`}
+                      <TextField.Root
                         placeholder="Service"
                         value={newKey.service}
                         onChange={e => setNewKey(k => ({ ...k, service: e.target.value }))}
+                        size="1"
+                        className="w-full"
                       />
-                      <input
+                      <TextField.Root
                         type="password"
                         autoComplete="off"
-                        className={`${inputBase} text-xs font-mono`}
                         placeholder={API_PRESETS.find(p => p.service === newKey.service)?.placeholder ?? 'Paste your key here'}
                         value={newKey.key}
                         onChange={e => setNewKey(k => ({ ...k, key: e.target.value }))}
                         onKeyDown={e => e.key === 'Enter' && handleCreateKey()}
+                        size="1"
+                        className="w-full font-mono"
                       />
-                      <button
-                        type="button"
-                        onClick={handleCreateKey}
-                        disabled={addingKey}
-                        className="btn-primary text-xs py-1.5 disabled:opacity-40"
-                      >
+                      <Button variant="solid" size="2" onClick={handleCreateKey} disabled={addingKey}>
                         {addingKey ? 'Saving…' : 'Add & Assign to Agent'}
-                      </button>
+                      </Button>
                     </div>
                   )}
 
@@ -1223,12 +1216,8 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                       {allApiKeys.map(key => {
                         const on = activeApiKeys.includes(key.id);
                         return (
-                          <button
-                            key={key.id}
-                            type="button"
-                            onClick={() => toggleApiKey(key.id)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all ${on ? 'border-mission-control-accent/40 bg-mission-control-accent/5' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30'}`}
-                          >
+                          <button key={key.id} type="button" onClick={() => toggleApiKey(key.id)}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${on ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'}`}>
                             <div className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${on ? 'bg-mission-control-accent border-mission-control-accent' : 'border-mission-control-border'}`}>
                               {on && <Check size={10} className="text-white" />}
                             </div>
@@ -1242,9 +1231,9 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                       })}
                     </div>
                   )}
-                  <button type="button" onClick={saveApiKeys} disabled={!apiKeysDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+                  <Button variant="solid" size="2" onClick={saveApiKeys} disabled={!apiKeysDirty || saving}>
                     {saving ? 'Saving…' : 'Save API Access'}
-                  </button>
+                  </Button>
                 </div>
               )}
 
@@ -1254,20 +1243,16 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
 
                   {/* Trust tier — compact horizontal pills */}
                   <div>
-                    <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-2">Trust Tier</div>
-                    <div className="grid grid-cols-5 gap-1.5">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Trust Tier</div>
+                    <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
                       {TRUST_TIERS.map(tier => (
-                        <button
-                          key={tier.id}
-                          type="button"
+                        <button key={tier.id} type="button"
                           onClick={() => {
                             if (tier.id !== trustTier) setPrevTrustTier(trustTier);
                             setTrustTier(tier.id);
-                            // Apply preset overrides for this tier
                             const preset = TIER_PRESETS[tier.id];
                             if (preset) {
                               setPermOverrides(preset);
-                              // Expand all groups so the user can see what changed
                               const allOpen: Record<string, boolean> = {};
                               PERMISSION_GROUPS.forEach(g => { allOpen[g.label] = true; });
                               setExpandedGroups(allOpen);
@@ -1276,14 +1261,14 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                             }
                             setPermDirty(true);
                           }}
-                          className={`flex flex-col items-center px-2 py-2 rounded-lg border text-center transition-all ${trustTier === tier.id ? 'border-mission-control-accent bg-mission-control-accent/10' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40'}`}
+                          className={`flex-1 px-2 py-1 rounded-md text-center transition-colors ${trustTier === tier.id ? 'bg-mission-control-accent/10' : 'hover:bg-mission-control-border/30'}`}
                         >
                           <span className={`text-xs font-semibold ${tier.color}`}>{tier.label}</span>
                         </button>
                       ))}
                     </div>
                     {/* Description + preset flash */}
-                    <div className="flex items-center justify-between mt-2 px-1">
+                    <Flex align="center" justify="between" mt="2" px="1">
                       <p className="text-xs text-mission-control-text-dim">
                         {TRUST_TIERS.find(t => t.id === trustTier)?.desc}
                       </p>
@@ -1292,7 +1277,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                           Presets applied
                         </span>
                       )}
-                    </div>
+                    </Flex>
                     {/* Tier diff preview */}
                     {prevTrustTier && prevTrustTier !== trustTier && (() => {
                       const prevPreset = TIER_PRESETS[prevTrustTier] || {};
@@ -1318,19 +1303,15 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
 
                   {/* Per-action overrides — collapsible groups */}
                   <div>
-                    <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-2">Action Overrides</div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Action Overrides</div>
                     <div className="space-y-1.5">
                       {PERMISSION_GROUPS.map(group => {
                         const isOpen = expandedGroups[group.label] ?? false;
                         const overrideCount = group.perms.filter(p => permOverrides[p.id] !== undefined).length;
                         return (
                           <div key={group.label} className="border border-mission-control-border rounded-lg overflow-hidden">
-                            <button
-                              type="button"
-                              onClick={() => setExpandedGroups(prev => ({ ...prev, [group.label]: !isOpen }))}
-                              className="w-full flex items-center justify-between px-3 py-2 bg-mission-control-surface hover:bg-mission-control-surface/80 transition-colors text-left"
-                            >
-                              <span className="flex items-center gap-2 text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
+                            <button type="button" onClick={() => setExpandedGroups(prev => ({ ...prev, [group.label]: !isOpen }))} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors w-full justify-between">
+                              <span className="flex items-center gap-2 text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
                                 <Shield size={11} /> {group.label}
                               </span>
                               <span className="flex items-center gap-2">
@@ -1346,31 +1327,22 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                                   const overrideVal = permOverrides[perm.id];
                                   const hasOverride = overrideVal !== undefined;
                                   return (
-                                    <div key={perm.id} className="flex items-center justify-between px-3 py-2">
+                                    <Flex key={perm.id} align="center" justify="between" className="px-3 py-2">
                                       <div className="min-w-0 mr-2">
                                         <span className="text-xs text-mission-control-text">{perm.label}</span>
                                         <span className={`ml-1.5 text-xs ${TIER_COLORS[perm.tier]}`}>T{perm.tier}</span>
                                       </div>
                                       <div className="flex items-center gap-1 flex-shrink-0">
                                         {hasOverride && (
-                                          <button
-                                            type="button"
-                                            onClick={() => { setPermOverrides(prev => { const n = { ...prev }; delete n[perm.id]; return n; }); setPermDirty(true); }}
-                                            className="text-xs text-mission-control-text-dim hover:text-mission-control-text px-1.5 py-0.5 rounded border border-mission-control-border transition-colors"
-                                          >Reset</button>
+                                          <button type="button" onClick={() => { setPermOverrides(prev => { const n = { ...prev }; delete n[perm.id]; return n; }); setPermDirty(true); }}
+                                            className="px-2 py-0.5 rounded text-xs text-mission-control-text-dim hover:text-mission-control-text border border-transparent hover:border-mission-control-border transition-colors">Reset</button>
                                         )}
-                                        <button
-                                          type="button"
-                                          onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: true })); setPermDirty(true); }}
-                                          className={`text-xs px-2 py-0.5 rounded border transition-colors ${overrideVal === true ? 'bg-success/20 text-success border-success/40' : 'border-mission-control-border text-mission-control-text-dim hover:text-success hover:border-success/40'}`}
-                                        >Allow</button>
-                                        <button
-                                          type="button"
-                                          onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: false })); setPermDirty(true); }}
-                                          className={`text-xs px-2 py-0.5 rounded border transition-colors ${overrideVal === false ? 'bg-error/20 text-error border-error/40' : 'border-mission-control-border text-mission-control-text-dim hover:text-error hover:border-error/40'}`}
-                                        >Deny</button>
+                                        <button type="button" onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: true })); setPermDirty(true); }}
+                                          className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${overrideVal === true ? 'bg-success/10 border-success/30 text-success' : 'border-mission-control-border text-mission-control-text-dim hover:border-success/30 hover:text-success'}`}>Allow</button>
+                                        <button type="button" onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: false })); setPermDirty(true); }}
+                                          className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${overrideVal === false ? 'bg-error/10 border-error/30 text-error' : 'border-mission-control-border text-mission-control-text-dim hover:border-error/30 hover:text-error'}`}>Deny</button>
                                       </div>
-                                    </div>
+                                    </Flex>
                                   );
                                 })}
                               </div>
@@ -1383,59 +1355,54 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
 
                   {/* Per-agent blocked commands */}
                   <div>
-                    <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">Blocked Commands</div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Blocked Commands</div>
                     <p className="text-xs text-mission-control-text-dim mb-2">Agent-specific blocked tool patterns (global blocks in Settings → Security always apply).</p>
                     <div className="border border-mission-control-border rounded-lg overflow-hidden">
                       <div className="p-2 bg-mission-control-surface flex gap-2">
-                        <input
-                          type="text"
+                        <TextField.Root
                           value={newDisallowed}
                           onChange={e => setNewDisallowed(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && handleAddAgentDisallowed()}
                           placeholder="e.g. Bash(git push *)"
-                          className="flex-1 text-xs bg-mission-control-bg0 border border-mission-control-border rounded px-2 py-1.5 focus:outline-none focus:border-mission-control-accent font-mono"
+                          size="1"
+                          className="flex-1 font-mono"
                         />
-                        <button
-                          type="button"
-                          onClick={handleAddAgentDisallowed}
-                          className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded hover:bg-mission-control-accent/20 transition-colors"
-                        >
-                          <Plus size={10} /> Block
-                        </button>
+                        <Button variant="soft" size="2" onClick={handleAddAgentDisallowed}>
+                          <Plus size={12} /> Block
+                        </Button>
                       </div>
                       {agentDisallowed.length > 0 && (
                         <div className="divide-y divide-mission-control-border border-t border-mission-control-border">
                           {agentDisallowed.map(tool => (
-                            <div key={tool} className="flex items-center justify-between px-3 py-1.5">
+                            <Flex key={tool} align="center" justify="between" className="px-3 py-1.5">
                               <code className="text-xs font-mono text-mission-control-text">{tool}</code>
-                              <button type="button" onClick={() => handleRemoveAgentDisallowed(tool)} className="p-0.5 text-mission-control-text-dim hover:text-error transition-colors">
+                              <button type="button" onClick={() => handleRemoveAgentDisallowed(tool)} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                                 <X size={12} />
                               </button>
-                            </div>
+                            </Flex>
                           ))}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <button type="button" onClick={savePermissions} disabled={!permDirty || saving} className="btn-primary text-sm disabled:opacity-40">
+                  <Button variant="solid" size="2" onClick={savePermissions} disabled={!permDirty || saving}>
                     {saving ? 'Saving…' : 'Save Permissions'}
-                  </button>
+                  </Button>
                 </div>
               )}
 
               {/* ── PERFORMANCE ── */}
               {tab === 'performance' && (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <BarChart2 size={14} className="text-mission-control-text-dim" />
-                    <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Agent Performance</span>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
+                    <BarChart2 size={12} /> Agent Performance
                   </div>
 
                   {metricsLoading ? (
-                    <div className="flex items-center justify-center py-10 text-mission-control-text-dim text-sm">Loading metrics…</div>
+                    <Flex align="center" justify="center" py="5" className="text-mission-control-text-dim text-sm">Loading metrics…</Flex>
                   ) : !metrics ? (
-                    <div className="flex items-center justify-center py-10 text-mission-control-text-dim text-sm">No metrics available</div>
+                    <Flex align="center" justify="center" py="5" className="text-mission-control-text-dim text-sm">No metrics available</Flex>
                   ) : (
                     <>
                       {/* Task stats */}
@@ -1456,39 +1423,39 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
 
                       {/* Review stats */}
                       <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border space-y-2">
-                        <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Clara Review Score</div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 h-2 rounded-full bg-mission-control-bg0 overflow-hidden">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Clara Review Score</div>
+                        <Flex align="center" gap="3">
+                          <div className="flex-1 h-2 rounded-full bg-mission-control-surface overflow-hidden">
                             <div
-                              className="h-full rounded-full bg-success transition-all"
+                              className="h-full rounded-full bg-success transition-colors"
                               style={{ width: `${metrics.approvalRate ?? 0}%` }}
                             />
                           </div>
                           <span className="text-sm font-bold text-mission-control-text w-10 text-right">
                             {metrics.approvalRate !== null ? `${metrics.approvalRate}%` : 'N/A'}
                           </span>
-                        </div>
-                        <div className="flex gap-4 text-xs text-mission-control-text-dim">
+                        </Flex>
+                        <Flex gap="4" className="text-xs text-mission-control-text-dim">
                           <span className="text-success">{metrics.reviewsApproved} approved</span>
                           <span className="text-error">{metrics.reviewsRejected} rejected</span>
-                        </div>
+                        </Flex>
                       </div>
 
                       {/* Memory and activity */}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border">
-                          <div className="flex items-center gap-1.5 mb-1">
+                          <Flex align="center" gap="2" mb="1">
                             <BookOpen size={12} className="text-mission-control-text-dim" />
                             <span className="text-xs text-mission-control-text-dim">Memory Notes</span>
-                          </div>
+                          </Flex>
                           <div className="text-lg font-bold text-mission-control-text">{metrics.memoryNotes}</div>
                           <div className="text-xs text-mission-control-text-dim">notes in vault</div>
                         </div>
                         <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border">
-                          <div className="flex items-center gap-1.5 mb-1">
+                          <Flex align="center" gap="2" mb="1">
                             <BarChart2 size={12} className="text-mission-control-text-dim" />
                             <span className="text-xs text-mission-control-text-dim">Recent Activity</span>
-                          </div>
+                          </Flex>
                           <div className="text-lg font-bold text-mission-control-text">{metrics.recentActivity}</div>
                           <div className="text-xs text-mission-control-text-dim">actions last 7d</div>
                         </div>
@@ -1497,30 +1464,26 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                       {/* Avg completion + last active */}
                       <div className="space-y-2 text-sm">
                         {metrics.avgCompletionMs !== null && (
-                          <div className="flex justify-between px-1">
+                          <Flex justify="between" px="1">
                             <span className="text-mission-control-text-dim text-xs">Avg. completion time</span>
                             <span className="text-mission-control-text text-xs font-medium">
                               {metrics.avgCompletionMs < 3600000
                                 ? `${Math.round(metrics.avgCompletionMs / 60000)}m`
                                 : `${(metrics.avgCompletionMs / 3600000).toFixed(1)}h`}
                             </span>
-                          </div>
+                          </Flex>
                         )}
                         {metrics.lastActive !== null && (
-                          <div className="flex justify-between px-1">
+                          <Flex justify="between" px="1">
                             <span className="text-mission-control-text-dim text-xs">Last active</span>
                             <span className="text-mission-control-text text-xs font-medium">
                               {new Date(metrics.lastActive).toLocaleString()}
                             </span>
-                          </div>
+                          </Flex>
                         )}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => { setMetrics(null); }}
-                        className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-                      >
+                      <button type="button" onClick={() => { setMetrics(null); }} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                         Refresh metrics
                       </button>
                     </>
@@ -1533,10 +1496,12 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
 
         {/* HR Actions footer — only for configure section, non-protected agents */}
         {section === 'configure' && !loading && !isProtectedAgent(agentId) && (
-          <div className="flex items-center gap-2 px-5 py-3 border-t border-mission-control-border bg-mission-control-bg/50">
+          <div className="flex items-center gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
             {agentStatus === 'disabled' ? (
-              <button
-                type="button"
+              <Button
+                variant="soft"
+                color="green"
+                size="2"
                 disabled={hrActionLoading}
                 onClick={async () => {
                   setHrActionLoading(true);
@@ -1547,32 +1512,33 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
                   } catch { showToast('Failed to enable agent', 'error'); }
                   finally { setHrActionLoading(false); }
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-success border border-success-border rounded-lg hover:bg-success-subtle transition-colors disabled:opacity-40"
               >
                 <Power size={14} /> Enable Agent
-              </button>
+              </Button>
             ) : (
-              <button
-                type="button"
+              <Button
+                variant="soft"
+                color="yellow"
+                size="2"
                 disabled={hrActionLoading}
                 onClick={() => setShowDisableConfirm(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-warning border border-warning-border rounded-lg hover:bg-warning-subtle transition-colors disabled:opacity-40"
               >
                 <PowerOff size={14} /> Disable Agent
-              </button>
+              </Button>
             )}
             <div className="flex-1" />
-            <button
-              type="button"
+            <Button
+              variant="solid"
+              color="red"
+              size="2"
               disabled={hrActionLoading}
               onClick={() => setShowFireConfirm(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors disabled:opacity-40"
             >
               <UserMinus size={14} /> Fire Agent
-            </button>
+            </Button>
           </div>
         )}
-      </div>
+      </Flex>
 
       {/* Fire confirm */}
       <ConfirmDialog
@@ -1616,6 +1582,6 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
         cancelLabel="Cancel"
         type="warning"
       />
-    </div>
+    </Flex>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Settings, Inbox } from 'lucide-react';
+import { Box, Flex } from '@radix-ui/themes';
 import FolderManager from './FolderManager';
 import ErrorDisplay from './ErrorDisplay';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent, useDroppable } from '@dnd-kit/core';
@@ -48,18 +49,19 @@ function SortableFolderTab({ folder, isActive, onClick, isOver }: SortableFolder
 
   return (
     <button
+      type="button"
       ref={setRefs}
       style={style}
       {...attributes}
       {...listeners}
       onClick={onClick}
       className={`
-        relative flex items-center gap-2 px-4 py-3 min-w-[140px] transition-all
-        border-b-2 whitespace-nowrap cursor-move
+        relative flex items-center gap-2 px-4 py-3 min-w-[140px] transition-colors
+        border-b-2 -mb-px whitespace-nowrap cursor-move
         ${isActive 
-          ? 'border-mission-control-accent text-mission-control-accent bg-mission-control-accent/5' 
+          ? 'border-mission-control-accent text-mission-control-accent bg-mission-control-accent/5'
           : isDropOver || isOver
-          ? 'border-green-500 text-mission-control-text bg-success-subtle'
+          ? 'border-success text-mission-control-text bg-success/10'
           : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
         }
       `}
@@ -183,30 +185,26 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
 
   return (
     <>
-      <div className="border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center overflow-x-auto scrollbar-thin scrollbar-thumb-mission-control-border scrollbar-track-transparent">
+      <Box className="border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" className="overflow-x-auto scrollbar-thin scrollbar-thumb-mission-control-border scrollbar-track-transparent">
           {/* All Sessions Tab */}
           <button
+            type="button"
             onClick={() => onSelectFolder(null)}
-            className={`
-              relative flex items-center gap-2 px-4 py-3 min-w-[140px] transition-all
-              border-b-2 whitespace-nowrap
-              ${selectedFolder === null 
-                ? 'border-mission-control-accent text-mission-control-accent bg-mission-control-accent/5' 
-                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
-              }
-            `}
+            className={`flex items-center gap-2 px-4 py-3 border-b-2 -mb-px min-w-[140px] whitespace-nowrap text-sm font-medium transition-colors ${
+              selectedFolder === null
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Inbox size={16} />
-            <span className="font-medium text-sm">All Messages</span>
+            All Messages
             {allSessionsCount > 0 && (
-              <span className={`
-                text-xs px-2 py-0.5 rounded-full
-                ${selectedFolder === null 
-                  ? 'bg-mission-control-accent text-white' 
+              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                selectedFolder === null
+                  ? 'bg-mission-control-accent/20 text-mission-control-accent'
                   : 'bg-mission-control-border text-mission-control-text-dim'
-                }
-              `}>
+              }`}>
                 {allSessionsCount}
               </span>
             )}
@@ -214,14 +212,14 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
 
           {/* Folder load error */}
           {folderLoadError && (
-            <div className="px-2 py-1 flex-1 min-w-0">
+            <Box px="2" py="1" flexGrow="1" minWidth="0">
               <ErrorDisplay
                 error={folderLoadError}
                 onRetry={loadFolders}
                 inline
                 context={{ action: 'load folders' }}
               />
-            </div>
+            </Box>
           )}
 
           {/* Folder Tabs (Draggable & Droppable) */}
@@ -250,24 +248,26 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-1 px-2 ml-auto border-l border-mission-control-border">
+          <Flex align="center" gap="1" px="2" className="ml-auto border-l border-mission-control-border">
             <button
+              type="button"
               onClick={handleCreateFolder}
-              className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-accent hover:bg-mission-control-border/50 transition-colors"
               title="Create new folder"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <Plus size={16} />
             </button>
             <button
+              type="button"
               onClick={() => setShowManager(true)}
-              className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-accent hover:bg-mission-control-border/50 transition-colors"
               title="Manage folders"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <Settings size={16} />
             </button>
-          </div>
-        </div>
-      </div>
+          </Flex>
+        </Flex>
+      </Box>
 
       {/* Folder Manager Modal */}
       {showManager && (

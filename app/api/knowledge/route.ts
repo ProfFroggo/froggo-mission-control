@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { syncArticleToFilesystem } from '@/lib/knowledgeSync';
+import { sanitizeFtsQuery } from '@/lib/knowledgeSearch';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,22 +18,69 @@ export async function GET(req: NextRequest) {
   try {
     let articles: Record<string, unknown>[];
     if (search) {
-      // FTS search — fall back to LIKE if FTS unavailable
+      // Build optional filter clauses that apply to BOTH FTS and LIKE paths.
+      // Previously, category and scope were silently ignored when search was
+      // provided — the two branches were mutually exclusive. Now both filters
+      // are combined with the search on both code paths.
+      const filterClauses: string[] = [];
+      const filterParams: unknown[] = [];
+      if (category) {
+        filterClauses.push('kb.category = ?');
+        filterParams.push(category);
+      }
+      if (scope) {
+        filterClauses.push("(kb.scope = ? OR kb.scope = 'all')");
+        filterParams.push(scope);
+      }
+      const filterSql = filterClauses.length
+        ? ' AND ' + filterClauses.join(' AND ')
+        : '';
+
+      // FTS search with BM25 relevance ranking and snippet extraction.
+      // Falls back to LIKE if FTS is unavailable.
       try {
-        articles = db.prepare(`
-          SELECT kb.* FROM knowledge_base kb
-          JOIN knowledge_base_fts fts ON fts.rowid = kb.rowid
-          WHERE knowledge_base_fts MATCH ?
-          ORDER BY kb.pinned DESC, rank
-          LIMIT 20
-        `).all(search) as Record<string, unknown>[];
+        const safeQuery = sanitizeFtsQuery(search);
+        if (!safeQuery) {
+          // After sanitization nothing remains — return empty without hitting the DB
+          articles = [];
+        } else {
+          // BM25 weights: title=10× content=1× tags=5× — boosts title and tag
+          // matches over body matches, reflecting typical user intent.
+          // snippet() extracts the most relevant 15-token excerpt from content
+          // (column index 1) with <mark> highlighting so the UI can show why
+          // a result matched without loading the full article body.
+          // knowledge_base_fts MUST be the first (primary) table in FROM.
+          // SQLite FTS5 auxiliary functions bm25() and snippet() are only
+          // available when the FTS virtual table is the leftmost table in the
+          // FROM clause — they raise "no such function" if used on a JOIN target.
+          articles = db.prepare(`
+            SELECT kb.*,
+              snippet(knowledge_base_fts, 1, '<mark>', '</mark>', '...', 15) AS matchSnippet
+            FROM knowledge_base_fts
+            JOIN knowledge_base kb ON kb.rowid = knowledge_base_fts.rowid
+            WHERE knowledge_base_fts MATCH ?${filterSql}
+            ORDER BY kb.pinned DESC, bm25(knowledge_base_fts, 10.0, 1.0, 5.0)
+            LIMIT 20
+          `).all(safeQuery, ...filterParams) as Record<string, unknown>[];
+        }
       } catch {
+        // FTS unavailable or query still failed — fall back to LIKE with filters
+        const likeClauses: string[] = ['(title LIKE ? OR content LIKE ? OR tags LIKE ?)'];
+        const likeParams: unknown[] = [`%${search}%`, `%${search}%`, `%${search}%`];
+        if (category) {
+          likeClauses.push('category = ?');
+          likeParams.push(category);
+        }
+        if (scope) {
+          likeClauses.push("(scope = ? OR scope = 'all')");
+          likeParams.push(scope);
+        }
         articles = db.prepare(`
           SELECT * FROM knowledge_base
-          WHERE title LIKE ? OR content LIKE ? OR tags LIKE ?
+          WHERE ${likeClauses.join(' AND ')}
           ORDER BY pinned DESC, updatedAt DESC
           LIMIT 20
-        `).all(`%${search}%`, `%${search}%`, `%${search}%`) as Record<string, unknown>[];
+        `).all(...likeParams) as Record<string, unknown>[];
       }
     } else {
       let q = 'SELECT * FROM knowledge_base WHERE 1=1';

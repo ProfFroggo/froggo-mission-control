@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Plus, X, Send, FileText } from 'lucide-react';
+import { Button, Spinner, TextArea, TextField, Flex } from '@radix-ui/themes';
+
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
 import { scheduleApi } from '../lib/api';
@@ -77,12 +79,12 @@ export default function XResearchIdeaEditor() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg p-6">
+    <Flex direction="column" height="100%" p="5" className="bg-mission-control-bg">
       <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
+        <Flex align="center" gap="2" className="mb-2">
           <FileText className="w-5 h-5 text-info" />
           <h3 className="text-lg font-semibold text-mission-control-text">Propose Research Idea</h3>
-        </div>
+        </Flex>
         <p className="text-sm text-mission-control-text-dim">
           Create a new research idea with citations. It will be submitted for approval.
         </p>
@@ -94,15 +96,14 @@ export default function XResearchIdeaEditor() {
           <label htmlFor="research-title" className="block text-sm font-medium text-mission-control-text mb-2">
             Title <span className="text-error">*</span>
           </label>
-          <input
+          <TextField.Root
             id="research-title"
-            type="text"
             aria-label="Research idea title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., AI Agents for Content Creation"
-            className="w-full bg-mission-control-bg-alt text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
             disabled={submitting}
+            size="2"
           />
         </div>
 
@@ -111,14 +112,14 @@ export default function XResearchIdeaEditor() {
           <label htmlFor="research-description" className="block text-sm font-medium text-mission-control-text mb-2">
             Description <span className="text-error">*</span>
           </label>
-          <textarea
+          <TextArea
             id="research-description"
             aria-label="Research idea description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe the research idea, key insights, and why it's relevant..."
             rows={8}
-            className="w-full bg-mission-control-bg-alt text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info resize-none"
+            resize="vertical"
             disabled={submitting}
           />
           <p className="text-xs text-mission-control-text-dim mt-1">
@@ -133,33 +134,37 @@ export default function XResearchIdeaEditor() {
           </label>
           <div className="space-y-2">
             {citations.map((citation, index) => (
-              <div key={`${citation}-${index}`} className="flex gap-2">
-                <input
-                  id={`citation-${index}`}
-                  type="url"
-                  aria-label={`Citation URL ${index + 1}`}
-                  value={citation}
-                  onChange={(e) => handleCitationChange(index, e.target.value)}
-                  placeholder="https://example.com/article"
-                  className="flex-1 bg-mission-control-bg-alt text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-info"
-                  disabled={submitting}
-                />
+              <Flex key={`${citation}-${index}`} gap="2">
+                <div className="flex-1">
+                  <TextField.Root
+                    id={`citation-${index}`}
+                    type="url"
+                    aria-label={`Citation URL ${index + 1}`}
+                    value={citation}
+                    onChange={(e) => handleCitationChange(index, e.target.value)}
+                    placeholder="https://example.com/article"
+                    disabled={submitting}
+                    size="2"
+                  />
+                </div>
                 {citations.length > 1 && (
-                  <button
+                  <Button
                     onClick={() => handleRemoveCitation(index)}
-                    className="p-2 text-error hover:bg-error-subtle rounded-lg transition-colors"
+                    variant="soft"
+                    color="red"
+                    size="2"
                     disabled={submitting}
                   >
                     <X className="w-5 h-5" />
-                  </button>
+                  </Button>
                 )}
-              </div>
+              </Flex>
             ))}
           </div>
           <button
             onClick={handleAddCitation}
-            className="mt-3 flex items-center gap-2 text-sm text-info hover:text-info transition-colors"
             disabled={submitting}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors mt-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
             Add Citation
@@ -169,14 +174,17 @@ export default function XResearchIdeaEditor() {
 
       {/* Submit Button */}
       <div className="mt-6 pt-6 border-t border-mission-control-border">
-        <button
+        <Button
           onClick={handleSubmit}
           disabled={submitting || !title.trim() || !description.trim()}
-          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-info hover:bg-info/80 disabled:bg-mission-control-bg-alt disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+          variant="solid"
+          color="blue"
+          size="3"
+          className="w-full"
         >
           {submitting ? (
             <>
-              <div className="w-5 h-5 border-2 border-mission-control-text border-t-transparent rounded-full animate-spin" />
+              <Spinner size="1" />
               Submitting...
             </>
           ) : (
@@ -185,8 +193,8 @@ export default function XResearchIdeaEditor() {
               Submit for Approval
             </>
           )}
-        </button>
+        </Button>
       </div>
-    </div>
+    </Flex>
   );
 }

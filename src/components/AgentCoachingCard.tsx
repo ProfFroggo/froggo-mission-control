@@ -1,10 +1,11 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import {
   TrendingUp, TrendingDown, Minus, Lightbulb,
   CheckCircle2, AlertTriangle, RefreshCw, Zap,
   CalendarDays, Share2, Target,
 } from 'lucide-react';
+import { Button, Flex, TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 type Period = '7d' | '30d' | '90d';
@@ -64,7 +65,7 @@ function ScoreRing({ score }: { score: number }) {
         <circle
           cx="56" cy="56" r={radius}
           fill="none"
-          stroke="var(--color-mission-control-border)"
+          stroke="var(--mission-control-border)"
           strokeWidth="8"
         />
         <circle
@@ -79,7 +80,7 @@ function ScoreRing({ score }: { score: number }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-bold tabular-nums" style={{ color }}>{score}</span>
-        <span className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">score</span>
+        <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">score</span>
       </div>
     </div>
   );
@@ -126,14 +127,14 @@ function SuccessSparkline({ points }: { points: number[] }) {
 function CoachingCardSkeleton() {
   return (
     <div className="animate-pulse space-y-4">
-      <div className="flex items-center gap-6">
+      <Flex align="center" gap="6">
         <div className="w-28 h-28 rounded-full bg-mission-control-border" />
         <div className="flex-1 space-y-2">
           <div className="h-4 bg-mission-control-border rounded w-1/3" />
           <div className="h-3 bg-mission-control-border rounded w-1/2" />
           <div className="h-3 bg-mission-control-border rounded w-2/5" />
         </div>
-      </div>
+      </Flex>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[0, 1, 2].map(i => (
           <div key={i} className="h-16 bg-mission-control-border rounded-lg" />
@@ -146,16 +147,16 @@ function CoachingCardSkeleton() {
   );
 }
 
-function WeekCard({ weekNum, actions }: { weekNum: number; actions: string[] }) {
+const WeekCard = memo(function WeekCard({ weekNum, actions }: { weekNum: number; actions: string[] }) {
   const labels = ['Foundation', 'Practice', 'Measure', 'Sustain'];
   return (
-    <div className="rounded-lg border border-mission-control-border bg-mission-control-bg p-3 space-y-2">
-      <div className="flex items-center gap-1.5">
+    <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-3 space-y-2 hover:border-mission-control-accent/20 transition-colors">
+      <Flex align="center" gap="2">
         <CalendarDays size={11} className="text-mission-control-text-dim flex-shrink-0" />
         <span className="text-[10px] font-semibold text-mission-control-text-dim uppercase tracking-wider">
           Week {weekNum} — {labels[weekNum - 1]}
         </span>
-      </div>
+      </Flex>
       {actions.length === 0 ? (
         <p className="text-xs text-mission-control-text-dim italic">No actions yet</p>
       ) : (
@@ -172,7 +173,7 @@ function WeekCard({ weekNum, actions }: { weekNum: number; actions: string[] }) 
       )}
     </div>
   );
-}
+});
 
 function formatDuration(ms: number): string {
   if (!ms) return '—';
@@ -199,7 +200,7 @@ function buildSparklinePoints(data: ReviewData): number[] {
   ].map(Math.round);
 }
 
-export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingCardProps) {
+const AgentCoachingCard = memo(function AgentCoachingCard({ agentId, agentName }: AgentCoachingCardProps) {
   const [period, setPeriod] = useState<Period>('30d');
   const [data, setData] = useState<ReviewData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -322,96 +323,96 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
   return (
     <div className="space-y-5">
       {/* Period selector + refresh + share */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
+      <Flex align="center" justify="between">
+        <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
           {(['7d', '30d', '90d'] as Period[]).map(p => (
             <button
               key={p}
               type="button"
               onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                 period === p
-                  ? 'bg-mission-control-accent text-white'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text'
+                  ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
               }`}
             >
               {p}
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-1">
+        <Flex align="center" gap="1">
           {data && (
             <button
               type="button"
-              onClick={handleShareReport}
-              className="icon-btn border border-mission-control-border"
               title="Copy report to clipboard"
               aria-label="Share performance report"
+              onClick={handleShareReport}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <Share2 size={14} />
             </button>
           )}
           <button
             type="button"
-            onClick={() => void fetchReview(period)}
             disabled={loading}
-            className="icon-btn border border-mission-control-border disabled:opacity-50"
             title="Refresh review"
             aria-label="Refresh performance review"
+            onClick={() => void fetchReview(period)}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {loading && !data && <CoachingCardSkeleton />}
 
       {error && !loading && (
-        <div className="rounded-lg border border-error-border bg-error-subtle p-4 text-sm text-error flex items-center gap-2">
+        <Flex align="center" gap="2" className="rounded-lg border border-error/30 bg-error/10 p-4 text-sm text-error">
           <AlertTriangle size={14} className="flex-shrink-0" />
           {error}
-        </div>
+        </Flex>
       )}
 
       {data && (
         <>
           {/* Score + trend + top metrics */}
-          <div className="flex items-center gap-6 rounded-2xl border border-mission-control-border bg-mission-control-bg p-5">
+          <Flex align="center" gap="6" className="rounded-xl border border-mission-control-border bg-mission-control-surface p-5">
             <ScoreRing score={data.score} />
             <div className="flex-1 space-y-2">
-              <div className="flex items-center gap-2">
+              <Flex align="center" gap="2">
                 <TrendIcon size={16} className={`flex-shrink-0 ${trendColor}`} />
                 <span className={`text-sm font-semibold capitalize ${trendColor}`}>{data.trend}</span>
                 <span className="text-xs text-mission-control-text-dim">vs prior {period}</span>
-              </div>
+              </Flex>
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
                   <div className="text-lg font-bold tabular-nums text-success">{data.metrics.tasksCompleted}</div>
-                  <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wide">Done</div>
+                  <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Done</div>
                 </div>
                 <div>
                   <div className="text-lg font-bold tabular-nums text-warning">{data.metrics.successRate}%</div>
-                  <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wide">Success</div>
+                  <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Success</div>
                 </div>
                 <div>
                   <div className="text-lg font-bold tabular-nums text-info">{formatDuration(data.metrics.avgDurationMs)}</div>
-                  <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wide">Avg time</div>
+                  <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Avg time</div>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 text-[11px] text-mission-control-text-dim pt-1">
+              <Flex align="center" gap="2" className="text-[11px] text-mission-control-text-dim pt-1">
                 <Zap size={11} className="text-warning flex-shrink-0" />
                 <span>{formatTokens(data.metrics.totalTokens)} tokens</span>
                 <span className="text-mission-control-border mx-0.5">/</span>
                 <span className="text-warning">${data.metrics.totalCostUsd.toFixed(4)}</span>
-              </div>
+              </Flex>
             </div>
-          </div>
+          </Flex>
 
           {/* Success rate sparkline */}
           {sparkPoints.length >= 2 && (
-            <div className="rounded-2xl border border-mission-control-border bg-mission-control-bg px-4 py-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-mission-control-text-dim uppercase tracking-wider">
+            <div className="rounded-xl border border-mission-control-border bg-mission-control-surface px-4 py-3">
+              <Flex align="center" justify="between">
+                <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
                   Success rate — 5-week trend
                 </span>
                 <span className="text-xs font-bold tabular-nums" style={{
@@ -423,7 +424,7 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
                 }}>
                   {sparkPoints[sparkPoints.length - 1]}%
                 </span>
-              </div>
+              </Flex>
               <div className="mt-2">
                 <SuccessSparkline points={sparkPoints} />
               </div>
@@ -432,8 +433,8 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
 
           {/* Strengths */}
           {data.strengths.length > 0 && (
-            <div className="rounded-2xl border border-success-border bg-success-subtle p-4">
-              <h4 className="text-xs font-semibold text-success uppercase tracking-wider mb-3">Strengths</h4>
+            <div className="rounded-xl border border-success/30 bg-success/10 p-4">
+              <h4 className="text-[10px] font-bold text-success uppercase tracking-wider mb-3">Strengths</h4>
               <ul className="space-y-1.5">
                 {data.strengths.map((s, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-mission-control-text">
@@ -447,8 +448,8 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
 
           {/* Areas for improvement */}
           {data.improvements.length > 0 && (
-            <div className="rounded-2xl border border-warning-border bg-warning-subtle p-4">
-              <h4 className="text-xs font-semibold text-warning uppercase tracking-wider mb-3">Areas for Improvement</h4>
+            <div className="rounded-xl border border-warning/30 bg-warning/10 p-4">
+              <h4 className="text-[10px] font-bold text-warning uppercase tracking-wider mb-3">Areas for Improvement</h4>
               <ul className="space-y-1.5">
                 {data.improvements.map((s, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-mission-control-text">
@@ -462,8 +463,8 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
 
           {/* Recommendations */}
           {data.recommendations.length > 0 && (
-            <div className="rounded-2xl border border-info-border bg-info-subtle p-4">
-              <h4 className="text-xs font-semibold text-info uppercase tracking-wider mb-3">Recommendations</h4>
+            <div className="rounded-xl border border-info/30 bg-info/10 p-4">
+              <h4 className="text-[10px] font-bold text-info uppercase tracking-wider mb-3">Recommendations</h4>
               <ul className="space-y-1.5">
                 {data.recommendations.map((s, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-mission-control-text">
@@ -476,8 +477,8 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
           )}
 
           {/* Skill gaps */}
-          <div className="rounded-2xl border border-mission-control-border p-4">
-            <h4 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-3">Skill Gaps</h4>
+          <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4">
+            <h4 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-3">Skill Gaps</h4>
             {data.skillGaps.length === 0 ? (
               <p className="text-sm text-mission-control-text-dim">
                 No recurring rejection patterns detected{data.metrics.tasksRejected === 0 ? ' — no rejected tasks this period' : ''}.
@@ -488,7 +489,7 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
                   {data.skillGaps.map((gap) => (
                     <span
                       key={gap.pattern}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-error-subtle text-error border border-error-border"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-error/10 text-error border border-error/30"
                     >
                       <AlertTriangle size={11} />
                       {gap.pattern}
@@ -498,10 +499,10 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
                 </div>
                 <button
                   type="button"
+                  className="mt-1 w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   onClick={() => {
                     showToast('success', 'Training scheduled', `${agentName} has been queued for skill coaching`);
                   }}
-                  className="mt-1 w-full py-2 text-sm font-medium rounded-lg border border-mission-control-border bg-mission-control-surface hover:bg-mission-control-border/50 text-mission-control-text transition-colors"
                 >
                   Train on this
                 </button>
@@ -510,50 +511,52 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
           </div>
 
           {/* 4-Week Coaching Plan */}
-          <div className="rounded-2xl border border-mission-control-border p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4 space-y-4">
+            <Flex align="center" justify="between">
+              <Flex align="center" gap="2">
                 <Target size={14} className="text-mission-control-text-dim" />
-                <h4 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
+                <h4 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
                   4-Week Coaching Plan
                 </h4>
-              </div>
+              </Flex>
               <button
                 type="button"
-                onClick={() => void refreshPlan()}
                 disabled={planLoading}
-                className="icon-btn border border-mission-control-border disabled:opacity-50"
                 title="Refresh coaching plan"
                 aria-label="Refresh coaching plan"
+                onClick={() => void refreshPlan()}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
               >
                 <RefreshCw size={12} className={planLoading ? 'animate-spin' : ''} />
               </button>
-            </div>
+            </Flex>
 
             {/* Focus goal input */}
             <div className="space-y-1.5">
               <label className="block text-[10px] font-medium text-mission-control-text-dim uppercase tracking-wider">
                 Coaching focus goal
               </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
+              <Flex align="center" gap="2">
+                <TextField.Root
+                  size="1"
+                  className="flex-1"
                   value={focusInput}
                   onChange={e => setFocusInput(e.target.value)}
                   placeholder="e.g. Improve success rate to 90% by end of quarter"
-                  className="flex-1 text-sm"
                   maxLength={500}
                   onKeyDown={e => { if (e.key === 'Enter') void saveFocus(); }}
                 />
-                <button
+                <Button
                   type="button"
-                  onClick={() => void saveFocus()}
+                  size="1"
+                  variant="soft"
                   disabled={focusSaving}
-                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-mission-control-accent text-white hover:opacity-90 disabled:opacity-50 transition-opacity flex-shrink-0"
+                  className="flex-shrink-0"
+                  onClick={() => void saveFocus()}
                 >
                   {focusSaving ? 'Saving...' : 'Save'}
-                </button>
-              </div>
+                </Button>
+              </Flex>
             </div>
 
             {/* 4-week plan cards */}
@@ -586,4 +589,6 @@ export default function AgentCoachingCard({ agentId, agentName }: AgentCoachingC
       )}
     </div>
   );
-}
+});
+
+export default AgentCoachingCard;

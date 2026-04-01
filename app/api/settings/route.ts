@@ -16,7 +16,7 @@ const DEFAULTS: Record<string, unknown> = {
   'ai.temperature': '0.7',
 };
 
-export function seedDefaultSettings(db: Database.Database): void {
+function seedDefaultSettings(db: Database.Database): void {
   const count = (db.prepare('SELECT COUNT(*) as c FROM settings').get() as { c: number }).c;
   if (count > 0) return;
   const stmt = db.prepare(

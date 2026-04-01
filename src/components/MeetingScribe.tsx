@@ -10,27 +10,15 @@
  */
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  Mic, Square, Loader2, Brain, ListTodo, FileText,
+  Mic, Square, Brain, ListTodo, FileText,
   Download, Send, Trash2, Clock, Sparkles, ChevronDown, ChevronUp
 } from 'lucide-react';
+import { Button, Flex, Spinner } from '@radix-ui/themes';
 import { useStore } from '../store/store';
 import { gateway } from '../lib/gateway';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('MeetingScribe');
-
-// Gemini API key — loaded dynamically, no hardcoded fallback
-let _cachedScribeKey: string | null = null;
-async function getGeminiApiKey(): Promise<string> {
-  if (_cachedScribeKey) return _cachedScribeKey;
-  try {
-    const { settingsApi } = await import('../lib/api');
-    const result = await settingsApi.get('gemini_api_key');
-    if (result?.value) { _cachedScribeKey = result.value; return result.value; }
-  } catch { /* ignore */ }
-  return '';
-}
-const GEMINI_MODEL = 'gemini-2.0-flash';
 
 // How often to send audio chunks for transcription (ms)
 const CHUNK_INTERVAL_MS = 8000;
@@ -80,49 +68,25 @@ function blobToBase64(blob: Blob): Promise<string> {
 }
 
 async function transcribeWithGemini(base64Audio: string, mimeType: string): Promise<string> {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${await getGeminiApiKey()}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            {
-              inlineData: {
-                data: base64Audio,
-                mimeType,
-              },
-            },
-            {
-              text: `Transcribe this audio accurately. Common vocabulary: "perps" (perpetual futures), "Mission Control", "Bitso", "Kanban", "onchain", "Solana", "Dashboard", "Opus", "Sonnet", "Claude".
+  const { authHeaders } = await import('../lib/api');
+  // Convert base64 to Blob for FormData upload
+  const binaryStr = atob(base64Audio);
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+  const blob = new Blob([bytes], { type: mimeType });
 
-Rules:
-- Output ONLY the transcript text
-- If no speech detected, return empty string
-- Do NOT add preamble, labels, or explanation
-- Preserve natural speech patterns`,
-            },
-          ],
-        }],
-        generationConfig: {
-          maxOutputTokens: 1024,
-          temperature: 0.1,
-        },
-      }),
-    }
-  );
+  const formData = new FormData();
+  formData.append('audio', blob, 'chunk.webm');
+  formData.append('mimeType', mimeType);
 
-  if (!response.ok) {
-    const err = await response.text();
-    logger.error('Gemini API error:', response.status, err);
-    throw new Error(`Gemini API error: ${response.status}`);
-  }
-
+  const response = await fetch('/api/gemini/transcribe', {
+    method: 'POST',
+    headers: { ...authHeaders() },
+    body: formData,
+  });
+  if (!response.ok) throw new Error(`Transcription error: ${response.status}`);
   const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-  
-  // Strip common preamble that Gemini sometimes adds despite instructions
+  const text = (data.transcript || '').trim();
   return text
     .replace(/^(Here'?s?\s+)?the\s+transcri(pt|ption)[:\s]*/i, '')
     .replace(/^(Okay|OK|Sure)[,.\s]*/i, '')
@@ -341,13 +305,16 @@ export default function MeetingScribe() {
         }
       }, CHUNK_INTERVAL_MS);
       
-      addActivity({ type: 'system', message: '🎙️ Meeting scribe started (Gemini)', timestamp: Date.now() });
+      addActivity({ type: 'system', message: 'Meeting scribe started (Gemini)', timestamp: Date.now() });
       
     } catch (err: unknown) {
-      // '[Scribe] Failed to start:', err;
       setError(err instanceof Error ? err.message : 'Failed to access microphone');
       isRecordingRef.current = false;
       setIsRecording(false);
+      // Clean up any partially-created resources
+      if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
+      if (audioCtxRef.current) { audioCtxRef.current.close().catch(() => {}); audioCtxRef.current = null; }
+      if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
     }
   }, [setMeetingActive, addActivity, processAudioChunk]);
 
@@ -410,7 +377,7 @@ export default function MeetingScribe() {
         setSummary(saved);
         addActivity({
           type: 'system',
-          message: `📋 Meeting ended: ${saved.savedPath ? 'transcript saved' : 'no save'} ${saved.tasksCreated > 0 ? `+ ${saved.tasksCreated} tasks` : ''}`,
+          message: `Meeting ended: ${saved.savedPath ? 'transcript saved' : 'no save'} ${saved.tasksCreated > 0 ? `+ ${saved.tasksCreated} tasks` : ''}`,
           timestamp: Date.now(),
         });
       }
@@ -435,7 +402,7 @@ export default function MeetingScribe() {
       '',
       `**Time:** ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`,
       `**Duration:** ${formatDuration(duration)}`,
-      `**Transcription:** Gemini ${GEMINI_MODEL}`,
+      `**Transcription:** Gemini (server-proxied)`,
       '',
       '## Transcript',
       '',
@@ -484,34 +451,29 @@ export default function MeetingScribe() {
     
     setIsSummarizing(true);
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${await getGeminiApiKey()}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `Summarize this meeting transcript concisely. Include:
+      const prompt = `Summarize this meeting transcript concisely. Include:
 1. **Key Topics** discussed
 2. **Decisions** made
 3. **Action Items** with owners if mentioned
 4. **Next Steps**
 
 Transcript:
-${transcriptText}`,
-              }],
-            }],
-            generationConfig: { maxOutputTokens: 1024 },
-          }),
-        }
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        const summaryText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (summaryText) setAiSummary(summaryText);
-      }
+${transcriptText}`;
+
+      const { authHeaders } = await import('../lib/api');
+      const res = await fetch('/api/gemini/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }], role: 'user' }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 4096 },
+        }),
+      });
+      if (!res.ok) throw new Error(`Gemini API error: ${res.status}`);
+      const data = await res.json();
+
+      const summaryText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (summaryText) setAiSummary(summaryText);
     } catch (err) {
       // '[Scribe] Summary error:', err;
     } finally {
@@ -590,68 +552,77 @@ ${transcriptText}`,
         {/* Record Button */}
         <div className="p-6 border-b border-mission-control-border">
           {isRecording ? (
-            <button
+            <Button
               onClick={() => stopRecording()}
-              className="w-full py-5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-lg font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-red-500/20"
+              variant="solid"
+              color="red"
+              size="3"
+              className="w-full py-5 text-lg font-bold"
             >
               <Square size={24} />
               Stop Recording
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               onClick={startRecording}
-              className="w-full py-5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-lg font-bold flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-500/20"
+              variant="solid"
+              color="grass"
+              size="3"
+              className="w-full py-5 text-lg font-bold"
             >
               <Mic size={24} />
               Start Meeting Scribe
-            </button>
+            </Button>
           )}
           
           {/* Recording info */}
           {isRecording && (
-            <div className="mt-4 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-error">
-                <span className="animate-pulse">●</span>
-                <span className="text-sm">Recording</span>
-              </div>
-              <span className="font-mono text-lg">{formatDuration(timer)}</span>
+            <Flex align="center" justify="between" className="mt-4">
+              <Flex align="center" gap="2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-error opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-error" />
+                </span>
+                <span className="text-sm text-error font-medium">Recording</span>
+              </Flex>
+              <span className="font-mono text-base tabular-nums text-mission-control-text">{formatDuration(timer)}</span>
               {/* Audio level bar */}
-              <div className="w-20 h-2 bg-mission-control-surface rounded-full overflow-hidden">
+              <div className="w-20 h-1.5 bg-mission-control-border/40 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-emerald-400 rounded-full transition-all duration-75"
+                  className="h-full bg-mission-control-accent rounded-full transition-[width] duration-75"
                   style={{ width: `${Math.min(100, audioLevel * 100)}%` }}
                 />
               </div>
-            </div>
+            </Flex>
           )}
           
           {processingChunk && (
-            <div className="mt-2 text-xs text-mission-control-text-dim flex items-center gap-1">
-              <Loader2 size={12} className="animate-spin" />
+            <Flex align="center" gap="1" className="mt-2 text-xs text-mission-control-text-dim">
+              <Spinner size="1" />
               Transcribing chunk...
-            </div>
+            </Flex>
           )}
           
           {error && (
-            <div className="mt-3 p-2 bg-error-subtle border border-error-border rounded text-sm text-error">
+            <div className="mt-3 p-2 bg-error/10 border border-error/30 rounded text-sm text-error">
               {error}
             </div>
           )}
           
           <p className="text-xs text-mission-control-text-dim mt-3 text-center">
-            Powered by Gemini {GEMINI_MODEL} • Audio sent in {CHUNK_INTERVAL_MS / 1000}s chunks
+            Powered by Gemini • Audio sent in {CHUNK_INTERVAL_MS / 1000}s chunks
           </p>
         </div>
         
         {/* Live Transcript */}
         <div className="flex-1 overflow-y-auto p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Brain size={16} className="text-emerald-400" />
+          <Flex align="center" gap="2" className="mb-3">
+            <Brain size={16} className="text-[--accent-11]" />
             <span className="font-medium text-sm">Live Transcript</span>
             {entries.length > 0 && (
               <span className="text-xs text-mission-control-text-dim">({entries.filter(e => !e.isProcessing).length} segments)</span>
             )}
-          </div>
+          </Flex>
           
           {entries.length === 0 ? (
             <div className="text-mission-control-text-dim text-sm text-center py-12">
@@ -663,18 +634,18 @@ ${transcriptText}`,
               {entries.map((entry) => (
                 <div
                   key={entry.id}
-                  className={`rounded px-3 py-2 ${
+                  className={`rounded-xl border px-3 py-2.5 ${
                     entry.isProcessing
-                      ? 'bg-mission-control-surface/50 text-mission-control-text-dim animate-pulse'
-                      : 'bg-mission-control-surface text-mission-control-text'
+                      ? 'bg-mission-control-surface border-mission-control-border/50 text-mission-control-text-dim animate-pulse'
+                      : 'bg-mission-control-surface border-mission-control-border text-mission-control-text'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="flex-1">{entry.text}</p>
-                    <span className="text-[10px] text-mission-control-text-dim shrink-0 mt-0.5">
-                      {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  <Flex align="start" justify="between" gap="2">
+                    <p className="flex-1 leading-relaxed">{entry.text}</p>
+                    <span className="text-[11px] tabular-nums text-mission-control-text-dim/70 shrink-0 mt-0.5">
+                      {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
-                  </div>
+                  </Flex>
                 </div>
               ))}
               <div ref={transcriptEndRef} />
@@ -687,20 +658,20 @@ ${transcriptText}`,
           <div className="border-t border-mission-control-border p-4">
             <button
               onClick={() => setShowActionItems(!showActionItems)}
-              className="flex items-center gap-2 mb-2 text-sm font-medium text-warning w-full"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors mb-2 w-full justify-start"
             >
               <ListTodo size={16} />
               Action Items ({actionItems.length})
               {showActionItems ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
             {showActionItems && (
-              <ul className="space-y-1 text-xs max-h-32 overflow-y-auto">
+              <ul className="space-y-1.5 text-xs max-h-32 overflow-y-auto">
                 {actionItems.map((item, i) => (
-                  <li key={i} className="flex items-center gap-2">
-                    <span className="px-1.5 py-0.5 bg-warning-subtle rounded text-warning text-[10px] shrink-0">
+                  <li key={i} className="flex items-center gap-2 rounded-lg bg-mission-control-surface border border-mission-control-border px-2.5 py-1.5">
+                    <span className="px-1.5 py-0.5 bg-warning/10 rounded-full text-warning text-[10px] font-medium shrink-0 uppercase tracking-wide">
                       {item.type}
                     </span>
-                    <span className="text-mission-control-text-dim truncate">{item.text}</span>
+                    <span className="text-mission-control-text/70 truncate">{item.text}</span>
                   </li>
                 ))}
               </ul>
@@ -714,15 +685,15 @@ ${transcriptText}`,
         {summary ? (
           /* Post-meeting summary */
           <div className="flex-1 overflow-y-auto p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <FileText size={20} className="text-emerald-400" />
+            <Flex align="center" gap="2" className="mb-6">
+              <FileText size={20} className="text-[--accent-11]" />
               <h3 className="text-lg font-medium">Meeting Complete</h3>
               <span className="text-sm text-mission-control-text-dim">({formatDuration(summary.duration)})</span>
-            </div>
+            </Flex>
             
             {summary.savedPath && (
-              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 mb-4">
-                <p className="text-sm text-emerald-400">✓ Notes saved</p>
+              <div className="bg-success/10 border border-success/30 rounded-lg p-3 mb-4">
+                <p className="text-sm text-success">Notes saved</p>
                 <p className="text-xs text-mission-control-text-dim mt-1">{summary.savedPath.split('/').pop()}</p>
               </div>
             )}
@@ -730,43 +701,52 @@ ${transcriptText}`,
             {/* AI Summary */}
             {aiSummary ? (
               <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 mb-4">
-                <div className="flex items-center gap-2 mb-2">
+                <Flex align="center" gap="2" className="mb-2">
                   <Sparkles size={16} className="text-review" />
                   <span className="text-sm font-medium text-review">AI Summary</span>
-                </div>
+                </Flex>
                 <div className="text-sm text-mission-control-text whitespace-pre-wrap">{aiSummary}</div>
               </div>
             ) : (
-              <button
+              <Button
                 onClick={generateAiSummary}
                 disabled={isSummarizing || !hasTranscript}
-                className="w-full mb-4 py-3 bg-review-subtle hover:bg-review-subtle border border-review-border rounded-lg text-sm text-review flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                variant="soft"
+                color="violet"
+                size="2"
+                className="w-full mb-4"
               >
                 {isSummarizing ? (
-                  <><Loader2 size={16} className="animate-spin" /> Generating summary...</>
+                  <><Spinner /> Generating summary...</>
                 ) : (
                   <><Sparkles size={16} /> Generate AI Summary</>
                 )}
-              </button>
+              </Button>
             )}
             
             {/* Action buttons */}
-            <div className="flex gap-2 mb-6">
-              <button
+            <Flex gap="2" className="mb-6">
+              <Button
                 onClick={sendToMissionControl}
                 disabled={!hasTranscript}
-                className="flex-1 py-2 bg-mission-control-accent hover:bg-mission-control-accent/80 rounded-lg text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                variant="solid"
+                color="violet"
+                size="2"
+                className="flex-1"
               >
                 <Send size={14} /> Send to Mission Control
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={exportMarkdown}
                 disabled={!hasTranscript}
-                className="flex-1 py-2 bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent rounded-lg text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                variant="soft"
+                color="gray"
+                size="2"
+                className="flex-1"
               >
                 <Download size={14} /> Export
-              </button>
-            </div>
+              </Button>
+            </Flex>
             
             {/* Full transcript review */}
             <div>
@@ -774,7 +754,7 @@ ${transcriptText}`,
               <div className="space-y-1 text-sm max-h-64 overflow-y-auto">
                 {entries.filter(e => !e.isProcessing).map(entry => (
                   <p key={entry.id} className="text-mission-control-text-dim">
-                    <span className="text-[10px] text-mission-control-text-dim/50 mr-1">
+                    <span className="text-xs text-mission-control-text-dim/70 mr-1">
                       {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                     {entry.text}
@@ -786,7 +766,7 @@ ${transcriptText}`,
             {/* Clear */}
             <button
               onClick={clearAll}
-              className="mt-6 text-sm text-mission-control-text-dim hover:text-error flex items-center gap-1"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors mt-6"
             >
               <Trash2 size={14} /> Clear
             </button>
@@ -807,27 +787,27 @@ ${transcriptText}`,
         ) : (
           /* During recording - show larger live view */
           <div className="flex-1 flex flex-col p-6">
-            <div className="flex items-center gap-2 mb-4">
+            <Flex align="center" gap="2" className="mb-4">
               <Clock size={16} className="text-mission-control-text-dim" />
               <span className="text-sm text-mission-control-text-dim">Recording in progress • {formatDuration(timer)}</span>
-            </div>
+            </Flex>
             
-            <div className="flex-1 overflow-y-auto space-y-3">
+            <div className="flex-1 overflow-y-auto space-y-2.5">
               {entries.filter(e => !e.isProcessing).map(entry => (
-                <div key={entry.id} className="bg-mission-control-surface rounded-lg px-4 py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-mission-control-text">{entry.text}</p>
-                    <span className="text-xs text-mission-control-text-dim shrink-0">
+                <div key={entry.id} className="bg-mission-control-surface border border-mission-control-border rounded-xl px-4 py-3">
+                  <Flex align="start" justify="between" gap="3">
+                    <p className="text-mission-control-text leading-relaxed">{entry.text}</p>
+                    <span className="text-[11px] tabular-nums text-mission-control-text-dim/70 shrink-0 mt-0.5">
                       {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
-                  </div>
+                  </Flex>
                 </div>
               ))}
               {processingChunk && (
-                <div className="flex items-center gap-2 text-mission-control-text-dim text-sm px-4">
-                  <Loader2 size={14} className="animate-spin" />
+                <Flex align="center" gap="2" className="text-mission-control-text-dim text-sm px-4">
+                  <Spinner size="1" />
                   Transcribing...
-                </div>
+                </Flex>
               )}
               <div ref={transcriptEndRef} />
             </div>

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Button, Flex, IconButton, TextField, Select } from '@radix-ui/themes';
 import {
   FolderOpen, FileText, Image, Film, Music, File, Upload, Trash2, Link,
   RefreshCw, Plus, Search, Grid, List, Download, X, Megaphone, Palette,
@@ -13,6 +14,8 @@ import ErrorDisplay from './ErrorDisplay';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import PromptDialog, { usePromptDialog } from './PromptDialog';
 import { libraryApi } from '../lib/api';
+import SearchInput from './SearchInput';
+import { humanizeFilename } from '@/utils/formatting';
 
 type FileCategory = 'code' | 'design' | 'docs' | 'campaigns' | 'projects' | 'other';
 type ViewMode = 'grid' | 'list';
@@ -49,12 +52,12 @@ interface MiniChatMessage {
 }
 
 const categoryConfig: Record<string, { icon: any; color: string; label: string }> = {
-  code:      { icon: Code,      color: 'text-green-400 bg-green-500/10',    label: 'Code' },
-  design:    { icon: Palette,   color: 'text-purple-400 bg-purple-500/10',  label: 'Design' },
-  docs:      { icon: BookOpen,  color: 'text-cyan-400 bg-cyan-500/10',      label: 'Docs' },
-  campaigns: { icon: Megaphone, color: 'text-pink-400 bg-pink-500/10',      label: 'Campaigns' },
-  projects:  { icon: FolderOpen,color: 'text-amber-400 bg-amber-500/10',    label: 'Projects' },
-  other:     { icon: File,      color: 'text-mission-control-text-dim bg-mission-control-bg0/10', label: 'Other' },
+  code:      { icon: Code,      color: 'text-success bg-success/10',    label: 'Code' },
+  design:    { icon: Palette,   color: 'text-info bg-info/10',          label: 'Design' },
+  docs:      { icon: BookOpen,  color: 'text-cyan-400 bg-cyan-500/10',                                label: 'Docs' },
+  campaigns: { icon: Megaphone, color: 'text-pink-400 bg-pink-500/10',                                label: 'Campaigns' },
+  projects:  { icon: FolderOpen,color: 'text-warning bg-warning/10',    label: 'Projects' },
+  other:     { icon: File,      color: 'text-mission-control-text-dim bg-mission-control-border/30',  label: 'Other' },
 };
 
 const getFileIcon = (mimeType?: string) => {
@@ -111,6 +114,16 @@ function saveStarred(set: Set<string>) {
   localStorage.setItem(STARRED_KEY, JSON.stringify([...set]));
 }
 
+// ─── Filesystem dir entry (from /api/library/fs) ─────────────────────────────
+interface FsDirEntry {
+  name: string;
+  path: string;
+  rel: string;
+  depth: number;
+  hasChildren: boolean;
+  fileCount: number;
+}
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface LibraryFilesTabProps {
   initialPath?: string | null;
@@ -137,7 +150,12 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   // Folder sidebar
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [folders, setFolders] = useState<LibraryFolder[]>([]);
-  const [selectedFolder, setSelectedFolder] = useState<string>('all'); // 'all' | 'recent' | 'starred' | folderId
+  const [selectedFolder, setSelectedFolder] = useState<string>('all'); // 'all' | 'recent' | 'starred' | 'dir:...' | folderId
+
+  // Filesystem directory navigation
+  const [basePath, setBasePath] = useState<string>('');
+  const [fsDirs, setFsDirs] = useState<FsDirEntry[]>([]);
+  const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
 
   // File detail panel
   const [detailFile, setDetailFile] = useState<LibraryFileItem | null>(null);
@@ -188,11 +206,12 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     setLoading(true);
     setLoadError(null);
     try {
-      const libraryResult = await libraryApi.getFiles();
+      const libraryResult = await libraryApi.getFiles() as { files: any[]; basePath?: string };
       const libraryFiles: LibraryFileItem[] = Array.isArray(libraryResult?.files)
         ? (libraryResult.files as unknown as LibraryFileItem[])
         : [];
       setFiles(libraryFiles);
+      if (libraryResult?.basePath) setBasePath(libraryResult.basePath);
       const projectMap: Record<string, string> = {};
       for (const f of libraryFiles) {
         projectMap[f.id] = f.project || '';
@@ -216,6 +235,19 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       // silent
     }
   }, []);
+
+  const loadDirs = useCallback(async () => {
+    try {
+      const res = await fetch('/api/library/fs');
+      if (res.ok) {
+        const data = await res.json();
+        setFsDirs(data.dirs || []);
+        if (data.basePath && !basePath) setBasePath(data.basePath);
+      }
+    } catch {
+      // silent
+    }
+  }, [basePath]);
 
   const loadTags = useCallback(async () => {
     try {
@@ -268,7 +300,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     loadFiles();
     loadFolders();
     loadTags();
-  }, [loadFiles, loadFolders, loadTags]);
+    loadDirs();
+  }, [loadFiles, loadFolders, loadTags, loadDirs]);
 
   useEffect(() => {
     if (newFolderInputVisible) {
@@ -605,6 +638,22 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     showToast('info', 'File upload not available in web mode');
   };
 
+  // ─── Directory tree helpers ──────────────────────────────────────────────────
+  // fsDirs comes from /api/library/fs — real filesystem directories
+  // Count files in a directory (recursive)
+  const countFilesInDir = useCallback((dirPath: string) =>
+    files.filter(f => f.path.startsWith(dirPath + '/')).length,
+  [files]);
+
+  const toggleDirExpand = (dirPath: string) => {
+    setExpandedDirs(prev => {
+      const next = new Set<string>(prev);
+      if (next.has(dirPath)) next.delete(dirPath);
+      else next.add(dirPath);
+      return next;
+    });
+  };
+
   // ─── Filtering ──────────────────────────────────────────────────────────────
   const categoryCounts: Record<string, number> = { all: files.length };
   for (const key of Object.keys(categoryConfig)) {
@@ -622,6 +671,10 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
     }
     if (selectedFolder === 'starred') {
       return fileList.filter(f => starred.has(f.id));
+    }
+    if (selectedFolder.startsWith('dir:')) {
+      const dirPath = selectedFolder.slice(4);
+      return fileList.filter(f => f.path.startsWith(dirPath + '/') || f.path === dirPath);
     }
     // Real folder: match by folder_id field (DB-tracked files) or project name (legacy)
     const folder = folders.find(f => f.id === selectedFolder);
@@ -673,7 +726,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <div
-      className={`h-full flex flex-col transition-all ${isDragOver ? 'ring-4 ring-mission-control-accent ring-inset bg-mission-control-accent/5' : ''}`}
+      className={`h-full flex flex-col transition-colors ${isDragOver ? 'ring-4 ring-mission-control-accent ring-inset bg-mission-control-accent/5' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -691,56 +744,70 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       {/* ── Toolbar ─────────────────────────────────────────────────────────── */}
       <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
         {/* Single row: search + filters + actions */}
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           {/* Search input */}
-          <div className="flex-1 relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && searchMode === 'ask') handleAskAgent(); }}
-              placeholder="Search files..."
-              className="w-full pl-9 pr-4 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent text-sm"
-            />
-          </div>
+          <SearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            onKeyDown={e => { if (e.key === 'Enter' && searchMode === 'ask') handleAskAgent(); }}
+            placeholder="Search files..."
+            className="flex-1"
+          />
 
           {/* Category dropdown */}
-          <select
+          <Select.Root
             value={selectedCategory}
-            onChange={e => setSelectedCategory(e.target.value as FileCategory | 'all')}
-            className="unstyled text-xs px-2.5 py-1.5 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text focus:outline-none focus:border-mission-control-accent flex-shrink-0"
-            aria-label="Filter by category"
+            onValueChange={v => setSelectedCategory(v as FileCategory | 'all')}
+            size="1"
           >
-            <option value="all">All ({files.length})</option>
-            {Object.entries(categoryConfig).map(([key, conf]) => (
-              <option key={key} value={key}>{conf.label} ({categoryCounts[key] ?? 0})</option>
-            ))}
-          </select>
+            <Select.Trigger aria-label="Filter by category" />
+            <Select.Content>
+              <Select.Item value="all">All ({files.length})</Select.Item>
+              {Object.entries(categoryConfig).map(([key, conf]) => (
+                <Select.Item key={key} value={key}>{conf.label} ({categoryCounts[key] ?? 0})</Select.Item>
+              ))}
+            </Select.Content>
+          </Select.Root>
 
           {/* Sort dropdown */}
-          <select
+          <Select.Root
             value={sortMode}
-            onChange={e => setSortMode(e.target.value as SortMode)}
-            className="unstyled text-xs px-2.5 py-1.5 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text focus:outline-none focus:border-mission-control-accent flex-shrink-0"
-            aria-label="Sort files"
+            onValueChange={v => setSortMode(v as SortMode)}
+            size="1"
           >
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="name">Name</option>
-          </select>
+            <Select.Trigger aria-label="Sort files" />
+            <Select.Content>
+              <Select.Item value="newest">Newest</Select.Item>
+              <Select.Item value="oldest">Oldest</Select.Item>
+              <Select.Item value="name">Name</Select.Item>
+            </Select.Content>
+          </Select.Root>
 
           {/* View toggle */}
-          <div className="flex gap-0.5 flex-shrink-0 border border-mission-control-border rounded-lg overflow-hidden">
+          <div className="flex flex-shrink-0 border border-mission-control-border rounded-lg overflow-hidden">
             <button
+              type="button"
               onClick={() => setViewMode('list')}
-              className={`p-1.5 transition-colors ${viewMode === 'list' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+              aria-label="List view"
+              aria-pressed={viewMode === 'list'}
+              className={`p-1.5 transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+              }`}
             >
               <List size={14} />
             </button>
             <button
+              type="button"
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+              aria-label="Grid view"
+              aria-pressed={viewMode === 'grid'}
+              className={`p-1.5 transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+              }`}
             >
               <Grid size={14} />
             </button>
@@ -750,51 +817,59 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
           {/* Ask Agent */}
           <button
+            type="button"
             onClick={() => { setSearchMode(searchMode === 'ask' ? 'filter' : 'ask'); setAskResponse(null); }}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs flex-shrink-0 transition-colors ${
-              searchMode === 'ask' ? 'bg-mission-control-accent text-white' : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+              searchMode === 'ask' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             <Bot size={12} /> Ask
           </button>
 
           {/* Refresh */}
-          <button
+          <IconButton
+            variant="surface"
+            color="gray"
+            size="1"
             onClick={loadFiles}
             disabled={loading}
-            className="p-1.5 rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors disabled:opacity-50 flex-shrink-0"
-            title="Refresh"
+            aria-label="Refresh files"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
+          </IconButton>
 
           {/* Upload */}
-          <button
+          <Button
+            variant="solid"
+            size="1"
             onClick={handleUpload}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-xs flex-shrink-0"
           >
             <Upload size={12} /> Upload
-          </button>
-        </div>
+          </Button>
+        </Flex>
       </div>
 
       {/* Ask response banner */}
       {askResponse && (
         <div className="mx-4 mt-2 p-3 bg-mission-control-accent/5 border border-mission-control-accent/20 rounded-lg text-sm text-mission-control-text">
-          <div className="flex items-start gap-2">
+          <Flex align="start" gap="2">
             <Bot size={14} className="text-mission-control-accent flex-shrink-0 mt-0.5" />
             <p className="leading-relaxed flex-1">{askResponse}</p>
-            <button onClick={() => setAskResponse(null)} className="flex-shrink-0 text-mission-control-text-dim hover:text-mission-control-text">
+            <button
+              onClick={() => setAskResponse(null)}
+              aria-label="Dismiss ask response"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+            >
               <X size={14} />
             </button>
-          </div>
+          </Flex>
         </div>
       )}
       {askLoading && (
-        <div className="mx-4 mt-2 p-3 bg-mission-control-accent/5 border border-mission-control-accent/20 rounded-lg text-sm text-mission-control-text-dim flex items-center gap-2">
+        <Flex align="center" gap="2" className="mx-4 mt-2 p-3 bg-mission-control-accent/5 border border-mission-control-accent/20 rounded-lg text-sm text-mission-control-text-dim">
           <RefreshCw size={14} className="animate-spin text-mission-control-accent" />
           Asking library agent...
-        </div>
+        </Flex>
       )}
 
       {/* ── Body: sidebar + main + detail ───────────────────────────────────── */}
@@ -803,31 +878,30 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         {/* ── Folder Sidebar ──────────────────────────────────────────────── */}
         {sidebarOpen && (
           <div className="w-48 flex-shrink-0 border-r border-mission-control-border bg-mission-control-surface flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-mission-control-border">
-              <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Folders</span>
-              <div className="flex items-center gap-1">
+            <Flex align="center" justify="between" px="3" py="2" className="border-b border-mission-control-border">
+              <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Folders</span>
+              <Flex align="center" gap="1">
                 <button
                   onClick={() => setNewFolderInputVisible(v => !v)}
-                  className="p-0.5 hover:bg-mission-control-border rounded text-mission-control-text-dim"
                   title="New folder"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <FolderPlus size={13} />
                 </button>
                 <button
                   onClick={() => setSidebarOpen(false)}
-                  className="p-0.5 hover:bg-mission-control-border rounded text-mission-control-text-dim"
                   title="Collapse sidebar"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <PanelLeftClose size={13} />
                 </button>
-              </div>
-            </div>
+              </Flex>
+            </Flex>
             {/* New folder inline input */}
             {newFolderInputVisible && (
-              <div className="px-2 py-1.5 border-b border-mission-control-border flex items-center gap-1">
-                <input
+              <Flex align="center" gap="1" px="2" py="1" className="border-b border-mission-control-border">
+                <TextField.Root
                   ref={newFolderInputRef}
-                  type="text"
                   value={newFolderName}
                   onChange={e => setNewFolderName(e.target.value)}
                   onKeyDown={e => {
@@ -835,24 +909,27 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                     if (e.key === 'Escape') { setNewFolderInputVisible(false); setNewFolderName(''); }
                   }}
                   placeholder="Folder name..."
-                  className="flex-1 px-2 py-1 bg-mission-control-bg border border-mission-control-border rounded text-xs focus:outline-none focus:border-mission-control-accent min-w-0"
+                  size="1"
+                  style={{ flex: 1, minWidth: 0 }}
                 />
-                <button
+                <IconButton
+                  size="1"
+                  variant="solid"
+                 
                   onClick={handleCreateFolder}
                   disabled={newFolderCreating || !newFolderName.trim()}
-                  className="p-1 bg-mission-control-accent text-white rounded disabled:opacity-50 flex-shrink-0"
                   title="Create folder"
                 >
                   {newFolderCreating ? <RefreshCw size={11} className="animate-spin" /> : <Check size={11} />}
-                </button>
+                </IconButton>
                 <button
                   onClick={() => { setNewFolderInputVisible(false); setNewFolderName(''); }}
-                  className="p-1 hover:bg-mission-control-border rounded text-mission-control-text-dim flex-shrink-0"
                   title="Cancel"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <X size={11} />
                 </button>
-              </div>
+              </Flex>
             )}
             <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
               {/* Virtual: All Files */}
@@ -880,24 +957,53 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 onClick={() => setSelectedFolder('starred')}
               />
 
-              {/* Real folders */}
-              {folders.length > 0 && (
+              {/* Filesystem directory tree — real directories from LIBRARY_PATH */}
+              {fsDirs.length > 0 && (
                 <div className="pt-2 mt-2 border-t border-mission-control-border">
-                  {folders.map(folder => {
-                    const count = files.filter(f =>
-                      (f as unknown as Record<string, unknown>).folder_id === folder.id || f.project === folder.name
-                    ).length;
-                    return (
-                      <SidebarItem
-                        key={folder.id}
-                        label={folder.name}
-                        icon={FolderOpen}
-                        count={count}
-                        selected={selectedFolder === folder.id}
-                        onClick={() => setSelectedFolder(folder.id)}
-                      />
-                    );
-                  })}
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-mission-control-text-dim px-2.5 pb-1">Folders</p>
+                  {fsDirs
+                    .filter(node => {
+                      if (node.depth === 0) return true;
+                      const parentPath = node.path.substring(0, node.path.lastIndexOf('/'));
+                      return expandedDirs.has(parentPath);
+                    })
+                    .map(node => {
+                      const isExpanded = expandedDirs.has(node.path);
+                      const isSelected = selectedFolder === `dir:${node.path}`;
+                      const fileCount = countFilesInDir(node.path);
+                      return (
+                        <div
+                          key={node.path}
+                          style={{ paddingLeft: `${node.depth * 12 + 10}px` }}
+                          className={`flex items-center gap-1 py-1 pr-2 rounded-lg text-xs cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                              : 'text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
+                          }`}
+                          onClick={() => setSelectedFolder(`dir:${node.path}`)}
+                        >
+                          {node.hasChildren ? (
+                            <button
+                              type="button"
+                              onClick={e => { e.stopPropagation(); toggleDirExpand(node.path); }}
+                              className="flex-shrink-0 w-4 h-4 flex items-center justify-center"
+                            >
+                              {isExpanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+                            </button>
+                          ) : (
+                            <span className="w-4 flex-shrink-0" />
+                          )}
+                          <FolderOpen size={12} className="flex-shrink-0" />
+                          <span className="truncate flex-1 min-w-0">{node.name}</span>
+                          {fileCount > 0 && (
+                            <span className={`text-[10px] flex-shrink-0 ml-1 ${isSelected ? 'text-mission-control-accent' : 'text-mission-control-text-dim'}`}>
+                              {fileCount}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })
+                  }
                 </div>
               )}
             </div>
@@ -909,8 +1015,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           <div className="flex-shrink-0 border-r border-mission-control-border bg-mission-control-surface flex flex-col items-center py-2">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-1.5 hover:bg-mission-control-border rounded text-mission-control-text-dim"
               title="Expand sidebar"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <PanelLeftOpen size={14} />
             </button>
@@ -919,11 +1025,44 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
         {/* ── Main File Area ───────────────────────────────────────────────── */}
         <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Directory breadcrumb */}
+          {selectedFolder.startsWith('dir:') && basePath && (
+            <div className="flex-shrink-0 flex items-center gap-1 px-4 py-2 border-b border-mission-control-border bg-mission-control-surface overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setSelectedFolder('all')}
+                className="text-[11px] text-mission-control-accent hover:underline flex-shrink-0"
+              >
+                Library
+              </button>
+              {selectedFolder.slice(4).replace(basePath, '').split('/').filter(Boolean).map((part, idx, parts) => {
+                const pathUpTo = basePath + '/' + parts.slice(0, idx + 1).join('/');
+                const isLast = idx === parts.length - 1;
+                return (
+                  <span key={pathUpTo} className="flex items-center gap-1">
+                    <ChevronRight size={10} className="text-mission-control-text-dim flex-shrink-0" />
+                    <button
+                      type="button"
+                      onClick={() => !isLast && setSelectedFolder(`dir:${pathUpTo}`)}
+                      className={`text-[11px] flex-shrink-0 transition-colors ${
+                        isLast
+                          ? 'text-mission-control-text font-medium cursor-default'
+                          : 'text-mission-control-accent hover:underline'
+                      }`}
+                    >
+                      {part}
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+
           {/* Recent files strip */}
           {selectedFolder === 'all' && recentFiles.length > 0 && (
             <div className="px-4 pt-3 pb-2 border-b border-mission-control-border bg-mission-control-bg flex-shrink-0">
-              <p className="text-xs font-medium text-mission-control-text-dim mb-2 flex items-center gap-1">
-                <Clock size={11} />
+              <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1">
+                <Clock size={10} />
                 Recent
               </p>
               <div className="flex gap-2 overflow-x-auto pb-1">
@@ -932,20 +1071,20 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                   const catConf = categoryConfig[file.category] || categoryConfig.other;
                   return (
                     <button
+                      type="button"
                       key={file.id}
                       onClick={() => handleFileClick(file)}
-                      className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-left ${
+                      className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-left min-w-[140px] max-w-[180px] ${
                         detailFile?.id === file.id
                           ? 'border-mission-control-accent bg-mission-control-accent/5'
                           : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30'
                       }`}
-                      style={{ minWidth: 140, maxWidth: 180 }}
                     >
                       <div className={`p-1.5 rounded ${catConf.color} flex-shrink-0`}>
                         <FileIcon size={12} />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs font-medium truncate max-w-[110px]">{file.name}</div>
+                        <div className="text-xs font-medium truncate max-w-[110px]">{humanizeFilename(file.name)}</div>
                         <div className="text-xs text-mission-control-text-dim">{formatRelative(file.updatedAt)}</div>
                       </div>
                     </button>
@@ -965,24 +1104,21 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
               <EmptyState
                 type="files"
                 action={
-                  <button
-                    onClick={handleUpload}
-                    className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors"
-                  >
+                  <Button size="2" variant="soft" onClick={handleUpload}>
                     <Plus size={16} />
                     Add first file
-                  </button>
+                  </Button>
                 }
               />
             ) : viewMode === 'list' ? (
-              <div className="rounded-lg border border-mission-control-border overflow-hidden">
+              <div className="rounded-xl border border-mission-control-border overflow-hidden">
                 {/* Header */}
-                <div className="grid gap-0 border-b border-mission-control-border bg-mission-control-bg px-3 py-1.5" style={{ gridTemplateColumns: '1rem 1fr 6rem 5rem 5rem 4rem' }}>
+                <div className="grid gap-0 border-b border-mission-control-border bg-mission-control-bg px-3 py-2" style={{ gridTemplateColumns: '1rem 1fr 6rem 5rem 5rem 4rem' }}>
                   <span />
-                  <span className="text-xs text-mission-control-text-dim font-medium">Name</span>
-                  <span className="text-xs text-mission-control-text-dim font-medium">Category</span>
-                  <span className="text-xs text-mission-control-text-dim font-medium text-right">Size</span>
-                  <span className="text-xs text-mission-control-text-dim font-medium text-right">Modified</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Name</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Category</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim text-right">Size</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim text-right">Modified</span>
                   <span />
                 </div>
                 {filteredFiles.map((file, idx) => {
@@ -994,7 +1130,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                   return (
                     <div
                       key={file.id}
-                      className={`group grid items-center gap-0 px-3 py-1.5 hover:bg-mission-control-surface/60 transition-colors cursor-pointer ${
+                      className={`group grid items-center gap-0 px-3 py-2.5 hover:bg-mission-control-border/10 transition-colors cursor-pointer ${
                         !isLast ? 'border-b border-mission-control-border/50' : ''
                       } ${isSelected ? 'bg-mission-control-accent/5' : ''}`}
                       style={{ gridTemplateColumns: '1rem 1fr 6rem 5rem 5rem 4rem' }}
@@ -1002,19 +1138,22 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                     >
                       <FileIcon size={12} className="text-mission-control-text-dim flex-shrink-0" />
                       <span className="text-xs font-medium truncate px-2 text-left hover:text-mission-control-accent transition-colors">
-                        {file.name}
+                        {humanizeFilename(file.name)}
                       </span>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <select
+                      <Flex align="center" gap="1" onClick={(e) => e.stopPropagation()}>
+                        <Select.Root
                           value={file.category || 'other'}
-                          onChange={(e) => { e.stopPropagation(); handleCategoryChange(file, e.target.value); }}
-                          className="unstyled text-xs text-mission-control-text-dim bg-transparent border-0 p-0 focus:outline-none cursor-pointer w-full"
+                          onValueChange={(v) => handleCategoryChange(file, v)}
+                          size="1"
                         >
-                          {Object.entries(categoryConfig).map(([key, val]) => (
-                            <option key={key} value={key}>{val.label}</option>
-                          ))}
-                        </select>
-                      </div>
+                          <Select.Trigger variant="ghost" />
+                          <Select.Content>
+                            {Object.entries(categoryConfig).map(([key, val]) => (
+                              <Select.Item key={key} value={key}>{val.label}</Select.Item>
+                            ))}
+                          </Select.Content>
+                        </Select.Root>
+                      </Flex>
                       <span className="text-xs text-mission-control-text-dim text-right tabular-nums">{formatSize(file.size)}</span>
                       <span className="text-xs text-mission-control-text-dim text-right tabular-nums">
                         {file.updatedAt ? new Date(file.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
@@ -1022,16 +1161,25 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                       <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => toggleStar(file.id)}
-                          className="p-1 hover:bg-mission-control-border rounded transition-colors"
                           title={isStarred ? 'Unstar' : 'Star'}
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         >
-                          <Star size={11} className={isStarred ? 'text-yellow-400 fill-yellow-400' : 'text-mission-control-text-dim'} />
+                          <Star size={11} className={isStarred ? 'text-warning fill-current text-warning' : ''} />
                         </button>
-                        <button onClick={() => handleLinkToTask(file)} className="p-1 hover:bg-mission-control-border rounded transition-colors" title="Link to task">
-                          <Link size={11} className="text-mission-control-text-dim" />
+                        <button
+                          onClick={() => handleLinkToTask(file)}
+                          title="Link to task"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                        >
+                          <Link size={11} />
                         </button>
-                        <button onClick={() => handleDelete(file)} className="p-1 hover:bg-error-subtle rounded transition-colors" title="Delete">
-                          <Trash2 size={11} className="text-error" />
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(file)}
+                          title="Delete"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+                        >
+                          <Trash2 size={11} />
                         </button>
                       </div>
                     </div>
@@ -1052,21 +1200,21 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleFileClick(file); } }}
                       role="button"
                       tabIndex={0}
-                      className={`p-3 bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent/40 cursor-pointer transition-colors group relative ${
+                      className={`p-3 bg-mission-control-surface border border-mission-control-border rounded-xl hover:border-mission-control-accent/40 cursor-pointer transition-colors group relative ${
                         detailFile?.id === file.id ? 'border-mission-control-accent' : ''
                       }`}
                     >
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleStar(file.id); }}
-                        className={`absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${isStarred ? 'opacity-100' : ''}`}
+                        className={`absolute top-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors opacity-0 group-hover:opacity-100 transition-opacity ${isStarred ? 'opacity-100' : ''}`}
                         title={isStarred ? 'Unstar' : 'Star'}
                       >
-                        <Star size={12} className={isStarred ? 'text-yellow-400 fill-yellow-400' : 'text-mission-control-text-dim'} />
+                        <Star size={12} className={isStarred ? 'text-warning fill-current text-warning' : ''} />
                       </button>
-                      <div className={`p-2.5 rounded-lg ${catConf.color} mb-2 flex items-center justify-center`}>
+                      <Flex align="center" justify="center" className={`p-2.5 rounded-lg ${catConf.color} mb-2`}>
                         <FileIcon size={20} />
-                      </div>
-                      <div className="text-xs font-medium truncate leading-tight">{file.name}</div>
+                      </Flex>
+                      <div className="text-xs font-medium truncate leading-tight">{humanizeFilename(file.name)}</div>
                       <div className="text-xs text-mission-control-text-dim mt-0.5">{formatSize(file.size)}</div>
                     </div>
                   );
@@ -1081,15 +1229,19 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
           <div className="w-80 flex-shrink-0 border-l border-mission-control-border bg-mission-control-surface flex flex-col overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0">
-              <div className="flex items-center gap-2 min-w-0">
+              <Flex align="center" gap="2" className="min-w-0">
                 {(() => {
                   const FileIcon = getFileIcon(detailFile.mimeType);
                   return <FileIcon size={14} className="text-mission-control-accent flex-shrink-0" />;
                 })()}
                 <span className="text-sm font-medium truncate">{detailFile.name}</span>
-              </div>
-              <button onClick={closeDetail} className="p-1 hover:bg-mission-control-border rounded flex-shrink-0">
-                <X size={14} className="text-mission-control-text-dim" />
+              </Flex>
+              <button
+                type="button"
+                onClick={closeDetail}
+                className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+              >
+                <X size={14} />
               </button>
             </div>
 
@@ -1115,55 +1267,58 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
               {/* Tags */}
               <div className="px-4 py-3 border-b border-mission-control-border">
-                <div className="flex items-center gap-1 mb-2">
+                <Flex align="center" gap="1" mb="2">
                   <Tag size={11} className="text-mission-control-text-dim" />
-                  <span className="text-xs font-medium text-mission-control-text-dim">Tags</span>
-                </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Tags</span>
+                </Flex>
                 <div className="flex flex-wrap gap-1 mb-2">
                   {(detailFile.tags || []).map(tag => (
                     <span
                       key={tag}
-                      className="flex items-center gap-0.5 px-1.5 py-0.5 bg-mission-control-border rounded text-xs"
+                      className="flex items-center gap-0.5 px-2 py-0.5 bg-mission-control-border/40 text-mission-control-text-dim text-[11px] rounded-full"
                     >
                       {tag}
                       <button
+                        type="button"
                         onClick={() => handleTagRemove(detailFile, tag)}
-                        className="ml-0.5 hover:text-error"
+                        style={{ width: 'auto', height: 'auto', minWidth: 0, minHeight: 0, padding: '1px' }}
+                        className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                       >
                         <X size={9} />
                       </button>
                     </span>
                   ))}
                 </div>
-                <div className="flex gap-1">
-                  <input
-                    type="text"
+                <Flex gap="1">
+                  <TextField.Root
                     value={tagInput}
                     onChange={e => setTagInput(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') { handleTagAdd(detailFile, tagInput); } }}
                     placeholder="Add tag..."
-                    className="flex-1 px-2 py-1 bg-mission-control-bg border border-mission-control-border rounded text-xs focus:outline-none focus:border-mission-control-accent"
+                    size="1"
+                    className="flex-1"
                   />
-                  <button
+                  <Button
+                    size="1"
+                    variant="soft"
                     onClick={() => handleTagAdd(detailFile, tagInput)}
-                    className="px-2 py-1 bg-mission-control-border rounded text-xs hover:bg-mission-control-border/80"
                   >
                     Add
-                  </button>
-                </div>
+                  </Button>
+                </Flex>
               </div>
 
               {/* Preview */}
               <div className="px-4 py-3 border-b border-mission-control-border">
-                <div className="flex items-center gap-1 mb-2">
+                <Flex align="center" gap="1" mb="2">
                   <Info size={11} className="text-mission-control-text-dim" />
-                  <span className="text-xs font-medium text-mission-control-text-dim">Preview</span>
-                </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Preview</span>
+                </Flex>
                 {detailContentLoading ? (
-                  <div className="flex items-center gap-2 text-xs text-mission-control-text-dim py-2">
+                  <Flex align="center" gap="2" py="2" className="text-xs text-mission-control-text-dim">
                     <RefreshCw size={12} className="animate-spin" />
                     Loading preview...
-                  </div>
+                  </Flex>
                 ) : detailFile.mimeType?.startsWith('image/') && detailContent ? (
                   <img
                     src={detailContent}
@@ -1173,8 +1328,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 ) : (detailFile.mimeType === 'application/pdf' || detailFile.name.toLowerCase().endsWith('.pdf')) ? (
                   <iframe
                     src={`/api/library?action=raw&id=${encodeURIComponent(detailFile.id)}`}
-                    className="w-full rounded-lg bg-white"
-                    style={{ height: 200 }}
+                    className="w-full rounded-lg bg-mission-control-surface h-[200px]"
                     title={detailFile.name}
                   />
                 ) : detailFile.mimeType?.startsWith('audio/') ? (
@@ -1186,8 +1340,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 ) : detailFile.mimeType?.startsWith('video/') ? (
                   <video
                     controls
-                    className="w-full rounded-lg"
-                    style={{ maxHeight: 160 }}
+                    className="w-full rounded-lg max-h-[160px]"
                     src={`/api/library?action=raw&id=${encodeURIComponent(detailFile.id)}`}
                   />
                 ) : detailContent ? (
@@ -1204,39 +1357,41 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                 <a
                   href={`/api/library?action=raw&id=${encodeURIComponent(detailFile.id)}`}
                   download={detailFile.name}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-xs w-full justify-center"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-[--accent-9] text-[--accent-contrast] rounded-lg hover:bg-[--accent-10] transition-colors text-xs w-full justify-center"
                 >
                   <Download size={13} />
                   Download
                 </a>
-                <div className="flex gap-1.5">
-                  <button
+                <Flex gap="2">
+                  <Button
+                    size="1"
+                    variant={starred.has(detailFile.id) ? 'soft' : 'outline'}
+                    color={starred.has(detailFile.id) ? 'amber' : 'gray'}
                     onClick={() => toggleStar(detailFile.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors text-xs flex-1 justify-center border ${
-                      starred.has(detailFile.id)
-                        ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
-                        : 'bg-mission-control-border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-                    }`}
+                    style={{ flex: 1, justifyContent: 'center' }}
                   >
-                    <Star size={12} className={starred.has(detailFile.id) ? 'fill-yellow-400' : ''} />
+                    <Star size={12} className={starred.has(detailFile.id) ? 'fill-current' : ''} />
                     {starred.has(detailFile.id) ? 'Starred' : 'Star'}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    size="1"
+                    variant="outline"
+                    color="gray"
                     onClick={() => handleCopyPath(detailFile)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:text-mission-control-text transition-colors text-xs flex-1 justify-center"
+                    style={{ flex: 1, justifyContent: 'center' }}
                   >
                     <Copy size={12} />
                     Copy path
-                  </button>
-                </div>
+                  </Button>
+                </Flex>
               </div>
 
               {/* Activity */}
               <div className="px-4 py-3 border-b border-mission-control-border">
-                <div className="flex items-center gap-1 mb-2">
+                <Flex align="center" gap="1" mb="2">
                   <Clock size={11} className="text-mission-control-text-dim" />
                   <span className="text-xs font-medium text-mission-control-text-dim">Activity</span>
-                </div>
+                </Flex>
                 <div className="space-y-1.5">
                   <div className="text-xs text-mission-control-text-dim">
                     Created {formatRelative(detailFile.createdAt)}
@@ -1256,10 +1411,10 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
               {/* Mini chat */}
               <div className="px-4 py-3 flex flex-col">
-                <div className="flex items-center gap-1 mb-2">
+                <Flex align="center" gap="1" mb="2">
                   <Bot size={11} className="text-mission-control-accent" />
                   <span className="text-xs font-medium text-mission-control-text-dim">Ask about this file</span>
-                </div>
+                </Flex>
                 {miniChatMessages.length > 0 && (
                   <div className="space-y-2 mb-2 max-h-48 overflow-y-auto">
                     {miniChatMessages.map((msg, i) => (
@@ -1275,31 +1430,33 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                       </div>
                     ))}
                     {miniChatLoading && (
-                      <div className="text-xs p-2 rounded-lg bg-mission-control-bg text-mission-control-text-dim mr-4 flex items-center gap-1">
+                      <Flex align="center" gap="1" className="text-xs p-2 rounded-lg bg-mission-control-bg text-mission-control-text-dim mr-4">
                         <RefreshCw size={10} className="animate-spin" />
                         Thinking...
-                      </div>
+                      </Flex>
                     )}
                     <div ref={miniChatEndRef} />
                   </div>
                 )}
-                <div className="flex gap-1">
-                  <input
-                    type="text"
+                <Flex gap="1">
+                  <TextField.Root
                     value={miniChatInput}
                     onChange={e => setMiniChatInput(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') sendMiniChat(); }}
                     placeholder="Ask a question..."
-                    className="flex-1 px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-xs focus:outline-none focus:border-mission-control-accent"
+                    size="1"
+                    className="flex-1"
                   />
-                  <button
+                  <IconButton
+                    size="2"
+                    variant="solid"
+
                     onClick={sendMiniChat}
                     disabled={miniChatLoading || !miniChatInput.trim()}
-                    className="p-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-50 transition-colors"
                   >
                     <Send size={12} />
-                  </button>
-                </div>
+                  </IconButton>
+                </Flex>
               </div>
             </div>
           </div>
@@ -1308,16 +1465,16 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
 
       {/* ── Viewer Modal (video, audio, binary) ─────────────────────────────── */}
       {viewerOpen && detailFile && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-glow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <Flex align="center" justify="between" p="6" className="border-b border-mission-control-border">
               <div className="flex-1 min-w-0 mr-4">
                 <h3 className="font-bold text-lg truncate">{detailFile.name}</h3>
                 <p className="text-sm text-mission-control-text-dim mt-1">
                   {formatSize(detailFile.size)} • {detailFile.mimeType || 'Unknown type'}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <Flex gap="2">
                 <a
                   href={`/api/library?action=raw&id=${encodeURIComponent(detailFile.id)}`}
                   download={detailFile.name}
@@ -1327,13 +1484,14 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                   Download
                 </a>
                 <button
+                  type="button"
                   onClick={() => { setViewerOpen(false); setDetailFile(null); }}
-                  className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                 >
                   <X size={20} />
                 </button>
-              </div>
-            </div>
+              </Flex>
+            </Flex>
             <div className="flex-1 overflow-auto p-6">
               {viewerLoading ? (
                 <div className="flex items-center justify-center h-full">
@@ -1344,15 +1502,15 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
                   {viewerContent.content}
                 </pre>
               ) : viewerContent?.viewType === 'image' ? (
-                <div className="flex items-center justify-center">
+                <Flex align="center" justify="center">
                   <img src={viewerContent.content} alt={detailFile.name} className="max-w-full max-h-[60vh] object-contain rounded-lg" />
-                </div>
+                </Flex>
               ) : viewerContent?.viewType === 'video' ? (
-                <div className="flex items-center justify-center">
+                <Flex align="center" justify="center">
                   <video controls className="max-w-full max-h-[60vh] rounded-lg">
                     <source src={viewerContent.content} />
                   </video>
-                </div>
+                </Flex>
               ) : viewerContent?.viewType === 'audio' ? (
                 <div className="flex flex-col items-center justify-center gap-4 py-8">
                   <audio controls className="w-full max-w-lg">
@@ -1375,7 +1533,7 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
               )}
             </div>
             {detailFile.linkedTasks && detailFile.linkedTasks.length > 0 && (
-              <div className="p-4 border-t border-mission-control-border bg-mission-control-bg/50">
+              <div className="p-4 border-t border-mission-control-border bg-mission-control-bg">
                 <p className="text-sm text-mission-control-text-dim mb-2">Linked to tasks:</p>
                 <div className="flex flex-wrap gap-2">
                   {detailFile.linkedTasks.map(taskId => (
@@ -1424,6 +1582,7 @@ interface SidebarItemProps {
 function SidebarItem({ label, icon: Icon, count, selected, onClick }: SidebarItemProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
         selected
@@ -1449,9 +1608,9 @@ interface MetaRowProps {
 
 function MetaRow({ label, value }: MetaRowProps) {
   return (
-    <div className="flex items-start justify-between gap-2">
+    <Flex align="start" justify="between" gap="2">
       <span className="text-xs text-mission-control-text-dim flex-shrink-0">{label}</span>
       <span className="text-xs text-mission-control-text text-right break-all">{value}</span>
-    </div>
+    </Flex>
   );
 }

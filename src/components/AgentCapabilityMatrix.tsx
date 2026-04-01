@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
 import { RefreshCw, Circle } from 'lucide-react';
+import { Box, Flex } from '@radix-ui/themes';
 
 interface Agent {
   id: string;
@@ -49,7 +50,7 @@ function scoreAgentForCategory(agent: Agent, category: CapabilityCategory): numb
 
 function CapabilityDots({ score }: { score: number }) {
   return (
-    <div className="flex items-center justify-center gap-0.5">
+    <Flex align="center" justify="center" gap="1">
       {[1, 2, 3].map(level => (
         <Circle
           key={level}
@@ -61,7 +62,7 @@ function CapabilityDots({ score }: { score: number }) {
           }
         />
       ))}
-    </div>
+    </Flex>
   );
 }
 
@@ -94,10 +95,10 @@ export default function AgentCapabilityMatrix() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center gap-2 py-10 text-mission-control-text-dim">
+      <Flex align="center" justify="center" gap="2" className="py-10 text-mission-control-text-dim">
         <RefreshCw size={16} className="animate-spin" />
         <span className="text-sm">Loading matrix...</span>
-      </div>
+      </Flex>
     );
   }
 
@@ -108,7 +109,7 @@ export default function AgentCapabilityMatrix() {
         <button
           type="button"
           onClick={load}
-          className="px-3 py-1.5 text-xs border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
           Retry
         </button>
@@ -172,7 +173,7 @@ export default function AgentCapabilityMatrix() {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 px-4 py-3 text-[11px] text-mission-control-text-dim border-t border-mission-control-border">
+      <Flex align="center" gap="4" className="px-4 py-3 text-[11px] text-mission-control-text-dim border-t border-mission-control-border">
         <span className="font-medium">Legend:</span>
         {[
           { score: 0, label: 'None' },
@@ -180,12 +181,12 @@ export default function AgentCapabilityMatrix() {
           { score: 2, label: 'Capable' },
           { score: 3, label: 'Expert' },
         ].map(({ score, label }) => (
-          <div key={label} className="flex items-center gap-1.5">
+          <Flex key={label} align="center" gap="2">
             <CapabilityDots score={score} />
             <span>{label}</span>
-          </div>
+          </Flex>
         ))}
-      </div>
+      </Flex>
     </div>
   );
 }

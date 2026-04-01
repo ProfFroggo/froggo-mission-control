@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, Image, File, Search, Settings, Pin, Reply, ChevronDown } from 'lucide-react';
+import { Button, IconButton, TextField, TextArea, Flex } from '@radix-ui/themes';
+import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, Image, File, Search, Settings, Pin, Reply, ChevronDown, MessageCircle, PanelRight } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import MentionText from './MentionText';
@@ -11,9 +12,19 @@ import { useStore } from '../store/store';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { useArtifactExtraction } from '../hooks/useArtifactExtraction';
 import { useArtifactOpen } from '../hooks/useArtifactOpen';
+import { useArtifactStore } from '../store/artifactStore';
 import ToolPermissionCard, { type ToolPermissionRequest } from './ToolPermissionCard';
 import MessageReactions from './MessageReactions';
 import RoomSettingsPanel, { useRoomNotifSetting } from './RoomSettingsPanel';
+import {
+  MissionControlComposer,
+  ensureCSS,
+  parseMessageContent,
+  groupParsedItems,
+  ThinkingBlock,
+  ToolGroupBlock,
+  MarkdownText,
+} from './chat/ThreadStyles';
 
 interface AttachedFile {
   id: string;
@@ -32,6 +43,14 @@ interface ChatRoomViewProps {
 
 const MAX_AGENT_RESPONSES_PER_TURN = 15;
 
+// Relative timestamp helper
+function relativeTime(ts: number): string {
+  const diff = Date.now() - ts;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 // Convert tool names like mcp__mission-control_db__task_update → "task_update"
 function formatToolName(name: string): string {
   const parts = name.split('__');
@@ -39,12 +58,35 @@ function formatToolName(name: string): string {
   return last.replace(/_/g, ' ');
 }
 
+/** Renders structured agent messages with collapsible thinking/tool blocks — same as main chat */
+function RoomStructuredMessage({ content, streaming, onArtifactOpen }: { content: string; streaming: boolean; onArtifactOpen?: (lang: string, code: string) => void }) {
+  ensureCSS();
+  const { items, isParsed } = parseMessageContent(content);
+
+  if (!isParsed) {
+    return <MarkdownMessage content={content} onArtifactOpen={onArtifactOpen} />;
+  }
+
+  const grouped = groupParsedItems(items, streaming);
+  return (
+    <div className="flex flex-col gap-1">
+      {grouped.map((g, i) => {
+        if (g.kind === 'thinking') return <ThinkingBlock key={i} text={g.text} />;
+        if (g.kind === 'tools') return <ToolGroupBlock key={i} tools={g.tools} hasRunning={g.hasRunning} />;
+        return <MarkdownText key={i} text={g.text} />;
+      })}
+    </div>
+  );
+}
+
 export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideHeader = false }: ChatRoomViewProps) {
+  ensureCSS();
   const { rooms, addMessage, updateMessage, updateRoomAgents, updateRoom, deleteRoom, loadMessages } = useChatRoomStore();
   const agents = useStore(s => s.agents);
   const room = rooms.find(r => r.id === roomId);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [queuedMessage, setQueuedMessage] = useState<string | null>(null);
   const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
   // Auto-extract artifacts from messages
   const projectId = roomId.startsWith('project-') ? roomId.slice('project-'.length) : undefined;
@@ -67,6 +109,10 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
 
   // Artifact store — for wiring "Open Preview" cards in messages
   const handleArtifactOpen = useArtifactOpen();
+  const { toggleCollapse, isCollapsed, setFilterBySession } = useArtifactStore();
+
+  // Filter artifacts to this room's session
+  useEffect(() => { setFilterBySession(roomId); return () => setFilterBySession(null); }, [roomId, setFilterBySession]);
 
   // Helper to get agent name from store
   const agentName = useCallback((id: string) => agents.find(a => a.id === id)?.name || id, [agents]);
@@ -267,11 +313,11 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
           parts.push(`\n\n[Attached text file: ${att.name} - could not decode]`);
         }
       } else if (att.type.startsWith('image/')) {
-        parts.push(`\n\n📷 IMAGE ATTACHED: ${att.name}\nPlease use the image tool or Read tool to analyze this image.`);
+        parts.push(`\n\n[IMAGE ATTACHED: ${att.name}]\nPlease use the image tool or Read tool to analyze this image.`);
       } else if (att.type === 'application/pdf') {
-        parts.push(`\n\n📄 PDF ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)`);
+        parts.push(`\n\n[PDF ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)]`);
       } else {
-        parts.push(`\n\n📎 FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)`);
+        parts.push(`\n\n[FILE ATTACHED: ${att.name} (${(att.size / 1024).toFixed(1)}KB)]`);
       }
     }
     return parts.join('');
@@ -382,25 +428,28 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
   };
 
   /** Send a message to a specific agent using per-runId callbacks.
-   *  Returns a promise that resolves only when the agent finishes (onEnd/onError/timeout). */
+   *  Returns a promise that resolves only when the agent finishes (onEnd/onError/timeout).
+   *  Accumulates structured content blocks (thinking, tool_use, text) for rich rendering. */
   const sendToAgent = (agentId: string, prompt: string): Promise<string> => {
     return new Promise<string>((resolve) => {
       const msgId = `rm-${Date.now()}-${agentId}-${Math.random().toString(36).slice(2, 6)}`;
-      let content = '';
+      let textContent = '';
+      const blocks: any[] = [];
       let settled = false;
+
+      const serializeBlocks = () => JSON.stringify(blocks);
 
       const settle = () => {
         if (settled) return;
         settled = true;
         setTypingAgents(prev => { const n = new Set(prev); n.delete(agentId); return n; });
         setStreamingStatus(prev => { const n = { ...prev }; delete n[msgId]; return n; });
-        // Clear shared refs only if they still belong to this agent
         if (pendingAgentRef.current === agentId) {
           pendingAgentRef.current = null;
           pendingMsgIdRef.current = null;
           pendingContentRef.current = '';
         }
-        resolve(content);
+        resolve(textContent);
       };
 
       pendingAgentRef.current = agentId;
@@ -409,7 +458,6 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
       setTypingAgents(prev => new Set(prev).add(agentId));
 
-      // Add placeholder message
       addMessage(roomId, {
         id: msgId,
         role: 'agent',
@@ -419,15 +467,13 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         streaming: true,
       });
 
-      // Safety timeout — 30s
       const timer = setTimeout(() => {
         if (!settled) {
-          updateMessage(roomId, msgId, { content: content || '', streaming: false });
+          updateMessage(roomId, msgId, { content: blocks.length > 0 ? serializeBlocks() : textContent || '', streaming: false });
           settle();
         }
       }, 30000);
 
-      // Use IIFE to avoid async Promise executor
       (async () => {
         try {
           abortControllerRef.current = new AbortController();
@@ -459,28 +505,34 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 if (evt.type === 'assistant' && evt.message?.content) {
                   for (const block of evt.message.content) {
                     if (block.type === 'text') {
-                      content += block.text;
-                      pendingContentRef.current = content;
-                      updateMessage(roomId, msgId, { content });
-                      // Clear streaming status once text starts flowing
+                      textContent += block.text;
+                      blocks.push({ type: 'text', text: block.text });
+                      pendingContentRef.current = textContent;
+                      updateMessage(roomId, msgId, { content: serializeBlocks() });
                       setStreamingStatus(prev => { const n = { ...prev }; delete n[msgId]; return n; });
                     } else if (block.type === 'tool_use' && block.name) {
-                      // Show which tool is being called
+                      blocks.push({ type: 'tool_use', name: block.name, input: block.input, id: block.id });
                       const toolLabel = formatToolName(block.name as string);
                       setStreamingStatus(prev => ({ ...prev, [msgId]: toolLabel }));
+                      updateMessage(roomId, msgId, { content: serializeBlocks() });
+                    } else if (block.type === 'tool_result') {
+                      blocks.push({ type: 'tool_result', tool_use_id: block.tool_use_id, content: block.content, is_error: block.is_error });
+                      updateMessage(roomId, msgId, { content: serializeBlocks() });
                     } else if (block.type === 'thinking' && block.thinking) {
-                      // Show a truncated excerpt of the thinking
+                      blocks.push({ type: 'thinking', thinking: block.thinking });
                       const excerpt = (block.thinking as string).slice(0, 120).replace(/\n+/g, ' ').trim();
                       setStreamingStatus(prev => ({ ...prev, [msgId]: excerpt + (block.thinking.length > 120 ? '…' : '') }));
+                      updateMessage(roomId, msgId, { content: serializeBlocks() });
                     }
                   }
                 } else if (evt.type === 'result' && evt.result) {
-                  content = evt.result;
-                  pendingContentRef.current = content;
-                  updateMessage(roomId, msgId, { content });
+                  textContent = evt.result;
+                  pendingContentRef.current = textContent;
+                  // Result might be structured JSON or plain text
+                  updateMessage(roomId, msgId, { content: evt.result });
                 } else if (evt.type === 'error' && evt.text) {
-                  content = evt.text;
-                  pendingContentRef.current = content;
+                  textContent = evt.text;
+                  pendingContentRef.current = textContent;
                 } else if (evt.type === 'tool_permission_request' && evt.toolName && evt.approvalId) {
                   const req: ToolPermissionRequest & { msgId: string } = {
                     approvalId: evt.approvalId as string,
@@ -492,11 +544,12 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   };
                   setPendingPermissions(prev => new Map(prev).set(req.approvalId, req));
                 } else if (evt.type === 'timeout') {
-                  content = 'Response timed out — please try again.';
-                  pendingContentRef.current = content;
+                  textContent = 'Response timed out — please try again.';
+                  pendingContentRef.current = textContent;
                 } else if (evt.type === 'done') {
                   clearTimeout(timer);
-                  updateMessage(roomId, msgId, { content: content || '*(no response)*', streaming: false });
+                  const finalContent = blocks.length > 0 ? serializeBlocks() : (textContent || '*(no response)*');
+                  updateMessage(roomId, msgId, { content: finalContent, streaming: false });
                   settle();
                   return;
                 }
@@ -504,10 +557,17 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             }
           }
           clearTimeout(timer);
-          updateMessage(roomId, msgId, { content: content || '*(no response)*', streaming: false });
+          const finalContent = blocks.length > 0 ? serializeBlocks() : (textContent || '*(no response)*');
+          updateMessage(roomId, msgId, { content: finalContent, streaming: false });
           settle();
         } catch (e: unknown) {
           clearTimeout(timer);
+          if (e instanceof DOMException && e.name === 'AbortError') {
+            const finalContent = blocks.length > 0 ? serializeBlocks() : (textContent || '*(stopped)*');
+            updateMessage(roomId, msgId, { content: finalContent, streaming: false });
+            settle();
+            return;
+          }
           updateMessage(roomId, msgId, {
             content: `Error: ${e instanceof Error ? e.message : 'Failed to reach agent'}`,
             streaming: false,
@@ -557,19 +617,23 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     setLoading(false);
   };
 
-  /** Handle user sending a message */
+  /** Handle user sending a message — queues if agents are currently responding */
   const handleSend = async () => {
     const text = input.trim();
     if (!text && attachments.length === 0) return;
-
     if (!room) return;
 
-    // Process attachments
+    // If agents are currently streaming, queue this message for after they finish
+    if (loading) {
+      setQueuedMessage(text);
+      setInput('');
+      return;
+    }
+
     const fileContent = attachments.length > 0 ? await processAttachments() : '';
     const fullContent = text + fileContent;
 
-    // Display message (show attachment badges to user)
-    const displayContent = text + (attachments.length > 0 ? `\n\n📎 ${attachments.map(a => a.name).join(', ')}` : '');
+    const displayContent = text + (attachments.length > 0 ? `\n\n[Attached: ${attachments.map(a => a.name).join(', ')}]` : '');
 
     const userMsg: RoomMessage = {
       id: `rm-${Date.now()}-user`,
@@ -583,8 +647,6 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     setAttachments([]);
     setReplyToMsg(null);
 
-    // Determine which agents to address
-    // When no @mention, only route to mission-control (orchestrator) to avoid waking all agents
     const mentioned = extractMentions(text, room.agents);
     const targets = mentioned.length > 0 ? mentioned : (room.agents.includes('mission-control') ? ['mission-control'] : room.agents);
 
@@ -593,6 +655,36 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     turnResponseCountRef.current = 0;
     await routeToAgents(targets, fullContent);
   };
+
+  // Process queued message after agents finish responding
+  useEffect(() => {
+    if (!loading && queuedMessage) {
+      const queued = queuedMessage;
+      setQueuedMessage(null);
+      setInput(queued);
+      // Small delay so state settles, then auto-send
+      const timer = setTimeout(() => {
+        setInput('');
+        // Re-run handleSend logic inline since we can't call async in effect cleanly
+        if (!room) return;
+        const mentioned = extractMentions(queued, room.agents);
+        const targets = mentioned.length > 0 ? mentioned : (room.agents.includes('mission-control') ? ['mission-control'] : room.agents);
+        const userMsg: RoomMessage = {
+          id: `rm-${Date.now()}-user`,
+          role: 'user',
+          content: queued,
+          timestamp: Date.now(),
+        };
+        addMessage(roomId, userMsg);
+        setStopped(false);
+        setLoading(true);
+        turnResponseCountRef.current = 0;
+        routeToAgents(targets, queued);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, queuedMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -639,7 +731,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
   if (!room) {
     return (
-      <div className="h-full flex items-center justify-center text-mission-control-text-dim">
+      <div className="h-full flex-1 flex items-center justify-center text-mission-control-text-dim" style={{ minWidth: 0 }}>
         <p>Room not found</p>
       </div>
     );
@@ -677,23 +769,23 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
   const isTeamMeeting = room.agents.length >= totalAgents - 1 || room.name.toLowerCase().includes('team meeting');
 
   return (
-    <div className="h-full flex">
+    <Flex height="100%" flexGrow="1" style={{ minWidth: 0 }}>
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        {!hideHeader && <div className={`p-4 border-b border-mission-control-border flex items-center gap-3 ${
+        {!hideHeader && <div className={`flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0 gap-3 ${
           isTeamMeeting
-            ? 'bg-warning/10 border-amber-500/30'
+            ? 'bg-warning/10 border-warning/30'
             : 'bg-mission-control-surface'
         }`}>
         <button
           onClick={onBack}
-          className="p-2 rounded-lg hover:bg-mission-control-border transition-colors"
           title="Back to chat"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <ArrowLeft size={18} />
         </button>
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           {isTeamMeeting ? (
             <div className="w-10 h-10 rounded-full bg-warning flex items-center justify-center shadow-md">
               <UsersRound size={20} className="text-white" />
@@ -706,7 +798,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             </div>
           )}
           <div>
-            <h2 className={`font-semibold text-sm ${isTeamMeeting ? 'text-amber-500' : ''}`}>
+            <h2 className={`font-semibold text-sm ${isTeamMeeting ? 'text-warning' : ''}`}>
               {room.name}
             </h2>
             <p className="text-xs text-mission-control-text-dim">
@@ -716,7 +808,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               }
             </p>
           </div>
-        </div>
+        </Flex>
 
         {/* Agent presence indicators for team meetings */}
         {isTeamMeeting && (
@@ -759,60 +851,81 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           {/* Search toggle */}
           <button
             onClick={() => { setShowSearch(v => !v); if (showSearch) setSearchQuery(''); }}
-            className={`p-2 rounded-lg transition-colors ${
-              showSearch
-                ? 'bg-mission-control-accent/15 text-mission-control-accent ring-1 ring-mission-control-accent/30'
-                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border'
-            }`}
             title="Search messages (Cmd+F)"
+            className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+              showSearch
+                ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Search size={16} />
           </button>
           {/* Settings */}
           <button
             onClick={() => setShowSettings(true)}
-            className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
             title="Room settings"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <Settings size={16} />
           </button>
           {/* Stop / Resume toggle */}
           {(loading || typingAgents.size > 0 || room.messages.some(m => m.streaming)) ? (
-            <button
+            <IconButton
               onClick={stopAll}
-              className="w-8 h-8 rounded-lg border-2 border-red-500 text-error hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center"
+              size="2"
+              variant="outline"
+              color="red"
+             
               title="Stop all agents"
             >
               <Square size={14} fill="currentColor" />
-            </button>
+            </IconButton>
           ) : stopped ? (
-            <button
+            <IconButton
               onClick={resumeAgents}
-              className="w-8 h-8 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors flex items-center justify-center"
+              size="2"
+              variant="solid"
+              color="red"
+             
               title="Resume agents"
             >
               <Square size={12} fill="white" />
-            </button>
+            </IconButton>
           ) : null}
           {/* Manage members */}
           <button
             onClick={() => setShowManageMembers(true)}
-            className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
             title="Manage members"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <UserPlus size={18} />
           </button>
           {/* Voice meeting toggle */}
           <button
             onClick={() => setVoiceMode(!voiceMode)}
-            className={`p-2 rounded-lg transition-colors ${
-              voiceMode
-                ? 'bg-success-subtle text-success ring-1 ring-success/50'
-                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border'
-            }`}
             title={voiceMode ? 'Switch to text chat' : 'Start voice meeting'}
+            className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+              voiceMode
+                ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Phone size={16} />
+          </button>
+          {/* Artifact panel toggle */}
+          <button
+            type="button"
+            onClick={toggleCollapse}
+            title={isCollapsed ? 'Open artifacts' : 'Close artifacts'}
+            aria-label={isCollapsed ? 'Open artifact panel' : 'Close artifact panel'}
+            aria-pressed={!isCollapsed}
+            className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+              !isCollapsed
+                ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg'
+            }`}
+          >
+            <PanelRight size={15} />
           </button>
           {!hideDelete && (
           <button
@@ -827,12 +940,8 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 onBack();
               });
             }}
-            className={`p-2 rounded-lg transition-colors ${
-              isTeamMeeting
-                ? 'text-amber-400 hover:text-error hover:bg-error-subtle'
-                : 'text-mission-control-text-dim hover:text-error hover:bg-error-subtle'
-            }`}
             title={isTeamMeeting ? 'End meeting' : 'Delete room'}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors"
           >
             <Trash2 size={16} />
           </button>
@@ -844,12 +953,13 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       {showSearch && (
         <div className="px-4 py-2 border-b border-mission-control-border bg-mission-control-surface flex items-center gap-2">
           <Search size={14} className="text-mission-control-text-dim shrink-0" />
-          <input
+          <TextField.Root
             ref={searchInputRef}
             value={searchQuery}
             onChange={e => { setSearchQuery(e.target.value); setSearchMatchIdx(0); }}
             placeholder="Search messages..."
-            className="flex-1 bg-transparent text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none"
+            size="2"
+            className="flex-1"
           />
           {searchMatchIds.length > 0 && (
             <>
@@ -858,15 +968,15 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               </span>
               <button
                 onClick={() => setSearchMatchIdx(i => (i - 1 + searchMatchIds.length) % searchMatchIds.length)}
-                className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim"
                 title="Previous match"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <ChevronDown size={14} className="rotate-180" />
               </button>
               <button
                 onClick={() => setSearchMatchIdx(i => (i + 1) % searchMatchIds.length)}
-                className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim"
                 title="Next match"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <ChevronDown size={14} />
               </button>
@@ -877,8 +987,8 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           )}
           <button
             onClick={() => { setShowSearch(false); setSearchQuery(''); }}
-            className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim"
             title="Close search"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <X size={14} />
           </button>
@@ -887,7 +997,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
       {/* Pinned message banner */}
       {pinnedMessage && (
-        <div className="px-4 py-2 border-b border-mission-control-border bg-mission-control-surface/80 flex items-center gap-2 text-xs">
+        <div className="px-4 py-2 border-b border-mission-control-border bg-mission-control-surface flex items-center gap-2 text-xs">
           <Pin size={12} className="text-mission-control-accent shrink-0" />
           <span className="text-mission-control-text-dim truncate flex-1">{pinnedMessage.content.slice(0, 120)}</span>
           <button
@@ -895,7 +1005,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               const el = document.getElementById(`msg-${pinnedMessage.id}`);
               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }}
-            className="text-mission-control-accent hover:underline shrink-0"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             Jump
           </button>
@@ -914,9 +1024,9 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             {isTeamMeeting ? (
               <>
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-warning/20 flex items-center justify-center">
-                  <UsersRound size={40} className="text-amber-500" />
+                  <UsersRound size={40} className="text-warning" />
                 </div>
-                <p className="text-lg font-medium mb-2 text-amber-500">Team Meeting Started</p>
+                <p className="text-lg font-medium mb-2 text-warning">Team Meeting Started</p>
                 <p className="text-sm mb-4">
                   All {room.agents.length} agents are present and ready.
                 </p>
@@ -934,24 +1044,28 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center max-w-sm mx-auto">
                   {["@all Let's discuss the sprint plan", "@all Team status update", "@Chief What are the priorities?"].map((q, i) => (
-                    <button
+                    <Button
                       key={i}
                       onClick={() => setInput(q)}
-                      className="px-3 py-1.5 text-xs bg-warning/10 border border-amber-500/30 rounded-lg hover:border-amber-500 transition-colors"
+                      size="1"
+                      variant="soft"
+                      color="amber"
                     >
                       {q}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </>
             ) : (
               <>
-                <Users size={48} className="mb-4 opacity-30" />
-                <p className="text-lg font-medium mb-2">Room Created</p>
-                <p className="text-sm mb-4 text-center">
-                  Start a conversation with {room.agents.map(id => agentName(id)).join(' and ')}.
+                <div className="w-12 h-12 rounded-full bg-mission-control-accent/10 flex items-center justify-center mb-3">
+                  <MessageCircle size={20} className="text-mission-control-accent" />
+                </div>
+                <p className="text-sm font-medium text-mission-control-text-dim">Start the conversation</p>
+                <p className="text-xs text-mission-control-text-dim max-w-[240px] text-center mt-1">
+                  Send a message to {room.agents.map(id => agentName(id)).join(' and ')}.
                 </p>
-                <p className="text-xs text-center">
+                <p className="text-xs text-mission-control-text-dim text-center mt-3">
                   Use <span className="font-mono bg-mission-control-bg px-1.5 py-0.5 rounded">@all</span> to notify everyone,
                   or <span className="font-mono bg-mission-control-bg px-1.5 py-0.5 rounded">@AgentName</span> for specific agents.
                 </p>
@@ -970,7 +1084,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             const theme = msg.agentId ? getAgentTheme(msg.agentId) : null;
             const prev = idx > 0 ? displayedMessages[idx - 1] : null;
             const showAvatar = !prev || prev.agentId !== msg.agentId || prev.role !== msg.role;
-            const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const time = relativeTime(msg.timestamp);
 
             // Collect any pending permission requests for this message
             const msgPermissions = [...pendingPermissions.values()].filter(p => p.msgId === msg.id);
@@ -996,34 +1110,37 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} ${showAvatar ? 'mt-4' : 'mt-1'}`}
               >
                 {/* Avatar */}
-                <div className={`flex-shrink-0 w-9 ${!showAvatar ? 'invisible' : ''}`}>
+                <div className={`flex-shrink-0 w-8 ${!showAvatar ? 'invisible' : ''}`}>
                   {isUser ? (
-                    <div className="w-9 h-9 rounded-full bg-mission-control-accent flex items-center justify-center text-white text-sm font-semibold">
+                    <div className="w-8 h-8 rounded-full bg-mission-control-accent flex items-center justify-center text-white text-sm font-semibold">
                       K
                     </div>
                   ) : msg.agentId ? (
-                    <AgentAvatar agentId={msg.agentId} size="md" ring />
+                    <AgentAvatar agentId={msg.agentId} size="sm" ring />
                   ) : null}
                 </div>
 
                 {/* Content */}
                 <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[80%] min-w-[100px]`}>
                   {showAvatar && (
-                    <div className={`text-xs font-medium mb-1 px-1 ${
-                      isUser ? 'text-mission-control-accent' : (theme?.text || 'text-mission-control-text-dim')
+                    <div className={`mb-1 px-1 text-xs font-medium ${
+                      isUser
+                        ? 'text-mission-control-accent'
+                        : 'text-success'
                     }`}>
                       {isUser ? 'Kevin' : (msg.agentId ? agentName(msg.agentId) : 'Agent')}
                     </div>
                   )}
                   <div
-                    className={`px-4 py-3 rounded-2xl break-words ${
+                    className={`break-words text-sm leading-relaxed ${
                       isUser
-                        ? 'bg-mission-control-accent text-white rounded-tr-sm'
-                        : `bg-mission-control-surface/90 backdrop-blur-sm border ${theme?.border || 'border-mission-control-border'} rounded-tl-sm shadow-sm`
+                        ? 'text-mission-control-text rounded-[18px_18px_4px_18px] px-4 py-2.5'
+                        : `bg-transparent text-mission-control-text px-0 py-0`
                     }`}
+                    style={isUser ? { background: 'color-mix(in srgb, var(--mission-control-accent) 11%, transparent)', border: '1px solid color-mix(in srgb, var(--mission-control-accent) 18%, transparent)' } : undefined}
                   >
                     {msg.streaming && !msg.content ? (
-                      <div className="flex items-start gap-2 py-1 max-w-xs">
+                      <Flex align="start" gap="2" className="py-1 max-w-xs">
                         <div className="flex gap-1 mt-1 shrink-0">
                           <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
                           <div className="w-2 h-2 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -1034,19 +1151,15 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                             ? streamingStatus[msg.id]
                             : 'thinking...'}
                         </span>
-                      </div>
-                    ) : !isUser ? (
-                      <MarkdownMessage
-                        content={msg.content}
-                        mentions={{ ids: room.agents, names: Object.fromEntries(room.agents.map(id => [id, agentName(id)])) }}
-                        onArtifactOpen={handleArtifactOpen}
-                      />
-                    ) : (
-                      <MentionText 
-                        text={msg.content} 
+                      </Flex>
+                    ) : isUser ? (
+                      <MentionText
+                        text={msg.content}
                         agentIds={room.agents}
                         agentNames={Object.fromEntries(room.agents.map(id => [id, agentName(id)]))}
                       />
+                    ) : (
+                      <RoomStructuredMessage content={msg.content} streaming={!!msg.streaming} onArtifactOpen={handleArtifactOpen} />
                     )}
                     {msg.streaming && msg.content && (
                       <div className="flex items-center gap-1.5 mt-2 opacity-60">
@@ -1055,13 +1168,14 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       </div>
                     )}
                   </div>
-                  <span className="text-xs text-mission-control-text-dim mt-1 px-1">{time}</span>
+                  <span className="text-[11px] tabular-nums text-mission-control-text-dim/70 mt-1 px-1">{time}</span>
                   {/* Hover action buttons */}
-                  <div className={`flex items-center gap-1 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'justify-end' : 'justify-start'}`}>
+                  <Flex align="center" gap="1" className={`mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'justify-end' : 'justify-start'}`}>
                     <button
+                      type="button"
                       onClick={() => setReplyToMsg(msg)}
                       title="Reply in thread"
-                      className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     >
                       <Reply size={13} />
                     </button>
@@ -1070,15 +1184,15 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                         pinnedMessageId: room.pinnedMessageId === msg.id ? undefined : msg.id,
                       })}
                       title={room.pinnedMessageId === msg.id ? 'Unpin' : 'Pin message'}
-                      className={`p-1 rounded hover:bg-mission-control-border transition-colors ${
+                      className={`inline-flex items-center justify-center w-6 h-6 rounded transition-colors ${
                         room.pinnedMessageId === msg.id
-                          ? 'text-mission-control-accent'
-                          : 'text-mission-control-text-dim hover:text-mission-control-text'
+                          ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                          : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                       }`}
                     >
                       <Pin size={13} />
                     </button>
-                  </div>
+                  </Flex>
                   {/* Reactions */}
                   <MessageReactions messageId={msg.id} isUser={isUser} />
                 </div>
@@ -1113,13 +1227,15 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
         {/* Typing indicators for agents */}
         {typingAgents.size > 0 && !room.messages.some(m => m.streaming) && (
-          <div className="flex items-center gap-2 text-sm text-mission-control-text-dim pl-12">
-            <div className="flex gap-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" />
-              <div className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
-              <div className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+          <div className="flex items-center gap-2 px-4 py-2">
+            <div className="flex gap-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-mission-control-text-dim animate-bounce [animation-delay:0ms]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-mission-control-text-dim animate-bounce [animation-delay:150ms]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-mission-control-text-dim animate-bounce [animation-delay:300ms]" />
             </div>
-            {[...typingAgents].map(id => agentName(id)).join(', ')} typing...
+            <span className="text-xs text-mission-control-text-dim">
+              {[...typingAgents].map(id => agentName(id)).join(', ')} {typingAgents.size === 1 ? 'is' : 'are'} responding...
+            </span>
           </div>
         )}
 
@@ -1143,7 +1259,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
       {/* Input */}
       <div
-        className="p-4 border-t border-mission-control-border bg-mission-control-surface relative"
+        className="flex items-end gap-2 px-4 py-3 border-t border-mission-control-border flex-shrink-0 bg-mission-control-bg relative transition-colors"
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFiles(Array.from(e.dataTransfer.files)); }}
         role="button"
@@ -1181,18 +1297,23 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       <img src={att.dataUrl} alt={att.name} className="w-full h-full object-cover" />
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg">
+                    <Flex align="center" gap="2" className="px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg">
                       <Icon size={16} className="text-mission-control-accent" />
                       <span className="text-sm truncate max-w-32">{att.name}</span>
                       <span className="text-xs text-mission-control-text-dim">{(att.size / 1024).toFixed(1)}KB</span>
-                    </div>
+                    </Flex>
                   )}
-                  <button
+                  <IconButton
                     onClick={() => removeAttachment(att.id)}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    size="1"
+                    variant="solid"
+                    color="red"
+                    radius="full"
+                    style={{ position: 'absolute', top: '-6px', right: '-6px', opacity: 0 }}
+                    className="group-hover:opacity-100 transition-colors duration-150"
                   >
                     <X size={12} />
-                  </button>
+                  </IconButton>
                 </div>
               );
             })}
@@ -1208,7 +1329,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
             </span>
             <button
               onClick={() => setReplyToMsg(null)}
-              className="text-mission-control-text-dim hover:text-mission-control-text shrink-0"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <X size={12} />
             </button>
@@ -1223,9 +1344,10 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               if (id === 'all') {
                 return (
                   <button
+                    type="button"
                     key="all"
                     onClick={() => insertMention('all')}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-mission-control-bg transition-colors border-b border-mission-control-border"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-mission-control-bg transition-colors border-b border-mission-control-border text-left"
                   >
                     <div className="w-8 h-8 rounded-full bg-mission-control-accent/20 flex items-center justify-center">
                       <UsersRound size={16} className="text-mission-control-accent" />
@@ -1240,9 +1362,10 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
               const theme = getAgentTheme(id);
               return (
                 <button
+                  type="button"
                   key={id}
                   onClick={() => insertMention(id)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-mission-control-bg transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-mission-control-bg transition-colors text-left"
                 >
                   <AgentAvatar agentId={id} size="sm" />
                   <span className={`font-medium text-sm ${theme.text}`}>{agent?.name || id}</span>
@@ -1253,43 +1376,61 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           </div>
         )}
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="p-3 rounded-lg bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors self-stretch flex items-center"
-            title="Attach file"
-          >
-            <Paperclip size={20} />
-          </button>
-          <button
-            onClick={() => setShowMentions(!showMentions)}
-            className={`p-3 rounded-lg transition-all self-stretch flex items-center ${
-              showMentions ? 'bg-mission-control-accent text-white' : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-            title="Mention an agent"
-          >
-            <AtSign size={20} />
-          </button>
-
-          <div className="flex-1 relative">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder={`Message the room... (use @name to mention)`}
-              rows={1}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-3 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none transition-colors"
-            />
+        <div className="aui-composer-root">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder={loading ? "Type to queue next message…" : "Message the room… (@name to mention)"}
+            rows={1}
+            className="aui-composer-input min-h-[22px] max-h-[160px] overflow-auto"
+            style={{ resize: 'none' }}
+          />
+          <div className="aui-composer-footer">
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                title="Attach file"
+                className="aui-composer-icon-btn"
+              >
+                <Paperclip size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMentions(!showMentions)}
+                title="Mention an agent"
+                className={`aui-composer-icon-btn ${showMentions ? 'aui-composer-icon-btn-active' : ''}`}
+              >
+                <AtSign size={15} />
+              </button>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {loading ? (
+                <button
+                  type="button"
+                  onClick={stopAll}
+                  aria-label="Stop generation"
+                  title="Stop (Escape)"
+                  className="aui-stop-btn"
+                >
+                  <Square size={14} fill="currentColor" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSend}
+                  disabled={!input.trim() && attachments.length === 0}
+                  aria-label="Send message"
+                  title="Send (Enter)"
+                  className="aui-send-btn"
+                >
+                  <Send size={15} />
+                </button>
+              )}
+            </div>
           </div>
-
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() && attachments.length === 0}
-            className="p-3 bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-all disabled:opacity-50 self-stretch flex items-center"
-          >
-            <Send size={20} />
-          </button>
         </div>
       </div>
       </>
@@ -1297,7 +1438,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
       {/* Manage Members Modal */}
       {showManageMembers && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
           onClick={() => setShowManageMembers(false)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); setShowManageMembers(false); } }}
           role="button"
@@ -1312,7 +1453,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           >
             <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
               <h3 className="font-semibold">Manage Members</h3>
-              <button onClick={() => setShowManageMembers(false)} className="text-mission-control-text-dim hover:text-mission-control-text text-lg">✕</button>
+              <button type="button" onClick={() => setShowManageMembers(false)} className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"><X size={16} /></button>
             </div>
             <div className="p-4 overflow-y-auto flex-1 min-h-0 space-y-1">
               {agents.map((agent) => {
@@ -1320,6 +1461,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 const theme = getAgentTheme(agent.id);
                 return (
                   <button
+                    type="button"
                     key={agent.id}
                     onClick={() => {
                       const updated = inRoom
@@ -1327,7 +1469,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                         : [...room.agents, agent.id];
                       if (updated.length > 0) updateRoomAgents(roomId, updated);
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${
                       inRoom ? 'bg-mission-control-accent/10 ring-1 ring-mission-control-accent/30' : 'hover:bg-mission-control-bg'
                     }`}
                   >
@@ -1336,7 +1478,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       <span className={`text-sm font-medium ${inRoom ? theme.text : 'text-mission-control-text-dim'}`}>{agent.name}</span>
                       <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>
                     </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${inRoom ? 'bg-success-subtle text-success' : 'bg-mission-control-bg text-mission-control-text-dim'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${inRoom ? 'bg-success/10 text-success' : 'bg-mission-control-bg text-mission-control-text-dim'}`}>
                       {inRoom ? 'In room' : 'Add'}
                     </span>
                   </button>
@@ -1381,6 +1523,6 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
       {/* Artifact Panel */}
       <ArtifactPanel sessionId={roomId} />
-    </div>
+    </Flex>
   );
 }

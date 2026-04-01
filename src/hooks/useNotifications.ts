@@ -81,7 +81,7 @@ export function useNotifications() {
     };
 
     poll(); // Initial fetch
-    const timer = setInterval(poll, 10000);
+    const timer = setInterval(poll, 60000); // 60s fallback — SSE notification.new is primary (Phase 88.4)
     return () => clearInterval(timer);
   }, []);
 

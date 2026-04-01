@@ -44,8 +44,10 @@ export async function POST() {
           continue;
         }
 
-        const triggerConfig = typeof auto.trigger_config === 'string' ? JSON.parse(auto.trigger_config) : (auto.trigger_config || {});
-        const actions = typeof auto.actions === 'string' ? JSON.parse(auto.actions) : (auto.actions || []);
+        let triggerConfig: Record<string, unknown> = {};
+        try { triggerConfig = typeof auto.trigger_config === 'string' ? JSON.parse(auto.trigger_config) : (auto.trigger_config || {}); } catch { /* malformed JSON */ }
+        let actions: { type: string; config: Record<string, any> }[] = [];
+        try { actions = typeof auto.actions === 'string' ? JSON.parse(auto.actions) : (auto.actions || []); } catch { /* malformed JSON */ }
         const aiEngine: 'gemini' | 'claude' = (auto.ai_engine || 'gemini') as 'gemini' | 'claude';
 
         // Evaluate trigger

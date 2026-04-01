@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Send, Loader2, Check, CheckCircle, XCircle, Circle, Sparkles, GraduationCap } from 'lucide-react';
+import { Button, Flex, IconButton, TextField, Spinner } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
 import { catalogApi } from '../lib/api';
@@ -349,7 +350,7 @@ ${toolsSection}
 2. Post activity updates on meaningful decisions using the task_activity_create MCP tool.
 3. Check in with the team before taking external actions (emails, deploys, posts).
 4. Trust tier \`${researchedTier}\` — ${researchedTier === 'worker' ? 'you have full autonomy to act within your domain.' : 'check in before major decisions or irreversible actions.'}
-5. Use the task pipeline: todo → internal-review → in-progress → agent-review → done. Never move a task to done yourself — that is Clara's job.
+5. Use the task pipeline: todo → internal-review → in-progress → review → done. Never move a task to done yourself — that is Clara's job.
 6. When blocked, set status to human-review and explain why.
 
 ## Communication Style
@@ -436,7 +437,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
         body: JSON.stringify({
           title: `${cfg.emoji} ${cfg.name} — First Day Onboarding`,
           description: `Welcome to the team, ${cfg.name}! Your first day orientation task. Work through each subtask in order to get up to speed.\n\n**Role:** ${cfg.role}\n**Personality:** ${cfg.personality}\n**Model:** ${researchedModel} · **Trust tier:** ${researchedTier}`,
-          planningNotes: `## Onboarding Plan\n\n1. Read identity files (SOUL.md + CLAUDE.md)\n2. Introduce yourself in the mission-control chat\n3. Review your assigned skills and tools\n4. Complete your first assignment\n\n## Skills to leverage\n${skillsList}${specsList}\n\n## Notes\n- Trust tier: ${researchedTier} — ${researchedTier === 'worker' ? 'you have full autonomy' : 'check in before major decisions'}\n- Model: ${researchedModel}\n- All tasks must follow the pipeline: todo → internal-review → in-progress → agent-review → done`,
+          planningNotes: `## Onboarding Plan\n\n1. Read identity files (SOUL.md + CLAUDE.md)\n2. Introduce yourself in the mission-control chat\n3. Review your assigned skills and tools\n4. Complete your first assignment\n\n## Skills to leverage\n${skillsList}${specsList}\n\n## Notes\n- Trust tier: ${researchedTier} — ${researchedTier === 'worker' ? 'you have full autonomy' : 'check in before major decisions'}\n- Model: ${researchedModel}\n- All tasks must follow the pipeline: todo → internal-review → in-progress → review → done`,
           assignedTo: cfg.id,
           priority: 'p2',
           status: 'todo',
@@ -497,33 +498,34 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
   const progressPct = totalSteps > 0 ? Math.round((doneCount / totalSteps) * 100) : 0;
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-      <button className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full cursor-default" onClick={handleClose} type="button" aria-label="Close" />
+    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+      <button className="absolute inset-0 w-full h-full cursor-default border-0 outline-none" onClick={handleClose} type="button" aria-label="Close" />
       <div className={`relative w-full max-w-lg bg-mission-control-bg border border-mission-control-accent/30 rounded-2xl shadow-2xl shadow-mission-control-accent/10 flex flex-col max-h-[85vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
 
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
-          <div className="w-10 h-10 rounded-full bg-mission-control-accent/20 flex items-center justify-center text-mission-control-accent">
-            <GraduationCap size={22} />
-          </div>
-          <div className="flex-1">
-            <h2 className="font-bold text-mission-control-text">HR — Agent Creator</h2>
-            <p className="text-xs text-mission-control-accent">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <div>
+            <h2 className="text-base font-semibold text-mission-control-text">HR — Agent Creator</h2>
+            <p className="text-xs text-mission-control-text-dim mt-0.5">
               {stage === 'creating'
                 ? creationDone ? 'Onboarding complete!' : creationError ? 'Onboarding failed' : 'Launching new agent...'
                 : 'Building your next team member'}
             </p>
           </div>
-          <button onClick={handleClose} className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-surface transition-colors">
-            <X size={18} />
+          <button
+            type="button"
+            onClick={handleClose}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+          >
+            <X size={16} />
           </button>
         </div>
 
         {/* Creating stage */}
         {stage === 'creating' && pendingConfig && (
-          <div className="flex-1 overflow-y-auto p-4 min-h-[300px]">
+          <div className="flex-1 overflow-y-auto px-6 py-4 min-h-[300px]">
             {/* Agent card */}
-            <div className="flex items-center gap-3 mb-4">
+            <Flex align="center" gap="3" className="mb-4">
               <div className="w-12 h-12 rounded-full overflow-hidden border border-mission-control-accent/40 flex items-center justify-center bg-mission-control-accent/20 flex-shrink-0">
                 {generatedAvatarPng ? (
                   <img src={`data:image/webp;base64,${generatedAvatarPng}`} alt={pendingConfig.name} className="w-full h-full object-cover" />
@@ -537,18 +539,18 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
               </div>
               {!creationDone && !creationError && <Loader2 size={16} className="ml-auto text-mission-control-accent animate-spin" />}
               {creationDone && <Sparkles size={18} className="ml-auto text-mission-control-accent" />}
-            </div>
+            </Flex>
 
             {/* Progress bar */}
             {totalSteps > 0 && (
               <div className="mb-4">
-                <div className="flex justify-between text-xs text-mission-control-text-dim mb-1">
+                <Flex justify="between" className="text-xs text-mission-control-text-dim mb-1">
                   <span>{doneCount}/{totalSteps} steps</span>
                   <span>{progressPct}%</span>
-                </div>
+                </Flex>
                 <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${creationError ? 'bg-error' : 'bg-mission-control-accent'}`}
+                    className={`h-full rounded-full transition-colors duration-500 ${creationError ? 'bg-error' : 'bg-mission-control-accent'}`}
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
@@ -558,11 +560,11 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
             {/* Steps list */}
             <div className="space-y-2">
               {creationSteps.map((step) => (
-                <div key={step.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-all duration-300 ${
+                <div key={step.id} className={`flex items-start gap-3 p-3 rounded-lg border transition-colors duration-300 ${
                   step.status === 'running'  ? 'bg-mission-control-accent/5 border-mission-control-accent/30' :
-                  step.status === 'done'     ? 'bg-success-subtle border-success-border' :
+                  step.status === 'done'     ? 'bg-success/10 border-success/30' :
                   step.status === 'skipped'  ? 'bg-mission-control-surface/30 border-mission-control-border opacity-60' :
-                  step.status === 'error'    ? 'bg-error-subtle border-error-border' :
+                  step.status === 'error'    ? 'bg-error/10 border-error/30' :
                   'bg-mission-control-surface/50 border-mission-control-border'
                 }`}>
                   <div className="flex-shrink-0 mt-0.5">
@@ -605,7 +607,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
 
             {/* Error banner */}
             {creationError && (
-              <div className="mt-4 p-3 bg-error-subtle border border-error-border rounded-lg">
+              <div className="mt-4 p-3 bg-error/10 border border-error/30 rounded-lg">
                 <div className="text-sm text-error font-medium">Onboarding failed</div>
                 <div className="text-xs text-mission-control-text-dim mt-1">{creationError}</div>
               </div>
@@ -616,9 +618,9 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
 
         {/* Chat stage */}
         {stage === 'chat' && (
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px]">
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 min-h-[300px]">
             {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <Flex key={i} justify={msg.role === 'user' ? 'end' : 'start'}>
                 {msg.role === 'hr' && (
                   <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 flex items-center justify-center mr-2 flex-shrink-0 mt-0.5 text-mission-control-accent">
                     <GraduationCap size={14} />
@@ -626,7 +628,7 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
                 )}
                 <div className={`max-w-[80%] px-3 py-2 rounded-lg text-sm whitespace-pre-wrap ${
                   msg.role === 'user'
-                    ? 'bg-info-subtle text-info rounded-br-md'
+                    ? 'bg-info/10 text-info rounded-br-md'
                     : 'bg-mission-control-surface text-mission-control-text rounded-bl-md'
                 }`}>
                   {msg.content.split(/(\*\*[^*]+\*\*)/).map((part, j) =>
@@ -635,88 +637,94 @@ You were created on ${new Date().toISOString().split('T')[0]} and assigned to th
                       : <span key={j}>{part}</span>
                   )}
                 </div>
-              </div>
+              </Flex>
             ))}
 
             {/* Pending config — confirm/edit prompt */}
             {pendingConfig && !isTyping && (
               <div className="mt-2 p-3 bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-lg space-y-2">
-                <div className="flex items-center gap-2">
+                <Flex align="center" gap="2">
                   <span className="text-xl">{pendingConfig.emoji}</span>
                   <span className="font-semibold text-mission-control-accent">{pendingConfig.name}</span>
                   <span className="text-xs text-mission-control-text-dim">· {pendingConfig.role}</span>
-                </div>
+                </Flex>
                 <div className="text-xs text-mission-control-text-dim space-y-0.5">
                   <div>Skills: {pendingConfig.capabilities.slice(0, 4).join(', ')}{pendingConfig.capabilities.length > 4 ? '...' : ''}</div>
                   <div>Trust tier: {inferTrustTier(pendingConfig.role)}</div>
                 </div>
-                <div className="flex gap-2 mt-2">
-                  <button
+                <Flex gap="2" className="mt-2">
+                  <Button
                     onClick={() => startCreation(pendingConfig)}
-                    className="flex-1 py-2 bg-mission-control-accent text-white text-sm rounded-lg hover:bg-mission-control-accent-dim transition-colors flex items-center justify-center gap-1.5"
+                    variant="solid"
+                    color="grass"
+                    size="2"
+                    className="flex-1"
                   >
                     <Check size={14} /> Create agent
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => { setPendingConfig(null); addUserMessage('wait, let me change something'); askHR('wait, let me change something'); }}
-                    className="px-3 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim text-sm rounded-lg hover:bg-mission-control-border transition-colors"
+                    variant="soft"
+                    color="gray"
+                    size="2"
                   >
                     Edit
-                  </button>
-                </div>
+                  </Button>
+                </Flex>
               </div>
             )}
 
             {isTyping && (
-              <div className="flex justify-start">
+              <Flex justify="start">
                 <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 flex items-center justify-center mr-2 text-mission-control-accent">
                   <GraduationCap size={14} />
                 </div>
                 <div className="bg-mission-control-surface px-4 py-3 rounded-lg">
-                  <div className="flex gap-1">
+                  <Flex gap="1">
                     <span className="w-2 h-2 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-2 h-2 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                     <span className="w-2 h-2 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
+                  </Flex>
                 </div>
-              </div>
+              </Flex>
             )}
             <div ref={messagesEndRef} />
           </div>
         )}
 
         {/* Input / action bar */}
-        <div className="p-3 border-t border-mission-control-border">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
           {stage === 'creating' && creationDone ? (
-            <button onClick={handleClose} className="w-full py-2.5 bg-mission-control-accent text-white font-medium rounded-lg hover:bg-mission-control-accent-dim transition-colors flex items-center justify-center gap-2">
+            <Button onClick={handleClose} variant="solid" size="2" className="w-full">
               <Check size={16} /> Done — View Agents
-            </button>
+            </Button>
           ) : stage === 'creating' && creationError ? (
-            <div className="flex gap-2">
-              <button onClick={() => { setStage('chat'); setCreationSteps([]); setCreationError(null); }} className="flex-1 py-2.5 bg-mission-control-surface border border-mission-control-border text-mission-control-text rounded-lg hover:bg-mission-control-border transition-colors text-sm">Back</button>
-              <button onClick={() => pendingConfig && startCreation(pendingConfig)} className="flex-1 py-2.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors text-sm">Retry</button>
-            </div>
+            <Flex gap="2" className="w-full">
+              <Button onClick={() => { setStage('chat'); setCreationSteps([]); setCreationError(null); }} variant="ghost" size="2" className="flex-1">Back</Button>
+              <Button onClick={() => pendingConfig && startCreation(pendingConfig)} variant="solid" size="2" className="flex-1">Retry</Button>
+            </Flex>
           ) : stage === 'creating' ? (
-            <div className="flex items-center justify-center gap-2 py-2 text-sm text-mission-control-text-dim">
-              <Loader2 size={14} className="animate-spin text-mission-control-accent" />
+            <Flex align="center" justify="center" gap="2" className="py-2 text-sm text-mission-control-text-dim">
+              <Spinner size="1" />
               Launching {pendingConfig?.name}...
-            </div>
+            </Flex>
           ) : pendingConfig ? null : (
-            <div className="flex gap-2">
-              <input
+            <Flex gap="2">
+              <TextField.Root
+                size="2"
+                className="flex-1"
                 type="text"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={isTyping}
                 placeholder={isTyping ? 'HR is thinking...' : 'Type your response...'}
-                className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50 disabled:opacity-50"
                 autoFocus
               />
-              <button onClick={handleSend} disabled={!input.trim() || isTyping} className="p-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                {isTyping ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-              </button>
-            </div>
+              <IconButton onClick={handleSend} disabled={!input.trim() || isTyping} variant="solid" color="grass" size="2">
+                {isTyping ? <Spinner size="1" /> : <Send size={18} />}
+              </IconButton>
+            </Flex>
           )}
         </div>
       </div>

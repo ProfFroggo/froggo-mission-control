@@ -5,11 +5,21 @@ import TaskScheduler from './TaskScheduler';
 import ContentScheduler from './ContentScheduler';
 import CronTab from './CronTab';
 import { Spinner } from './LoadingStates';
+import { Flex } from '@radix-ui/themes';
 import EmptyState from './EmptyState';
 import ErrorDisplay from './ErrorDisplay';
 import { ErrorBoundary } from './ErrorBoundary';
+import TabNav, { type TabNavItem } from './TabNav';
+import PanelHeader from './PanelHeader';
 
 type ScheduleTab = 'calendar' | 'tasks' | 'scheduler' | 'crons';
+
+const SCHEDULE_TABS: TabNavItem[] = [
+  { id: 'calendar',  label: 'Calendar',          icon: Calendar  },
+  { id: 'tasks',     label: 'Task Scheduler',     icon: ListTodo  },
+  { id: 'scheduler', label: 'Content Scheduler',  icon: Clock     },
+  { id: 'crons',     label: 'Cron Jobs',          icon: RefreshCw },
+];
 
 export default function SchedulePanel() {
   const [activeTab, setActiveTab] = useState<ScheduleTab>('calendar');
@@ -64,55 +74,22 @@ export default function SchedulePanel() {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Tab Header */}
-      <div className="border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center px-4">
-          <button
-            onClick={() => setActiveTab('calendar')}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
-              activeTab === 'calendar'
-                ? 'text-mission-control-accent border-mission-control-accent'
-                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-surface'
-            }`}
-          >
-            <Calendar size={16} />
-            Calendar
-          </button>
-          <button
-            onClick={() => setActiveTab('tasks')}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
-              activeTab === 'tasks'
-                ? 'text-mission-control-accent border-mission-control-accent'
-                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-surface'
-            }`}
-          >
-            <ListTodo size={16} />
-            Task Scheduler
-          </button>
-          <button
-            onClick={() => setActiveTab('scheduler')}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
-              activeTab === 'scheduler'
-                ? 'text-mission-control-accent border-mission-control-accent'
-                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-surface'
-            }`}
-          >
-            <Clock size={16} />
-            Content Scheduler
-          </button>
-          <button
-            onClick={() => setActiveTab('crons')}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${
-              activeTab === 'crons'
-                ? 'text-mission-control-accent border-mission-control-accent'
-                : 'text-mission-control-text-dim border-transparent hover:text-mission-control-text hover:bg-mission-control-surface'
-            }`}
-          >
-            <RefreshCw size={16} />
-            Cron Jobs
-          </button>
-        </div>
+    <Flex direction="column" height="100%">
+      {/* Header + Tabs */}
+      <div className="bg-mission-control-surface">
+        <PanelHeader
+          icon={Calendar}
+          title="Schedule"
+          subtitle="Manage calendar events, tasks, and cron jobs"
+          border={false}
+        />
+        <TabNav
+          tabs={SCHEDULE_TABS}
+          activeTab={activeTab}
+          onTabChange={(id) => setActiveTab(id as ScheduleTab)}
+          paddingX="px-4"
+          border={false}
+        />
       </div>
 
       {/* Tab Content */}
@@ -124,6 +101,6 @@ export default function SchedulePanel() {
           {activeTab === 'crons' && <CronTab />}
         </ErrorBoundary>
       </div>
-    </div>
+    </Flex>
   );
 }

@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, Loader2, Download, Copy, Check } from 'lucide-react';
+import { TrendingUp, Download, Copy, Check } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 
 interface WeekBucket {
   weekStart: string;
@@ -18,9 +19,9 @@ const CHART_PADDING = { top: 16, right: 16, bottom: 40, left: 48 };
 const BAR_GAP = 4;
 
 const COLORS = {
-  created: 'var(--color-info, #3b82f6)',
-  completed: 'var(--color-success, #22c55e)',
-  inProgress: 'var(--color-warning, #f59e0b)',
+  created: 'var(--color-info)',
+  completed: 'var(--color-success)',
+  inProgress: 'var(--color-warning)',
 };
 
 function formatWeek(dateStr: string): string {
@@ -89,8 +90,9 @@ export default function VelocityChart({ weeks = 8 }: Props) {
 
   if (loading) {
     return (
-      <div className="h-64 flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-mission-control-text-dim" />
+      <div className="space-y-4">
+        <div className="h-5 bg-mission-control-border/40 rounded animate-pulse w-40" />
+        <div className="h-[224px] bg-mission-control-border/20 rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -129,34 +131,36 @@ export default function VelocityChart({ weeks = 8 }: Props) {
   return (
     <div className="space-y-4">
       {/* Header row */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between">
+        <Flex align="center" gap="2">
           <TrendingUp size={16} className="text-mission-control-accent" />
-          <span className="font-medium">Task Velocity</span>
-          <span className="text-xs text-mission-control-text-dim">last {weeks} weeks</span>
-        </div>
-        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-mission-control-text">Task Velocity</span>
+          <span className="text-[10px] uppercase tracking-wider text-mission-control-text-dim">last {weeks} weeks</span>
+        </Flex>
+        <Flex align="center" gap="2">
           <button
+            type="button"
             onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
             title="Export velocity as CSV"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Download size={12} />
             CSV
           </button>
           <button
+            type="button"
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors"
             title="Copy to clipboard"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Copy'}
           </button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Legend */}
-      <div className="flex items-center gap-5 text-xs">
+      <Flex align="center" gap="5" className="text-xs">
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm inline-block" style={{ background: COLORS.created }} />
           Created
@@ -169,7 +173,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
           <span className="w-3 h-3 rounded-sm inline-block" style={{ background: COLORS.inProgress }} />
           In Progress
         </span>
-      </div>
+      </Flex>
 
       {/* SVG chart */}
       <div className="w-full overflow-x-auto">
@@ -188,7 +192,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
                   y1={y}
                   x2={chartW - CHART_PADDING.right}
                   y2={y}
-                  stroke="var(--color-border, #334155)"
+                  stroke="var(--mission-control-border)"
                   strokeWidth={0.5}
                   strokeDasharray="3,3"
                 />
@@ -198,7 +202,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
                   textAnchor="end"
                   dominantBaseline="middle"
                   fontSize={9}
-                  fill="var(--color-text-dim, #64748b)"
+                  fill="var(--mission-control-text-dim)"
                 >
                   {tick}
                 </text>
@@ -261,7 +265,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
                     y={baseY - h_created - h_completed - h_inProgress - 3}
                     textAnchor="middle"
                     fontSize={8}
-                    fill="var(--color-text-dim, #64748b)"
+                    fill="var(--mission-control-text-dim)"
                   >
                     {stackedTotal}
                   </text>
@@ -272,7 +276,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
                   y={baseY + 14}
                   textAnchor="middle"
                   fontSize={8}
-                  fill="var(--color-text-dim, #64748b)"
+                  fill="var(--mission-control-text-dim)"
                 >
                   {label}
                 </text>
@@ -286,7 +290,7 @@ export default function VelocityChart({ weeks = 8 }: Props) {
             y1={yPos(0)}
             x2={chartW - CHART_PADDING.right}
             y2={yPos(0)}
-            stroke="var(--color-border, #334155)"
+            stroke="var(--mission-control-border)"
             strokeWidth={1}
           />
         </svg>

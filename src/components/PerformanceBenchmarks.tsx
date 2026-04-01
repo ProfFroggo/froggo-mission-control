@@ -11,6 +11,7 @@ import {
   Minus,
   RefreshCw,
 } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import {
   LineChart,
   Line,
@@ -193,10 +194,10 @@ export default function PerformanceBenchmarks() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="flex items-center gap-2 text-mission-control-text-dim">
+        <Flex align="center" gap="2" className="text-mission-control-text-dim">
           <RefreshCw size={20} className="animate-spin" />
           Loading benchmarks...
-        </div>
+        </Flex>
       </div>
     );
   }
@@ -206,9 +207,9 @@ export default function PerformanceBenchmarks() {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-y-auto">
+    <Flex direction="column" height="100%" className="overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <Flex align="center" justify="between" className="mb-6">
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <TrendingUp className="text-mission-control-accent" size={20} />
@@ -219,83 +220,77 @@ export default function PerformanceBenchmarks() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex bg-mission-control-border rounded-lg p-1">
+        <Flex align="center" gap="3">
+          <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
             {(['wow', 'mom', 'yoy'] as const).map((mode) => (
               <button
                 key={mode}
+                type="button"
                 onClick={() => setCompareMode(mode)}
-                className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   compareMode === mode
-                    ? 'bg-mission-control-accent text-white'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text'
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
                 }`}
               >
-                {mode === 'wow'
-                  ? 'Week/Week'
-                  : mode === 'mom'
-                  ? 'Month/Month'
-                  : 'Year/Year'}
+                {mode === 'wow' ? 'Week/Week' : mode === 'mom' ? 'Month/Month' : 'Year/Year'}
               </button>
             ))}
           </div>
 
           <button
+            type="button"
             onClick={loadBenchmarks}
-            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
             title="Refresh"
+            aria-label="Refresh"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <RefreshCw size={16} />
           </button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Comparison Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {metrics.map((metric) => (
-          <div
-            key={metric.label}
-            className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4"
-          >
-            <div className="text-sm text-mission-control-text-dim mb-1">{metric.label}</div>
-            <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-2xl font-bold tabular-nums">
-                {metric.current.toLocaleString()}
-              </span>
-              <span className="text-sm text-mission-control-text-dim">{metric.unit}</span>
+        {metrics.map((metric) => {
+          const deltaColor =
+            metric.trend === 'up'
+              ? metric.positive ? 'text-success' : 'text-error'
+              : metric.trend === 'down'
+              ? metric.positive ? 'text-error' : 'text-success'
+              : 'text-mission-control-text-dim';
+          const deltaSign = metric.changePercent > 0 ? '+' : '';
+          return (
+            <div
+              key={metric.label}
+              className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-4"
+            >
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">{metric.label}</div>
+              <Flex align="baseline" gap="1.5" className="mb-2">
+                <span className="text-2xl font-bold tabular-nums text-mission-control-text">
+                  {metric.current.toLocaleString()}
+                </span>
+                <span className="text-sm text-mission-control-text-dim">{metric.unit}</span>
+              </Flex>
+              <Flex align="center" gap="1.5">
+                {getTrendIcon(metric.trend, metric.positive)}
+                <span className={`text-xs font-medium tabular-nums ${deltaColor}`}>
+                  {deltaSign}{metric.changePercent.toFixed(1)}%
+                </span>
+              </Flex>
+              <div className="text-[10px] text-mission-control-text-dim/70 mt-1">
+                vs previous period
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {getTrendIcon(metric.trend, metric.positive)}
-              <span
-                className={`text-sm font-medium ${
-                  metric.trend === 'up'
-                    ? metric.positive
-                      ? 'text-success'
-                      : 'text-error'
-                    : metric.trend === 'down'
-                    ? metric.positive
-                      ? 'text-error'
-                      : 'text-success'
-                    : 'text-mission-control-text-dim'
-                }`}
-              >
-                <span className="tabular-nums">{metric.change > 0 ? '+' : ''}
-                {metric.change.toLocaleString()} ({metric.changePercent > 0 ? '+' : ''}
-                {metric.changePercent.toFixed(1)}%)</span>
-              </span>
-            </div>
-            <div className="text-xs text-mission-control-text-dim mt-1">
-              vs previous period
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Trend Charts */}
       <div className="space-y-6">
         {/* Tasks Completed Trend */}
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-          <h3 className="font-semibold mb-4">Tasks Completed Trend</h3>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-4">Tasks Completed Trend</div>
           <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={benchmarks}>
@@ -313,9 +308,9 @@ export default function PerformanceBenchmarks() {
               <Line
                 type="monotone"
                 dataKey="tasksCompleted"
-                stroke={CHART_COLORS.green}
+                stroke={CHART_COLORS.accent}
                 strokeWidth={2}
-                dot={{ fill: CHART_COLORS.green }}
+                dot={{ fill: CHART_COLORS.accent }}
                 name="Tasks Completed"
               />
             </LineChart>
@@ -325,7 +320,7 @@ export default function PerformanceBenchmarks() {
 
         {/* Completion Rate Trend */}
         <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-          <h3 className="font-semibold mb-4">Completion Rate Trend</h3>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-4">Completion Rate Trend</div>
           <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={benchmarks}>
@@ -357,7 +352,7 @@ export default function PerformanceBenchmarks() {
         {/* Average Time & Total Hours */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-            <h3 className="font-semibold mb-4">Avg Completion Time</h3>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-4">Avg Completion Time</div>
             <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={benchmarks}>
@@ -385,7 +380,7 @@ export default function PerformanceBenchmarks() {
           </div>
 
           <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-            <h3 className="font-semibold mb-4">Total Hours Logged</h3>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-4">Total Hours Logged</div>
             <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={benchmarks}>
@@ -416,10 +411,10 @@ export default function PerformanceBenchmarks() {
 
       {/* Insights */}
       <div className="mt-6 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-        <h3 className="font-semibold mb-4 flex items-center gap-2">
-          <Calendar size={16} className="text-mission-control-accent" />
+        <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-4 flex items-center gap-2">
+          <Calendar size={12} className="text-mission-control-accent" />
           Period Insights
-        </h3>
+        </div>
         <div className="space-y-3">
           {metrics.map((metric) => {
             const isPositive =
@@ -434,15 +429,15 @@ export default function PerformanceBenchmarks() {
                 key={metric.label}
                 className={`p-3 rounded-lg ${
                   isPositive
-                    ? 'bg-success-subtle border border-success-border'
+                    ? 'bg-success/10 border border-success/30'
                     : isNegative
-                    ? 'bg-error-subtle border border-error-border'
+                    ? 'bg-error/10 border border-error/30'
                     : 'bg-mission-control-bg border border-mission-control-border'
                 }`}
               >
-                <div className="flex items-center justify-between">
+                <Flex align="center" justify="between">
                   <span className="font-medium">{metric.label}</span>
-                  <div className="flex items-center gap-2">
+                  <Flex align="center" gap="2">
                     {getTrendIcon(metric.trend, metric.positive)}
                     <span
                       className={
@@ -458,15 +453,15 @@ export default function PerformanceBenchmarks() {
                         : metric.trend === 'down'
                         ? 'Decreased'
                         : 'Stable'}{' '}
-                      by <span className="tabular-nums">{Math.abs(metric.changePercent).toFixed(1)}%</span>
+                      by <span className="tabular-nums font-mono">{Math.abs(metric.changePercent).toFixed(1)}%</span>
                     </span>
-                  </div>
-                </div>
+                  </Flex>
+                </Flex>
               </div>
             );
           })}
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

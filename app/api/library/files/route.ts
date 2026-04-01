@@ -140,7 +140,7 @@ export async function GET() {
     // Sort newest first (by mtime)
     files.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
-    return NextResponse.json({ files });
+    return NextResponse.json({ files, basePath: libraryRoot });
   } catch (error) {
     console.error('GET /api/library/files error:', error);
     return NextResponse.json({ files: [] });

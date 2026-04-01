@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Bell,
 } from 'lucide-react';
+import { Button, Flex } from '@radix-ui/themes';
 import {
   generateWeeklyReport,
   generateMonthlyReport,
@@ -100,9 +101,9 @@ async function triggerExport(
 
 function StatCard({ label, value, color }: { label: string; value: string | number; color?: string }) {
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-      <div className="text-sm text-mission-control-text-dim mb-2">{label}</div>
-      <div className={`text-3xl font-bold ${color ?? 'text-mission-control-text'}`}>
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+      <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">{label}</div>
+      <div className={`text-2xl font-bold tabular-nums text-mission-control-text ${color ?? ''}`}>
         {value}
       </div>
     </div>
@@ -132,26 +133,28 @@ function ExportButtons({
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <Flex align="center" gap="2">
       <button
+        type="button"
         onClick={() => handleExport('csv')}
         disabled={!!busy}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors disabled:opacity-50"
         title={`Export ${type} as CSV`}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
       >
         <Download size={12} />
         {busy === 'csv' ? 'Exporting…' : 'CSV'}
       </button>
       <button
+        type="button"
         onClick={() => handleExport('json')}
         disabled={!!busy}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg transition-colors disabled:opacity-50"
         title={`Export ${type} as JSON`}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
       >
         <Download size={12} />
         {busy === 'json' ? 'Exporting…' : 'JSON'}
       </button>
-    </div>
+    </Flex>
   );
 }
 
@@ -188,7 +191,7 @@ function ExecutiveSummaryCard({
 
   if (loading) {
     return (
-      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 animate-pulse">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5 animate-pulse">
         <div className="h-5 bg-mission-control-border rounded w-48 mb-4" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
@@ -201,7 +204,7 @@ function ExecutiveSummaryCard({
 
   if (error || !summary) {
     return (
-      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
         <p className="text-sm text-mission-control-text-dim">
           Executive summary unavailable.
         </p>
@@ -210,64 +213,65 @@ function ExecutiveSummaryCard({
   }
 
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 space-y-5">
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <BarChart3 size={18} className="text-mission-control-accent" />
-          <h3 className="font-semibold">Executive Summary</h3>
+      <Flex align="center" justify="between">
+        <Flex align="center" gap="2">
+          <BarChart3 size={14} className="text-mission-control-text-dim" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Executive Summary</span>
           <span className="text-xs text-mission-control-text-dim">
-            ({summary.period.days}d period)
+            ({summary.period.days}d)
           </span>
-        </div>
+        </Flex>
         <button
+          type="button"
           onClick={load}
-          className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors"
           title="Refresh summary"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
           <RefreshCw size={14} />
         </button>
-      </div>
+      </Flex>
 
       {/* KPI grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 bg-mission-control-bg rounded-lg">
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-2">
+        <div className="p-4 bg-mission-control-border/10 rounded-lg">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mb-2">
             <CheckSquare size={12} />
             Tasks Completed
-          </div>
-          <div className="text-2xl font-bold text-success">{summary.tasks.completed}</div>
-          <div className="text-xs text-mission-control-text-dim mt-1">
-            {summary.tasks.velocity}/day velocity
+          </Flex>
+          <div className="text-2xl font-bold tabular-nums text-mission-control-text">{summary.tasks.completed}</div>
+          <div className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
+            <span className="text-success">{summary.tasks.velocity}</span>/day velocity
           </div>
         </div>
-        <div className="p-4 bg-mission-control-bg rounded-lg">
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-2">
+        <div className="p-4 bg-mission-control-border/10 rounded-lg">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mb-2">
             <Users size={12} />
             Active Agents
-          </div>
-          <div className="text-2xl font-bold text-info">{summary.agents.active}</div>
-          <div className="text-xs text-mission-control-text-dim mt-1">
-            {summary.agents.avgSuccessRate}% avg success rate
+          </Flex>
+          <div className="text-2xl font-bold tabular-nums text-mission-control-text">{summary.agents.active}</div>
+          <div className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
+            <span className="text-info">{summary.agents.avgSuccessRate}%</span> avg success
           </div>
         </div>
-        <div className="p-4 bg-mission-control-bg rounded-lg">
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-2">
+        <div className="p-4 bg-mission-control-border/10 rounded-lg">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mb-2">
             <Award size={12} />
             Approvals
-          </div>
-          <div className="text-2xl font-bold text-warning">{summary.approvals.total}</div>
-          <div className="text-xs text-mission-control-text-dim mt-1">
-            {summary.approvals.approved} approved
+          </Flex>
+          <div className="text-2xl font-bold tabular-nums text-mission-control-text">{summary.approvals.total}</div>
+          <div className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
+            <span className="text-success">{summary.approvals.approved}</span> approved
           </div>
         </div>
-        <div className="p-4 bg-mission-control-bg rounded-lg">
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-2">
+        <div className="p-4 bg-mission-control-border/10 rounded-lg">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mb-2">
             <Zap size={12} />
             Token Cost
-          </div>
-          <div className="text-2xl font-bold text-review">${summary.tokens.cost.toFixed(4)}</div>
-          <div className="text-xs text-mission-control-text-dim mt-1">
+          </Flex>
+          <div className="text-2xl font-bold tabular-nums text-mission-control-text">${summary.tokens.cost.toFixed(4)}</div>
+          <div className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
             {formatNumber(summary.tokens.total)} tokens
           </div>
         </div>
@@ -276,18 +280,20 @@ function ExecutiveSummaryCard({
       {/* Highlights */}
       {summary.highlights.length > 0 && (
         <div className="space-y-2">
-          <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
+          <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
             Highlights
           </div>
           <div className="space-y-1.5">
             {summary.highlights.map((h, i) => (
-              <div
+              <Flex
                 key={i}
-                className="flex items-start gap-2 text-sm p-3 bg-mission-control-bg rounded-lg"
+                align="start"
+                gap="2"
+                className="text-sm p-3 bg-mission-control-border/10 rounded-lg"
               >
                 <TrendingUp size={14} className="text-mission-control-accent mt-0.5 shrink-0" />
                 {h}
-              </div>
+              </Flex>
             ))}
           </div>
         </div>
@@ -318,18 +324,18 @@ function ReportSection({
   children,
 }: ReportSectionProps) {
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="font-semibold flex items-center gap-2">
-            <Icon size={16} className="text-mission-control-accent" />
-            {title}
-          </h3>
-          <p className="text-xs text-mission-control-text-dim mt-0.5">{subtitle}</p>
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <Icon size={14} className="text-mission-control-text-dim" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">{title}</span>
         </div>
         <ExportButtons type={exportType} from={from} to={to} />
       </div>
-      {children}
+      <div className="px-4 pt-3 pb-4">
+        <p className="text-xs text-mission-control-text-dim mb-1">{subtitle}</p>
+        {children}
+      </div>
     </div>
   );
 }
@@ -397,8 +403,13 @@ export default function ReportsPanel() {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-mission-control-text-dim">Generating reports…</div>
+      <div className="space-y-6 p-1">
+        <div className="h-32 bg-mission-control-border/20 rounded-xl animate-pulse" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 bg-mission-control-border/20 rounded-xl animate-pulse" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -411,30 +422,29 @@ export default function ReportsPanel() {
   ];
 
   return (
-    <div className="h-full flex flex-col">
+    <Flex direction="column" height="100%">
       {/* ── Header ── */}
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
-        <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <FileText className="text-mission-control-accent" size={20} />
-            Productivity Reports
-          </h2>
-          <p className="text-sm text-mission-control-text-dim mt-1">
-            Weekly, monthly summaries and data exports
-          </p>
-        </div>
+        <Flex align="center" gap="3">
+          <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+            <FileText size={24} className="text-mission-control-accent" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-mission-control-text">Productivity Reports</h2>
+            <p className="text-sm text-mission-control-text-dim mt-0.5">Weekly, monthly summaries and data exports</p>
+          </div>
+        </Flex>
 
         <div className="flex items-center gap-3 flex-wrap">
           {/* Date range quick selectors */}
-          <div className="flex bg-mission-control-border rounded-lg p-1 gap-0.5">
+          <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
             {QUICK_RANGES.map((r) => (
               <button
                 key={r.value}
+                type="button"
                 onClick={() => { setQuickRange(r.value); setCustomFrom(''); setCustomTo(''); }}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                  quickRange === r.value && !customFrom
-                    ? 'bg-mission-control-accent text-white'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text'
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  quickRange === r.value && !customFrom ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {r.label}
@@ -442,14 +452,14 @@ export default function ReportsPanel() {
             ))}
           </div>
 
-          {/* Custom date inputs */}
-          <div className="flex items-center gap-1.5">
+          {/* Custom date inputs — native date pickers kept as-is for functionality */}
+          <Flex align="center" gap="2">
             <Calendar size={14} className="text-mission-control-text-dim" />
             <input
               type="date"
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
-              className="text-xs px-2 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg"
+              style={{ fontSize: '0.75rem', padding: '0.375rem 0.5rem', background: 'var(--mission-control-surface)', border: '1px solid var(--mission-control-border)', borderRadius: '0.5rem', color: 'inherit' }}
               title="From date"
             />
             <span className="text-mission-control-text-dim text-xs">to</span>
@@ -457,21 +467,20 @@ export default function ReportsPanel() {
               type="date"
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
-              className="text-xs px-2 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg"
+              style={{ fontSize: '0.75rem', padding: '0.375rem 0.5rem', background: 'var(--mission-control-surface)', border: '1px solid var(--mission-control-border)', borderRadius: '0.5rem', color: 'inherit' }}
               title="To date"
             />
-          </div>
+          </Flex>
 
           {/* Report type selector */}
-          <div className="flex bg-mission-control-border rounded-lg p-1">
+          <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
             {(['weekly', 'monthly'] as const).map((type) => (
               <button
                 key={type}
+                type="button"
                 onClick={() => setReportType(type)}
-                className={`px-3 py-2 rounded text-sm font-medium transition-colors capitalize ${
-                  reportType === type
-                    ? 'bg-mission-control-accent text-white'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text'
+                className={`px-2.5 py-1 rounded-md text-xs font-medium capitalize transition-colors ${
+                  reportType === type ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {type}
@@ -480,13 +489,14 @@ export default function ReportsPanel() {
           </div>
 
           {/* Schedule stub */}
-          <button
+          <Button
             onClick={() => setShowScheduleToast(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors text-sm"
+            variant="outline"
+            size="2"
           >
             <Bell size={14} />
             Schedule Report
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -500,66 +510,58 @@ export default function ReportsPanel() {
           <ReportSection
             icon={CheckSquare}
             title="Tasks Report"
-            subtitle="All tasks in selected period"
+            subtitle="id, title, status, priority, agent, created, completed, duration"
             exportType="tasks"
             from={exportFrom}
             to={exportTo}
           >
-            <p className="text-sm text-mission-control-text-dim">
-              Includes id, title, status, priority, agent, created, completed, and duration.
-            </p>
+            <span />
           </ReportSection>
 
           <ReportSection
             icon={Users}
             title="Agent Performance"
-            subtitle="Per-agent metrics"
+            subtitle="tasks completed, success rate, avg duration, token usage"
             exportType="agents"
             from={exportFrom}
             to={exportTo}
           >
-            <p className="text-sm text-mission-control-text-dim">
-              Includes tasks completed, success rate, avg duration, and token usage.
-            </p>
+            <span />
           </ReportSection>
 
           <ReportSection
             icon={Award}
             title="Approvals Report"
-            subtitle="All approval decisions"
+            subtitle="type, status, created, resolved, response time"
             exportType="approvals"
             from={exportFrom}
             to={exportTo}
           >
-            <p className="text-sm text-mission-control-text-dim">
-              Includes type, status, created, resolved, and response time.
-            </p>
+            <span />
           </ReportSection>
 
           <ReportSection
             icon={Zap}
             title="Token Usage"
-            subtitle="Daily token consumption by agent"
+            subtitle="date, agent, input/output tokens, cost per day"
             exportType="token-usage"
             from={exportFrom}
             to={exportTo}
           >
-            <p className="text-sm text-mission-control-text-dim">
-              Includes date, agent, input/output tokens, and cost per day.
-            </p>
+            <span />
           </ReportSection>
         </div>
 
         {/* ── Legacy weekly/monthly report ── */}
         {reportType === 'weekly' && weeklyReport && (
           <div className="space-y-6">
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <div className="flex items-center gap-2 text-mission-control-accent mb-2">
-                <Calendar size={20} />
-                <span className="font-medium">Week of {weeklyReport.weekStart}</span>
-              </div>
-              <p className="text-sm text-mission-control-text-dim">
-                {weeklyReport.weekStart} to {weeklyReport.weekEnd}
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <Flex align="center" gap="2" className="mb-2">
+                <Calendar size={16} className="text-mission-control-accent" />
+                <span className="text-sm font-semibold text-mission-control-text">Week of {weeklyReport.weekStart}</span>
+              </Flex>
+              <p className="text-xs text-mission-control-text-dim">
+                {weeklyReport.weekStart} — {weeklyReport.weekEnd}
               </p>
             </div>
 
@@ -570,31 +572,31 @@ export default function ReportsPanel() {
               <StatCard label="Total Hours" value={`${weeklyReport.totalHours.toFixed(1)}h`} color="text-warning" />
             </div>
 
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Award size={16} className="text-warning" />
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <Award size={12} className="text-mission-control-text-dim" />
                 Highlights
-              </h3>
+              </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-mission-control-bg rounded-lg">
+                <div className="p-4 bg-mission-control-border/10 rounded-lg">
                   <div className="text-sm text-mission-control-text-dim mb-2">Top Performer</div>
                   <div className="text-xl font-bold text-warning">{weeklyReport.topAgent}</div>
                 </div>
-                <div className="p-4 bg-mission-control-bg rounded-lg">
+                <div className="p-4 bg-mission-control-border/10 rounded-lg">
                   <div className="text-sm text-mission-control-text-dim mb-2">Most Active Project</div>
                   <div className="text-xl font-bold text-info">{weeklyReport.topProject}</div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp size={16} className="text-mission-control-accent" />
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <TrendingUp size={12} className="text-mission-control-text-dim" />
                 Insights
-              </h3>
+              </div>
               <div className="space-y-3">
                 {weeklyReport.insights.map((insight, idx) => (
-                  <div key={idx} className="p-4 bg-mission-control-bg rounded-lg text-sm">
+                  <div key={idx} className="p-4 bg-mission-control-border/10 rounded-lg text-sm">
                     {insight}
                   </div>
                 ))}
@@ -605,14 +607,14 @@ export default function ReportsPanel() {
 
         {reportType === 'monthly' && monthlyReport && (
           <div className="space-y-6">
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <div className="flex items-center gap-2 text-mission-control-accent mb-2">
-                <Calendar size={20} />
-                <span className="font-medium">
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <Flex align="center" gap="2" className="mb-2">
+                <Calendar size={16} className="text-mission-control-accent" />
+                <span className="text-sm font-semibold text-mission-control-text">
                   {monthlyReport.month} {monthlyReport.year}
                 </span>
-              </div>
-              <p className="text-sm text-mission-control-text-dim">Monthly Performance Report</p>
+              </Flex>
+              <p className="text-xs text-mission-control-text-dim">Monthly Performance Report</p>
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -622,20 +624,20 @@ export default function ReportsPanel() {
               <StatCard label="Total Hours" value={`${monthlyReport.totalHours.toFixed(1)}h`} color="text-warning" />
             </div>
 
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Award size={16} className="text-warning" />
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <Award size={12} className="text-mission-control-text-dim" />
                 Agent Performance
-              </h3>
+              </div>
               <div className="space-y-3">
                 {monthlyReport.agentPerformance.map((agent) => (
-                  <div key={agent.agentId} className="p-4 bg-mission-control-bg rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
+                  <div key={agent.agentId} className="p-4 bg-mission-control-border/10 rounded-lg">
+                    <Flex align="center" justify="between" className="mb-3">
                       <span className="font-medium">{agent.agentName}</span>
                       <span className="text-sm text-mission-control-text-dim">
                         {agent.tasksCompleted} completed
                       </span>
-                    </div>
+                    </Flex>
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <div className="text-mission-control-text-dim">Completion Rate</div>
@@ -659,20 +661,20 @@ export default function ReportsPanel() {
               </div>
             </div>
 
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Clock size={16} className="text-mission-control-accent" />
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <Clock size={12} className="text-mission-control-text-dim" />
                 Project Breakdown
-              </h3>
+              </div>
               <div className="space-y-3">
                 {monthlyReport.projectBreakdown.map((project) => (
-                  <div key={project.project} className="p-4 bg-mission-control-bg rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
+                  <div key={project.project} className="p-4 bg-mission-control-border/10 rounded-lg">
+                    <Flex align="center" justify="between" className="mb-3">
                       <span className="font-medium">{project.project}</span>
                       <span className="text-sm text-mission-control-text-dim">
                         {project.totalTasks} tasks
                       </span>
-                    </div>
+                    </Flex>
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <div className="text-mission-control-text-dim">Completed</div>
@@ -696,14 +698,14 @@ export default function ReportsPanel() {
               </div>
             </div>
 
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-6">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp size={16} className="text-mission-control-accent" />
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-5">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <TrendingUp size={12} className="text-mission-control-text-dim" />
                 Insights
-              </h3>
+              </div>
               <div className="space-y-3">
                 {monthlyReport.insights.map((insight, idx) => (
-                  <div key={idx} className="p-4 bg-mission-control-bg rounded-lg text-sm">
+                  <div key={idx} className="p-4 bg-mission-control-border/10 rounded-lg text-sm">
                     {insight}
                   </div>
                 ))}
@@ -714,6 +716,6 @@ export default function ReportsPanel() {
       </div>
 
       <ScheduleToast visible={showScheduleToast} onHide={() => setShowScheduleToast(false)} />
-    </div>
+    </Flex>
   );
 }

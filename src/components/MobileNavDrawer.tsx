@@ -4,8 +4,8 @@ import {
   LayoutDashboard, Mail, Kanban, MessageSquare, ShieldAlert, Bot, Bell, Puzzle,
   FolderOpen, FolderKanban, CalendarClock, BookOpen, Search, Megaphone, Zap,
 } from 'lucide-react';
+import { Button, Text, Badge, Flex, Box } from '@radix-ui/themes';
 import { usePanelConfigStore } from '../store/panelConfig';
-import { NumberBadge } from './BadgeWrapper';
 import { ViewRegistry } from '../core/ViewRegistry';
 
 // Mirror of BUILTIN_PANEL_ICONS from Sidebar — must stay in sync
@@ -102,32 +102,36 @@ export default function MobileNavDrawer({
         }`}
       >
         {/* Drawer header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
-          <span className="text-sm font-semibold text-mission-control-text">Navigation</span>
+        <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border">
+          <Text size="2" weight="bold" className="text-mission-control-text">Navigation</Text>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all"
             aria-label="Close navigation"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={18} aria-hidden="true" />
           </button>
-        </div>
+        </Flex>
 
         {/* Search button */}
         {onOpenSearch && (
-          <div className="px-3 pt-3 pb-1">
-            <button
+          <Box className="px-3 pt-3 pb-1">
+            <Button
               onClick={() => { onOpenSearch(); onClose(); }}
-              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all border border-mission-control-border/50"
+              variant="outline"
+              color="gray"
+              size="2"
               aria-label="Search (Cmd+K)"
+              className="w-full justify-start"
             >
               <Search size={16} className="flex-shrink-0" aria-hidden="true" />
               <span className="flex-1 text-sm text-left truncate">Search...</span>
-              <kbd className="text-[10px] px-1.5 py-0.5 bg-mission-control-border/80 rounded font-mono flex-shrink-0">
+              <kbd className="text-xs px-1.5 py-0.5 bg-mission-control-border/80 rounded font-mono flex-shrink-0">
                 K
               </kbd>
-            </button>
-          </div>
+            </Button>
+          </Box>
         )}
 
         {/* Nav items */}
@@ -155,33 +159,33 @@ export default function MobileNavDrawer({
               return (
                 <button
                   key={id}
+                  type="button"
                   onClick={() => handleNavigate(id)}
-                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all relative focus-visible:ring-2 focus-visible:ring-mission-control-accent focus-visible:ring-offset-1 focus-visible:ring-offset-mission-control-bg ${
-                    isActive
-                      ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
-                      : 'text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
-                  }`}
                   aria-label={`${label}${badge > 0 ? ` (${badge} items)` : ''}`}
                   aria-current={isActive ? 'page' : undefined}
+                  className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors relative ${
+                    isActive ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+                  }`}
                 >
                   <Icon size={20} className="flex-shrink-0" aria-hidden="true" />
                   <span className="text-sm font-medium flex-1 text-left truncate">{label}</span>
                   {shortcutNum !== undefined && (
-                    <kbd className={`text-[10px] px-1.5 py-0.5 rounded font-mono flex-shrink-0 ${
-                      isActive ? 'bg-white/20 text-white' : 'bg-mission-control-border/80 text-mission-control-text-dim'
+                    <kbd className={`text-xs px-1.5 py-0.5 rounded font-mono flex-shrink-0 ${
+                      isActive ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'bg-mission-control-border/80 text-mission-control-text-dim'
                     }`}>
                       {shortcutNum}
                     </kbd>
                   )}
                   {badge > 0 && (
-                    <NumberBadge
-                      count={badge}
-                      maxCount={99}
-                      position="inline"
-                      variant={isActive ? 'secondary' : 'primary'}
-                      size="sm"
-                      className={isActive ? 'bg-mission-control-text/20 text-mission-control-text' : 'bg-mission-control-accent/20 text-mission-control-accent'}
-                    />
+                    <Badge
+                      color={isActive ? 'gray' : 'indigo'}
+                      variant="soft"
+                      size="1"
+                      radius="full"
+                      className={isActive ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'bg-mission-control-accent/20 text-mission-control-accent'}
+                    >
+                      {badge > 99 ? '99+' : badge}
+                    </Badge>
                   )}
                 </button>
               );
@@ -189,12 +193,13 @@ export default function MobileNavDrawer({
         </nav>
 
         {/* Bottom actions */}
-        <div className="p-3 border-t border-mission-control-border space-y-1">
+        <Box className="p-3 border-t border-mission-control-border space-y-1">
           {onOpenEditPanels && (
             <button
+              type="button"
               onClick={() => { onOpenEditPanels(); onClose(); }}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all"
               aria-label="Edit Panels"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <SlidersHorizontal size={18} aria-hidden="true" />
               <span className="text-sm font-medium">Edit Panels</span>
@@ -203,9 +208,10 @@ export default function MobileNavDrawer({
 
           {onOpenHelp && (
             <button
+              type="button"
               onClick={() => { onOpenHelp(); onClose(); }}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all"
               aria-label="Help"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <HelpCircle size={18} aria-hidden="true" />
               <span className="text-sm font-medium">Help</span>
@@ -213,19 +219,18 @@ export default function MobileNavDrawer({
           )}
 
           <button
+            type="button"
             onClick={() => handleNavigate('settings')}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all ${
-              currentView === 'settings'
-                ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
-                : 'text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
-            }`}
             aria-label="Settings"
             aria-current={currentView === 'settings' ? 'page' : undefined}
+            className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              currentView === 'settings' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+            }`}
           >
             <Settings size={18} aria-hidden="true" />
             <span className="text-sm font-medium">Settings</span>
           </button>
-        </div>
+        </Box>
       </div>
     </>
   );

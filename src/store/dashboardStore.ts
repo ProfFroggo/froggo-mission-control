@@ -17,13 +17,16 @@ export interface DashboardLayout {
 }
 
 const STORAGE_KEY = 'mission-control.dashboard-layout';
-const LAYOUT_VERSION = 2; // Increment to force layout reset on upgrade
+const LAYOUT_VERSION = 3; // Increment to force layout reset on upgrade
 
 const DEFAULT_WIDGET_IDS = [
   'task-stats',
   'agent-activity',
   'approval-queue',
   'system-health',
+  'schedule-upcoming',
+  'inbox-count',
+  'perf-48h',
 ];
 
 const DEFAULT_SIZES: Record<string, WidgetSize> = {
@@ -31,6 +34,9 @@ const DEFAULT_SIZES: Record<string, WidgetSize> = {
   'agent-activity': 'md',
   'approval-queue': 'md',
   'system-health': 'xl',
+  'schedule-upcoming': 'md',
+  'inbox-count': 'md',
+  'perf-48h': 'md',
 };
 
 function buildDefaultLayout(): DashboardWidgetSlot[] {

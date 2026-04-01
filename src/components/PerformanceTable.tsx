@@ -2,8 +2,9 @@
 // loadData is redefined on each render but captures latest state - safe pattern.
 // Review: 2026-02-17 - suppression retained, pattern is safe
 
-import { useState, useEffect } from 'react';
-import { Activity } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Activity, ChevronUp, ChevronDown } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import { getAgentTheme } from '../utils/agentThemes';
 
 interface PerformanceData {
@@ -87,17 +88,13 @@ export default function PerformanceTable() {
     }
   };
 
-  const getStatusColor = (agent: PerformanceData) => {
-    // Gray for low sample size
-    if (agent.total_tasks < 5) return 'bg-muted';
-
-    // Red/Yellow/Green based on success rate and Clara approval
+  const getStatusDotStyle = (agent: PerformanceData): React.CSSProperties => {
+    if (agent.total_tasks < 5) return { backgroundColor: 'var(--mission-control-border)' };
     const success = agent.success_rate;
     const clara = agent.clara_approval_rate;
-
-    if (success >= 0.8 && clara >= 0.85) return 'bg-green-500';
-    if (success >= 0.6 && clara >= 0.7) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (success >= 0.8 && clara >= 0.85) return { backgroundColor: 'var(--color-success)' };
+    if (success >= 0.6 && clara >= 0.7) return { backgroundColor: 'var(--color-warning)' };
+    return { backgroundColor: 'var(--color-error)' };
   };
 
   const sortedData = [...data].sort((a, b) => {
@@ -122,27 +119,21 @@ export default function PerformanceTable() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Activity className="text-mission-control-accent" size={20} />
-            Agent Performance Comparison
-          </h2>
-          <p className="text-sm text-mission-control-text-dim mt-1">
-            Cross-agent metrics with quality indicators
-          </p>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <Activity className="text-mission-control-accent" size={16} />
+          <span className="text-sm font-semibold text-mission-control-text">Agent Performance Comparison</span>
         </div>
 
         {/* Period selector */}
-        <div className="flex bg-mission-control-border rounded-lg p-1">
+        <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
           {([7, 30, 90] as const).map((days) => (
             <button
               key={days}
+              type="button"
               onClick={() => setPeriod(days)}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                period === days
-                  ? 'bg-mission-control-accent text-white'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text'
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                period === days ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               {days}d
@@ -152,7 +143,7 @@ export default function PerformanceTable() {
       </div>
 
       {/* Performance Table */}
-      <div className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-2xl p-6 overflow-auto">
+      <div className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-xl overflow-auto">
         {data.length === 0 ? (
           <div className="flex items-center justify-center h-full text-mission-control-text-dim">
             No performance data available for selected period
@@ -160,83 +151,95 @@ export default function PerformanceTable() {
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-mission-control-border">
-                <th className="text-left py-3 px-4 text-sm font-medium text-mission-control-text-dim">Status</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-mission-control-text-dim">Agent</th>
+              <tr className="flex items-center gap-3 px-4 py-2 border-b border-mission-control-border text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
+                <th className="text-left w-6 font-bold">St</th>
+                <th className="text-left flex-1 font-bold">Agent</th>
                 <th
-                  className="text-right py-3 px-4 text-sm font-medium text-mission-control-text-dim cursor-pointer hover:text-mission-control-text"
+                  className="text-right w-20 cursor-pointer hover:text-mission-control-text font-bold select-none"
                   onClick={() => handleSort('success_rate')}
                 >
-                  Success Rate {sortBy === 'success_rate' && (sortDir === 'asc' ? '↑' : '↓')}
+                  <span className="inline-flex items-center justify-end gap-0.5">
+                    Success
+                    {sortBy === 'success_rate' && (sortDir === 'asc' ? <ChevronUp size={10} /> : <ChevronDown size={10} />)}
+                  </span>
                 </th>
                 <th
-                  className="text-right py-3 px-4 text-sm font-medium text-mission-control-text-dim cursor-pointer hover:text-mission-control-text"
+                  className="text-right w-16 cursor-pointer hover:text-mission-control-text font-bold select-none"
                   onClick={() => handleSort('avg_completion_hours')}
                 >
-                  Avg Time {sortBy === 'avg_completion_hours' && (sortDir === 'asc' ? '↑' : '↓')}
+                  <span className="inline-flex items-center justify-end gap-0.5">
+                    Avg Time
+                    {sortBy === 'avg_completion_hours' && (sortDir === 'asc' ? <ChevronUp size={10} /> : <ChevronDown size={10} />)}
+                  </span>
                 </th>
                 <th
-                  className="text-right py-3 px-4 text-sm font-medium text-mission-control-text-dim cursor-pointer hover:text-mission-control-text"
+                  className="text-right w-20 cursor-pointer hover:text-mission-control-text font-bold select-none"
                   onClick={() => handleSort('clara_approval_rate')}
                 >
-                  Clara Rate {sortBy === 'clara_approval_rate' && (sortDir === 'asc' ? '↑' : '↓')}
+                  <span className="inline-flex items-center justify-end gap-0.5">
+                    Clara
+                    {sortBy === 'clara_approval_rate' && (sortDir === 'asc' ? <ChevronUp size={10} /> : <ChevronDown size={10} />)}
+                  </span>
                 </th>
                 <th
-                  className="text-right py-3 px-4 text-sm font-medium text-mission-control-text-dim cursor-pointer hover:text-mission-control-text"
+                  className="text-right w-24 cursor-pointer hover:text-mission-control-text font-bold select-none"
                   onClick={() => handleSort('tokens_per_task')}
                 >
-                  Tokens/Task {sortBy === 'tokens_per_task' && (sortDir === 'asc' ? '↑' : '↓')}
+                  <span className="inline-flex items-center justify-end gap-0.5">
+                    Tokens/Task
+                    {sortBy === 'tokens_per_task' && (sortDir === 'asc' ? <ChevronUp size={10} /> : <ChevronDown size={10} />)}
+                  </span>
                 </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-mission-control-text-dim">Tasks</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-mission-control-text-dim">Cost</th>
+                <th className="text-right w-12 font-bold">Tasks</th>
+                <th className="text-right w-20 font-bold">Cost</th>
               </tr>
             </thead>
             <tbody>
               {sortedData.map((agent) => {
                 const theme = getAgentTheme(agent.agent_id);
-                const statusColor = getStatusColor(agent);
+                const dotStyle = getStatusDotStyle(agent);
 
                 return (
                   <tr
                     key={agent.agent_id}
                     onClick={() => handleRowClick(agent.agent_id)}
-                    className="border-b border-mission-control-border/50 hover:bg-mission-control-border/30 cursor-pointer transition-colors"
+                    className="flex items-center gap-3 px-4 py-2.5 border-b border-mission-control-border/40 last:border-0 hover:bg-mission-control-border/10 transition-colors text-sm cursor-pointer"
                   >
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${statusColor}`} />
-                      </div>
+                    <td className="w-6">
+                      <div className="w-2.5 h-2.5 rounded-full" style={dotStyle} />
                     </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
+                    <td className="flex-1 min-w-0">
+                      <Flex align="center" gap="2">
                         <div
-                          className="w-2 h-2 rounded-full"
+                          className="w-2 h-2 rounded-full shrink-0"
                           style={{ backgroundColor: theme.color }}
                         />
-                        <span className="font-medium capitalize">{agent.agent_id.replace(/-/g, ' ')}</span>
-                      </div>
+                        <span className="font-medium capitalize truncate">{agent.agent_id.replace(/-/g, ' ')}</span>
+                      </Flex>
                     </td>
-                    <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
+                    <td className="w-20 text-right tabular-nums whitespace-nowrap">
                       <span className={agent.success_rate >= 0.8 ? 'text-success' : agent.success_rate >= 0.6 ? 'text-warning' : 'text-error'}>
                         {(agent.success_rate * 100).toFixed(0)}%
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
+                    <td className="w-16 text-right tabular-nums whitespace-nowrap">
                       <span className="text-mission-control-text-dim">{agent.avg_completion_hours.toFixed(1)}h</span>
                     </td>
-                    <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
+                    <td className="w-20 text-right tabular-nums whitespace-nowrap">
                       <span className={agent.clara_approval_rate >= 0.85 ? 'text-success' : agent.clara_approval_rate >= 0.7 ? 'text-warning' : 'text-error'}>
                         {(agent.clara_approval_rate * 100).toFixed(0)}%
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
-                      <span className="text-mission-control-text-dim">{agent.tokens_per_task.toLocaleString()}</span>
+                    <td className="w-24 text-right tabular-nums whitespace-nowrap">
+                      <span className="text-mission-control-text-dim font-mono">{agent.tokens_per_task.toLocaleString()}</span>
                     </td>
-                    <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
+                    <td className="w-12 text-right tabular-nums whitespace-nowrap">
                       <span className="text-mission-control-text-dim">{agent.total_tasks}</span>
                     </td>
-                    <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
-                      <span className="text-mission-control-text-dim">${agent.total_cost.toFixed(2)}</span>
+                    <td className="w-20 text-right tabular-nums whitespace-nowrap">
+                      <span className="text-mission-control-text-dim font-mono">
+                        ${agent.total_cost < 1 ? agent.total_cost.toFixed(4) : agent.total_cost.toFixed(2)}
+                      </span>
                     </td>
                   </tr>
                 );
@@ -249,7 +252,7 @@ export default function PerformanceTable() {
       {/* Audit Trail Modal */}
       {selectedAgent && (
         <div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-8"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-8"
           onClick={() => setSelectedAgent(null)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedAgent(null); } }}
           role="button"
@@ -257,19 +260,17 @@ export default function PerformanceTable() {
           aria-label="Close modal"
         >
           <div
-            className="bg-mission-control-surface border border-mission-control-border rounded-2xl w-full max-w-4xl max-h-[80vh] overflow-auto"
+            className="bg-mission-control-surface border border-mission-control-border rounded-xl w-full max-w-4xl max-h-[80vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"
           >
-            <div className="p-6 border-b border-mission-control-border sticky top-0 bg-mission-control-surface">
-              <h3 className="text-xl font-bold flex items-center gap-2 tracking-tight">
-                <Activity size={20} className="text-mission-control-accent" />
-                {selectedAgent} Audit Trail
-              </h3>
-              <p className="text-sm text-mission-control-text-dim mt-1">
-                Last {period} days of lifecycle changes and activity
-              </p>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border sticky top-0 bg-mission-control-surface flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <Activity size={16} className="text-mission-control-accent" />
+                <span className="text-sm font-semibold text-mission-control-text">{selectedAgent} Audit Trail</span>
+              </div>
+              <span className="text-xs text-mission-control-text-dim">Last {period} days</span>
             </div>
 
             <div className="p-6">
@@ -290,7 +291,7 @@ export default function PerformanceTable() {
                       <div className="flex-1">
                         {entry.type === 'lifecycle' ? (
                           <div>
-                            <div className="text-sm font-medium text-amber-400">
+                            <div className="text-sm font-medium text-warning">
                               Lifecycle: {entry.field}
                             </div>
                             <div className="text-xs text-mission-control-text-dim mt-1">
@@ -329,10 +330,7 @@ export default function PerformanceTable() {
             </div>
 
             <div className="p-6 border-t border-mission-control-border flex justify-end">
-              <button
-                onClick={() => setSelectedAgent(null)}
-                className="px-4 py-2 bg-mission-control-border rounded-lg hover:bg-mission-control-border/70 transition-colors"
-              >
+              <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" onClick={() => setSelectedAgent(null)}>
                 Close
               </button>
             </div>

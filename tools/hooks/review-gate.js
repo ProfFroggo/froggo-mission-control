@@ -49,7 +49,9 @@ async function main() {
 
     if (status === 'review' && taskId) {
       // Fire-and-forget: trigger Clara review via the platform API
-      triggerClaraReview(taskId).catch(() => {});
+      triggerClaraReview(taskId).catch((err) => {
+        process.stderr.write(`[review-gate] Clara review trigger failed for task ${taskId}: ${err}\n`);
+      });
     }
   } catch {
     // Silently ignore parse errors

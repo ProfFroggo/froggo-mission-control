@@ -3,6 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { Calculator, TrendingUp, TrendingDown, Plus, Trash2, Play, Save, Loader2 } from 'lucide-react';
+import { Button, Flex, TextField, Select, TextArea, Box } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { financeApi } from '../lib/api';
 
@@ -121,10 +122,10 @@ function QuickProjectionTab() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12 gap-2 text-mission-control-text-dim">
+      <Flex align="center" justify="center" gap="2" className="py-12 text-mission-control-text-dim">
         <Loader2 className="w-5 h-5 animate-spin" />
         <span className="text-sm">Loading recurring items...</span>
-      </div>
+      </Flex>
     );
   }
 
@@ -151,23 +152,22 @@ function QuickProjectionTab() {
               className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                 isCancelled
                   ? 'bg-error/5 border-error/30 opacity-60'
-                  : 'bg-mission-control-bg-alt border-mission-control-border'
+                  : 'bg-mission-control-border/20 border-mission-control-border'
               }`}
             >
               {/* Toggle */}
               <button
+                type="button"
                 onClick={() => setCancel(item.id, !isCancelled)}
-                className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${
-                  isCancelled ? 'bg-error/60' : 'bg-mission-control-accent'
-                }`}
                 aria-label={isCancelled ? 'Restore item' : 'Cancel item'}
                 title={isCancelled ? 'Click to restore' : 'Click to cancel'}
+                className={`inline-flex items-center justify-center w-8 h-8 rounded-full border flex-shrink-0 transition-colors ${
+                  isCancelled
+                    ? 'bg-error/10 border-error/30 text-error'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
-                <span
-                  className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                    isCancelled ? 'translate-x-0.5' : 'translate-x-5'
-                  }`}
-                />
+                <span className="w-2 h-2 rounded-full bg-current" />
               </button>
 
               {/* Name */}
@@ -185,15 +185,17 @@ function QuickProjectionTab() {
               </span>
 
               {/* Amount input (disabled when cancelled) */}
-              <input
+              <TextField.Root
                 type="number"
                 disabled={isCancelled}
                 defaultValue={Math.abs(item.amount).toFixed(2)}
                 onChange={(e) => setAdjustAmount(item.id, e.target.value)}
                 min="0"
                 step="0.01"
-                className="w-24 text-right text-sm bg-mission-control-surface border border-mission-control-border rounded px-2 py-1 text-mission-control-text focus:outline-none focus:border-mission-control-accent disabled:opacity-40"
+                size="2"
+                className="w-24"
                 aria-label={`Amount for ${item.description}`}
+                style={{ textAlign: 'right' }}
               />
               <span className="text-xs text-mission-control-text-dim flex-shrink-0">{item.currency}</span>
             </div>
@@ -202,10 +204,13 @@ function QuickProjectionTab() {
       </div>
 
       {/* Calculate button */}
-      <button
+      <Button
         onClick={calculate}
         disabled={calculating}
-        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent hover:bg-mission-control-accent/90 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+        size="2"
+        variant="soft"
+       
+        className="w-full"
         aria-label="Calculate projection"
       >
         {calculating ? (
@@ -213,44 +218,44 @@ function QuickProjectionTab() {
         ) : (
           <><Calculator className="w-4 h-4" /> Calculate</>
         )}
-      </button>
+      </Button>
 
       {/* Results */}
       {result && (
         <div className="grid grid-cols-3 gap-3 mt-4">
           {/* Before */}
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-            <p className="text-xs text-mission-control-text-dim uppercase tracking-wide mb-2">Before</p>
-            <p className="text-lg font-bold text-mission-control-text">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Before</p>
+            <p className="text-xl font-bold tabular-nums text-mission-control-text">
               {formatCurrency(result.before.monthly)}
               <span className="text-xs font-normal text-mission-control-text-dim">/mo</span>
             </p>
-            <p className="text-xs text-mission-control-text-dim mt-1">
+            <p className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
               {formatCurrency(result.before.yearly)}/yr
             </p>
           </div>
 
           {/* After */}
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-            <p className="text-xs text-mission-control-text-dim uppercase tracking-wide mb-2">After</p>
-            <p className="text-lg font-bold text-mission-control-text">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">After</p>
+            <p className="text-xl font-bold tabular-nums text-mission-control-text">
               {formatCurrency(result.after.monthly)}
               <span className="text-xs font-normal text-mission-control-text-dim">/mo</span>
             </p>
-            <p className="text-xs text-mission-control-text-dim mt-1">
+            <p className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
               {formatCurrency(result.after.yearly)}/yr
             </p>
           </div>
 
           {/* Savings */}
           <div
-            className={`rounded-lg p-4 border ${
+            className={`rounded-xl p-4 border ${
               result.savings.monthly >= 0
                 ? 'bg-success/10 border-success/30'
                 : 'bg-error/10 border-error/30'
             }`}
           >
-            <p className="text-xs text-mission-control-text-dim uppercase tracking-wide mb-2 flex items-center gap-1">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1">
               {result.savings.monthly >= 0 ? (
                 <TrendingDown className="w-3 h-3 text-success" />
               ) : (
@@ -259,7 +264,7 @@ function QuickProjectionTab() {
               Savings
             </p>
             <p
-              className={`text-lg font-bold ${
+              className={`text-xl font-bold tabular-nums ${
                 result.savings.monthly >= 0 ? 'text-success' : 'text-error'
               }`}
             >
@@ -267,7 +272,7 @@ function QuickProjectionTab() {
               {formatCurrency(result.savings.monthly)}
               <span className="text-xs font-normal text-mission-control-text-dim">/mo</span>
             </p>
-            <p className="text-xs text-mission-control-text-dim mt-1">
+            <p className="text-xs text-mission-control-text-dim mt-1 tabular-nums">
               {result.savings.yearly >= 0 ? '+' : ''}
               {formatCurrency(result.savings.yearly)}/yr
             </p>
@@ -412,37 +417,40 @@ function ScenarioBuilderTab() {
   return (
     <div className="space-y-4">
       {/* Header row */}
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <span className="text-sm text-mission-control-text-dim">
           {scenarios.length} scenario{scenarios.length !== 1 ? 's' : ''}
         </span>
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           {comparedIds.length >= 2 && (
             <button
+              type="button"
               onClick={() => setCompareMode((v) => !v)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
                 compareMode
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
               }`}
             >
               Compare
             </button>
           )}
-          <button
+          <Button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent hover:bg-mission-control-accent/90 text-white rounded-lg text-sm font-medium transition-colors"
+            size="2"
+            variant="soft"
+
             aria-label="New scenario"
           >
             <Plus className="w-4 h-4" /> New Scenario
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Flex>
+      </Flex>
 
       {/* Comparison chart */}
       {compareMode && comparisonChartData.length > 0 && (
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-mission-control-text mb-3">Scenario Comparison</h4>
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+          <h4 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Scenario Comparison</h4>
           <div style={{ height: 200 }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={comparisonChartData}>
@@ -484,10 +492,10 @@ function ScenarioBuilderTab() {
 
       {/* Scenario list */}
       {loadingScenarios ? (
-        <div className="flex items-center justify-center py-8 gap-2 text-mission-control-text-dim">
+        <Flex align="center" justify="center" gap="2" className="py-8 text-mission-control-text-dim">
           <Loader2 className="w-5 h-5 animate-spin" />
           <span className="text-sm">Loading scenarios...</span>
-        </div>
+        </Flex>
       ) : scenarios.length === 0 && !showForm ? (
         <div className="text-center py-10 text-mission-control-text-dim">
           <TrendingUp className="w-10 h-10 mx-auto mb-2" />
@@ -500,8 +508,8 @@ function ScenarioBuilderTab() {
             const months = projectionData[scenario.id];
             const color = SCENARIO_COLORS[idx % SCENARIO_COLORS.length];
             return (
-              <div key={scenario.id} className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-                <div className="flex items-start justify-between gap-3 mb-3">
+              <div key={scenario.id} className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4">
+                <Flex align="start" justify="between" gap="3" className="mb-3">
                   <div>
                     <h4 className="font-semibold text-mission-control-text">{scenario.name}</h4>
                     {scenario.description && (
@@ -509,23 +517,26 @@ function ScenarioBuilderTab() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <button
+                    <Button
                       onClick={() => runProjection(scenario.id)}
                       disabled={projecting}
-                      className="flex items-center gap-1.5 px-2.5 py-1 bg-mission-control-accent/20 hover:bg-mission-control-accent/30 text-mission-control-accent rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                      size="1"
+                      variant="soft"
+                     
                       aria-label="Run projection"
                     >
                       <Play className="w-3 h-3" /> Run
-                    </button>
+                    </Button>
                     <button
+                      type="button"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       onClick={() => deleteScenario(scenario.id, scenario.name)}
-                      className="p-1 text-mission-control-text-dim hover:text-error rounded transition-colors"
                       aria-label={`Delete ${scenario.name}`}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                </div>
+                </Flex>
 
                 {/* Projection chart */}
                 {months && months.length > 0 && (
@@ -566,32 +577,32 @@ function ScenarioBuilderTab() {
                               >
                                 <p className="font-semibold text-mission-control-text mb-2">Month {label}</p>
                                 <div className="space-y-1 text-mission-control-text-dim">
-                                  <div className="flex justify-between gap-4">
+                                  <Flex justify="between" gap="4">
                                     <span>Income</span>
                                     <span className="text-success">{formatCurrency(d.income)}</span>
-                                  </div>
-                                  <div className="flex justify-between gap-4">
+                                  </Flex>
+                                  <Flex justify="between" gap="4">
                                     <span>Expenses</span>
                                     <span className="text-error">{formatCurrency(d.expenses)}</span>
-                                  </div>
+                                  </Flex>
                                   {d.oneTime !== 0 && (
-                                    <div className="flex justify-between gap-4">
+                                    <Flex justify="between" gap="4">
                                       <span>One-time</span>
                                       <span>{formatCurrency(d.oneTime)}</span>
-                                    </div>
+                                    </Flex>
                                   )}
-                                  <div className="flex justify-between gap-4 border-t border-mission-control-border pt-1 mt-1">
+                                  <Flex justify="between" gap="4" className="border-t border-mission-control-border pt-1 mt-1">
                                     <span className="font-medium text-mission-control-text">Net</span>
                                     <span className={d.net >= 0 ? 'text-success' : 'text-error'}>
                                       {formatCurrency(d.net)}
                                     </span>
-                                  </div>
-                                  <div className="flex justify-between gap-4">
+                                  </Flex>
+                                  <Flex justify="between" gap="4">
                                     <span className="font-medium text-mission-control-text">Balance</span>
                                     <span className={d.runningBalance >= 0 ? 'text-success' : 'text-error'}>
                                       {formatCurrency(d.runningBalance)}
                                     </span>
-                                  </div>
+                                  </Flex>
                                 </div>
                               </div>
                             );
@@ -623,26 +634,26 @@ function ScenarioBuilderTab() {
           {/* Name */}
           <div>
             <label htmlFor="scenario-name" className="block text-xs text-mission-control-text-dim mb-1">Name *</label>
-            <input
+            <TextField.Root
               id="scenario-name"
-              type="text"
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="e.g., Cancel Netflix + Gym"
-              className="w-full px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+              size="2"
             />
           </div>
 
           {/* Description */}
           <div>
             <label htmlFor="scenario-description" className="block text-xs text-mission-control-text-dim mb-1">Description</label>
-            <textarea
+            <TextArea
               id="scenario-description"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               placeholder="Optional notes..."
               rows={2}
-              className="w-full px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent resize-none"
+              variant="soft"
+              resize="vertical"
             />
           </div>
 
@@ -650,54 +661,56 @@ function ScenarioBuilderTab() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="scenario-account" className="block text-xs text-mission-control-text-dim mb-1">Base Account</label>
-              <select
-                id="scenario-account"
-                value={form.baseAccountId}
-                onChange={(e) => setForm((f) => ({ ...f, baseAccountId: e.target.value }))}
-                className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+              <Select.Root
+                value={form.baseAccountId || '_none'}
+                onValueChange={(val) => setForm((f) => ({ ...f, baseAccountId: val === '_none' ? '' : val }))}
+                size="2"
               >
-                <option value="">None (delta mode)</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
-                ))}
-              </select>
+                <Select.Trigger id="scenario-account" className="w-full" />
+                <Select.Content>
+                  <Select.Item value="_none">None (delta mode)</Select.Item>
+                  {accounts.map((a) => (
+                    <Select.Item key={a.id} value={a.id}>{a.name}</Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Root>
             </div>
             <div>
               <label htmlFor="scenario-months" className="block text-xs text-mission-control-text-dim mb-1">Projection months</label>
-              <input
+              <TextField.Root
                 id="scenario-months"
                 type="number"
                 min={1}
                 max={60}
                 value={form.projectionMonths}
                 onChange={(e) => setForm((f) => ({ ...f, projectionMonths: parseInt(e.target.value) || 12 }))}
-                className="w-full px-3 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                size="2"
               />
             </div>
           </div>
 
           {/* Income adjustments */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">
+            <Flex align="center" justify="between" className="mb-2">
+              <span className="text-[10px] text-mission-control-text-dim font-bold uppercase tracking-wide">
                 Income adjustments
               </span>
               <button
+                type="button"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 onClick={() =>
                   setForm((f) => ({
                     ...f,
                     incomeRows: [...f.incomeRows, { label: '', monthly_delta: 0 }],
                   }))
                 }
-                className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent/80"
               >
                 <Plus className="w-3 h-3" /> Add
               </button>
-            </div>
+            </Flex>
             {form.incomeRows.map((row, i) => (
-              <div key={i} className="flex items-center gap-2 mb-2">
-                <input
-                  type="text"
+              <Flex key={i} align="center" gap="2" className="mb-2">
+                <TextField.Root
                   value={row.label}
                   onChange={(e) =>
                     setForm((f) => {
@@ -707,9 +720,10 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="e.g., Side project"
-                  className="flex-1 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="flex-1"
                 />
-                <input
+                <TextField.Root
                   type="number"
                   value={row.monthly_delta}
                   onChange={(e) =>
@@ -720,46 +734,48 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="+500"
-                  className="w-24 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="w-24"
                 />
                 <button
+                  type="button"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   onClick={() =>
                     setForm((f) => ({
                       ...f,
                       incomeRows: f.incomeRows.filter((_, j) => j !== i),
                     }))
                   }
-                  className="p-1 text-mission-control-text-dim hover:text-error rounded transition-colors"
                   aria-label="Remove income row"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
-              </div>
+              </Flex>
             ))}
           </div>
 
           {/* Expense adjustments */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">
+            <Flex align="center" justify="between" className="mb-2">
+              <span className="text-[10px] text-mission-control-text-dim font-bold uppercase tracking-wide">
                 Expense adjustments
               </span>
               <button
+                type="button"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 onClick={() =>
                   setForm((f) => ({
                     ...f,
                     expenseRows: [...f.expenseRows, { category: '', monthly_delta: 0 }],
                   }))
                 }
-                className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent/80"
               >
                 <Plus className="w-3 h-3" /> Add
               </button>
-            </div>
+            </Flex>
             {form.expenseRows.map((row, i) => (
-              <div key={i} className="flex items-center gap-2 mb-2">
-                <input
-                  type="text"
+              <Flex key={i} align="center" gap="2" className="mb-2">
+                <TextField.Root
                   value={row.category}
                   onChange={(e) =>
                     setForm((f) => {
@@ -769,9 +785,10 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="e.g., subscriptions"
-                  className="flex-1 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="flex-1"
                 />
-                <input
+                <TextField.Root
                   type="number"
                   value={row.monthly_delta}
                   onChange={(e) =>
@@ -782,46 +799,48 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="-50"
-                  className="w-24 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="w-24"
                 />
                 <button
+                  type="button"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   onClick={() =>
                     setForm((f) => ({
                       ...f,
                       expenseRows: f.expenseRows.filter((_, j) => j !== i),
                     }))
                   }
-                  className="p-1 text-mission-control-text-dim hover:text-error rounded transition-colors"
                   aria-label="Remove expense row"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
-              </div>
+              </Flex>
             ))}
           </div>
 
           {/* One-time events */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-mission-control-text-dim font-medium uppercase tracking-wide">
+            <Flex align="center" justify="between" className="mb-2">
+              <span className="text-[10px] text-mission-control-text-dim font-bold uppercase tracking-wide">
                 One-time events
               </span>
               <button
+                type="button"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 onClick={() =>
                   setForm((f) => ({
                     ...f,
                     eventRows: [...f.eventRows, { label: '', amount: 0, date: '' }],
                   }))
                 }
-                className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent/80"
               >
                 <Plus className="w-3 h-3" /> Add
               </button>
-            </div>
+            </Flex>
             {form.eventRows.map((row, i) => (
-              <div key={i} className="flex items-center gap-2 mb-2">
-                <input
-                  type="text"
+              <Flex key={i} align="center" gap="2" className="mb-2">
+                <TextField.Root
                   value={row.label}
                   onChange={(e) =>
                     setForm((f) => {
@@ -831,9 +850,10 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="e.g., Vacation"
-                  className="flex-1 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="flex-1"
                 />
-                <input
+                <TextField.Root
                   type="number"
                   value={row.amount}
                   onChange={(e) =>
@@ -844,9 +864,10 @@ function ScenarioBuilderTab() {
                     })
                   }
                   placeholder="-3000"
-                  className="w-24 px-2 py-1.5 bg-mission-control-bg-alt border border-mission-control-border rounded text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="w-24"
                 />
-                <input
+                <TextField.Root
                   type="date"
                   value={row.date}
                   onChange={(e) =>
@@ -856,44 +877,49 @@ function ScenarioBuilderTab() {
                       return { ...f, eventRows: next };
                     })
                   }
-                  className="w-32 px-2 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="w-32"
                 />
                 <button
+                  type="button"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   onClick={() =>
                     setForm((f) => ({
                       ...f,
                       eventRows: f.eventRows.filter((_, j) => j !== i),
                     }))
                   }
-                  className="p-1 text-mission-control-text-dim hover:text-error rounded transition-colors"
                   aria-label="Remove event row"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
-              </div>
+              </Flex>
             ))}
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 pt-2">
-            <button
+          <Flex align="center" gap="2" className="pt-2">
+            <Button
               onClick={saveAndProject}
               disabled={saving || projecting}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent hover:bg-mission-control-accent/90 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+              size="2"
+              variant="soft"
+             
             >
               {saving || projecting ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> {saving ? 'Saving...' : 'Projecting...'}</>
               ) : (
                 <><Save className="w-4 h-4" /> Save & Project</>
               )}
-            </button>
+            </Button>
             <button
+              type="button"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               onClick={resetForm}
-              className="px-4 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text rounded-lg text-sm transition-colors"
             >
               Cancel
             </button>
-          </div>
+          </Flex>
         </div>
       )}
     </div>
@@ -913,27 +939,28 @@ export default function FinanceScenarioPanel() {
   ];
 
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
+    <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
       {/* Tab strip */}
-      <div className="flex items-center gap-1 mb-4">
+      <Flex gap="1" className="border-b border-mission-control-border mb-4">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
+            type="button"
             onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`flex items-center gap-1.5 px-4 py-3 border-b-2 -mb-px text-sm font-medium transition-colors ${
               activeTab === id
-                ? 'bg-mission-control-accent text-white'
-                : 'bg-mission-control-bg-alt text-mission-control-text-dim hover:text-mission-control-text'
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             <Icon className="w-3.5 h-3.5" />
             {label}
           </button>
         ))}
-      </div>
+      </Flex>
 
       {/* Tab content */}
       {activeTab === 'quick' ? <QuickProjectionTab /> : <ScenarioBuilderTab />}
-    </div>
+    </Box>
   );
 }

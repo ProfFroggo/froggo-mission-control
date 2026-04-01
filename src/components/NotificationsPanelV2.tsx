@@ -12,6 +12,7 @@ import {
   ChevronDown, ChevronRight, Volume2, VolumeX, ExternalLink,
   MessageSquare, Calendar
 } from 'lucide-react';
+import { Button, Select, Checkbox, Switch, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import EmptyState from './EmptyState';
 import IconBadge from './IconBadge';
@@ -30,18 +31,18 @@ const SOUND_PREF_KEY = 'mission-control.notification-sound';
 // ─── Type config ──────────────────────────────────────────────────────────────
 
 const typeConfig: Record<string, { icon: any; color: string; label: string }> = {
-  task_complete:    { icon: CheckCircle,   color: 'text-success bg-success-subtle',       label: 'Task Complete'   },
-  task_deadline:    { icon: Clock3,        color: 'text-warning bg-warning-subtle',       label: 'Deadline'        },
-  task_assigned:    { icon: CheckSquare,   color: 'text-info bg-info-subtle',             label: 'Task Assigned'   },
+  task_complete:    { icon: CheckCircle,   color: 'text-success bg-success/10',       label: 'Task Complete'   },
+  task_deadline:    { icon: Clock3,        color: 'text-warning bg-warning/10',       label: 'Deadline'        },
+  task_assigned:    { icon: CheckSquare,   color: 'text-info bg-info/10',             label: 'Task Assigned'   },
   agent_update:     { icon: Bot,           color: 'text-review bg-review-subtle',         label: 'Agent Update'    },
-  message_arrival:  { icon: MessageSquare, color: 'text-info bg-info-subtle',             label: 'Message'         },
-  approval_pending: { icon: Eye,           color: 'text-warning bg-warning-subtle',       label: 'Review Needed'   },
-  human_review:     { icon: AlertTriangle, color: 'text-amber-400 bg-amber-500/10',       label: 'Human Review'    },
+  message_arrival:  { icon: MessageSquare, color: 'text-info bg-info/10',             label: 'Message'         },
+  approval_pending: { icon: Eye,           color: 'text-warning bg-warning/10',       label: 'Review Needed'   },
+  human_review:     { icon: AlertTriangle, color: 'text-warning bg-warning/10',       label: 'Human Review'    },
   calendar_event:   { icon: Calendar,      color: 'text-pink-400 bg-pink-500/10',         label: 'Event'           },
-  system_alert:     { icon: AlertTriangle, color: 'text-error bg-error-subtle',           label: 'Alert'           },
+  system_alert:     { icon: AlertTriangle, color: 'text-error bg-error/10',           label: 'Alert'           },
   skill_learned:    { icon: Star,          color: 'text-cyan-400 bg-cyan-500/10',         label: 'Skill'           },
-  approval_needed:  { icon: Shield,        color: 'text-orange-400 bg-orange-500/10',     label: 'Approval Needed' },
-  error:            { icon: XCircle,       color: 'text-error bg-error-subtle',           label: 'Error'           },
+  approval_needed:  { icon: Shield,        color: 'text-danger bg-danger/10',              label: 'Approval Needed' },
+  error:            { icon: XCircle,       color: 'text-error bg-error/10',           label: 'Error'           },
 };
 
 // ─── Group definitions ────────────────────────────────────────────────────────
@@ -147,20 +148,11 @@ function firePushNotification(message: string): void {
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <button
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors focus:outline-none ${
-        checked ? 'bg-mission-control-accent' : 'bg-mission-control-border'
-      }`}
-    >
-      <span
-        className={`inline-block h-4 w-4 mt-0.5 rounded-full bg-white shadow transition-transform ${
-          checked ? 'translate-x-4' : 'translate-x-0.5'
-        }`}
-      />
-    </button>
+    <Switch
+      checked={checked}
+      onCheckedChange={onChange}
+      size="2"
+    />
   );
 }
 
@@ -187,8 +179,8 @@ function ActionButtons({ notif, onDismiss, onMarkRead }: ActionButtonsProps) {
       {group === 'Tasks' && (
         <button
           onClick={(e) => navigateTo('kanban', e)}
-          className="p-1.5 hover:bg-info-subtle text-info rounded-lg transition-colors"
           title="View task"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <ExternalLink size={14} />
         </button>
@@ -196,8 +188,8 @@ function ActionButtons({ notif, onDismiss, onMarkRead }: ActionButtonsProps) {
       {group === 'Approvals' && (
         <button
           onClick={(e) => navigateTo('approvals', e)}
-          className="p-1.5 hover:bg-warning-subtle text-warning rounded-lg transition-colors"
           title="Review"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <ExternalLink size={14} />
         </button>
@@ -205,8 +197,8 @@ function ActionButtons({ notif, onDismiss, onMarkRead }: ActionButtonsProps) {
       {group === 'Agents' && (
         <button
           onClick={(e) => navigateTo('agents', e)}
-          className="p-1.5 hover:bg-review-subtle text-review rounded-lg transition-colors"
           title="View agent"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <ExternalLink size={14} />
         </button>
@@ -216,8 +208,8 @@ function ActionButtons({ notif, onDismiss, onMarkRead }: ActionButtonsProps) {
       {!notif.read && (
         <button
           onClick={(e) => { e.stopPropagation(); onMarkRead(notif.id); }}
-          className="p-1.5 hover:bg-success-subtle text-success rounded-lg transition-colors"
           title="Mark as read"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <Check size={14} />
         </button>
@@ -226,8 +218,8 @@ function ActionButtons({ notif, onDismiss, onMarkRead }: ActionButtonsProps) {
       {/* Dismiss */}
       <button
         onClick={(e) => { e.stopPropagation(); onDismiss(notif.id); }}
-        className="p-1.5 hover:bg-mission-control-border text-mission-control-text-dim rounded-lg transition-colors"
         title="Dismiss"
+        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
       >
         <X size={14} />
       </button>
@@ -424,10 +416,11 @@ export default function NotificationsPanelV2() {
     return (
       <div className="h-full flex flex-col">
         <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-          <div className="flex items-center gap-3">
+          <Flex align="center" gap="3">
             <button
+              type="button"
               onClick={() => setShowSettings(false)}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+              className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <X size={20} />
             </button>
@@ -435,38 +428,41 @@ export default function NotificationsPanelV2() {
               <h1 className="text-lg font-semibold text-mission-control-text">Notification Settings</h1>
               <p className="text-sm text-mission-control-text-dim">Configure notification preferences</p>
             </div>
-          </div>
+          </Flex>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Browser push opt-in */}
           <div className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
+            <Flex align="center" justify="between" className="mb-1">
+              <Flex align="center" gap="2">
                 {pushEnabled && pushPermission === 'granted'
                   ? <Bell size={16} className="text-mission-control-accent" />
                   : <BellOff size={16} className="text-mission-control-text-dim" />
                 }
                 <span className="font-medium text-sm">Browser notifications</span>
-              </div>
+              </Flex>
               {pushPermission === 'unsupported' ? (
                 <span className="text-xs text-mission-control-text-dim">Not supported</span>
               ) : pushEnabled && pushPermission === 'granted' ? (
-                <button
+                <Button
+                  size="1"
+                  variant="soft"
+                  color="red"
                   onClick={handleDisablePush}
-                  className="px-3 py-1.5 text-xs bg-error-subtle text-error rounded-lg hover:bg-error-subtle/80 transition-colors"
                 >
                   Disable
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
+                  size="1"
+                  variant="soft"
                   onClick={handleRequestPush}
-                  className="px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors"
                 >
                   Enable browser notifications
-                </button>
+                </Button>
               )}
-            </div>
+            </Flex>
             <p className="text-xs text-mission-control-text-dim pl-6">
               {pushEnabled && pushPermission === 'granted'
                 ? 'You will receive browser push notifications for new events.'
@@ -476,16 +472,16 @@ export default function NotificationsPanelV2() {
 
           {/* Sound toggle */}
           <div className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
+            <Flex align="center" justify="between" className="mb-1">
+              <Flex align="center" gap="2">
                 {soundEnabled
                   ? <Volume2 size={16} className="text-mission-control-accent" />
                   : <VolumeX size={16} className="text-mission-control-text-dim" />
                 }
                 <span className="font-medium text-sm">Notification sounds</span>
-              </div>
+              </Flex>
               <Toggle checked={soundEnabled} onChange={saveSoundPref} />
-            </div>
+            </Flex>
             <p className="text-xs text-mission-control-text-dim pl-6">
               Play a subtle beep when new notifications arrive.
             </p>
@@ -498,40 +494,54 @@ export default function NotificationsPanelV2() {
               const Icon = config?.icon || Bell;
               return (
                 <div key={pref.type} className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <IconBadge icon={Icon} size={18} color={config?.color || 'bg-mission-control-bg0/10 text-mission-control-text-dim'} />
+                  <Flex align="start" gap="3">
+                    <IconBadge icon={Icon} size={18} color={config?.color || 'bg-mission-control-surface/10 text-mission-control-text-dim'} />
                     <div className="flex-1">
                       <div className="font-medium mb-1">{config?.label || pref.type}</div>
                       <div className="grid grid-cols-2 gap-3 mt-3">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input type="checkbox" checked={pref.enabled} onChange={(e) => handleTogglePreference(pref.type, 'enabled', e.target.checked)} className="rounded" />
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={pref.enabled}
+                            onCheckedChange={(v) => handleTogglePreference(pref.type, 'enabled', !!v)}
+                          />
                           <span>Enabled</span>
                         </label>
-                        <label className="flex items-center gap-2 text-sm">
-                          <input type="checkbox" checked={pref.show_desktop} disabled={!pref.enabled} onChange={(e) => handleTogglePreference(pref.type, 'show_desktop', e.target.checked)} className="rounded" />
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={pref.show_desktop}
+                            disabled={!pref.enabled}
+                            onCheckedChange={(v) => handleTogglePreference(pref.type, 'show_desktop', !!v)}
+                          />
                           <span>Desktop notification</span>
                         </label>
-                        <label className="flex items-center gap-2 text-sm">
-                          <input type="checkbox" checked={pref.play_sound} disabled={!pref.enabled} onChange={(e) => handleTogglePreference(pref.type, 'play_sound', e.target.checked)} className="rounded" />
+                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={pref.play_sound}
+                            disabled={!pref.enabled}
+                            onCheckedChange={(v) => handleTogglePreference(pref.type, 'play_sound', !!v)}
+                          />
                           <span>Play sound</span>
                         </label>
-                        <div className="flex items-center gap-2 text-sm">
+                        <Flex align="center" gap="2" className="text-sm">
                           <span>Min priority:</span>
-                          <select
+                          <Select.Root
                             value={pref.min_priority}
                             disabled={!pref.enabled}
-                            onChange={(e) => handleTogglePreference(pref.type, 'min_priority', e.target.value)}
-                            className="bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-xs text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+                            onValueChange={(v) => handleTogglePreference(pref.type, 'min_priority', v)}
+                            size="1"
                           >
-                            <option value="low">Low</option>
-                            <option value="normal">Normal</option>
-                            <option value="high">High</option>
-                            <option value="urgent">Urgent</option>
-                          </select>
-                        </div>
+                            <Select.Trigger />
+                            <Select.Content>
+                              <Select.Item value="low">Low</Select.Item>
+                              <Select.Item value="normal">Normal</Select.Item>
+                              <Select.Item value="high">High</Select.Item>
+                              <Select.Item value="urgent">Urgent</Select.Item>
+                            </Select.Content>
+                          </Select.Root>
+                        </Flex>
                       </div>
                     </div>
-                  </div>
+                  </Flex>
                 </div>
               );
             })}
@@ -544,15 +554,15 @@ export default function NotificationsPanelV2() {
   // ── Main view ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full flex flex-col">
+    <Flex direction="column" height="100%">
       {/* Header */}
       <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <Flex align="center" justify="between" className="mb-4">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-mission-control-accent/20 rounded-lg relative">
               <Bell size={24} className="text-mission-control-accent" />
               {stats.unread > 0 && (
-                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                <div className="absolute -top-1 -right-1 bg-error text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center tabular-nums">
                   {stats.unread > 9 ? '9+' : stats.unread}
                 </div>
               )}
@@ -564,18 +574,18 @@ export default function NotificationsPanelV2() {
                 {stats.urgent > 0 && ` • ${stats.urgent} urgent`}
               </p>
             </div>
-          </div>
+          </Flex>
 
           <div className="flex gap-2 items-center flex-wrap">
             {/* Sound quick toggle */}
             <button
               onClick={() => saveSoundPref(!soundEnabled)}
-              className={`p-2 rounded-lg transition-colors ${
-                soundEnabled
-                  ? 'bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30'
-                  : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'
-              }`}
               title={soundEnabled ? 'Mute notification sounds' : 'Enable notification sounds'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${
+                soundEnabled
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
             </button>
@@ -583,21 +593,22 @@ export default function NotificationsPanelV2() {
             {/* Push notification quick toggle */}
             <button
               onClick={pushEnabled ? handleDisablePush : handleRequestPush}
-              className={`p-2 rounded-lg transition-colors ${
-                pushEnabled && pushPermission === 'granted'
-                  ? 'bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30'
-                  : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'
-              }`}
               title={pushEnabled && pushPermission === 'granted' ? 'Disable browser notifications' : 'Enable browser notifications'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${
+                pushEnabled && pushPermission === 'granted'
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {pushEnabled && pushPermission === 'granted' ? <Bell size={16} /> : <BellOff size={16} />}
             </button>
 
             {notifications.length > 0 && (
               <button
+                type="button"
                 onClick={handleDismissAll}
-                className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
                 title="Dismiss all notifications"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <X size={14} />
                 Dismiss all
@@ -606,9 +617,10 @@ export default function NotificationsPanelV2() {
 
             {stats.unread > 0 && (
               <button
+                type="button"
                 onClick={handleMarkAllRead}
-                className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
                 title="Mark all as read"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <CheckCheck size={14} />
                 Mark all read
@@ -616,46 +628,57 @@ export default function NotificationsPanelV2() {
             )}
 
             <button
+              type="button"
               onClick={loadNotifications}
               disabled={loading}
-              className="flex items-center gap-2 px-3 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
               Refresh
             </button>
 
             <button
+              type="button"
               onClick={() => setShowSettings(true)}
-              className="p-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors"
               title="Settings"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <Settings size={16} />
             </button>
           </div>
-        </div>
+        </Flex>
 
         {/* Filter tabs */}
-        <div className="flex gap-2">
+        <Flex align="center" className="border-b border-mission-control-border -mb-px">
           {(['all', 'unread', 'urgent', 'actionable'] as const).map((f) => {
             const count = f === 'all' ? stats.total
               : f === 'unread' ? stats.unread
               : f === 'urgent' ? stats.urgent
               : stats.actionable;
+            const isActive = filter === f;
             return (
               <button
                 key={f}
+                type="button"
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                  filter === f
-                    ? 'bg-mission-control-accent text-white'
-                    : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  isActive
+                    ? 'border-mission-control-accent text-mission-control-accent'
+                    : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
-                {f.charAt(0).toUpperCase() + f.slice(1)} ({count || 0})
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+                <span className={`px-1.5 py-0.5 rounded-full text-xs font-mono tabular-nums ${
+                  isActive
+                    ? 'bg-mission-control-accent/20 text-mission-control-accent'
+                    : 'bg-mission-control-border text-mission-control-text-dim'
+                }`}>
+                  {count || 0}
+                </span>
               </button>
             );
           })}
-        </div>
+        </Flex>
       </div>
 
       {/* Notifications list */}
@@ -673,14 +696,15 @@ export default function NotificationsPanelV2() {
                 <div key={group}>
                   {/* Collapsible group header */}
                   <button
+                    type="button"
                     onClick={() => toggleGroup(group)}
-                    className="w-full flex items-center gap-2 mb-2 group/header"
+                    className="w-full flex items-center gap-2 mb-2 group/header bg-transparent border-0 p-0 cursor-pointer"
                   >
                     {isCollapsed
                       ? <ChevronRight size={14} className="text-mission-control-text-dim flex-shrink-0" />
                       : <ChevronDown  size={14} className="text-mission-control-text-dim flex-shrink-0" />
                     }
-                    <span className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">
+                    <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
                       {group}
                     </span>
                     <div className="flex-1 h-px bg-mission-control-border/50" />
@@ -703,16 +727,16 @@ export default function NotificationsPanelV2() {
                         return (
                           <div
                             key={notif.id}
-                            className={`p-4 rounded-lg border transition-all group ${
+                            className={`p-4 rounded-lg border transition-colors group ${
                               notif.priority === 'urgent'
-                                ? 'bg-error-subtle border-error-border shadow-lg'
+                                ? 'bg-error/10 border-error/30 border-l-2 border-l-[var(--color-error)] shadow-lg'
                                 : notif.read
-                                ? 'bg-mission-control-bg border-mission-control-border opacity-60'
-                                : 'bg-mission-control-surface border-mission-control-border shadow-card hover:shadow-card-hover'
+                                ? 'bg-transparent border-mission-control-border opacity-70'
+                                : 'bg-mission-control-accent/5 border-mission-control-border border-l-2 border-l-mission-control-accent shadow-card hover:shadow-card-hover'
                             }`}
                           >
-                            <div className="flex items-start gap-3">
-                              <IconBadge icon={Icon} size={16} color={config?.color || 'bg-mission-control-bg0/10 text-mission-control-text-dim'} />
+                            <Flex align="start" gap="3">
+                              <IconBadge icon={Icon} size={16} color={config?.color || 'bg-mission-control-surface/10 text-mission-control-text-dim'} />
 
                               <div className="flex-1 min-w-0">
                                 {/* Clickable body */}
@@ -735,7 +759,7 @@ export default function NotificationsPanelV2() {
                                     {/* High-priority red "!" badge */}
                                     {highPriority && (
                                       <span
-                                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-xs font-bold flex-shrink-0"
+                                        className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-error/20 text-error text-xs font-bold flex-shrink-0"
                                         title="High priority"
                                         aria-label="High priority"
                                       >
@@ -745,10 +769,10 @@ export default function NotificationsPanelV2() {
 
                                     {/* Non-urgent, non-normal priority label */}
                                     {!highPriority && notif.priority !== 'normal' && (
-                                      <span className={`px-1.5 py-0.5 text-xs rounded flex-shrink-0 whitespace-nowrap ${
+                                      <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded flex-shrink-0 whitespace-nowrap ${
                                         notif.priority === 'high'
-                                          ? 'bg-orange-500 text-white'
-                                          : 'bg-mission-control-bg0/20 text-mission-control-text-dim'
+                                          ? 'bg-warning/20 text-warning'
+                                          : 'bg-mission-control-border/40 text-mission-control-text-dim'
                                       }`}>
                                         {notif.priority.charAt(0).toUpperCase() + notif.priority.slice(1)}
                                       </span>
@@ -758,15 +782,15 @@ export default function NotificationsPanelV2() {
                                   <p className="text-sm text-mission-control-text-dim line-clamp-2">{notif.message}</p>
 
                                   {notif.description && (
-                                    <p className="text-xs text-mission-control-text-dim mt-1 opacity-75 line-clamp-2">{notif.description}</p>
+                                    <p className="text-xs text-mission-control-text-dim/70 mt-1 line-clamp-2">{notif.description}</p>
                                   )}
 
-                                  <div className="flex items-center gap-2 mt-2 text-xs text-mission-control-text-dim flex-wrap">
-                                    <span className={`px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap ${config?.color || 'bg-mission-control-bg0/20 text-mission-control-text-dim'}`}>
+                                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 whitespace-nowrap ${config?.color || 'bg-mission-control-surface/20 text-mission-control-text-dim'}`}>
                                       {config?.label || notif.type}
                                     </span>
-                                    <Clock size={10} />
-                                    <span>{formatTimeAgo(notif.created_at)}</span>
+                                    <Clock size={10} className="text-mission-control-text-dim/70" />
+                                    <span className="text-[11px] text-mission-control-text-dim/70 tabular-nums">{formatTimeAgo(notif.created_at)}</span>
                                     {notif.channel && (
                                       <>
                                         <span>•</span>
@@ -778,23 +802,27 @@ export default function NotificationsPanelV2() {
 
                                 {/* Inline quick-actions (always visible for tasks / approvals) */}
                                 {(isTask || isApproval) && !notif.read && (
-                                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-mission-control-border/30">
+                                  <Flex align="center" gap="2" className="mt-3 pt-3 border-t border-mission-control-border/30">
                                     {isTask && (
-                                      <button
+                                      <Button
+                                        size="1"
+                                        variant="soft"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           window.dispatchEvent(new CustomEvent('navigate', { detail: 'kanban' }));
                                           handleMarkRead(notif.id);
                                         }}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-info-subtle text-info text-xs font-medium rounded-lg hover:bg-info-subtle/80 transition-colors"
                                       >
                                         <Eye size={12} />
                                         View Task
-                                      </button>
+                                      </Button>
                                     )}
                                     {isApproval && (
                                       <>
-                                        <button
+                                        <Button
+                                          size="1"
+                                          variant="soft"
+                                          color="green"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             if (notif.source_id) {
@@ -807,12 +835,14 @@ export default function NotificationsPanelV2() {
                                             handleDismiss(notif.id);
                                             showToast('success', 'Approved');
                                           }}
-                                          className="flex items-center gap-1.5 px-3 py-1.5 bg-success-subtle text-success text-xs font-medium rounded-lg hover:bg-success-subtle/80 transition-colors"
                                         >
                                           <Check size={12} />
                                           Approve
-                                        </button>
-                                        <button
+                                        </Button>
+                                        <Button
+                                          size="1"
+                                          variant="soft"
+                                          color="red"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             if (notif.source_id) {
@@ -825,25 +855,26 @@ export default function NotificationsPanelV2() {
                                             handleDismiss(notif.id);
                                             showToast('info', 'Denied');
                                           }}
-                                          className="flex items-center gap-1.5 px-3 py-1.5 bg-error-subtle text-error text-xs font-medium rounded-lg hover:bg-error-subtle/80 transition-colors"
                                         >
                                           <X size={12} />
                                           Deny
-                                        </button>
-                                        <button
+                                        </Button>
+                                        <Button
+                                          size="1"
+                                          variant="soft"
+                                          color="amber"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             window.dispatchEvent(new CustomEvent('navigate', { detail: 'approvals' }));
                                             handleMarkRead(notif.id);
                                           }}
-                                          className="flex items-center gap-1.5 px-3 py-1.5 bg-warning-subtle text-warning text-xs font-medium rounded-lg hover:bg-warning-subtle/80 transition-colors"
                                         >
                                           <Eye size={12} />
                                           Review
-                                        </button>
+                                        </Button>
                                       </>
                                     )}
-                                  </div>
+                                  </Flex>
                                 )}
                               </div>
 
@@ -853,7 +884,7 @@ export default function NotificationsPanelV2() {
                                 onDismiss={handleDismiss}
                                 onMarkRead={handleMarkRead}
                               />
-                            </div>
+                            </Flex>
                           </div>
                         );
                       })}
@@ -870,7 +901,7 @@ export default function NotificationsPanelV2() {
       <div className="border-t border-mission-control-border">
         <button
           onClick={() => setShowQuickPrefs(prev => !prev)}
-          className="w-full flex items-center gap-2 px-5 py-3 text-xs font-semibold text-mission-control-text-dim hover:bg-mission-control-border/40 transition-colors"
+          className="w-full flex items-center gap-2 px-5 py-3 text-xs font-semibold text-mission-control-text-dim hover:bg-mission-control-border/40 transition-colors bg-transparent border-0 cursor-pointer"
         >
           {showQuickPrefs ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           Notification Preferences
@@ -886,6 +917,6 @@ export default function NotificationsPanelV2() {
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }

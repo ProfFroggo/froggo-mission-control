@@ -6,6 +6,7 @@ import {
   MessageCircle, Lightbulb, ChevronRight,
   Keyboard, Star, Zap
 } from 'lucide-react';
+import { Flex, TextField } from '@radix-ui/themes';
 import { 
   helpArticles, 
   faqs, 
@@ -117,23 +118,25 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="glass-modal rounded-2xl shadow-2xl w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col">
+      <div className="bg-mission-control-surface rounded-2xl shadow-2xl w-full max-w-4xl h-[85vh] overflow-hidden flex flex-col border border-mission-control-border">
         {/* Header */}
-        <div className="p-6 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-info-subtle rounded-lg">
-              <HelpCircle size={24} className="text-info" />
+        <div className="flex items-center justify-between px-6 py-4 bg-mission-control-surface border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="3">
+            <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+              <HelpCircle size={24} className="text-mission-control-accent" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold">Help & Documentation</h2>
+              <h2 className="text-xl font-semibold text-mission-control-text">Help & Documentation</h2>
               <p className="text-sm text-mission-control-text-dim">
-                {currentPanel && `Context: ${currentPanel.charAt(0).toUpperCase() + currentPanel.slice(1)}`}
+                {currentPanel ? `Context: ${currentPanel.charAt(0).toUpperCase() + currentPanel.slice(1)}` : 'Articles, FAQs, and keyboard shortcuts'}
               </p>
             </div>
-          </div>
+          </Flex>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+            aria-label="Close help"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <X size={20} />
           </button>
@@ -141,10 +144,8 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
 
         {/* Search Bar */}
         <div className="p-4 border-b border-mission-control-border flex-shrink-0">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
+          <div>
+            <TextField.Root
               placeholder="Search help articles, FAQs, and guides..."
               value={searchQuery}
               onChange={(e) => {
@@ -155,13 +156,18 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
                   setViewMode('browse');
                 }
               }}
-              className="w-full pl-10 pr-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
-            />
+              size="2"
+              className="w-full"
+            >
+              <TextField.Slot>
+                <Search size={16} />
+              </TextField.Slot>
+            </TextField.Root>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex gap-2 px-6 py-3 border-b border-mission-control-border flex-shrink-0 overflow-x-auto">
+        <div className="flex gap-2 px-4 py-3 border-b border-mission-control-border flex-shrink-0 overflow-x-auto">
           <NavButton
             icon={<BookOpen size={16} />}
             label="Browse"
@@ -243,8 +249,17 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-mission-control-border bg-mission-control-bg text-center text-sm text-mission-control-text-dim flex-shrink-0">
-          <span>© 2026 <a href="https://froggo.pro" target="_blank" rel="noopener noreferrer" className="text-mission-control-accent hover:underline">froggo.pro</a> — AGPL-3.0 License</span>
+        <div className="p-4 border-t border-mission-control-border bg-mission-control-bg text-center flex-shrink-0 space-y-2">
+          <button
+            type="button"
+            onClick={() => window.open('mailto:support@froggo.pro', '_blank')}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            Contact Support
+          </button>
+          <p className="font-mono text-[10px] text-mission-control-text-dim/70">
+            © 2026 <a href="https://froggo.pro" target="_blank" rel="noopener noreferrer" className="text-mission-control-accent hover:underline">froggo.pro</a> — AGPL-3.0 — v1.0.0
+          </p>
         </div>
       </div>
     </div>
@@ -252,23 +267,25 @@ export default function HelpPanel({ isOpen, onClose, currentPanel }: HelpPanelPr
 }
 
 // Nav Button Component
-function NavButton({ icon, label, active, onClick }: { 
-  icon: React.ReactNode; 
-  label: string; 
-  active: boolean; 
-  onClick: () => void; 
+function NavButton({ icon, label, active, onClick }: {
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+  onClick: () => void;
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-        active 
-          ? 'bg-mission-control-accent text-white' 
-          : 'bg-mission-control-bg hover:bg-mission-control-border text-mission-control-text-dim'
-      }`}
+      className={[
+        'flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap',
+        active
+          ? 'border-mission-control-accent text-mission-control-accent'
+          : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-border',
+      ].join(' ')}
     >
       {icon}
-      <span className="text-sm font-medium">{label}</span>
+      <span>{label}</span>
     </button>
   );
 }
@@ -299,7 +316,7 @@ function SearchResults({
       {/* Articles */}
       {results.articles.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-mission-control-text-dim mb-3 uppercase tracking-wide">
+          <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">
             Articles ({results.articles.length})
           </h3>
           <div className="space-y-2">
@@ -313,7 +330,7 @@ function SearchResults({
       {/* FAQs */}
       {results.faqs.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-mission-control-text-dim mb-3 uppercase tracking-wide">
+          <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">
             FAQs ({results.faqs.length})
           </h3>
           <div className="space-y-2">
@@ -347,12 +364,12 @@ function BrowseView({
       {/* Context-Aware Help */}
       {contextArticles.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Star size={16} className="text-warning" />
-            <h3 className="text-sm font-medium text-mission-control-text-dim uppercase tracking-wide">
+          <Flex align="center" gap="2" className="mb-3">
+            <Star size={14} className="text-warning" />
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
               Relevant to Current Panel
             </h3>
-          </div>
+          </Flex>
           <div className="space-y-2">
             {contextArticles.map(article => (
               <ArticleCard key={article.id} article={article} onClick={() => onSelectArticle(article)} />
@@ -364,7 +381,7 @@ function BrowseView({
       {/* All Categories */}
       {Array.from(categories.entries()).map(([category, articles]) => (
         <div key={category}>
-          <h3 className="text-sm font-medium text-mission-control-text-dim mb-3 uppercase tracking-wide">
+          <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">
             {category}
           </h3>
           <div className="space-y-2">
@@ -382,19 +399,25 @@ function BrowseView({
 function ArticleCard({ article, onClick }: { article: HelpArticle; onClick: () => void }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className="w-full p-4 bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors text-left group"
+      className="flex items-start gap-3 w-full p-4 bg-mission-control-surface border border-mission-control-border rounded-xl hover:border-[var(--mission-control-accent)]/30 transition-colors cursor-pointer text-left"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">
-          <h4 className="font-medium mb-1 group-hover:text-mission-control-accent transition-colors">
-            {article.title}
-          </h4>
-          <p className="text-sm text-mission-control-text-dim line-clamp-2">
+      <div className="flex items-start justify-between gap-3 w-full">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h4 className="text-sm font-medium text-mission-control-text">
+              {article.title}
+            </h4>
+            <span className="text-[10px] uppercase font-bold tracking-wider bg-mission-control-border/40 rounded-full px-2 py-0.5 text-mission-control-text-dim/70 flex-shrink-0">
+              {article.category}
+            </span>
+          </div>
+          <p className="text-xs text-mission-control-text-dim/70 line-clamp-1">
             {article.content.split('\n')[0]}
           </p>
         </div>
-        <ChevronRight size={20} className="text-mission-control-text-dim group-hover:text-mission-control-accent transition-colors flex-shrink-0" />
+        <ChevronRight size={14} className="text-mission-control-text-dim/70 flex-shrink-0 mt-0.5" />
       </div>
     </button>
   );
@@ -404,27 +427,31 @@ function ArticleCard({ article, onClick }: { article: HelpArticle; onClick: () =
 function ArticleView({ article, onBack }: { article: HelpArticle; onBack: () => void }) {
   return (
     <div>
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-sm text-mission-control-text-dim hover:text-mission-control-accent mb-4 transition-colors"
-      >
-        <ChevronRight size={16} className="rotate-180" />
-        Back to browse
-      </button>
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1 text-[11px] text-mission-control-text-dim/70 mb-4">
+        <button
+          type="button"
+          onClick={onBack}
+          className="hover:text-mission-control-text transition-colors"
+        >
+          Browse
+        </button>
+        <span>/</span>
+        <span className="text-[10px] uppercase font-bold tracking-wider bg-mission-control-border/40 rounded-full px-2 py-0.5">{article.category}</span>
+        <span>/</span>
+        <span className="text-mission-control-text/70 truncate max-w-[200px]">{article.title}</span>
+      </div>
 
       <div className="space-y-4">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs px-2 py-1 bg-mission-control-accent/20 text-mission-control-accent rounded-md">
-              {article.category}
-            </span>
+          <Flex align="center" gap="2" className="mb-2">
             {article.lastUpdated && (
-              <span className="text-xs text-mission-control-text-dim">
+              <span className="text-[11px] text-mission-control-text-dim/70">
                 Updated {article.lastUpdated}
               </span>
             )}
-          </div>
-          <h2 className="text-2xl font-bold mb-2">{article.title}</h2>
+          </Flex>
+          <h2 className="text-2xl font-bold text-mission-control-text mb-2">{article.title}</h2>
         </div>
 
         {/* Content */}
@@ -464,7 +491,7 @@ function FAQView({
     <div className="space-y-6">
       {Array.from(categories.entries()).map(([category, items]) => (
         <div key={category}>
-          <h3 className="text-sm font-medium text-mission-control-text-dim mb-3 uppercase tracking-wide">
+          <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">
             {category}
           </h3>
           <div className="space-y-2">
@@ -487,21 +514,22 @@ function FAQView({
 function FAQCard({ faq, expanded, onToggle }: { faq: FAQItem; expanded: boolean; onToggle: () => void }) {
   return (
     <button
+      type="button"
       onClick={onToggle}
-      className="w-full p-4 bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors text-left"
+      className="flex items-start gap-3 w-full p-4 bg-mission-control-surface border border-mission-control-border rounded-xl hover:border-[var(--mission-control-accent)]/30 transition-colors cursor-pointer text-left"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">
-          <h4 className="font-medium mb-1">{faq.question}</h4>
+      <div className="flex items-start justify-between gap-3 w-full">
+        <div className="flex-1 min-w-0">
+          <h4 className="text-sm font-medium text-mission-control-text">{faq.question}</h4>
           {expanded && (
-            <p className="text-sm text-mission-control-text-dim mt-2">
+            <p className="text-xs text-mission-control-text-dim/70 mt-2 leading-relaxed">
               {faq.answer}
             </p>
           )}
         </div>
-        <ChevronRight 
-          size={20} 
-          className={`text-mission-control-text-dim transition-transform flex-shrink-0 ${
+        <ChevronRight
+          size={14}
+          className={`text-mission-control-text-dim/70 transition-transform flex-shrink-0 mt-0.5 ${
             expanded ? 'rotate-90' : ''
           }`}
         />
@@ -513,15 +541,15 @@ function FAQCard({ faq, expanded, onToggle }: { faq: FAQItem; expanded: boolean;
 // Quick Tips View
 function QuickTipsView({ tips }: { tips: QuickTip[] }) {
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-2 gap-3">
       {tips.map(tip => (
         <div
           key={tip.id}
-          className="p-4 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent transition-colors"
+          className="p-4 bg-mission-control-surface border border-mission-control-border rounded-xl hover:border-[var(--mission-control-accent)]/30 transition-colors"
         >
-          <Zap size={18} className="text-mission-control-accent mb-2" />
-          <h4 className="font-medium mb-1">{tip.title}</h4>
-          <p className="text-sm text-mission-control-text-dim">{tip.description}</p>
+          <Zap size={16} className="text-mission-control-accent mb-2" />
+          <h4 className="text-sm font-semibold text-mission-control-text mb-1">{tip.title}</h4>
+          <p className="text-xs text-mission-control-text-dim/70 leading-relaxed">{tip.description}</p>
         </div>
       ))}
     </div>
@@ -530,23 +558,33 @@ function QuickTipsView({ tips }: { tips: QuickTip[] }) {
 
 // Shortcuts View - Reference to existing KeyboardShortcuts component data
 function ShortcutsView() {
+  const shortcuts = [
+    { keys: '⌘K', label: 'Global Search' },
+    { keys: '⌘1–9', label: 'Navigate panels' },
+    { keys: '⌘N', label: 'New (context-aware)' },
+    { keys: '⌘,', label: 'Settings' },
+    { keys: '⌘M', label: 'Toggle mute' },
+    { keys: '⌘?', label: 'Keyboard shortcuts' },
+  ];
+
   return (
     <div className="space-y-4">
-      <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
-        <p className="text-sm">
-          <strong>Tip:</strong> Press <kbd className="px-2 py-1 bg-mission-control-bg border border-mission-control-border rounded text-xs">⌘?</kbd> anytime to view the full keyboard shortcuts reference.
+      <div className="p-3 bg-info/10 border border-info/30 rounded-lg">
+        <p className="text-xs text-mission-control-text/70">
+          Press{' '}
+          <kbd className="px-1.5 py-0.5 bg-mission-control-bg border border-mission-control-border rounded font-mono text-[10px]">⌘?</kbd>
+          {' '}anytime to view the full keyboard shortcuts reference.
         </p>
       </div>
-      
-      <div className="text-mission-control-text-dim">
-        <p>Common shortcuts:</p>
-        <ul className="mt-2 space-y-1 text-sm">
-          <li>• ⌘K - Global Search</li>
-          <li>• ⌘1-9 - Navigate panels</li>
-          <li>• ⌘N - New (context-aware)</li>
-          <li>• ⌘, - Settings</li>
-          <li>• ⌘M - Toggle mute</li>
-        </ul>
+
+      <div className="space-y-1">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Common shortcuts</p>
+        {shortcuts.map(s => (
+          <div key={s.keys} className="flex items-center justify-between py-2 border-b border-mission-control-border/40 last:border-0">
+            <span className="text-sm text-mission-control-text">{s.label}</span>
+            <kbd className="px-2 py-0.5 bg-mission-control-bg border border-mission-control-border rounded font-mono text-[10px] text-mission-control-text-dim">{s.keys}</kbd>
+          </div>
+        ))}
       </div>
     </div>
   );

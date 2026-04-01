@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, X, Check } from 'lucide-react';
+import { Button, Flex } from '@radix-ui/themes';
 
 export interface TourStep {
   target: string; // CSS selector for element to highlight
@@ -201,7 +202,7 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
 
       {/* Tooltip */}
       <div
-        className="absolute w-[400px] bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl"
+        className="absolute w-[400px] bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl"
         style={{
           top: tooltipPosition.top,
           left: tooltipPosition.left,
@@ -216,8 +217,10 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
             </p>
           </div>
           <button
+            type="button"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             onClick={onSkip}
-            className="p-1 hover:bg-mission-control-border rounded-lg transition-colors"
+            aria-label="Skip tour"
           >
             <X size={16} />
           </button>
@@ -232,7 +235,7 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
         <div className="px-4 pb-2">
           <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
             <div
-              className="h-full bg-mission-control-accent transition-all duration-300"
+              className="h-full bg-mission-control-accent transition-colors duration-300"
               style={{ width: `${((currentStep + 1) / tour.steps.length) * 100}%` }}
             />
           </div>
@@ -241,36 +244,40 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
         {/* Footer */}
         <div className="p-4 border-t border-mission-control-border flex items-center justify-between">
           <button
+            type="button"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             onClick={onSkip}
-            className="text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
           >
             Skip Tour
           </button>
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <button
-              onClick={handlePrevious}
+              type="button"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               disabled={currentStep === 0}
-              className="p-2 rounded-lg hover:bg-mission-control-border transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              onClick={handlePrevious}
+              aria-label="Previous step"
             >
               <ChevronLeft size={16} />
             </button>
-            <button
+            <Button
+              size="2"
+              variant="solid"
               onClick={handleNext}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
             >
               {currentStep === tour.steps.length - 1 ? (
                 <>
                   <Check size={16} />
-                  <span className="text-sm font-medium">Complete</span>
+                  Complete
                 </>
               ) : (
                 <>
-                  <span className="text-sm font-medium">Next</span>
+                  Next
                   <ChevronRight size={16} />
                 </>
               )}
-            </button>
-          </div>
+            </Button>
+          </Flex>
         </div>
       </div>
     </div>
@@ -454,7 +461,7 @@ export const tours: Record<string, Tour> = {
       {
         target: '[data-column="done"]',
         title: 'Done',
-        content: 'Approved tasks move to Done. Celebrate your wins! 🎉',
+        content: 'Approved tasks move to Done. Celebrate your wins!',
         position: 'right',
       },
     ],

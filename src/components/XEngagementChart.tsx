@@ -3,7 +3,8 @@
 // Shows impressions, likes, and retweets over time with toggle buttons.
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { BarChart2, Eye, Heart, Repeat2, RefreshCw, Loader2 } from 'lucide-react';
+import { BarChart2, Eye, Heart, Repeat2, RefreshCw } from 'lucide-react';
+import { Flex, Select, Spinner } from '@radix-ui/themes';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -35,9 +36,9 @@ interface MetricConfig {
 }
 
 const METRICS: MetricConfig[] = [
-  { key: 'impressions', label: 'Impressions', color: '#8b5cf6', Icon: Eye },
-  { key: 'likes', label: 'Likes', color: '#ec4899', Icon: Heart },
-  { key: 'retweets', label: 'Retweets', color: '#10b981', Icon: Repeat2 },
+  { key: 'impressions', label: 'Impressions', color: 'var(--color-info)', Icon: Eye },
+  { key: 'likes', label: 'Likes', color: 'var(--color-error)', Icon: Heart },
+  { key: 'retweets', label: 'Retweets', color: 'var(--color-success)', Icon: Repeat2 },
 ];
 
 // ─── SVG Chart ────────────────────────────────────────────────────────────────
@@ -79,7 +80,7 @@ function SVGLineChart({ data, visible }: ChartProps) {
 
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48" style={{ color: 'var(--color-mission-control-text-dim)' }}>
+      <div className="flex items-center justify-center h-48 text-mission-control-text-dim">
         <span className="text-sm">No data available</span>
       </div>
     );
@@ -124,7 +125,7 @@ function SVGLineChart({ data, visible }: ChartProps) {
   };
 
   return (
-    <div ref={containerRef} style={{ width: '100%' }}>
+    <div ref={containerRef} className="w-full">
       <svg width={width} height={CHART_H} style={{ display: 'block', overflow: 'visible' }}>
         {/* Grid lines */}
         {yTicks.map((tick, i) => (
@@ -134,7 +135,7 @@ function SVGLineChart({ data, visible }: ChartProps) {
               y1={toY(tick)}
               x2={PADDING.left + chartW}
               y2={toY(tick)}
-              stroke="var(--color-mission-control-border)"
+              stroke="var(--mission-control-border)"
               strokeWidth={1}
               strokeDasharray={i === 0 ? undefined : '4 4'}
             />
@@ -143,7 +144,7 @@ function SVGLineChart({ data, visible }: ChartProps) {
               y={toY(tick) + 4}
               textAnchor="end"
               fontSize={10}
-              fill="var(--color-mission-control-text-dim)"
+              fill="var(--mission-control-text-dim)"
             >
               {formatNum(tick)}
             </text>
@@ -158,7 +159,7 @@ function SVGLineChart({ data, visible }: ChartProps) {
             y={CHART_H - 6}
             textAnchor="middle"
             fontSize={10}
-            fill="var(--color-mission-control-text-dim)"
+            fill="var(--mission-control-text-dim)"
           >
             {label}
           </text>
@@ -188,7 +189,7 @@ function SVGLineChart({ data, visible }: ChartProps) {
               cy={toY(d[key])}
               r={3}
               fill={color}
-              stroke="var(--color-mission-control-bg)"
+              stroke="var(--mission-control-bg)"
               strokeWidth={1.5}
             />
           ))
@@ -249,97 +250,85 @@ export function XEngagementChart({ days = 30 }: XEngagementChartProps) {
 
   return (
     <div
-      className="rounded-lg border overflow-hidden"
-      style={{
-        background: 'var(--color-mission-control-surface)',
-        borderColor: 'var(--color-mission-control-border)',
-      }}
+      className="rounded-lg border border-mission-control-border overflow-hidden bg-mission-control-surface"
     >
       {/* Header */}
-      <div
-        className="flex items-center justify-between p-4 border-b"
-        style={{ borderColor: 'var(--color-mission-control-border)' }}
+      <Flex
+        align="center"
+        justify="between"
+        className="p-4 border-b border-mission-control-border"
       >
-        <div className="flex items-center gap-2">
-          <BarChart2 size={16} style={{ color: 'var(--color-info)' }} />
-          <span className="text-sm font-semibold" style={{ color: 'var(--color-mission-control-text)' }}>
+        <Flex align="center" gap="2">
+          <BarChart2 size={16} className="text-info" />
+          <span className="text-sm font-semibold text-mission-control-text">
             Engagement Over Time
           </span>
-        </div>
-        <div className="flex items-center gap-2">
-          {loading && <Loader2 size={14} className="animate-spin" style={{ color: 'var(--color-mission-control-text-dim)' }} />}
-          <select
-            value={selectedDays}
-            onChange={(e) => setSelectedDays(Number(e.target.value))}
-            className="text-xs px-2 py-1 rounded-lg border border-mission-control-border bg-mission-control-surface text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-          >
-            <option value={7}>7 days</option>
-            <option value={14}>14 days</option>
-            <option value={30}>30 days</option>
-            <option value={60}>60 days</option>
-            <option value={90}>90 days</option>
-          </select>
+        </Flex>
+        <Flex align="center" gap="2">
+          {loading && <Spinner size="1" />}
+          <Select.Root value={String(selectedDays)} onValueChange={(v) => setSelectedDays(Number(v))}>
+            <Select.Trigger />
+            <Select.Content>
+              <Select.Item value="7">7 days</Select.Item>
+              <Select.Item value="14">14 days</Select.Item>
+              <Select.Item value="30">30 days</Select.Item>
+              <Select.Item value="60">60 days</Select.Item>
+              <Select.Item value="90">90 days</Select.Item>
+            </Select.Content>
+          </Select.Root>
           <button
             onClick={loadData}
-            className="p-1.5 rounded hover:opacity-70"
-            style={{ color: 'var(--color-mission-control-text-dim)' }}
+            title="Refresh"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <RefreshCw size={12} />
           </button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Summary stats bar */}
-      <div
-        className="grid grid-cols-3 border-b"
-        style={{ borderColor: 'var(--color-mission-control-border)' }}
-      >
-        <div
-          className="p-3 text-center border-r"
-          style={{ borderColor: 'var(--color-mission-control-border)' }}
-        >
-          <div className="text-lg font-bold" style={{ color: '#8b5cf6' }}>
+      <div className="grid grid-cols-3 border-b border-mission-control-border">
+        <div className="p-3 text-center border-r border-mission-control-border">
+          <div className="text-lg font-bold tabular-nums text-info">
             {formatNum(totalImpressions)}
           </div>
-          <div className="text-xs" style={{ color: 'var(--color-mission-control-text-dim)' }}>
+          <div className="text-xs text-mission-control-text-dim">
             Total Impressions
           </div>
         </div>
-        <div
-          className="p-3 text-center border-r"
-          style={{ borderColor: 'var(--color-mission-control-border)' }}
-        >
-          <div className="text-lg font-bold" style={{ color: '#ec4899' }}>
+        <div className="p-3 text-center border-r border-mission-control-border">
+          <div className="text-lg font-bold tabular-nums text-error">
             {formatNum(avgLikes)}
           </div>
-          <div className="text-xs" style={{ color: 'var(--color-mission-control-text-dim)' }}>
+          <div className="text-xs text-mission-control-text-dim">
             Avg Likes / Day
           </div>
         </div>
         <div className="p-3 text-center">
-          <div className="text-lg font-bold" style={{ color: '#10b981' }}>
+          <div className="text-lg font-bold tabular-nums text-success">
             {formatNum(avgRetweets)}
           </div>
-          <div className="text-xs" style={{ color: 'var(--color-mission-control-text-dim)' }}>
+          <div className="text-xs text-mission-control-text-dim">
             Avg Retweets / Day
           </div>
         </div>
       </div>
 
       {/* Toggle buttons */}
-      <div className="flex items-center gap-2 px-4 pt-3">
+      <Flex align="center" gap="2" className="px-4 pt-3">
         {METRICS.map(({ key, label, color, Icon }) => (
           <button
+            type="button"
             key={key}
             onClick={() => toggleMetric(key)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors"
             style={
               visible[key]
                 ? { background: `${color}18`, color, borderColor: color }
                 : {
-                    background: 'var(--color-mission-control-surface)',
-                    color: 'var(--color-mission-control-text-dim)',
-                    borderColor: 'var(--color-mission-control-border)',
+                    background: 'var(--mission-control-surface)',
+                    color: 'var(--mission-control-text-dim)',
+                    borderColor: 'var(--mission-control-border)',
                     opacity: 0.6,
                   }
             }
@@ -348,7 +337,7 @@ export function XEngagementChart({ days = 30 }: XEngagementChartProps) {
             {label}
           </button>
         ))}
-      </div>
+      </Flex>
 
       {/* Chart */}
       <div className="p-4">

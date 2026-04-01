@@ -24,47 +24,90 @@ const icons = {
   info: Info,
 };
 
-const colors = {
-  success: 'bg-success-subtle border-success-border text-success',
-  error: 'bg-error-subtle border-error-border text-error',
-  warning: 'bg-warning-subtle border-warning-border text-warning',
-  info: 'bg-info-subtle border-info-border text-info',
+const variantStyles: Record<ToastType, { border: string; icon: string }> = {
+  success: { border: 'border-l-4 border-l-[var(--color-success)]',  icon: 'text-success'  },
+  error:   { border: 'border-l-4 border-l-[var(--color-error)]',    icon: 'text-error'    },
+  warning: { border: 'border-l-4 border-l-[var(--color-warning)]',  icon: 'text-warning'  },
+  info:    { border: 'border-l-4 border-l-[var(--color-info)]',     icon: 'text-info'     },
+};
+
+const progressColor: Record<ToastType, string> = {
+  success: 'bg-success',
+  error:   'bg-error',
+  warning: 'bg-warning',
+  info:    'bg-info',
 };
 
 function ToastItem({ toast, onDismiss }: ToastProps) {
   const Icon = icons[toast.type];
+  const { border, icon } = variantStyles[toast.type];
+  const duration = toast.duration || 5000;
+  const [progress, setProgress] = useState(100);
+  const [visible, setVisible] = useState(false);
 
+  // Trigger enter animation
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onDismiss(toast.id);
-    }, toast.duration || 5000);
+    const frame = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
+  // Progress bar countdown
+  useEffect(() => {
+    const start = Date.now();
+    const tick = () => {
+      const elapsed = Date.now() - start;
+      const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
+      setProgress(remaining);
+      if (remaining > 0) requestAnimationFrame(tick);
+    };
+    const raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [duration]);
+
+  // Auto-dismiss
+  useEffect(() => {
+    const timer = setTimeout(() => onDismiss(toast.id), duration);
     return () => clearTimeout(timer);
-  }, [toast.id, toast.duration, onDismiss]);
+  }, [toast.id, duration, onDismiss]);
 
-  // Build screen reader announcement: title + optional message
+  // Screen reader announcement
   const announcement = toast.message ? `${toast.title}: ${toast.message}` : toast.title;
 
   return (
     <div
-      className={`flex items-start gap-3 p-4 rounded-lg border backdrop-blur-sm shadow-lg animate-toast-in ${colors[toast.type]}`}
+      className={`pointer-events-auto flex flex-col min-w-[280px] max-w-[360px] rounded-xl bg-mission-control-surface border border-mission-control-border shadow-xl overflow-hidden ${border} transition-[transform,opacity] duration-300 ease-out ${
+        visible ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'
+      }`}
     >
-      {/* Screen reader announcement — assertive so errors/warnings are immediately announced */}
       <AlertRegion message={announcement} />
-      <Icon size={20} className="flex-shrink-0 mt-0.5" />
-      <div className="flex-1 min-w-0">
-        <div className="font-medium">{toast.title}</div>
-        {toast.message && (
-          <div className="text-sm opacity-80 mt-0.5">{toast.message}</div>
-        )}
+
+      <div className="flex items-start gap-3 px-4 py-3">
+        <Icon size={16} className={`flex-shrink-0 mt-0.5 ${icon}`} />
+
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold text-mission-control-text">{toast.title}</div>
+          {toast.message && (
+            <div className="text-xs text-mission-control-text-dim/80 mt-0.5">{toast.message}</div>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onDismiss(toast.id)}
+          aria-label="Dismiss notification"
+          className="ml-auto flex-shrink-0 p-1 rounded hover:bg-mission-control-border/40 text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+        >
+          <X size={12} />
+        </button>
       </div>
-      <button
-        onClick={() => onDismiss(toast.id)}
-        className="flex-shrink-0 p-1 hover:bg-mission-control-text/10 rounded transition-colors"
-        aria-label="Dismiss notification"
-      >
-        <X size={14} />
-      </button>
+
+      {/* Progress bar */}
+      <div className="h-0.5 w-full bg-mission-control-border/30">
+        <div
+          className={`h-full ${progressColor[toast.type]} transition-none`}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
     </div>
   );
 }
@@ -93,7 +136,7 @@ export function showToast(typeOrTitle: string, titleOrType: string, message?: st
     message,
     duration: duration || 5000,
   };
-  
+
   currentToasts = [...currentToasts, toast];
   toastListeners.forEach(listener => listener(currentToasts));
 }
@@ -128,7 +171,7 @@ export default function ToastContainer() {
 
   return (
     <div
-      className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 w-[calc(100vw-2rem)] max-w-sm"
+      className="fixed bottom-4 right-4 z-[300] flex flex-col gap-2 pointer-events-none"
       role="region"
       aria-label="Notifications"
       aria-live="polite"

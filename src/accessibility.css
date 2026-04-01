@@ -9,6 +9,7 @@
   outline: var(--focus-ring-width, 2px) solid var(--mission-control-accent);
   outline-offset: var(--focus-ring-offset, 2px);
   border-radius: 4px;
+  transition: outline-offset 0.1s ease;
 }
 
 /* Skip to main content link */
@@ -72,13 +73,26 @@ select:focus-visible {
   .voice-orb-pulse::after {
     animation: none !important;
   }
-  
+
   .animate-slide-in,
   .animate-slide-up,
-  .animate-slide-down {
+  .animate-slide-down,
+  .animate-fade-in,
+  .animate-slide-in-right {
     animation: none !important;
   }
-  
+
+  .typing-dot-1,
+  .typing-dot-2,
+  .typing-dot-3 {
+    animation: none !important;
+  }
+
+  .agent-dot-pulse,
+  .skeleton-shimmer {
+    animation: none !important;
+  }
+
   .modal-backdrop-enter,
   .modal-backdrop-exit,
   .modal-content-enter,

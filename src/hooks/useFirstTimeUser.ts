@@ -71,7 +71,7 @@ export function useFirstTimeUser(
   }, []);
 
   return {
-    isFirstTime: !localStorage.getItem(ONBOARDING_KEY),
+    isFirstTime: typeof window !== 'undefined' ? !localStorage.getItem(ONBOARDING_KEY) : false,
     showOnboardingWizard,
     completeOnboarding,
     skipOnboarding,

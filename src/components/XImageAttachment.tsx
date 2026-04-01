@@ -1,4 +1,5 @@
 import { Image } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 
 interface XImageAttachButtonProps {
   onImagesSelected: (paths: string[]) => void;
@@ -24,15 +25,17 @@ export function XImageAttachButton({ onImagesSelected, existingImages, disabled 
 
   return (
     <div>
-      <button
+      <Button
         type="button"
         onClick={handleClick}
         disabled={disabled}
-        className="flex items-center gap-2 px-3 py-2 text-sm bg-mission-control-bg-alt text-mission-control-text-dim hover:text-mission-control-text border border-mission-control-border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        variant="outline"
+        color="gray"
+        size="2"
       >
         <Image className="w-4 h-4" />
         Attach Image
-      </button>
+      </Button>
       {existingImages && existingImages.length > 0 && (
         <XImageThumbnails paths={existingImages} />
       )}

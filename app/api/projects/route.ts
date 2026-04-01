@@ -37,21 +37,34 @@ export async function GET(request: NextRequest) {
       ORDER BY p.updatedAt DESC
     `).all(...values) as Record<string, unknown>[];
 
-    // Enrich with members
-    const memberStmt = db.prepare(`
-      SELECT pm.*, a.name AS agentName, a.avatar AS agentEmoji
-      FROM project_members pm
-      LEFT JOIN agents a ON a.id = pm.agentId
-      WHERE pm.projectId = ?
-      ORDER BY pm.addedAt ASC
-    `);
+    // Batch-fetch all members for returned projects (avoids N+1)
+    const projectIds = projects.map(p => p.id as string);
+    let allMembers: Record<string, unknown>[] = [];
+    if (projectIds.length > 0) {
+      const placeholders = projectIds.map(() => '?').join(',');
+      allMembers = db.prepare(`
+        SELECT pm.*, a.name AS agentName, a.avatar AS agentEmoji
+        FROM project_members pm
+        LEFT JOIN agents a ON a.id = pm.agentId
+        WHERE pm.projectId IN (${placeholders})
+        ORDER BY pm.addedAt ASC
+      `).all(...projectIds) as Record<string, unknown>[];
+    }
+    const membersByProject = new Map<string, Record<string, unknown>[]>();
+    for (const m of allMembers) {
+      const pid = m.projectId as string;
+      if (!membersByProject.has(pid)) membersByProject.set(pid, []);
+      membersByProject.get(pid)!.push(m);
+    }
 
     const enriched = projects.map(p => ({
       ...parseProject(p),
-      members: memberStmt.all(p.id as string),
+      members: membersByProject.get(p.id as string) || [],
     }));
 
-    return NextResponse.json(enriched);
+    return NextResponse.json(enriched, {
+      headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
+    });
   } catch (error) {
     console.error('GET /api/projects error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -72,21 +85,45 @@ export async function POST(request: NextRequest) {
     const id = `proj-${Date.now()}-${randomUUID().slice(0, 8)}`;
     const now = Date.now();
 
-    db.prepare(`
-      INSERT INTO projects (id, name, description, emoji, color, goal, status, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)
-    `).run(
-      id,
-      name.trim(),
-      description || null,
-      emoji || '📁',
-      color || '#6366f1',
-      goal || null,
-      now,
-      now
-    );
+    // Atomic: create project + members + chat room
+    db.transaction(() => {
+      db.prepare(`
+        INSERT INTO projects (id, name, description, emoji, color, goal, status, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)
+      `).run(
+        id,
+        name.trim(),
+        description || null,
+        emoji || 'folder',
+        color || '#6366f1',
+        goal || null,
+        now,
+        now
+      );
 
-    // Auto-create project directory structure
+      // Add members
+      if (Array.isArray(memberAgentIds) && memberAgentIds.length > 0) {
+        const addMember = db.prepare(`
+          INSERT OR IGNORE INTO project_members (projectId, agentId, role, addedAt)
+          VALUES (?, ?, 'member', ?)
+        `);
+        for (const agentId of memberAgentIds) {
+          addMember.run(id, agentId, now);
+        }
+      }
+
+      // Auto-create a chat room for the project, seeded with the project members
+      try {
+        const roomId = `project-${id}`;
+        const roomAgents = Array.isArray(memberAgentIds) ? memberAgentIds : [];
+        db.prepare(`
+          INSERT OR IGNORE INTO chat_rooms (id, name, topic, agents, project_id, createdAt, updatedAt)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(roomId, `${emoji || '📁'} ${name.trim()}`, `Project chat for ${name.trim()}`, JSON.stringify(roomAgents), id, now, now);
+      } catch { /* project_id column might not exist on old DBs */ }
+    })();
+
+    // Auto-create project directory structure (non-transactional — filesystem, not DB)
     try {
       const { mkdirSync, writeFileSync, existsSync } = await import('fs');
       const { join } = await import('path');
@@ -95,7 +132,6 @@ export async function POST(request: NextRequest) {
       for (const sub of ['images', 'docs', 'code', 'design']) {
         mkdirSync(join(projDir, sub), { recursive: true });
       }
-      // Create project context files
       if (!existsSync(join(projDir, 'GOAL.md'))) {
         writeFileSync(join(projDir, 'GOAL.md'), `# ${name.trim()}\n\n${goal || description || 'Project goal TBD.'}\n`, 'utf-8');
       }
@@ -106,37 +142,6 @@ export async function POST(request: NextRequest) {
         writeFileSync(join(projDir, 'CONTEXT.md'), `# Context\n\n${description || 'No additional context yet.'}\n`, 'utf-8');
       }
     } catch { /* non-critical — directory creation failure doesn't block project creation */ }
-
-    // Add members
-    if (Array.isArray(memberAgentIds) && memberAgentIds.length > 0) {
-      const addMember = db.prepare(`
-        INSERT OR IGNORE INTO project_members (projectId, agentId, role, addedAt)
-        VALUES (?, ?, 'member', ?)
-      `);
-      const tx = db.transaction(() => {
-        for (const agentId of memberAgentIds) {
-          addMember.run(id, agentId, now);
-        }
-      });
-      tx();
-    }
-
-    // Auto-create a chat room for the project, seeded with the project members
-    try {
-      const roomId = `project-${id}`;
-      const roomAgents = Array.isArray(memberAgentIds) ? memberAgentIds : [];
-      db.prepare(`
-        INSERT OR IGNORE INTO chat_rooms (id, name, topic, agents, project_id, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(roomId, `${emoji || '📁'} ${name.trim()}`, `Project chat for ${name.trim()}`, JSON.stringify(roomAgents), id, now, now);
-    } catch { /* project_id column might not exist on old DBs */ }
-
-    // Auto-create library folder
-    const { mkdirSync } = await import('fs');
-    const { join } = await import('path');
-    const { homedir } = await import('os');
-    const projectLibDir = join(homedir(), 'mission-control', 'library', 'projects', id);
-    mkdirSync(projectLibDir, { recursive: true });
 
     const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
     return NextResponse.json(project, { status: 201 });

@@ -12,18 +12,17 @@
  * 3. Add a catalog/modules/<name>.json manifest
  */
 
-// Core modules — always active, cannot be uninstalled
+// Core modules — always active, cannot be uninstalled.
+// These are imported synchronously so their nav items appear immediately.
+// Only modules users commonly land on first are synchronous; the rest are deferred
+// to reduce initial JS parse cost under 4× CPU throttling (Lighthouse mobile sim).
 import './settings';
 import './inbox';
 import './chat';
 import './kanban';
 import './approvals';
-import './notifications';
-import './agent-mgmt';
-import './library';
-import './knowledge';
-import './projects';
-import './campaigns';
-import './automations';
-import './schedule';
-import './automations';
+// notifications, agent-mgmt moved to deferred-core-registry.ts — they're always
+// enabled but rarely the first view. Loading them async after first paint saves
+// ~4KB synchronous parse and 2 fewer icon resolutions in the critical path.
+// workflow-studio, library, knowledge, projects, campaigns, automations, schedule,
+// budget are also deferred: loaded in ModuleLoader.initAll() via deferred-core-registry.ts

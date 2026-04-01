@@ -41,8 +41,11 @@ export async function POST(
 
     const { agentId, content, replyTo, role, mentionedAgents, messageId, timestamp } = body;
 
-    if (!agentId || !content) {
-      return NextResponse.json({ error: 'agentId and content are required' }, { status: 400 });
+    if (!agentId || typeof agentId !== 'string') {
+      return NextResponse.json({ error: 'agentId is required' }, { status: 400 });
+    }
+    if (!content || typeof content !== 'string') {
+      return NextResponse.json({ error: 'content is required' }, { status: 400 });
     }
 
     const now = timestamp ?? Date.now();

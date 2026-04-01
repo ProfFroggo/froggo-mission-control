@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { Globe, MapPin } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import { HABITAT_REGIONS, type HabitatRegion } from './frog-data';
 
 /**
@@ -110,12 +111,12 @@ export function HabitatMap() {
         <div className="mt-8 text-center min-h-[80px]" aria-live="polite">
           {selectedRegion ? (
             <div className="inline-flex flex-col items-center gap-2 rounded-lg border border-[rgba(82,183,136,0.2)] bg-[rgba(13,31,23,0.6)] px-8 py-5">
-              <div className="flex items-center gap-2 text-[var(--frog-moss)]">
+              <Flex align="center" gap="2" className="text-[var(--frog-moss)]">
                 <MapPin className="h-5 w-5" aria-hidden="true" />
                 <h3 className="text-lg font-semibold text-[var(--frog-mist)]">
                   {selectedRegion.name}
                 </h3>
-              </div>
+              </Flex>
               <p className="text-[var(--frog-lily)] text-sm max-w-md">
                 {selectedRegion.description}
               </p>

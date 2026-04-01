@@ -334,7 +334,7 @@ export const useChatRoomStore = create<ChatRoomState>()(
           r.id === roomId
             ? {
                 ...r,
-                artifacts: [...r.artifacts, newArtifact],
+                artifacts: [...r.artifacts, newArtifact].slice(-200),
                 activeArtifactId: id,
                 updatedAt: Date.now(),
               }

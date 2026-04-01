@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, BookOpen, RefreshCw } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -75,27 +76,35 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+    <Flex
+      align="center"
+      justify="center"
+      p="4"
+      className={`fixed inset-0 z-50 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
     >
       <button
+        type="button"
         className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full cursor-default"
         onClick={handleClose}
         onKeyDown={(e) => e.key === 'Escape' && handleClose()}
         aria-label="Close training log"
       />
       <div
-        className={`relative w-full max-w-4xl bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}
+        className={`relative w-full max-w-4xl bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}
       >
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
-          <BookOpen size={20} className="text-mission-control-accent" />
-          <h2 className="text-lg font-semibold text-mission-control-text flex-1">Training Log</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="2">
+            <BookOpen size={16} className="text-mission-control-accent" />
+            <span className="text-base font-semibold text-mission-control-text">Training Log</span>
+          </Flex>
           <button
+            type="button"
             onClick={handleClose}
-            className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-surface"
+            aria-label="Close"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
-            <X size={18} />
+            <X size={15} />
           </button>
         </div>
 
@@ -113,11 +122,12 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
               files.map((file) => (
                 <button
                   key={file.name}
+                  type="button"
                   onClick={() => loadFileContent(file)}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                     selectedFile?.name === file.name
-                      ? 'bg-mission-control-accent/15 text-mission-control-accent border border-mission-control-accent/30'
-                      : 'text-mission-control-text-dim hover:bg-mission-control-surface hover:text-mission-control-text border border-transparent'
+                      ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                      : 'text-mission-control-text hover:bg-mission-control-border/30'
                   }`}
                 >
                   <div className="font-medium text-xs line-clamp-2 mb-0.5">{file.name}</div>
@@ -149,6 +159,6 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

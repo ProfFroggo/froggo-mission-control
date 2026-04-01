@@ -17,9 +17,9 @@ import {
   FileText,
   Download,
   Zap,
-  Loader2,
   HelpCircle,
 } from 'lucide-react';
+import { Button, Spinner, TextField, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import MarkdownMessage from './MarkdownMessage';
 
@@ -102,13 +102,12 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="border border-mission-control-border rounded-lg bg-mission-control-surface overflow-hidden">
+    <div className="border border-mission-control-border rounded-xl bg-mission-control-surface overflow-hidden hover:border-mission-control-accent/20 transition-colors">
       {/* Card header */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="3">
           <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold"
-            style={{ background: 'var(--color-info-subtle)', color: 'var(--color-info)' }}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border border-mission-control-border flex-shrink-0 bg-info/10 text-info"
           >
             {data.handle[0].toUpperCase()}
           </div>
@@ -135,8 +134,8 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
               )}
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           <a
             href={`https://x.com/${data.handle}`}
             target="_blank"
@@ -145,21 +144,24 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
           >
             <ExternalLink size={12} />
           </a>
-          <button
+          <Button
             onClick={() => setExpanded(v => !v)}
-            className="text-xs px-2 py-1 rounded border border-mission-control-border hover:bg-mission-control-bg transition-colors text-mission-control-text-dim"
+            variant="outline"
+            color="gray"
+            size="1"
           >
             {expanded ? 'Less' : 'Tweets'}
-          </button>
+          </Button>
           <button
+            type="button"
             onClick={() => onRemove(data.handle)}
             aria-label={`Remove @${data.handle}`}
-            className="text-mission-control-text-dim hover:text-error transition-colors"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={16} />
           </button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Metrics row */}
       <div className="grid grid-cols-4 divide-x divide-mission-control-border text-center py-3">
@@ -198,7 +200,7 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
               className="p-3 border-b border-mission-control-border last:border-b-0 text-sm"
             >
               <div className="text-mission-control-text mb-2 line-clamp-3">{tweet.text}</div>
-              <div className="flex items-center gap-4 text-xs text-mission-control-text-dim">
+              <Flex align="center" gap="4" className="text-xs text-mission-control-text-dim">
                 <span className="flex items-center gap-1">
                   <Heart size={11} /> {tweet.public_metrics?.like_count ?? 0}
                 </span>
@@ -216,7 +218,7 @@ function CompetitorCard({ data, onRemove }: CompetitorCardProps) {
                     })}
                   </span>
                 )}
-              </div>
+              </Flex>
             </div>
           ))}
         </div>
@@ -361,13 +363,13 @@ export function XCompetitorTracker() {
   }, []);
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg overflow-y-auto">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg overflow-y-auto">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-2 mb-1">
+        <Flex align="center" gap="2" className="mb-1">
           <Target size={20} style={{ color: 'var(--color-warning)' }} />
           <h2 className="text-lg font-semibold text-mission-control-text">Competitor Tracker</h2>
-        </div>
+        </Flex>
         <p className="text-sm text-mission-control-text-dim">
           Search competitor X accounts and analyze their recent tweet engagement.
         </p>
@@ -377,18 +379,18 @@ export function XCompetitorTracker() {
         {/* Latest AI Report */}
         {latestReport && (
           <div className="rounded-xl border border-mission-control-border bg-mission-control-surface p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
+            <Flex align="center" justify="between" className="mb-2">
+              <Flex align="center" gap="2">
                 <FileText size={14} className="text-info" />
                 <span className="text-sm font-medium text-mission-control-text">{latestReport.title}</span>
-              </div>
-              <div className="flex items-center gap-2">
+              </Flex>
+              <Flex align="center" gap="2">
                 <span className="text-[10px] text-mission-control-text-dim">
                   {new Date(latestReport.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
                 <button
                   onClick={() => setShowReport(!showReport)}
-                  className="px-2 py-1 text-xs text-info hover:bg-info-subtle/50 rounded transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   {showReport ? 'Collapse' : 'View Report'}
                 </button>
@@ -402,13 +404,13 @@ export function XCompetitorTracker() {
                     a.click();
                     URL.revokeObjectURL(url);
                   }}
-                  className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded transition-colors"
                   title="Download report"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <Download size={13} />
                 </button>
-              </div>
-            </div>
+              </Flex>
+            </Flex>
             {!showReport && <p className="text-xs text-mission-control-text-dim">{latestReport.summary}</p>}
             {showReport && (
               <div className="mt-3 p-3 rounded-lg border border-mission-control-border bg-mission-control-bg max-h-[500px] overflow-y-auto text-sm">
@@ -419,8 +421,8 @@ export function XCompetitorTracker() {
         )}
 
         {/* Generate Report Button */}
-        <div className="flex items-center gap-2">
-          <button
+        <Flex align="center" gap="2">
+          <Button
             onClick={async () => {
               setGeneratingReport(true);
               try {
@@ -443,46 +445,44 @@ export function XCompetitorTracker() {
               setGeneratingReport(false);
             }}
             disabled={generatingReport || handles.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-info/10 text-info hover:bg-info/20 rounded-lg transition-colors disabled:opacity-40"
+            variant="soft"
+            color="blue"
+            size="1"
           >
-            {generatingReport ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+            {generatingReport ? <Spinner size="1" /> : <Zap size={12} />}
             {generatingReport ? 'Generating...' : 'Run Competitor Analysis'}
-          </button>
+          </Button>
           {!latestReport && <span className="text-[10px] text-mission-control-text-dim">Add competitor handles below, then run analysis</span>}
-        </div>
+        </Flex>
 
         {/* Add handle input */}
         <div>
           <label className="block text-sm font-medium text-mission-control-text mb-2">
             Track a competitor
           </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-mission-control-text-dim">
-                @
-              </span>
-              <input
-                type="text"
+          <Flex gap="2">
+            <div className="flex-1">
+              <TextField.Root
                 value={inputValue}
                 onChange={e => setInputValue(e.target.value)}
                 onKeyDown={e => {
                   if (e.key === 'Enter') handleAdd();
                 }}
-                placeholder="handle"
-                className="w-full pl-7 pr-3 py-2 text-sm border border-mission-control-border rounded-lg bg-mission-control-bg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:ring-2"
-                style={{ '--tw-ring-color': 'var(--color-info)' } as React.CSSProperties}
+                placeholder="@handle"
+                size="2"
               />
             </div>
-            <button
+            <Button
               onClick={handleAdd}
               disabled={!inputValue.trim()}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg transition-colors disabled:opacity-50"
-              style={{ background: 'var(--color-info)', color: '#fff' }}
+              variant="solid"
+              color="blue"
+              size="2"
             >
               <Plus size={16} />
               Add
-            </button>
-          </div>
+            </Button>
+          </Flex>
           <p className="text-xs text-mission-control-text-dim mt-1.5">
             Track up to 10 competitors. Uses X search API to fetch recent tweets.
           </p>
@@ -491,29 +491,35 @@ export function XCompetitorTracker() {
         {/* Tracked handles chips */}
         {handles.length > 0 && competitors.length === 0 && !loading && (
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <Flex align="center" justify="between" className="mb-2">
               <span className="text-sm font-medium text-mission-control-text">
                 Tracked accounts ({handles.length})
               </span>
               <button
                 onClick={handleRefresh}
-                className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <RefreshCw size={12} />
                 Load data
               </button>
-            </div>
+            </Flex>
             <div className="flex flex-wrap gap-2">
               {handles.map(h => (
-                <div
+                <Flex
                   key={h}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border border-mission-control-border text-mission-control-text"
+                  align="center"
+                  gap="2"
+                  className="px-2.5 py-1 rounded-full text-xs border border-mission-control-border text-mission-control-text"
                 >
                   @{h}
-                  <button onClick={() => handleRemove(h)} aria-label={`Remove @${h}`}>
-                    <X size={12} className="text-mission-control-text-dim hover:text-error" />
+                  <button
+                    onClick={() => handleRemove(h)}
+                    aria-label={`Remove @${h}`}
+                    className="inline-flex items-center justify-center w-4 h-4 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                  >
+                    <X size={12} />
                   </button>
-                </div>
+                </Flex>
               ))}
             </div>
           </div>
@@ -521,45 +527,51 @@ export function XCompetitorTracker() {
 
         {/* Loading */}
         {loading && (
-          <div className="flex items-center justify-center py-12 text-mission-control-text-dim">
-            <div className="w-6 h-6 border-2 border-info border-t-transparent rounded-full animate-spin mr-3" />
+          <Flex align="center" justify="center" gap="3" className="py-12 text-mission-control-text-dim">
+            <Spinner size="2" />
             Searching X for competitor tweets...
-          </div>
+          </Flex>
         )}
 
         {/* Error */}
         {error && !loading && (
-          <div
-            className="flex items-center gap-2 p-3 rounded-lg text-sm"
-            style={{ background: 'var(--color-error-subtle)', color: 'var(--color-error)' }}
+          <Flex
+            align="center"
+            gap="2"
+            className="p-3 rounded-lg text-sm"
+            style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}
           >
             <AlertCircle size={16} />
             {error}
-            <button onClick={handleRefresh} className="ml-auto underline text-xs">
+            <button
+              onClick={handleRefresh}
+              style={{ marginLeft: 'auto' }}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+            >
               Retry
             </button>
-          </div>
+          </Flex>
         )}
 
         {/* Competitor cards */}
         {!loading && competitors.length > 0 && (
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
+            <Flex align="center" justify="between" className="mb-3">
+              <Flex align="center" gap="2">
                 <BarChart2 size={16} className="text-mission-control-text-dim" />
                 <span className="text-sm font-medium text-mission-control-text">
                   Competitor Analysis ({competitors.length})
                 </span>
-              </div>
+              </Flex>
               <button
                 onClick={handleRefresh}
                 disabled={loading}
-                className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
               >
                 <RefreshCw size={12} />
                 Refresh
               </button>
-            </div>
+            </Flex>
             <div className="space-y-3">
               {competitors.map(c => (
                 <CompetitorCard key={c.handle} data={c} onRemove={handleRemove} />
@@ -577,7 +589,7 @@ export function XCompetitorTracker() {
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }
 

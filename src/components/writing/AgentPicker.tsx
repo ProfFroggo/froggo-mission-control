@@ -14,19 +14,20 @@ interface AgentPickerProps {
 
 export default function AgentPicker({ selected, onSelect, disabled }: AgentPickerProps) {
   return (
-    <div className="flex gap-1">
+    <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
       {AGENTS.map(({ id, name, Icon }) => {
         const isActive = selected === id;
         return (
           <button
             key={id}
+            type="button"
             onClick={() => onSelect(id)}
             disabled={disabled}
-            className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors disabled:opacity-50 ${
               isActive
-                ? 'bg-mission-control-accent/20 text-mission-control-accent'
-                : 'text-mission-control-text-dim hover:text-mission-control-text'
-            } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                ? 'bg-mission-control-surface text-mission-control-accent shadow-sm'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+            }`}
           >
             <Icon className="w-3 h-3" />
             <span>{name}</span>

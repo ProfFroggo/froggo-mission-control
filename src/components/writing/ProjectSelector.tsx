@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button, TextField, Flex } from '@radix-ui/themes';
 import { useWritingStore, WritingProject } from '../../store/writingStore';
 import { useWizardStore } from '../../store/wizardStore';
 import { Plus, BookOpen, BookText, Trash2, X, Wand2 } from 'lucide-react';
@@ -68,30 +69,33 @@ export default function ProjectSelector() {
     <div className="h-full overflow-y-auto bg-mission-control-bg">
       <div className="max-w-3xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <Flex align="center" justify="between" className="mb-8">
           <div>
             <h1 className="text-2xl font-bold text-mission-control-text">Writing Projects</h1>
             <p className="text-sm text-mission-control-text-dim mt-1">
               {projects.length} {projects.length === 1 ? 'project' : 'projects'}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <button
+          <Flex align="center" gap="2">
+            <Button
               onClick={startWizard}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-colors"
+              size="2"
+              variant="solid"
             >
               <Wand2 size={16} />
               Plan with AI
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-mission-control-border text-mission-control-text-dim text-sm font-medium hover:border-mission-control-accent transition-colors"
+              size="2"
+              variant="outline"
+              color="gray"
             >
               {showForm ? <X size={16} /> : <Plus size={16} />}
               {showForm ? 'Cancel' : 'New Project'}
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Flex>
+        </Flex>
 
         {/* Create form */}
         {showForm && (
@@ -101,38 +105,35 @@ export default function ProjectSelector() {
                 <label htmlFor="project-title" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
                   Title
                 </label>
-                <input
+                <TextField.Root
                   id="project-title"
-                  type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                   placeholder="My Writing Project"
-                  className="w-full px-3 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-sm placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent"
+                  size="2"
                 />
               </div>
               <div>
                 <span className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
                   Type
                 </span>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
                   <button
+                    type="button"
                     onClick={() => setType('memoir')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                      type === 'memoir'
-                        ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                        : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-text-dim'
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                      type === 'memoir' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
                     }`}
                   >
                     <BookOpen size={16} />
                     Memoir
                   </button>
                   <button
+                    type="button"
                     onClick={() => setType('novel')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                      type === 'novel'
-                        ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                        : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-text-dim'
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                      type === 'novel' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
                     }`}
                   >
                     <BookText size={16} />
@@ -140,13 +141,14 @@ export default function ProjectSelector() {
                   </button>
                 </div>
               </div>
-              <button
+              <Button
                 onClick={handleCreate}
                 disabled={!title.trim() || creating}
-                className="px-4 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                size="2"
+                variant="solid"
               >
                 {creating ? 'Creating...' : 'Create Project'}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -182,34 +184,36 @@ export default function ProjectSelector() {
             {projects.map((project) => (
               <button
                 key={project.id}
+                type="button"
                 onClick={() => openProject(project.id)}
-                className="w-full text-left p-4 rounded-lg border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40 hover:shadow-card transition-all group"
+                className="group w-full text-left p-4 rounded-lg border border-mission-control-border bg-mission-control-surface hover:bg-mission-control-border/40 transition-colors"
               >
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between w-full">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <Flex align="center" gap="2" className="mb-1">
                       <h3 className="text-sm font-semibold text-mission-control-text truncate">
                         {project.title}
                       </h3>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider ${
                         project.type === 'memoir'
-                          ? 'bg-info-subtle text-info'
+                          ? 'bg-info/10 text-info'
                           : 'bg-review-subtle text-review'
                       }`}>
                         {project.type === 'memoir' ? <BookOpen size={10} /> : <BookText size={10} />}
                         {project.type}
                       </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-mission-control-text-dim">
+                    </Flex>
+                    <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim">
                       <span>{project.chapterCount} {project.chapterCount === 1 ? 'chapter' : 'chapters'}</span>
                       <span>{project.wordCount.toLocaleString()} words</span>
                       <span>Created {relativeTime(project.createdAt)}</span>
-                    </div>
+                    </Flex>
                   </div>
                   <button
+                    type="button"
                     onClick={(e) => handleDelete(e, project)}
-                    className="p-1.5 rounded-lg text-mission-control-text-dim/0 group-hover:text-mission-control-text-dim hover:!text-error hover:bg-error-subtle transition-all"
                     title="Delete project"
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-error/70 hover:text-error hover:bg-mission-control-surface transition-colors opacity-0 group-hover:opacity-100"
                   >
                     <Trash2 size={14} />
                   </button>

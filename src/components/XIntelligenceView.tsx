@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Search, Target, Zap } from 'lucide-react';
+import { Flex, Box } from '@radix-ui/themes';
 import XResearchView from './XResearchView';
 import XCompetitorTracker from './XCompetitorTracker';
 
@@ -30,44 +31,43 @@ export default function XIntelligenceView() {
   const [activeSubTab, setActiveSubTab] = useState<IntelSubTab>('search');
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Sub-tab bar + AI actions */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center gap-1">
+      <Flex align="center" justify="between" px="4" py="2" className="border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" gap="1">
           {SUB_TABS.map((tab) => (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActiveSubTab(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                activeSubTab === tab.id
-                  ? 'bg-info-subtle text-info font-medium'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt'
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                activeSubTab === tab.id ? 'border-mission-control-accent text-mission-control-accent' : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               {tab.icon}
               {tab.label}
             </button>
           ))}
-        </div>
-        <div className="flex items-center gap-1">
+        </Flex>
+        <Flex align="center" gap="1">
           {AI_ACTIONS[activeSubTab]?.map((action, i) => (
             <button
               key={i}
               onClick={() => dispatchToAgent(action.prompt)}
-              className="flex items-center gap-1 px-2.5 py-1 text-xs text-info hover:bg-info-subtle/50 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <Zap size={10} />
               {action.label}
             </button>
           ))}
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Sub-tab content */}
-      <div className="flex-1 overflow-hidden">
+      <Box className="flex-1 overflow-hidden">
         {activeSubTab === 'search' && <XResearchView />}
         {activeSubTab === 'competitors' && <XCompetitorTracker />}
-      </div>
-    </div>
+      </Box>
+    </Flex>
   );
 }

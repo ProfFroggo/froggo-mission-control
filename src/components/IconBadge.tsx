@@ -5,6 +5,7 @@
 
 import type React from 'react';
 import { LucideIcon } from 'lucide-react';
+import { Box } from '@radix-ui/themes';
 
 interface IconBadgeProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -34,12 +35,12 @@ export default function IconBadge({
   const minDimension = size + 16; // size + (2 * 8px padding)
 
   return (
-    <div 
-      className={`p-2 ${roundedClass} ${color} flex-shrink-0 inline-flex items-center justify-center ${className}`}
-      style={{ 
-        minWidth: `${minDimension}px`, 
+    <Box
+      flexShrink="0"
+      className={`p-2 ${roundedClass} ${color} inline-flex items-center justify-center ${className}`}
+      style={{
+        minWidth: `${minDimension}px`,
         minHeight: `${minDimension}px`,
-        // Remove fit-content to prevent layout shifts
         width: `${minDimension}px`,
         height: `${minDimension}px`
       }}
@@ -47,7 +48,7 @@ export default function IconBadge({
       role={ariaLabel ? 'img' : undefined}
     >
       <Icon size={size} className="flex-shrink-0" aria-hidden="true" />
-    </div>
+    </Box>
   );
 }
 
@@ -56,28 +57,28 @@ export default function IconBadge({
  */
 export const BadgePresets = {
   // Notification types
-  taskComplete: { color: 'text-success bg-success-subtle' },
-  taskDeadline: { color: 'text-warning bg-warning-subtle' },
+  taskComplete: { color: 'text-success bg-success/10' },
+  taskDeadline: { color: 'text-warning bg-warning/10' },
   agentUpdate: { color: 'text-review bg-review-subtle' },
-  messageArrival: { color: 'text-info bg-info-subtle' },
-  approvalPending: { color: 'text-warning bg-warning-subtle' },
+  messageArrival: { color: 'text-info bg-info/10' },
+  approvalPending: { color: 'text-warning bg-warning/10' },
   calendarEvent: { color: 'text-review bg-review-subtle' },
-  systemAlert: { color: 'text-error bg-error-subtle' },
-  skillLearned: { color: 'text-info bg-info-subtle' },
-  error: { color: 'text-error bg-error-subtle' },
+  systemAlert: { color: 'text-error bg-error/10' },
+  skillLearned: { color: 'text-info bg-info/10' },
+  error: { color: 'text-error bg-error/10' },
   
   // Approval types
-  tweet: { color: 'text-info bg-info-subtle' },
-  reply: { color: 'text-info bg-info-subtle' },
-  email: { color: 'text-success bg-success-subtle' },
+  tweet: { color: 'text-info bg-info/10' },
+  reply: { color: 'text-info bg-info/10' },
+  email: { color: 'text-success bg-success/10' },
   message: { color: 'text-review bg-review-subtle' },
-  task: { color: 'text-warning bg-warning-subtle' },
-  action: { color: 'text-success bg-success-subtle' },
+  task: { color: 'text-warning bg-warning/10' },
+  action: { color: 'text-success bg-success/10' },
   
   // Channels - using CSS custom properties for theme consistency
   discord: { color: 'text-[var(--channel-discord)] bg-[var(--channel-discord-bg)]' },
   telegram: { color: 'text-[var(--channel-telegram)] bg-[var(--channel-telegram-bg)]' },
   whatsapp: { color: 'text-[var(--channel-whatsapp)] bg-[var(--channel-whatsapp-bg)]' },
   webchat: { color: 'text-review bg-review-subtle' },
-  agents: { color: 'text-warning bg-warning-subtle' },
+  agents: { color: 'text-warning bg-warning/10' },
 } as const;

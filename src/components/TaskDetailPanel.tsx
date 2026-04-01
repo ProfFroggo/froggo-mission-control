@@ -4,8 +4,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useEventBus } from '../lib/useEventBus';
-import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe, Timer, Link2, Sparkles, ChevronUp, ChevronDown, User } from 'lucide-react';
+import { X, Bot, Clock, Play, CheckCircle, XCircle, FileText, Activity, MessageSquare, Calendar, Plus, Check, Eye, AlertCircle, AlertTriangle, Lightbulb, Loader2, RefreshCw, Upload, Download, Trash2, Paperclip, Search, ImageIcon, File, Archive, Settings, Code, Globe, Timer, Link2, Sparkles, ChevronUp, ChevronDown, User, ExternalLink, Film, Code2, Braces, Table2, Image, ZoomIn, Pencil } from 'lucide-react';
 import { useStore, Task, Subtask, TaskActivity } from '../store/store';
+// eslint-disable-next-line import/order
+import { Box, Flex, Button, Checkbox, IconButton, Spinner, TextArea, TextField, Select } from '@radix-ui/themes';
 import ActiveAgentIndicator from './ActiveAgentIndicator';
 import AgentProgressQuery from './AgentProgressQuery';
 import { showToast } from './Toast';
@@ -18,7 +20,11 @@ import { createLogger } from '../utils/logger';
 const logger = createLogger('TaskDetailPanel');
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import TaskChatTab from './TaskChatTab';
+import TabNav from './TabNav';
 import { isProtectedAgent } from '../lib/agentConfig';
+import { useFocusTrap } from '../hooks/useKeyboardNav';
+import BaseModal, { BaseModalHeader, BaseModalBody, BaseModalFooter } from './BaseModal';
+import MarkdownMessage from './MarkdownMessage';
 
 function parseAcceptanceCriteria(planningNotes: string): string[] {
   const match = planningNotes.match(/## Acceptance Criteria\n([\s\S]*?)(?=\n##|$)/);
@@ -58,6 +64,7 @@ interface TaskDetailPanelProps {
 export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps) {
   const agents = useStore(s => s.agents);
   const updateTask = useStore(s => s.updateTask);
+  const patchTaskLocal = useStore(s => s.patchTaskLocal);
   const spawnAgentForTask = useStore(s => s.spawnAgentForTask);
   const loadSubtasksForTask = useStore(s => s.loadSubtasksForTask);
   const addSubtask = useStore(s => s.addSubtask);
@@ -72,6 +79,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [selectedSubtaskIds, setSelectedSubtaskIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [editingDueDateId, setEditingDueDateId] = useState<string | null>(null);
+  const [editingPlanningNotes, setEditingPlanningNotes] = useState(false);
   const newSubtaskInputRef = useRef<HTMLInputElement>(null);
   const [suggestedCriteria, setSuggestedCriteria] = useState<string[]>([]);
   const [isCreatingCriteriaSubtasks, setIsCreatingCriteriaSubtasks] = useState(false);
@@ -95,7 +103,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   const [activeAgentInfo, setActiveAgentInfo] = useState<{ sessionKey: string; displayName: string } | null>(null);
   const [checkingAgent, setCheckingAgent] = useState(false);
   const [abortingAgent, setAbortingAgent] = useState(false);
-  const [fileViewer, setFileViewer] = useState<{ name: string; content: string; ext: string } | null>(null);
+  const [fileViewer, setFileViewer] = useState<{ name: string; content?: string; ext: string; mediaType?: 'image' | 'video' | 'html'; serveUrl?: string } | null>(null);
+  // Focus trap for dialog accessibility (WCAG 2.4.3 / 4.1.2)
+  const focusTrapRef = useFocusTrap(!!task);
+  const panelTitleId = 'task-detail-title';
+  // Focus trap for agent-active modal (not yet migrated to BaseModal)
+  const agentActiveModalTrapRef = useFocusTrap(showAgentActiveModal);
+  const previousActiveElementRef = useRef<HTMLElement | null>(null);
   // Track current task id for SSE handler
   const taskIdRef = useRef<string | null>(task?.id ?? null);
   taskIdRef.current = task?.id ?? null;
@@ -112,6 +126,40 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       loadActivityRef.current?.();
     }
   });
+
+  // Save focus on open, restore on close (WCAG 2.4.3)
+  useEffect(() => {
+    if (task) {
+      previousActiveElementRef.current = document.activeElement as HTMLElement;
+    }
+    return () => {
+      previousActiveElementRef.current?.focus();
+    };
+  }, [!!task]); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally only tracks open/close
+
+  // Prevent body scroll when panel is open
+  useEffect(() => {
+    if (!task) return;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, [task]);
+
+  // Hydrate planningNotes lazily — the bulk load uses ?summary=1 which strips this field.
+  // Use local state so it doesn't depend on store refresh cycles.
+  const [localPlanningNotes, setLocalPlanningNotes] = useState<string | undefined>(undefined);
+  const hydratedTaskId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!task) { setLocalPlanningNotes(undefined); hydratedTaskId.current = null; return; }
+    if (task.planningNotes !== undefined) { setLocalPlanningNotes(task.planningNotes); return; }
+    if (hydratedTaskId.current === task.id) return;
+    hydratedTaskId.current = task.id;
+    taskApi.getById(task.id).then((fullTask: any) => {
+      if (fullTask && 'planningNotes' in fullTask) {
+        setLocalPlanningNotes(fullTask.planningNotes ?? '');
+      }
+    }).catch(() => {});
+  }, [task?.id, task?.planningNotes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle both local and remote agents
   const assignedAgent = task?.assignedTo ? agents.find(a => a.id === task.assignedTo) : null;
@@ -226,8 +274,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
       const isCmdOrCtrl = e.metaKey || e.ctrlKey;
 
-      // Escape - Close panel
+      // Escape - Close panel (only if no sub-modal is open)
       if (e.key === 'Escape') {
+        // Let sub-modals handle their own Escape key
+        if (showForkModal || showReopenModal || showAgentActiveModal || fileViewer || showPokeModal || open) return;
         e.preventDefault();
         onClose();
         return;
@@ -336,7 +386,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [task, activeTab, onClose, updateTask]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- sub-modal states for Escape scoping
+  }, [task, activeTab, onClose, updateTask, showForkModal, showReopenModal, showAgentActiveModal, fileViewer, showPokeModal, open]);
 
   if (!task) return null;
 
@@ -633,6 +684,23 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   };
 
   const handleOpenFile = async (filePath: string) => {
+    const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+    const name = filePath.split('/').pop() ?? filePath;
+    const serveUrl = `/api/files/serve?path=${encodeURIComponent(filePath)}`;
+
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)) {
+      setFileViewer({ name, ext, mediaType: 'image', serveUrl });
+      return;
+    }
+    if (['mp4', 'webm', 'mov'].includes(ext)) {
+      setFileViewer({ name, ext, mediaType: 'video', serveUrl });
+      return;
+    }
+    if (['html', 'htm'].includes(ext)) {
+      setFileViewer({ name, ext, mediaType: 'html', serveUrl });
+      return;
+    }
+
     try {
       const res = await fetch(`/api/files/read?path=${encodeURIComponent(filePath)}`);
       const data = await res.json();
@@ -752,22 +820,51 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-    <div className="w-full md:w-[700px] md:max-w-[95vw] h-[95dvh] md:h-auto md:max-h-[90vh] bg-mission-control-surface border border-mission-control-border md:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom md:zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+    <>
+    {/* Backdrop — aria-hidden so screen readers skip it; click closes dialog */}
+    {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+    {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+    <div
+      ref={focusTrapRef as React.RefObject<HTMLDivElement>}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={panelTitleId}
+      tabIndex={-1}
+      className="fixed z-50 inset-x-0 bottom-0 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:w-[1100px] md:max-w-[95vw] h-[95dvh] md:h-auto md:max-h-[90vh] bg-mission-control-surface border border-mission-control-border md:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom md:zoom-in-95 duration-200 outline-none"
+      onClick={e => e.stopPropagation()}
+    >
       {/* Header */}
-      <div className="px-4 pt-3 pb-2 border-b border-mission-control-border bg-mission-control-bg rounded-t-2xl flex-shrink-0">
+      <div className="px-4 pt-3 pb-2 border-b border-mission-control-border bg-mission-control-surface rounded-t-2xl flex-shrink-0">
         {/* Row 1: badges + close */}
-        <div className="flex items-center gap-2 mb-1.5">
+        <Flex align="center" gap="2" className="mb-1.5">
           <ActiveAgentIndicator taskId={task.id} showLabel size="sm" />
-          <span className={`px-1.5 py-0.5 text-xs rounded ${
-            task.status === 'done' ? 'bg-success-subtle text-success' :
-            task.status === 'in-progress' ? 'bg-info-subtle text-info' :
-            task.status === 'review' ? 'bg-review-subtle text-review' :
-            task.status === 'failed' ? 'bg-error-subtle text-error' :
-            'bg-info-subtle text-info'
+          <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
+            task.status === 'done'            ? 'bg-success/10 text-success' :
+            task.status === 'in-progress'     ? 'bg-info/10 text-info' :
+            task.status === 'review'          ? 'bg-review-subtle text-review' :
+            task.status === 'human-review'    ? 'bg-warning/10 text-warning' :
+            task.status === 'internal-review' ? 'bg-review-subtle text-review' :
+            task.status === 'failed'          ? 'bg-error/10 text-error' :
+            task.status === 'cancelled'       ? 'bg-mission-control-border/40 text-mission-control-text-dim' :
+            'bg-mission-control-border/30 text-mission-control-text-dim'
           }`}>
-            {task.status.replace(/-/g, ' ')}
+            {task.status === 'internal-review' ? 'Pre-review' : task.status.replace(/-/g, ' ')}
           </span>
+          {task.priority && (() => {
+            const pCfg = {
+              p0: { label: 'P0', color: 'bg-error/10 text-error' },
+              p1: { label: 'P1', color: 'bg-warning/10 text-warning' },
+              p2: { label: 'P2', color: 'bg-info/10 text-info' },
+              p3: { label: 'P3', color: 'bg-mission-control-border/30 text-mission-control-text-dim' },
+            }[task.priority];
+            if (!pCfg) return null;
+            return (
+              <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${pCfg.color}`}>
+                {pCfg.label}
+              </span>
+            );
+          })()}
           <span className="text-xs text-mission-control-text-dim">{task.project}</span>
           {task.projectName && (
             <span className="flex items-center gap-1 text-xs text-mission-control-accent">
@@ -777,9 +874,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           )}
           {dueDateUrgency && (
             <span className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${
-              dueDateUrgency.level === 'overdue' ? 'bg-error-subtle text-error' :
-              dueDateUrgency.level === 'soon' ? 'bg-warning-subtle text-warning' :
-              'bg-warning-subtle/50 text-warning'
+              dueDateUrgency.level === 'overdue' ? 'bg-error/10 text-error' :
+              dueDateUrgency.level === 'soon' ? 'bg-warning/10 text-warning' :
+              'bg-warning/10/50 text-warning'
             }`}>
               {dueDateUrgency.level === 'overdue'
                 ? <AlertTriangle size={11} />
@@ -790,32 +887,35 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
           {(JSON.parse(task.tags || '[]') as string[]).map((tag: string) => (
             <span key={tag} className="px-1.5 py-0.5 text-xs bg-mission-control-accent/20 text-mission-control-accent rounded-full flex items-center gap-1 flex-shrink-0">
               {tag}
-              <button onClick={() => { const t = JSON.parse(task.tags || '[]'); updateTask(task.id, { tags: JSON.stringify(t.filter((x: string) => x !== tag)) }); }} className="hover:text-error">×</button>
+              <button type="button" onClick={() => { const t = JSON.parse(task.tags || '[]'); updateTask(task.id, { tags: JSON.stringify(t.filter((x: string) => x !== tag)) }); }} aria-label={`Remove tag ${tag}`} className="hover:text-error leading-none">×</button>
             </span>
           ))}
           <input
-            type="text"
             placeholder="+ tag"
-            className="unstyled px-1.5 py-0.5 text-xs bg-mission-control-bg border border-mission-control-border rounded-full focus:outline-none focus:border-mission-control-accent w-14 flex-shrink-0"
+            aria-label="Add tag"
+            className="px-2 py-0.5 text-xs rounded-full border border-mission-control-border/60 bg-transparent text-mission-control-text-dim placeholder-mission-control-text-dim/50 hover:border-mission-control-border focus:outline-none focus:border-mission-control-accent/50 w-14 flex-shrink-0 leading-none"
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                const newTag = e.currentTarget.value.trim();
+              const input = e.currentTarget;
+              if (e.key === 'Enter' && input.value.trim()) {
+                const newTag = input.value.trim();
                 const currentTags = JSON.parse(task.tags || '[]');
                 if (!currentTags.includes(newTag)) updateTask(task.id, { tags: JSON.stringify([...currentTags, newTag]) });
-                e.currentTarget.value = '';
+                input.value = '';
               }
             }}
           />
           <button
+            type="button"
             onClick={onClose}
-            className="ml-auto p-1.5 hover:bg-mission-control-border rounded-lg transition-colors flex-shrink-0"
+            aria-label="Close task detail"
+            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors ml-auto flex-shrink-0"
           >
             <X size={16} />
           </button>
-        </div>
+        </Flex>
 
         {/* Row 2: title */}
-        <h2 className="text-base font-semibold line-clamp-1 mb-1" title={task.title}>{task.title}</h2>
+        <h2 id={panelTitleId} className="text-base font-semibold line-clamp-1 mb-1" title={task.title}>{task.title}</h2>
 
         {/* Row 3: description (1 line) */}
         {task.description && (
@@ -823,12 +923,12 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         )}
 
         {/* Row 4: progress · dates — all one line */}
-        <div className="flex items-center gap-2 my-[14px]">
+        <Flex align="center" gap="2" className="my-[14px]">
           {subtasks.length > 0 ? (
             <>
               <div className="h-2 flex-1 bg-gradient-to-r from-mission-control-border/60 to-mission-control-border rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-green-700 to-green-400 transition-all duration-500 rounded-full"
+                  className="h-full bg-gradient-to-r from-[var(--color-success-hover)] to-[var(--color-success)] transition-colors duration-500 rounded-full"
                   style={{ width: `${subtaskProgress}%` }}
                 />
               </div>
@@ -841,7 +941,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             <>
               <div className="h-2 flex-1 bg-mission-control-border rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-mission-control-accent transition-all duration-500 rounded-full"
+                  className="h-full bg-mission-control-accent transition-colors duration-500 rounded-full"
                   style={{ width: `${task.progress}%` }}
                 />
               </div>
@@ -852,78 +952,77 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             </>
           ) : null}
           {/* dates pushed right */}
-          <div className="flex items-center gap-2 text-xs text-mission-control-text-dim ml-auto flex-shrink-0">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim ml-auto flex-shrink-0">
             <span className="flex items-center gap-1"><Calendar size={11} />{formatTime(task.createdAt)}</span>
             <span className="flex items-center gap-1"><Clock size={11} />{formatTime(task.updatedAt)}</span>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Row 6: agents — compact single row */}
-        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-mission-control-border">
+        <Flex align="center" gap="3" className="mt-2 pt-2 border-t border-mission-control-border">
           {/* Worker */}
-          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <Flex align="center" gap="2" className="flex-1 min-w-0">
             <span className="text-xs text-mission-control-text-dim whitespace-nowrap">Worker:</span>
             {assignedAgent ? (
-              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <Flex align="center" gap="2" className="flex-1 min-w-0">
                 <AgentAvatar agentId={assignedAgent.id} fallbackEmoji={assignedAgent.avatar} size="sm" />
                 <span className="text-xs font-medium truncate">{assignedAgent.name}</span>
-                {!isWorking && !['done', 'in-progress', 'internal-review', 'agent-review', 'review'].includes(task.status) && (
-                  <button onClick={handleStart} className="p-1 bg-success text-white rounded hover:bg-success-hover flex-shrink-0" title="Start Work">
+                {!isWorking && !['done', 'in-progress', 'internal-review', 'review'].includes(task.status) && (
+                  <IconButton onClick={handleStart} variant="solid" size="1" title="Start Work" aria-label="Start Work">
                     <Play size={11} />
-                  </button>
+                  </IconButton>
                 )}
                 {(isWorking || task.status === 'in-progress') && <Loader2 size={12} className="animate-spin text-info flex-shrink-0" />}
-              </div>
+              </Flex>
             ) : isRemoteAgent ? (
-              <div className="flex items-center gap-1 min-w-0">
+              <Flex align="center" gap="1" className="min-w-0">
                 <Globe size={12} className="text-review flex-shrink-0" />
                 <span className="text-xs truncate capitalize">{task.assignedTo}</span>
-              </div>
+              </Flex>
             ) : (
               <span className="text-xs text-mission-control-text-dim italic">unassigned</span>
             )}
-          </div>
+          </Flex>
 
           <div className="w-px h-4 bg-mission-control-border flex-shrink-0" />
 
           {/* Reviewer */}
-          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <Flex align="center" gap="2" className="flex-1 min-w-0">
             <span className="text-xs text-mission-control-text-dim whitespace-nowrap">Reviewer:</span>
             {reviewer ? (
-              <div className="flex items-center gap-1.5 min-w-0">
+              <Flex align="center" gap="2" className="min-w-0">
                 <AgentAvatar agentId={reviewer.id} fallbackEmoji={reviewer.avatar} size="sm" />
                 <span className="text-xs font-medium truncate">{reviewer.name}</span>
                 {task.reviewStatus && (
                   <span className={`text-xs px-1 py-0.5 rounded flex-shrink-0 ${
-                    task.reviewStatus === 'approved' ? 'bg-success-subtle text-success' :
-                    task.reviewStatus === 'needs-changes' ? 'bg-error-subtle text-error' :
-                    task.reviewStatus === 'in-review' ? 'bg-warning-subtle text-warning' :
+                    task.reviewStatus === 'approved' ? 'bg-success/10 text-success' :
+                    task.reviewStatus === 'needs-changes' ? 'bg-error/10 text-error' :
+                    task.reviewStatus === 'in-review' ? 'bg-warning/10 text-warning' :
                     'bg-muted-subtle text-muted'
                   }`}>{task.reviewStatus}</span>
                 )}
-              </div>
+              </Flex>
             ) : (
-              <select
-                onChange={(e) => e.target.value && assignReviewer(e.target.value)}
-                className="flex-1 min-w-0 bg-mission-control-surface border border-dashed border-mission-control-border rounded-lg text-xs py-0.5 px-1 focus:outline-none focus:border-mission-control-accent"
-              >
-                <option value="">Assign...</option>
-                {agents
-                  .filter(a => a.id !== task.assignedTo)
-                  .map(a => (
-                    <option key={a.id} value={a.id} selected={a.id === 'clara'}>
-                      {a.name}{a.id === 'clara' ? ' (default)' : ''}
-                    </option>
-                  ))}
-              </select>
+              <Select.Root defaultValue="clara" onValueChange={(val) => val && assignReviewer(val)}>
+                <Select.Trigger className="flex-1 min-w-0" placeholder="Assign..." />
+                <Select.Content>
+                  {agents
+                    .filter(a => a.id !== task.assignedTo)
+                    .map(a => (
+                      <Select.Item key={a.id} value={a.id}>
+                        {a.name}{a.id === 'clara' ? ' (default)' : ''}
+                      </Select.Item>
+                    ))}
+                </Select.Content>
+              </Select.Root>
             )}
-          </div>
-        </div>
+          </Flex>
+        </Flex>
       </div>
 
       {/* Clara review notes callout */}
       {task.reviewNotes && task.reviewStatus && ['needs-changes', 'rejected', 'pre-rejected'].includes(task.reviewStatus) && (
-        <div className="mx-4 mt-3 p-3 bg-error-subtle border border-error-border rounded-lg flex items-start gap-2 flex-shrink-0">
+        <div className="mx-4 mt-3 p-3 bg-error/10 border border-error/30 rounded-lg flex items-start gap-2 flex-shrink-0">
           <AlertTriangle size={14} className="text-error flex-shrink-0 mt-0.5" />
           <div className="min-w-0">
             <span className="text-xs font-semibold text-error block mb-0.5">
@@ -934,7 +1033,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         </div>
       )}
       {task.reviewNotes && task.reviewStatus === 'approved' && (
-        <div className="mx-4 mt-3 p-3 bg-success-subtle border border-success-border rounded-lg flex items-start gap-2 flex-shrink-0">
+        <div className="mx-4 mt-3 p-3 bg-success/10 border border-success/30 rounded-lg flex items-start gap-2 flex-shrink-0">
           <CheckCircle size={14} className="text-success flex-shrink-0 mt-0.5" />
           <div className="min-w-0">
             <span className="text-xs font-semibold text-success block mb-0.5">
@@ -947,69 +1046,33 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
       {/* Time tracking strip */}
       <div className="mx-4 mt-2 mb-0 flex items-center gap-4 text-xs text-mission-control-text-dim flex-shrink-0 flex-wrap">
-        <div className="flex items-center gap-1.5">
+        <Flex align="center" gap="2">
           <Timer size={12} className="flex-shrink-0" />
           <span>Active {formatDuration(task.updatedAt - task.createdAt)}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
+        </Flex>
+        <Flex align="center" gap="2">
           <Calendar size={12} className="flex-shrink-0" />
           <span>Created {new Date(task.createdAt).toLocaleDateString()}</span>
-        </div>
+        </Flex>
       </div>
 
       {/* Tabs */}
       {/* IMPORTANT: Planning tab must ALWAYS be visible, regardless of task status.
           It serves as a historical record and should never be hidden when task is complete. */}
-      <div className="flex border-b border-mission-control-border flex-shrink-0">
-        {(['subtasks', 'planning', 'activity', 'files', 'review', 'chat'] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === tab
-                ? 'text-mission-control-accent border-b-2 border-mission-control-accent'
-                : 'text-mission-control-text-dim hover:text-mission-control-text'
-            }`}
-          >
-            {tab === 'subtasks' && (
-              <span className="flex items-center justify-center gap-2">
-                Subtasks
-                {subtasks.length > 0 && (
-                  <span className="bg-mission-control-border px-1.5 py-0.5 rounded text-xs">
-                    {completedSubtasks}/{subtasks.length}
-                  </span>
-                )}
-              </span>
-            )}
-            {tab === 'planning' && 'Planning'}
-            {tab === 'activity' && (
-              <span className="flex items-center justify-center gap-2">
-                Activity
-                {activities.length > 0 && (
-                  <span className="bg-mission-control-border px-1.5 py-0.5 rounded text-xs">
-                    {activities.length}
-                  </span>
-                )}
-              </span>
-            )}
-            {tab === 'files' && (
-              <span className="flex items-center justify-center gap-2">
-                Files
-                {attachments.length > 0 && (
-                  <span className="bg-mission-control-border px-1.5 py-0.5 rounded text-xs">
-                    {attachments.length}
-                  </span>
-                )}
-              </span>
-            )}
-            {tab === 'review' && 'Review'}
-            {tab === 'chat' && (
-              <span className="flex items-center justify-center gap-2">
-                Chat
-              </span>
-            )}
-          </button>
-        ))}
+      <div className="bg-mission-control-surface flex-shrink-0">
+        <TabNav
+          tabs={[
+            { id: 'subtasks',  label: 'Subtasks',  icon: CheckCircle, badge: subtasks.length > 0 ? `${completedSubtasks}/${subtasks.length}` : undefined },
+            { id: 'planning',  label: 'Planning',  icon: FileText },
+            { id: 'activity',  label: 'Activity',  icon: Activity,    badge: activities.length > 0 ? activities.length : undefined },
+            { id: 'files',     label: 'Files',     icon: Paperclip,   badge: attachments.length > 0 ? attachments.length : undefined },
+            { id: 'review',    label: 'Review',    icon: Eye },
+            { id: 'chat',      label: 'Chat',      icon: MessageSquare },
+          ]}
+          activeTab={activeTab}
+          onTabChange={(id) => setActiveTab(id as typeof activeTab)}
+          paddingX="px-4"
+        />
       </div>
 
       {/* Tab Content */}
@@ -1020,28 +1083,29 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             {/* Progress bar */}
             {subtasks.length > 0 && (
               <div className="mb-4">
-                <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1">
+                <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim mb-1">
                   <span>Progress</span>
                   <span>{completedSubtasks}/{subtasks.length} complete</span>
-                </div>
-                <div className="h-2 bg-mission-control-border rounded-full overflow-hidden">
+                </Flex>
+                <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-success rounded-full transition-all duration-300"
+                    className="h-full bg-mission-control-accent rounded-full transition-colors duration-300"
                     style={{ width: `${subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : 0}%` }}
                   />
                 </div>
                 {completedSubtasks === subtasks.length && task?.status === 'in-progress' && (
-                  <div className="mt-3 flex items-center gap-3 p-3 rounded-lg bg-success-subtle border border-success-border">
+                  <Flex align="center" gap="3" className="mt-3 p-3 rounded-lg bg-success/10 border border-success/30">
                     <CheckCircle size={16} className="text-success flex-shrink-0" />
                     <span className="text-sm text-success flex-1">All subtasks complete — ready for review?</span>
-                    <button
+                    <Button
                       type="button"
-                      onClick={() => updateTask(task.id, { status: 'agent-review' as any })}
-                      className="px-3 py-1.5 text-xs font-medium bg-success text-white rounded-lg hover:brightness-110 transition-colors flex-shrink-0"
+                      onClick={() => updateTask(task.id, { status: 'review' as any })}
+                      size="1"
+                      className="flex-shrink-0"
                     >
                       Move to Review
-                    </button>
-                  </div>
+                    </Button>
+                  </Flex>
                 )}
               </div>
             )}
@@ -1051,10 +1115,10 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               if (criteria.length === 0) return null;
               return (
                 <div className="mb-4 p-3 bg-mission-control-accent/10 border border-mission-control-accent/30 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
+                  <Flex align="center" gap="2" className="mb-2">
                     <Sparkles size={14} className="text-mission-control-accent flex-shrink-0" />
                     <span className="text-sm font-medium">Auto-generate from Acceptance Criteria</span>
-                  </div>
+                  </Flex>
                   <p className="text-xs text-mission-control-text-dim mb-2">
                     Found {criteria.length} item{criteria.length !== 1 ? 's' : ''} in planning notes. Create them as subtasks?
                   </p>
@@ -1066,22 +1130,22 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                       </li>
                     ))}
                   </ul>
-                  <button
+                  <Button
                     onClick={() => handleCreateCriteriaSubtasks(criteria)}
                     disabled={isCreatingCriteriaSubtasks}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
+                    size="1"
                   >
-                    {isCreatingCriteriaSubtasks ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                    {isCreatingCriteriaSubtasks ? <Spinner size="1" /> : <Plus size={12} />}
                     Create {criteria.length} subtask{criteria.length !== 1 ? 's' : ''}
-                  </button>
+                  </Button>
                 </div>
               );
             })()}
 
             {/* Add Subtask — Enter key creates next subtask automatically */}
-            <div className="flex gap-2 mb-4">
-              <input
-                ref={newSubtaskInputRef}
+            <Flex gap="2" className="mb-4">
+              <TextField.Root
+                ref={newSubtaskInputRef as React.Ref<HTMLInputElement>}
                 type="text"
                 value={newSubtask}
                 onChange={(e) => setNewSubtask(e.target.value)}
@@ -1092,73 +1156,83 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   }
                 }}
                 placeholder="Add a subtask... (Enter to add)"
-                className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                size="2"
+                className="flex-1"
               />
-              <button
+              <IconButton
                 onClick={handleAddSubtask}
                 disabled={!newSubtask.trim()}
-                className="p-2 bg-mission-control-accent text-white rounded-lg disabled:opacity-50 hover:bg-mission-control-accent-dim transition-colors"
+                size="2"
+                aria-label="Add subtask"
               >
                 <Plus size={16} />
-              </button>
-            </div>
+              </IconButton>
+            </Flex>
 
             {/* Bulk action bar — visible when one or more subtasks are selected */}
             {selectedSubtaskIds.size > 0 && (
-              <div className="flex items-center gap-2 mb-3 p-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
+              <Flex align="center" gap="2" className="mb-3 p-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
                 <span className="text-xs text-mission-control-text-dim flex-1">
                   {selectedSubtaskIds.size} selected
                 </span>
-                <button
+                <Button
                   onClick={handleBulkMarkDone}
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-success text-white rounded-lg hover:brightness-110 transition-colors"
+                  color="green"
+                  size="1"
                 >
                   <Check size={12} />
                   Mark done
-                </button>
+                </Button>
                 {bulkDeleteConfirm ? (
                   <>
                     <span className="text-xs text-error">Delete {selectedSubtaskIds.size}?</span>
-                    <button
+                    <Button
                       onClick={handleBulkDelete}
-                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-error text-white rounded-lg hover:brightness-110 transition-colors"
+                      color="red"
+                      size="1"
                     >
                       <Trash2 size={12} />
                       Yes, delete
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => setBulkDeleteConfirm(false)}
-                      className="px-2.5 py-1 text-xs border border-mission-control-border rounded-lg hover:bg-mission-control-border transition-colors"
+                      variant="outline"
+                      color="gray"
+                      size="1"
                     >
                       Cancel
-                    </button>
+                    </Button>
                   </>
                 ) : (
-                  <button
+                  <Button
                     onClick={() => setBulkDeleteConfirm(true)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs border border-error/40 text-error rounded-lg hover:bg-error/10 transition-colors"
+                    variant="outline"
+                    color="red"
+                    size="1"
                   >
                     <Trash2 size={12} />
                     Delete
-                  </button>
+                  </Button>
                 )}
                 <button
+                  type="button"
                   onClick={() => { setSelectedSubtaskIds(new Set()); setBulkDeleteConfirm(false); }}
-                  className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded transition-colors"
+                  aria-label="Clear selection"
+                  className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <X size={14} />
                 </button>
-              </div>
+              </Flex>
             )}
 
             {/* Subtask List */}
             {loadingSubtasks ? (
-              <div className="space-y-2">
+              <div className="divide-y divide-mission-control-border/40">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-mission-control-border">
+                  <Flex key={i} align="center" gap="2.5" className="py-2">
                     <div className="w-5 h-5 rounded bg-mission-control-surface animate-pulse flex-shrink-0" />
                     <div className="h-4 rounded bg-mission-control-surface animate-pulse flex-1" />
-                  </div>
+                  </Flex>
                 ))}
               </div>
             ) : subtasks.length === 0 ? (
@@ -1168,7 +1242,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                 <p className="text-xs">Break down this task into smaller steps</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="flex flex-col">
                 {subtasks.map((st, idx) => {
                   const isSelected = selectedSubtaskIds.has(st.id);
                   const isOverdue = st.dueDate != null && !st.completed && st.dueDate < Date.now();
@@ -1179,72 +1253,77 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     ? new Date(st.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
                     : null;
 
+                  const assignedAgent = agents.find(a => a.id === st.assignedTo);
+
                   return (
                     <div
                       key={st.id}
-                      className={`group flex items-start gap-2 p-3 rounded-lg border transition-all ${
+                      className={`relative flex items-start gap-3 px-3 py-2.5 rounded-xl mb-1.5 border transition-all ${
                         isSelected
-                          ? 'bg-mission-control-accent/10 border-mission-control-accent/50'
-                          : st.completed
-                            ? 'bg-success-subtle border-success-border'
-                            : 'bg-mission-control-bg border-mission-control-border hover:border-mission-control-accent/50'
+                          ? 'bg-mission-control-accent/5 border-mission-control-accent/25'
+                          : 'bg-mission-control-surface border-mission-control-border/50'
                       }`}
                     >
-                      {/* Selection checkbox — appears on hover or when selected */}
+                      {/* Selection checkbox — always visible */}
                       <button
+                        type="button"
                         onClick={() => handleToggleSubtaskSelect(st.id)}
-                        className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-all ${
+                        aria-label="Select subtask"
+                        className={`mt-0.5 flex-shrink-0 w-[15px] h-[15px] flex items-center justify-center rounded border transition-all ${
                           isSelected
-                            ? 'bg-mission-control-accent border-mission-control-accent text-white opacity-100'
-                            : 'border-mission-control-border opacity-0 group-hover:opacity-100'
+                            ? 'bg-mission-control-accent/20 border-mission-control-accent text-mission-control-accent'
+                            : 'border-mission-control-border/60 text-mission-control-text-dim hover:border-mission-control-accent/50'
                         }`}
-                        title="Select subtask"
                       >
-                        {isSelected && <Check size={10} />}
+                        {isSelected && <Check size={9} strokeWidth={3} />}
                       </button>
 
-                      {/* Completion toggle */}
+                      {/* Completion checkbox */}
                       <button
+                        type="button"
                         onClick={() => handleToggleSubtask(st.id)}
-                        className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center transition-colors flex-shrink-0 ${
+                        aria-label="Toggle subtask completion"
+                        className={`mt-0.5 flex-shrink-0 w-[18px] h-[18px] flex items-center justify-center rounded-[4px] border-2 transition-all ${
                           st.completed
-                            ? 'bg-success text-white'
-                            : 'border-2 border-mission-control-border hover:border-mission-control-accent'
+                            ? 'bg-success border-success text-white'
+                            : 'border-mission-control-border hover:border-mission-control-accent/60'
                         }`}
                       >
-                        {st.completed && <Check size={13} />}
+                        {st.completed && <Check size={11} strokeWidth={3} />}
                       </button>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <span
-                          className={`block text-sm leading-snug ${st.completed ? 'line-through text-mission-control-text-dim' : ''}`}
+                          className={`block text-sm leading-snug font-medium ${
+                            st.completed ? 'line-through text-mission-control-text-dim' : 'text-mission-control-text'
+                          }`}
                         >
                           {st.title}
                         </span>
                         {st.description && (
-                          <p className="text-xs text-mission-control-text-dim mt-0.5">{st.description}</p>
+                          <p className="text-xs text-mission-control-text-dim mt-0.5 line-clamp-1">{st.description}</p>
                         )}
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          {/* Assignee selector */}
-                          <div className="flex items-center gap-1">
-                            <User size={11} className="text-mission-control-text-dim flex-shrink-0" />
-                            <select
-                              value={st.assignedTo || ''}
-                              onChange={(e) => handleSetSubtaskAssignee(st.id, e.target.value)}
-                              className="unstyled text-xs bg-transparent border-none outline-none text-mission-control-text-dim cursor-pointer hover:text-mission-control-text max-w-[100px] truncate"
-                              title="Assign to agent"
-                            >
-                              <option value="">Unassigned</option>
-                              {agents.map((a) => (
-                                <option key={a.id} value={a.id}>
-                                  {a.name}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
 
-                          {/* Due date badge / editor */}
+                        {/* Metadata pills row */}
+                        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                          {/* Assignee pill */}
+                          <Select.Root
+                            value={st.assignedTo || '__unassigned'}
+                            onValueChange={(val) => handleSetSubtaskAssignee(st.id, val === '__unassigned' ? '' : val)}
+                          >
+                            <Select.Trigger
+                              className="inline-flex items-center gap-1.5 !px-2 !py-1 !rounded-lg !text-[11px] !leading-none !bg-mission-control-surface/80 !border !border-mission-control-border/50 !text-mission-control-text-dim hover:!text-mission-control-text hover:!border-mission-control-border !transition-colors !h-auto"
+                            />
+                            <Select.Content>
+                              <Select.Item value="__unassigned">Unassigned</Select.Item>
+                              {agents.map((a) => (
+                                <Select.Item key={a.id} value={a.id}>{a.name}</Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select.Root>
+
+                          {/* Due date pill */}
                           {editingDueDateId === st.id ? (
                             <input
                               type="date"
@@ -1256,63 +1335,69 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                                   handleSetDueDate(st.id, (e.target as HTMLInputElement).value);
                                 if (e.key === 'Escape') setEditingDueDateId(null);
                               }}
-                              className="text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-1 py-0 outline-none focus:border-mission-control-accent"
+                              className="px-2 py-1 text-[11px] leading-none rounded-lg border border-mission-control-accent/40 bg-mission-control-surface text-mission-control-text focus:outline-none w-28"
                             />
                           ) : (
                             <button
+                              type="button"
                               onClick={() => setEditingDueDateId(st.id)}
-                              className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded transition-colors ${
-                                isOverdue
-                                  ? 'text-error bg-error/10 border border-error/30'
-                                  : dueDateDisplay
-                                    ? 'text-mission-control-text-dim bg-mission-control-border'
-                                    : 'text-mission-control-text-dim opacity-0 group-hover:opacity-60 hover:!opacity-100'
-                              }`}
                               title={isOverdue ? 'Overdue — click to change' : 'Set due date'}
+                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] leading-none border transition-all ${
+                                isOverdue
+                                  ? 'text-error bg-error/10 border-error/30 hover:bg-error/20'
+                                  : dueDateDisplay
+                                    ? 'text-mission-control-text-dim bg-mission-control-surface/80 border-mission-control-border/50 hover:text-mission-control-text hover:border-mission-control-border'
+                                    : 'text-mission-control-text-dim/50 bg-mission-control-surface/40 border-mission-control-border/40 hover:text-mission-control-text-dim hover:border-mission-control-border'
+                              }`}
                             >
-                              <Calendar size={10} />
+                              <Calendar size={10} className="flex-shrink-0" />
                               {dueDateDisplay ?? 'Due date'}
                             </button>
                           )}
 
+                          {/* Done badge */}
                           {st.completedAt && (
-                            <span className="text-xs text-success/60">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] leading-none bg-success/10 text-success/80 border border-success/20">
+                              <Check size={9} strokeWidth={3} className="flex-shrink-0" />
                               Done {formatTime(st.completedAt)}
-                              {st.completedBy &&
-                                ` · ${agents.find((a) => a.id === st.completedBy)?.name || st.completedBy}`}
+                              {st.completedBy && ` · ${agents.find((a) => a.id === st.completedBy)?.name || st.completedBy}`}
                             </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Reorder buttons */}
-                      <div className="flex flex-col gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Actions — reorder + delete, always visible */}
+                      <div className="flex items-center gap-0.5 flex-shrink-0 mt-0.5">
                         <button
+                          type="button"
                           onClick={() => handleMoveSubtask(idx, 'up')}
                           disabled={idx === 0}
-                          className="p-0.5 text-mission-control-text-dim hover:text-mission-control-text disabled:opacity-20 disabled:cursor-not-allowed rounded transition-colors"
                           title="Move up"
+                          aria-label="Move subtask up"
+                          className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-20"
                         >
-                          <ChevronUp size={14} />
+                          <ChevronUp size={13} />
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleMoveSubtask(idx, 'down')}
                           disabled={idx === subtasks.length - 1}
-                          className="p-0.5 text-mission-control-text-dim hover:text-mission-control-text disabled:opacity-20 disabled:cursor-not-allowed rounded transition-colors"
                           title="Move down"
+                          aria-label="Move subtask down"
+                          className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-20"
                         >
-                          <ChevronDown size={14} />
+                          <ChevronDown size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSubtask(st.id)}
+                          title="Delete subtask"
+                          aria-label="Delete subtask"
+                          className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-mission-control-text-dim hover:text-error hover:bg-error/10 transition-colors ml-0.5"
+                        >
+                          <X size={13} />
                         </button>
                       </div>
-
-                      {/* Delete */}
-                      <button
-                        onClick={() => handleDeleteSubtask(st.id)}
-                        className="mt-0.5 p-1 text-mission-control-text-dim hover:text-error opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                        title="Delete subtask"
-                      >
-                        <X size={14} />
-                      </button>
                     </div>
                   );
                 })}
@@ -1324,50 +1409,79 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         {/* Planning Tab - ALWAYS VISIBLE regardless of task status (historical record) */}
         {activeTab === 'planning' && (
           <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium flex items-center gap-2">
-                <FileText size={16} className="text-mission-control-accent" />
-                Planning & Brainstorming
-              </h3>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <FileText size={12} className="text-mission-control-text-dim" />
+                Planning &amp; Brainstorming
+              </span>
+              <button
+                type="button"
+                onClick={() => setEditingPlanningNotes(!editingPlanningNotes)}
+                className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors hover:bg-mission-control-bg"
+                style={{ color: editingPlanningNotes ? 'var(--mission-control-accent)' : 'var(--mission-control-text-dim)' }}
+              >
+                {editingPlanningNotes ? <><Eye size={11} /> Preview</> : <><Pencil size={11} /> Edit</>}
+              </button>
             </div>
-            
-            <textarea
-              value={task.planningNotes || ''}
-              onChange={(e) => {
-                updateTask(task.id, { planningNotes: e.target.value });
-                // Auto-save to backend (debounced by typing)
-                clearTimeout((window as any).__planningNotesTimer);
-                (window as any).__planningNotesTimer = setTimeout(() => {
-                  taskApi.update(task.id, {
-                    planningNotes: e.target.value
-                  }).catch((_err: unknown) => { /* silent - planning notes save failed */ });
-                }, 1000);
-              }}
-              placeholder="Planning notes, brainstorming, research..."
-              className="w-full h-64 bg-mission-control-bg border border-mission-control-border rounded-lg p-4 text-sm resize-none focus:outline-none focus:border-mission-control-accent font-mono"
-              style={{ minHeight: '16rem' }}
-            />
-            
-            <p className="text-xs text-mission-control-text-dim mt-2">
-              <Lightbulb size={12} className="inline mr-1" />Use this space for planning, brainstorming, research notes, or any thoughts about this task.
-              Changes are auto-saved after 1 second.
-            </p>
+
+            {editingPlanningNotes ? (
+              <TextArea
+                value={localPlanningNotes ?? ''}
+                onChange={(e) => {
+                  setLocalPlanningNotes(e.target.value);
+                  updateTask(task.id, { planningNotes: e.target.value });
+                  clearTimeout((window as any).__planningNotesTimer);
+                  (window as any).__planningNotesTimer = setTimeout(() => {
+                    taskApi.update(task.id, {
+                      planningNotes: e.target.value
+                    }).catch((_err: unknown) => {});
+                  }, 1000);
+                }}
+                placeholder="Planning notes, brainstorming, research..."
+                resize="vertical"
+                size="2"
+                className="w-full font-mono"
+                style={{ minHeight: '16rem' }}
+              />
+            ) : (localPlanningNotes ?? '').trim() ? (
+              <div
+                className="rounded-lg p-3 cursor-pointer hover:bg-mission-control-bg/50 transition-colors"
+                style={{ border: '1px solid var(--mission-control-border)' }}
+                onClick={() => setEditingPlanningNotes(true)}
+              >
+                <MarkdownMessage content={localPlanningNotes ?? ''} />
+              </div>
+            ) : (
+              <div
+                className="rounded-lg p-4 text-center cursor-pointer hover:bg-mission-control-bg/50 transition-colors"
+                style={{ border: '1px dashed var(--mission-control-border)' }}
+                onClick={() => setEditingPlanningNotes(true)}
+              >
+                <p className="text-xs text-mission-control-text-dim">No planning notes yet. Click to add.</p>
+              </div>
+            )}
+
+            {editingPlanningNotes && (
+              <p className="text-xs text-mission-control-text-dim mt-2">
+                <Lightbulb size={12} className="inline mr-1" />Changes are auto-saved after 1 second.
+              </p>
+            )}
 
             {/* Dependencies */}
             <div className="mt-6">
-              <h3 className="text-sm font-medium flex items-center gap-2 mb-3">
-                <AlertCircle size={16} className="text-mission-control-accent" />
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <AlertCircle size={12} className="text-mission-control-text-dim" />
                 Blocked By
-              </h3>
+              </div>
               {(task.blockedBy || []).length > 0 ? (
                 <div className="space-y-2 mb-3">
                   {(task.blockedBy as string[]).map(depId => {
                     const depTask = useStore.getState().tasks.find(t => t.id === depId);
                     return (
-                      <div key={depId} className="flex items-center gap-2 p-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm">
+                      <Flex key={depId} align="center" gap="2" className="p-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm">
                         <span className="flex-1 truncate">{depTask?.title || depId}</span>
                         {depTask && (
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${depTask.status === 'done' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${depTask.status === 'done' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
                             {depTask.status}
                           </span>
                         )}
@@ -1379,23 +1493,22 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                               .then(() => showToast('success', 'Dependency removed'))
                               .catch(() => showToast('error', 'Failed to remove dependency'));
                           }}
-                          className="p-1 text-error hover:bg-error-subtle rounded transition-colors flex-shrink-0"
+                          aria-label="Remove dependency"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0"
                         >
                           <X size={12} />
                         </button>
-                      </div>
+                      </Flex>
                     );
                   })}
                 </div>
               ) : (
                 <p className="text-xs text-mission-control-text-dim mb-3">No dependencies</p>
               )}
-              <select
-                defaultValue=""
-                onChange={async (e) => {
-                  const depId = e.target.value;
+              <Select.Root
+                value=""
+                onValueChange={async (depId) => {
                   if (!depId) return;
-                  e.target.value = '';
                   const current = (task.blockedBy as string[]) || [];
                   if (current.includes(depId)) return;
                   // Simple cycle check: ensure depId doesn't already block this task
@@ -1409,15 +1522,17 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     showToast('success', 'Dependency added');
                   } catch { showToast('error', 'Failed to add dependency'); }
                 }}
-                className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                size="2"
               >
-                <option value="">+ Add dependency (blocked by)...</option>
-                {useStore.getState().tasks
-                  .filter(t => t.id !== task.id && !(task.blockedBy as string[] || []).includes(t.id))
-                  .map(t => (
-                    <option key={t.id} value={t.id}>{t.title} [{t.status}]</option>
-                  ))}
-              </select>
+                <Select.Trigger className="w-full" placeholder="+ Add dependency (blocked by)..." />
+                <Select.Content>
+                  {useStore.getState().tasks
+                    .filter(t => t.id !== task.id && !(task.blockedBy as string[] || []).includes(t.id))
+                    .map(t => (
+                      <Select.Item key={t.id} value={t.id}>{t.title} [{t.status}]</Select.Item>
+                    ))}
+                </Select.Content>
+              </Select.Root>
             </div>
 
             {/* Related Tasks */}
@@ -1433,13 +1548,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               if (related.length === 0) return null;
               return (
                 <div className="mt-6">
-                  <h3 className="text-sm font-medium flex items-center gap-2 mb-3">
-                    <Link2 size={16} className="text-mission-control-accent" />
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                    <Link2 size={12} className="text-mission-control-text-dim" />
                     Related Tasks
-                  </h3>
+                  </div>
                   <div className="space-y-1.5">
                     {related.map(rt => (
-                      <div key={rt.id} className="flex items-center gap-2 p-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-sm hover:border-mission-control-accent/50 transition-colors">
+                      <Flex key={rt.id} align="center" gap="2" className="p-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-sm hover:border-mission-control-accent/50 transition-colors">
                         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                           rt.status === 'in-progress' ? 'bg-info' :
                           rt.status === 'review' ? 'bg-review' :
@@ -1447,7 +1562,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                         }`} />
                         <span className="flex-1 truncate text-xs">{rt.title}</span>
                         <span className="text-xs text-mission-control-text-dim flex-shrink-0">{rt.project}</span>
-                      </div>
+                      </Flex>
                     ))}
                   </div>
                 </div>
@@ -1466,27 +1581,29 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               className="mb-4"
             />
             
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium">Activity Log</h3>
+            <Flex align="center" justify="between" className="mb-4">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Activity Log</div>
               <button
+                type="button"
                 onClick={loadActivity}
                 disabled={loadingActivity}
-                className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-border transition-colors"
+                aria-label="Refresh activity"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
               >
                 <RefreshCw size={14} className={loadingActivity ? 'animate-spin' : ''} />
               </button>
-            </div>
+            </Flex>
 
             {loadingActivity ? (
               <div className="space-y-3">
                 {[1,2,3].map(i => (
-                  <div key={i} className="flex gap-3 p-2">
+                  <Flex key={i} gap="3" className="p-2">
                     <div className="w-6 h-6 rounded-full bg-mission-control-surface animate-pulse shrink-0 mt-0.5" />
                     <div className="flex-1 space-y-1.5">
                       <div className="h-3 w-24 rounded bg-mission-control-surface animate-pulse" />
                       <div className="h-4 w-3/4 rounded bg-mission-control-surface animate-pulse" />
                     </div>
-                  </div>
+                  </Flex>
                 ))}
               </div>
             ) : (
@@ -1496,9 +1613,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     key={act.id}
                     className={`flex items-start gap-3 p-2 rounded-lg hover:bg-mission-control-bg/50 transition-colors ${
                       act.action === 'review-rejected' || act.action === 'pre-review-rejected'
-                        ? 'bg-error-subtle border border-error/20'
+                        ? 'bg-error/10 border border-error/20'
                         : act.action === 'review-approved' || act.action === 'pre-review-approved'
-                        ? 'bg-success-subtle border border-success/20'
+                        ? 'bg-success/10 border border-success/20'
                         : ''
                     }`}
                   >
@@ -1507,7 +1624,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm">{act.message}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <Flex align="center" gap="2" className="mt-0.5">
                         <span className="text-xs text-mission-control-text-dim">
                           {formatTime(act.timestamp)}
                         </span>
@@ -1516,7 +1633,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                             {agents.find(a => a.id === act.agentId)?.name || act.agentId}
                           </span>
                         )}
-                      </div>
+                      </Flex>
                       {act.details && (
                         <pre className="mt-1 text-xs bg-mission-control-bg p-2 rounded overflow-x-auto max-h-32">
                           {act.details}
@@ -1540,132 +1657,158 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
 
         {/* Files Tab */}
         {activeTab === 'files' && (
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium flex items-center gap-2">
-                <Paperclip size={16} className="text-mission-control-accent" />
-                Task Attachments
-              </h3>
-              <div className="flex gap-2">
-                <button
+          <div className="flex flex-col h-full">
+            {/* Toolbar */}
+            <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border flex-shrink-0">
+              <span className="text-sm font-medium text-mission-control-text">
+                Attachments
+                {attachments.length > 0 && (
+                  <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded-full bg-mission-control-border/60 text-mission-control-text-dim font-normal">
+                    {attachments.length}
+                  </span>
+                )}
+              </span>
+              <Flex gap="2">
+                <Button
                   onClick={handleAutoDetect}
                   disabled={loadingAttachments}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-accent/20 rounded-lg transition-colors"
-                  title="Auto-detect agent output files"
+                  variant="surface"
+                  color="gray"
+                  size="1"
+                  title="Scan agent output directories for new files"
                 >
-                  {loadingAttachments ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Search size={14} />
-                  )}
+                  {loadingAttachments ? <Spinner size="1" /> : <Search size={12} />}
                   Auto-detect
-                </button>
-                <label className="flex items-center gap-2 px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim cursor-pointer transition-colors">
-                  {uploadingFile ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Upload size={14} />
-                  )}
+                </Button>
+                <label className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-mission-control-accent text-white rounded-lg hover:opacity-90 cursor-pointer transition-opacity">
+                  {uploadingFile ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
                   Upload
-                  <input
-                    type="file"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    disabled={uploadingFile}
-                  />
+                  <input type="file" onChange={handleFileUpload} className="hidden" disabled={uploadingFile} />
                 </label>
-              </div>
-            </div>
+              </Flex>
+            </Flex>
 
-            {/* Upload Instructions */}
-            {attachments.length === 0 && !loadingAttachments && (
-              <div className="mb-4 p-4 bg-mission-control-bg/50 rounded-lg border border-dashed border-mission-control-border text-center">
-                <Paperclip size={32} className="mx-auto mb-2 opacity-30" />
-                <p className="text-sm text-mission-control-text-dim">
-                  No attachments yet. Upload deliverables, screenshots, or reference files.
-                </p>
-                <p className="text-xs text-mission-control-text-dim mt-1">
-                  Click Upload or use Auto-detect to find agent output files
-                </p>
-              </div>
-            )}
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4">
 
-            {/* Loading State */}
-            {loadingAttachments && attachments.length === 0 && (
-              <div className="flex items-center justify-center py-8 text-mission-control-text-dim">
-                <Loader2 size={24} className="animate-spin mr-2" />
-                Loading attachments...
-              </div>
-            )}
+              {/* Loading */}
+              {loadingAttachments && attachments.length === 0 && (
+                <Flex align="center" justify="center" gap="2" className="py-16 text-mission-control-text-dim text-sm">
+                  <Loader2 size={16} className="animate-spin" />
+                  Scanning for files…
+                </Flex>
+              )}
 
-            {/* Attachments List */}
-            <div className="space-y-2">
-              {attachments.map((attachment) => (
-                <div
-                  key={attachment.id}
-                  className="group flex items-center gap-3 p-3 bg-mission-control-bg rounded-lg border border-mission-control-border hover:border-mission-control-accent/50 transition-all"
-                >
-                  <div className="text-mission-control-text-dim flex-shrink-0">
-                    {getFileIcon(null)}
+              {/* Empty state */}
+              {!loadingAttachments && attachments.length === 0 && (
+                <label className="flex flex-col items-center justify-center py-16 px-8 rounded-2xl border-2 border-dashed border-mission-control-border/50 text-center cursor-pointer hover:border-mission-control-accent/40 hover:bg-mission-control-accent/[0.02] transition-all">
+                  <div className="w-12 h-12 rounded-xl bg-mission-control-border/30 flex items-center justify-center mb-3">
+                    <Paperclip size={22} className="text-mission-control-text-dim opacity-50" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{attachment.fileName ?? attachment.filePath.split('/').pop()}</div>
-                    <div className="flex items-center gap-2 text-xs text-mission-control-text-dim mt-0.5">
-                      {attachment.category && (
-                        <>
-                          <span className="px-1.5 py-0.5 bg-mission-control-border rounded text-xs">
-                            {attachment.category}
-                          </span>
-                          <span>•</span>
-                        </>
-                      )}
-                      <span>{formatTime(attachment.createdAt)}</span>
-                      {attachment.uploadedBy && attachment.uploadedBy !== 'user' && (
-                        <>
-                          <span>•</span>
-                          <span className="text-mission-control-accent">
-                            {agents.find(a => a.id === attachment.uploadedBy)?.name || attachment.uploadedBy}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    <div className="text-xs text-mission-control-text-dim/50 mt-0.5 truncate" title={attachment.filePath}>
-                      {attachment.filePath}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => handleOpenFile(attachment.filePath)}
-                      className="p-2 hover:bg-mission-control-accent/20 rounded-lg transition-colors"
-                      title="Open file"
-                    >
-                      <Download size={16} className="text-mission-control-accent" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteAttachment(attachment.id)}
-                      className="p-2 hover:bg-error-subtle rounded-lg transition-colors"
-                      title="Delete attachment"
-                    >
-                      <Trash2 size={16} className="text-error" />
-                    </button>
-                  </div>
+                  <p className="text-sm font-medium text-mission-control-text-dim mb-1">No files attached</p>
+                  <p className="text-xs text-mission-control-text-dim/60">Drop files here or click to upload · or use Auto-detect</p>
+                  <input type="file" onChange={handleFileUpload} className="hidden" disabled={uploadingFile} />
+                </label>
+              )}
+
+              {/* File list */}
+              {attachments.length > 0 && (
+                <div className="space-y-1.5">
+                  {attachments.map((attachment) => {
+                    const name = attachment.fileName ?? attachment.filePath.split('/').pop() ?? 'file';
+                    const ext = name.split('.').pop()?.toLowerCase() ?? '';
+                    const uploader = attachment.uploadedBy && attachment.uploadedBy !== 'user'
+                      ? agents.find(a => a.id === attachment.uploadedBy)?.name || attachment.uploadedBy
+                      : null;
+
+                    // File type config
+                    const fileType = ((): { icon: React.ReactNode; bg: string; label: string } => {
+                      if (['png','jpg','jpeg','gif','webp','svg'].includes(ext))
+                        return { icon: <Image size={14} />, bg: 'bg-blue-500/15 text-blue-400', label: 'Image' };
+                      if (['mp4','webm','mov','avi'].includes(ext))
+                        return { icon: <Film size={14} />, bg: 'bg-pink-500/15 text-pink-400', label: 'Video' };
+                      if (['md','txt'].includes(ext))
+                        return { icon: <FileText size={14} />, bg: 'bg-amber-500/15 text-amber-400', label: ext.toUpperCase() };
+                      if (ext === 'pdf')
+                        return { icon: <FileText size={14} />, bg: 'bg-red-500/15 text-red-400', label: 'PDF' };
+                      if (['html','htm'].includes(ext))
+                        return { icon: <Code2 size={14} />, bg: 'bg-orange-500/15 text-orange-400', label: 'HTML' };
+                      if (['ts','tsx','js','jsx'].includes(ext))
+                        return { icon: <Code2 size={14} />, bg: 'bg-emerald-500/15 text-emerald-400', label: ext.toUpperCase() };
+                      if (['py','go','rs','rb','php'].includes(ext))
+                        return { icon: <Code2 size={14} />, bg: 'bg-green-500/15 text-green-400', label: ext.toUpperCase() };
+                      if (['json','yaml','yml'].includes(ext))
+                        return { icon: <Braces size={14} />, bg: 'bg-cyan-500/15 text-cyan-400', label: ext.toUpperCase() };
+                      if (ext === 'csv')
+                        return { icon: <Table2 size={14} />, bg: 'bg-teal-500/15 text-teal-400', label: 'CSV' };
+                      return { icon: <File size={14} />, bg: 'bg-mission-control-border/40 text-mission-control-text-dim', label: ext.toUpperCase() || 'File' };
+                    })();
+
+                    return (
+                      <div
+                        key={attachment.id}
+                        className="flex items-center gap-3 p-3 rounded-xl bg-mission-control-surface border border-mission-control-border/60 hover:border-mission-control-accent/30 transition-colors cursor-pointer"
+                        onClick={() => handleOpenFile(attachment.filePath)}
+                      >
+                        {/* Type icon */}
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${fileType.bg}`}>
+                          {fileType.icon}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-sm font-medium text-mission-control-text truncate">{name}</span>
+                            <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-mission-control-border/50 text-mission-control-text-dim">
+                              {fileType.label}
+                            </span>
+                            {attachment.category && attachment.category !== ext && (
+                              <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] rounded bg-mission-control-accent/10 text-mission-control-accent">
+                                {attachment.category}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-mission-control-text-dim/60 truncate" title={attachment.filePath}>
+                            {attachment.filePath}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-mission-control-text-dim/40">
+                            <span>{formatTime(attachment.createdAt)}</span>
+                            {uploader && (
+                              <>
+                                <span>·</span>
+                                <span className="text-mission-control-accent/60">{uploader}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Actions — always visible, stop propagation to avoid opening preview */}
+                        <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenFile(attachment.filePath)}
+                            title="Open in Finder"
+                            aria-label="Open file"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+                          >
+                            <ExternalLink size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteAttachment(attachment.id)}
+                            title="Remove attachment"
+                            aria-label="Remove attachment"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-mission-control-text-dim hover:text-error hover:bg-error/10 transition-colors"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+              )}
             </div>
-
-            {/* Stats Summary */}
-            {attachments.length > 0 && (
-              <div className="mt-4 p-3 bg-mission-control-bg/50 rounded-lg border border-mission-control-border">
-                <div className="flex items-center justify-between text-xs text-mission-control-text-dim">
-                  <span>
-                    {attachments.length} file{attachments.length !== 1 ? 's' : ''} attached
-                  </span>
-                  <span>
-                    Total: {attachments.length} file{attachments.length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -1679,162 +1822,120 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         )}
 
         {activeTab === 'review' && (
-          <div className="p-4">
-            {/* Definition of Ready Checklist - show for internal-review status */}
-            {task.status === 'internal-review' && (
-              <div className="mb-4 p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle size={16} className="text-mission-control-accent" />
-                  <span className="font-medium">Definition of Ready</span>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className={`flex items-center gap-2 ${(task.subtasks?.length || 0) >= 2 ? 'text-success' : 'text-error'}`}>
-                    {(task.subtasks?.length || 0) >= 2 ? <CheckCircle size={14} className="text-success inline" /> : <XCircle size={14} className="text-error inline" />}
-                    Subtasks: {task.subtasks?.length || 0}/2 (minimum 2)
-                  </div>
-                  <div className={`flex items-center gap-2 ${task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? 'text-success' : 'text-error'}`}>
-                    {task.priority && ['p0','p1','p2','p3'].includes(task.priority) ? <CheckCircle size={14} className="text-success inline" /> : <XCircle size={14} className="text-error inline" />}
-                    Priority: {task.priority || 'Not set'}
-                  </div>
-                  <div className={`flex items-center gap-2 ${task.assignedTo && !isProtectedAgent(task.assignedTo) ? 'text-success' : 'text-error'}`}>
-                    {task.assignedTo && !isProtectedAgent(task.assignedTo) ? <CheckCircle size={14} className="text-success inline" /> : <XCircle size={14} className="text-error inline" />}
-                    Assigned: {task.assignedTo || 'Not assigned'}
-                  </div>
-                  <div className={`flex items-center gap-2 ${(task.description?.length || 0) >= 20 ? 'text-success' : 'text-warning'}`}>
-                    {(task.description?.length || 0) >= 20 ? <CheckCircle size={14} className="text-success inline" /> : <AlertTriangle size={14} className="text-warning inline" />}
-                    Description: {(task.description?.length || 0)} chars (min 20)
-                  </div>
-                </div>
-              </div>
-            )}
+          <div className="p-4 space-y-4">
 
-            {/* Quick Approve/Reject Actions (when in review status) */}
-            {task.status === 'review' && task.reviewStatus !== 'approved' && (
-              <div className="mb-4 p-4 bg-warning-subtle border border-warning-border rounded-lg">
-                <div className="flex items-center gap-2 mb-3">
-                  <AlertCircle size={16} className="text-warning" />
-                  <span className="font-medium text-warning">Awaiting Review</span>
+            {/* ── Pre-review gate summary ────────────────────────────────── */}
+            {task.status === 'internal-review' && (() => {
+              const gates = [
+                { ok: subtasks.length >= 1,                                          label: 'Subtasks',      detail: `${subtasks.length} added` },
+                { ok: ['p0','p1','p2','p3'].includes(task.priority ?? ''),           label: 'Priority',      detail: task.priority || 'not set' },
+                { ok: !!task.assignedTo && !isProtectedAgent(task.assignedTo),       label: 'Assigned',      detail: task.assignedTo || 'none' },
+                { ok: (task.description?.length ?? 0) >= 20,                         label: 'Description',   detail: `${task.description?.length ?? 0} chars` },
+                { ok: (task.planningNotes?.length ?? 0) >= 20,                       label: 'Planning notes',detail: `${task.planningNotes?.length ?? 0} chars` },
+              ];
+              const allPass = gates.every(g => g.ok);
+              return (
+                <div className={`p-4 rounded-xl border ${allPass ? 'bg-success/5 border-success/25' : 'bg-warning/5 border-warning/25'}`}>
+                  <div className="text-[10px] font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: allPass ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                    <Clock size={12} />
+                    Clara — Pre-Review Gate &nbsp;·&nbsp; {allPass ? 'All gates pass' : `${gates.filter(g => !g.ok).length} failing`}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {gates.map(({ ok, label, detail }) => (
+                      <span
+                        key={label}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] border ${
+                          ok
+                            ? 'bg-success/10 border-success/20 text-success/80'
+                            : 'bg-error/10 border-error/20 text-error/80'
+                        }`}
+                      >
+                        <span className="font-medium">{label}</span>
+                        <span className="opacity-70">{detail}</span>
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
+              );
+            })()}
+
+            {/* ── Human action: approve / request changes ────────────────── */}
+            {task.status === 'review' && task.reviewStatus !== 'approved' && (
+              <div className="p-4 bg-warning/10 border border-warning/30 rounded-xl">
+                <Flex align="center" gap="2" className="mb-3">
+                  <AlertCircle size={15} className="text-warning" />
+                  <span className="text-sm font-medium text-warning">Clara requests your decision</span>
+                </Flex>
+                <Flex gap="2">
+                  <Button
                     onClick={() => {
-                      // ATOMIC UPDATE: Change both reviewStatus AND status in one call
-                      const updates: { reviewStatus: 'approved'; status: 'in-progress' } = { 
-                        reviewStatus: 'approved',
-                        status: 'in-progress'
-                      };
-                      updateTask(task.id, updates);
-                      logTaskActivity(task.id, 'approved', 'Task approved - moved back to in-progress');
-                      showToast('success', `Task approved! Assigned to ${task.assignedTo || 'unassigned'} to complete.`);
+                      updateTask(task.id, { reviewStatus: 'approved', status: 'in-progress' });
+                      logTaskActivity(task.id, 'approved', 'Task approved — moved back to in-progress');
+                      showToast('success', `Approved! Assigned to ${task.assignedTo || 'unassigned'}.`);
                     }}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-success text-white rounded-lg hover:bg-success-hover transition-colors"
+                    color="green"
+                    size="2"
+                    className="flex-1"
                   >
-                    <CheckCircle size={16} />
+                    <CheckCircle size={15} />
                     Approve
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => {
                       setReviewStatus('needs-changes');
                       updateTask(task.id, { status: 'in-progress' });
                       showToast('info', 'Task sent back for changes');
                     }}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-error text-white rounded-lg hover:bg-error-hover transition-colors"
+                    color="red"
+                    size="2"
+                    className="flex-1"
                   >
-                    <XCircle size={16} />
+                    <XCircle size={15} />
                     Request Changes
-                  </button>
-                </div>
+                  </Button>
+                </Flex>
               </div>
             )}
 
-            {/* Approved Notice */}
             {task.reviewStatus === 'approved' && (
-              <div className="mb-4 p-4 bg-success-subtle border border-success-border rounded-lg">
-                <div className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-success" />
-                  <span className="font-medium text-success">Review Approved</span>
-                </div>
-                <p className="mt-2 text-sm text-mission-control-text-dim">
-                  This task has been approved and can now be marked as done.
-                </p>
+              <div className="p-3 bg-success/10 border border-success/30 rounded-xl flex items-center gap-2">
+                <CheckCircle size={15} className="text-success flex-shrink-0" />
+                <span className="text-sm font-medium text-success">Review approved</span>
               </div>
             )}
 
-            {reviewer ? (
-              <div className="space-y-4">
-                {/* Review Status */}
-                <div className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Eye size={16} className="text-mission-control-accent" />
-                    <span className="font-medium">Review Status</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['pending', 'in-review', 'needs-changes', 'approved'] as const).map((status) => (
-                      <button
-                        key={status}
-                        onClick={() => setReviewStatus(status)}
-                        className={`p-2 rounded-lg text-sm transition-colors ${
-                          task.reviewStatus === status
-                            ? status === 'approved' ? 'bg-success text-white' :
-                              status === 'needs-changes' ? 'bg-error text-white' :
-                              status === 'in-review' ? 'bg-warning text-white' :
-                              'bg-mission-control-accent text-white'
-                            : 'bg-mission-control-border hover:bg-mission-control-border/80'
-                        }`}
-                      >
-                        {status.replace('-', ' ')}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Review Notes */}
-                <div className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                  <div className="flex items-center gap-2 mb-3">
-                    <FileText size={16} className="text-mission-control-accent" />
-                    <span className="font-medium">Review Notes</span>
-                  </div>
-                  <textarea
-                    value={task.reviewNotes || ''}
-                    onChange={(e) => updateTask(task.id, { reviewNotes: e.target.value })}
-                    placeholder="Add notes from review..."
-                    className="w-full h-24 bg-mission-control-surface border border-mission-control-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
-                  />
-                </div>
-
-                {/* Pre-approval Checklist */}
-                <div className="p-4 bg-warning-subtle border border-warning-border rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle size={16} className="text-warning" />
-                    <span className="font-medium text-warning">Pre-Approval Checklist</span>
-                  </div>
-                  <div className="text-sm text-mission-control-text-dim space-y-1">
-                    <div className="flex items-center gap-2">
-                      <input type="checkbox" className="rounded" />
-                      <span>Code reviewed for bugs</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input type="checkbox" className="rounded" />
-                      <span>Matches task requirements</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input type="checkbox" className="rounded" />
-                      <span>No security issues</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input type="checkbox" className="rounded" />
-                      <span>Ready for human approval</span>
-                    </div>
-                  </div>
-                </div>
+            {/* ── Clara's review notes (read-only) ──────────────────────── */}
+            <div className="p-4 bg-mission-control-bg rounded-xl border border-mission-control-border">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
+                <Eye size={12} />
+                Clara&apos;s Review Notes
+                {reviewer && (
+                  <span className="ml-auto flex items-center gap-1.5 normal-case font-normal text-mission-control-text-dim/60">
+                    <AgentAvatar agentId={reviewer.id} fallbackEmoji={reviewer.avatar} size="sm" />
+                    {reviewer.name}
+                    {task.reviewStatus && (
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                        task.reviewStatus === 'approved'      ? 'bg-success/15 text-success' :
+                        task.reviewStatus === 'needs-changes' ? 'bg-error/15 text-error' :
+                        task.reviewStatus === 'in-review'     ? 'bg-warning/15 text-warning' :
+                        'bg-mission-control-border/40 text-mission-control-text-dim'
+                      }`}>{task.reviewStatus}</span>
+                    )}
+                  </span>
+                )}
               </div>
-            ) : (
-              <div className="text-center text-mission-control-text-dim py-12">
-                <Eye size={48} className="mx-auto mb-3 opacity-20" />
-                <p className="text-sm">No reviewer assigned</p>
-                <p className="text-xs">Assign a review agent to enable pre-approval checks</p>
-              </div>
-            )}
+
+              {task.reviewNotes ? (
+                <div className="text-sm text-mission-control-text whitespace-pre-wrap leading-relaxed bg-mission-control-surface rounded-lg p-3 border border-mission-control-border/50">
+                  {task.reviewNotes}
+                </div>
+              ) : (
+                <div className="text-sm text-mission-control-text-dim/50 italic py-4 text-center">
+                  No review notes yet — Clara will write here after reviewing this task.
+                </div>
+              )}
+            </div>
+
           </div>
         )}
       </div>
@@ -1842,122 +1943,135 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       {/* Quick Actions — only shown when there are actions to display */}
       {((task.status as string) === 'done' || task.parentTaskId) && (
       <div className="p-6 border-t border-mission-control-border bg-mission-control-bg rounded-b-2xl flex-shrink-0">
-        <div className="flex gap-2">
+        <Flex gap="2">
           {task.status === 'done' && (
             <>
-              <button
+              <Button
                 onClick={() => setShowReopenModal(true)}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-mission-control-border text-mission-control-text rounded-lg hover:bg-mission-control-border/70 transition-colors"
+                variant="outline"
+                color="gray"
+                size="2"
+                className="flex-1"
               >
                 <XCircle size={16} />
                 Reopen
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => { setShowForkModal(true); setForkDescription(''); }}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+                size="2"
+                className="flex-1"
               >
-                🔀 Fork From This
-              </button>
+                Fork From This
+              </Button>
             </>
           )}
           {/* Fork button also available for non-done tasks with parent context */}
           {task.status !== 'done' && task.parentTaskId && (
-            <button
+            <Button
               onClick={() => { setShowForkModal(true); setForkDescription(''); }}
-              className="flex items-center justify-center gap-2 px-3 py-2 bg-mission-control-surface border border-mission-control-border text-mission-control-text rounded-lg hover:border-mission-control-accent transition-colors text-sm"
+              variant="outline"
+              color="gray"
+              size="2"
             >
-              🔀 Fork
-            </button>
+              Fork
+            </Button>
           )}
-        </div>
+        </Flex>
       </div>
       )}
 
       {/* Reopen Task Modal */}
-      {showReopenModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-          <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw]">
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
-              <h3 className="text-lg font-semibold">Reopen Task</h3>
-              <button
-                onClick={() => {
-                  setShowReopenModal(false);
-                  setReopenReason('');
-                }}
-                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6">
-              <p className="text-sm text-mission-control-text-dim mb-4">
-                Why are you reopening this task?
-              </p>
-              <textarea
-                value={reopenReason}
-                onChange={(e) => setReopenReason(e.target.value)}
-                placeholder="Enter reason for reopening (required)..."
-                className="w-full h-32 bg-mission-control-bg border border-mission-control-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
-              />
-              {reopenReason.trim().length === 0 && (
-                <p className="text-xs text-error mt-2">
-                  Reason is required and cannot be empty
-                </p>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 p-6 border-t border-mission-control-border">
-              <button
-                onClick={() => {
-                  setShowReopenModal(false);
-                  setReopenReason('');
-                }}
-                className="flex-1 px-4 py-2 bg-mission-control-border text-mission-control-text rounded-lg hover:bg-mission-control-border/70 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleReopen}
-                disabled={!reopenReason.trim()}
-                className="flex-1 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Reopen Task
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <BaseModal
+        isOpen={showReopenModal}
+        onClose={() => { setShowReopenModal(false); setReopenReason(''); }}
+        size="md"
+        ariaLabel="Reopen task"
+        showCloseButton={false}
+      >
+        <BaseModalHeader
+          title="Reopen Task"
+          titleId="reopen-task-title"
+          onClose={() => { setShowReopenModal(false); setReopenReason(''); }}
+          closeButtonLabel="Close reopen task dialog"
+        />
+        <BaseModalBody>
+          <p className="text-sm text-mission-control-text-dim mb-4">
+            Why are you reopening this task?
+          </p>
+          <TextArea
+            value={reopenReason}
+            onChange={(e) => setReopenReason(e.target.value)}
+            placeholder="Enter reason for reopening (required)..."
+            rows={5}
+            resize="none"
+            size="2"
+            className="w-full"
+          />
+          {reopenReason.trim().length === 0 && (
+            <p className="text-xs text-error mt-2">
+              Reason is required and cannot be empty
+            </p>
+          )}
+        </BaseModalBody>
+        <BaseModalFooter align="right">
+          <Button
+            onClick={() => { setShowReopenModal(false); setReopenReason(''); }}
+            variant="outline"
+            color="gray"
+            size="2"
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleReopen}
+            disabled={!reopenReason.trim()}
+            size="2"
+            className="flex-1"
+          >
+            Reopen Task
+          </Button>
+        </BaseModalFooter>
+      </BaseModal>
 
       {/* Agent Still Active Warning Modal */}
       {showAgentActiveModal && activeAgentInfo && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-          <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw]">
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setShowAgentActiveModal(false); setActiveAgentInfo(null); }}>
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          <div
+            ref={agentActiveModalTrapRef as React.RefObject<HTMLDivElement>}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="agent-active-title"
+            tabIndex={-1}
+            className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw] outline-none"
+            onClick={e => e.stopPropagation()}
+            onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); setShowAgentActiveModal(false); setActiveAgentInfo(null); } }}
+          >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-warning-subtle rounded-lg">
+            <Flex align="center" justify="between" className="p-6 border-b border-mission-control-border">
+              <Flex align="center" gap="3">
+                <div className="p-2 bg-warning/10 rounded-lg">
                   <AlertCircle size={24} className="text-warning" />
                 </div>
-                <h3 className="text-lg font-semibold">Agent Still Active</h3>
-              </div>
+                <h3 id="agent-active-title" className="text-lg font-semibold">Agent Still Active</h3>
+              </Flex>
               <button
+                type="button"
                 onClick={() => {
                   setShowAgentActiveModal(false);
                   setActiveAgentInfo(null);
                 }}
-                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+                aria-label="Close agent active warning"
+                className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <X size={16} />
               </button>
-            </div>
+            </Flex>
 
             {/* Content */}
             <div className="p-6">
-              <div className="bg-warning-subtle border border-warning-border rounded-lg p-4 mb-4">
+              <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 mb-4">
                 <p className="text-sm text-warning mb-2">
                   <AlertTriangle size={14} className="inline mr-1" />An agent is currently working on this task
                 </p>
@@ -1981,17 +2095,20 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 p-6 border-t border-mission-control-border">
-              <button
+            <Flex gap="3" className="p-6 border-t border-mission-control-border">
+              <Button
                 onClick={() => {
                   setShowAgentActiveModal(false);
                   setActiveAgentInfo(null);
                 }}
-                className="flex-1 px-4 py-2 bg-mission-control-border text-mission-control-text rounded-lg hover:bg-mission-control-border/70 transition-colors"
+                variant="outline"
+                color="gray"
+                size="2"
+                className="flex-1"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={async () => {
                   setAbortingAgent(true);
                   try {
@@ -2017,11 +2134,13 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   }
                 }}
                 disabled={abortingAgent}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger-hover transition-colors disabled:opacity-50"
+                color="red"
+                size="2"
+                className="flex-1"
               >
                 {abortingAgent ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" />
+                    <Spinner size="2" />
                     Aborting...
                   </>
                 ) : (
@@ -2030,8 +2149,8 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                     Abort & Approve
                   </>
                 )}
-              </button>
-            </div>
+              </Button>
+            </Flex>
           </div>
         </div>
       )}
@@ -2049,80 +2168,83 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
       )}
 
       {/* Fork Task Modal */}
-      {showForkModal && task && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-          <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border shadow-2xl w-[500px] max-w-[90vw]">
-            <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
-              <h3 className="text-lg font-semibold">🔀 Build on this task</h3>
-              <button
-                onClick={() => setShowForkModal(false)}
-                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-mission-control-text-dim">What do you want to build next?</p>
-              <textarea
-                value={forkDescription}
-                onChange={e => setForkDescription(e.target.value)}
-                placeholder="Describe the next task..."
-                rows={4}
-                autoFocus
-                className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
+      <BaseModal
+        isOpen={showForkModal && !!task}
+        onClose={() => setShowForkModal(false)}
+        size="md"
+        ariaLabel="Fork task"
+        showCloseButton={false}
+      >
+        <BaseModalHeader
+          title="Build on this task"
+          titleId="fork-task-title"
+          onClose={() => setShowForkModal(false)}
+          closeButtonLabel="Close fork task dialog"
+        />
+        <BaseModalBody>
+          <div className="space-y-4">
+            <p className="text-sm text-mission-control-text-dim">What do you want to build next?</p>
+            <TextArea
+              value={forkDescription}
+              onChange={e => setForkDescription(e.target.value)}
+              placeholder="Describe the next task..."
+              rows={4}
+              resize="none"
+              size="2"
+              className="w-full"
+            />
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={forkAssignSameAgent}
+                onCheckedChange={(val) => setForkAssignSameAgent(val === true)}
+                size="1"
               />
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={forkAssignSameAgent}
-                  onChange={e => setForkAssignSameAgent(e.target.checked)}
-                  className="rounded"
-                />
-                Assign to same agent{task.assignedTo ? ` (${task.assignedTo})` : ''}
-              </label>
-            </div>
-            <div className="flex justify-end gap-3 p-6 border-t border-mission-control-border">
-              <button
-                onClick={() => setShowForkModal(false)}
-                className="px-4 py-2 rounded-lg border border-mission-control-border hover:bg-mission-control-border transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={async () => {
-                  if (!forkDescription.trim()) return;
-                  try {
-                    // Fork via REST: create a subtask
-                    const result = await taskApi.addSubtask(task.id, {
-                      title: forkDescription.trim().slice(0, 100),
-                      description: forkDescription.trim(),
-                      assignedTo: forkAssignSameAgent ? task.assignedTo : undefined,
-                      priority: task.priority,
-                    });
-                    if (result) {
-                      showToast('success', 'Task forked', `Created new task from "${task.title}"`);
-                      setShowForkModal(false);
-                      // Reload child tasks
-                      taskApi.getSubtasks(task.id).then((r: any) => {
-                        const children = Array.isArray(r) ? r : r?.children || [];
-                        setChildTasks(children.map((c: any) => ({ id: c.id, title: c.title, status: c.status, stageNumber: c.stage_number })));
-                      });
-                    } else {
-                      showToast('error', 'Fork failed', 'Unknown error');
-                    }
-                  } catch (err) {
-                    showToast('error', 'Fork failed', (err as Error).message);
-                  }
-                }}
-                disabled={!forkDescription.trim()}
-                className="px-4 py-2 rounded-lg bg-mission-control-accent text-white hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
-              >
-                Create Task
-              </button>
-            </div>
+              Assign to same agent{task?.assignedTo ? ` (${task.assignedTo})` : ''}
+            </label>
           </div>
-        </div>
-      )}
+        </BaseModalBody>
+        <BaseModalFooter>
+          <Button
+            onClick={() => setShowForkModal(false)}
+            variant="outline"
+            color="gray"
+            size="2"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={async () => {
+              if (!task || !forkDescription.trim()) return;
+              try {
+                // Fork via REST: create a subtask
+                const result = await taskApi.addSubtask(task.id, {
+                  title: forkDescription.trim().slice(0, 100),
+                  description: forkDescription.trim(),
+                  assignedTo: forkAssignSameAgent ? task.assignedTo : undefined,
+                  priority: task.priority,
+                });
+                if (result) {
+                  showToast('success', 'Task forked', `Created new task from "${task.title}"`);
+                  setShowForkModal(false);
+                  // Reload child tasks
+                  taskApi.getSubtasks(task.id).then((r: any) => {
+                    const children = Array.isArray(r) ? r : r?.children || [];
+                    setChildTasks(children.map((c: any) => ({ id: c.id, title: c.title, status: c.status, stageNumber: c.stage_number })));
+                  });
+                } else {
+                  showToast('error', 'Fork failed', 'Unknown error');
+                }
+              } catch (err) {
+                showToast('error', 'Fork failed', (err as Error).message);
+              }
+            }}
+            disabled={!forkDescription.trim()}
+            size="2"
+          >
+            Create Task
+          </Button>
+        </BaseModalFooter>
+      </BaseModal>
 
       <ConfirmDialog
         open={open}
@@ -2135,35 +2257,84 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
         type={config.type}
       />
 
-      {/* File Viewer Modal */}
-      {fileViewer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setFileViewer(null)}>
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col mx-4" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
-              <div className="flex items-center gap-2">
-                <FileText size={16} className="text-mission-control-accent" />
-                <span className="text-sm font-medium">{fileViewer.name}</span>
-                <span className="text-xs text-mission-control-text-dim px-1.5 py-0.5 bg-mission-control-border rounded">.{fileViewer.ext}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => { navigator.clipboard.writeText(fileViewer.content); showToast('success', 'Copied to clipboard'); }}
-                  className="px-3 py-1.5 text-xs bg-mission-control-border hover:bg-mission-control-accent/20 rounded-lg transition-colors"
-                >
-                  Copy
-                </button>
-                <button onClick={() => setFileViewer(null)} className="p-1.5 hover:bg-mission-control-border rounded-lg transition-colors">
-                  <X size={16} />
-                </button>
-              </div>
+      {/* File Preview Modal */}
+      <BaseModal
+        isOpen={!!fileViewer}
+        onClose={() => setFileViewer(null)}
+        size="xl"
+        ariaLabel={fileViewer ? `Preview: ${fileViewer.name}` : 'File preview'}
+        maxHeight="85vh"
+        showCloseButton={false}
+      >
+        {/* Header */}
+        <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="2">
+            <ZoomIn size={15} className="text-mission-control-accent" />
+            <span className="text-sm font-medium truncate max-w-sm">{fileViewer?.name}</span>
+            <span className="text-[10px] text-mission-control-text-dim px-1.5 py-0.5 bg-mission-control-border/50 rounded font-mono uppercase">
+              .{fileViewer?.ext}
+            </span>
+          </Flex>
+          <Flex align="center" gap="2">
+            {fileViewer?.content && (
+              <Button
+                onClick={() => { navigator.clipboard.writeText(fileViewer.content!); showToast('success', 'Copied to clipboard'); }}
+                variant="surface"
+                color="gray"
+                size="1"
+              >
+                Copy
+              </Button>
+            )}
+            <button
+              type="button"
+              onClick={() => setFileViewer(null)}
+              aria-label="Close preview"
+              className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+            >
+              <X size={15} />
+            </button>
+          </Flex>
+        </Flex>
+
+        {/* Body */}
+        <div className="flex-1 overflow-auto">
+          {fileViewer?.mediaType === 'image' && (
+            <div className="flex items-center justify-center p-6 min-h-[300px] bg-[repeating-conic-gradient(#333_0%_25%,transparent_0%_50%)] bg-[length:20px_20px]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={fileViewer.serveUrl}
+                alt={fileViewer.name}
+                className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-2xl"
+              />
             </div>
-            <pre className="flex-1 overflow-auto p-4 text-xs font-mono text-mission-control-text whitespace-pre-wrap break-words">
+          )}
+          {fileViewer?.mediaType === 'video' && (
+            <div className="flex items-center justify-center p-6 bg-black">
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video
+                src={fileViewer.serveUrl}
+                controls
+                className="max-w-full max-h-[65vh] rounded-lg"
+              />
+            </div>
+          )}
+          {fileViewer?.mediaType === 'html' && (
+            <iframe
+              src={fileViewer.serveUrl}
+              title={fileViewer.name}
+              className="w-full h-[65vh] border-0"
+              sandbox="allow-scripts allow-same-origin"
+            />
+          )}
+          {!fileViewer?.mediaType && fileViewer?.content && (
+            <pre className="p-4 text-xs font-mono text-mission-control-text whitespace-pre-wrap break-words leading-relaxed">
               {fileViewer.content}
             </pre>
-          </div>
+          )}
         </div>
-      )}
+      </BaseModal>
     </div>
-    </div>
+    </>
   );
 }

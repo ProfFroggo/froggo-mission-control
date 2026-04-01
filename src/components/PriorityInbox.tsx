@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, Zap, AlertCircle, ChevronDown, Info, Star } from 'lucide-react';
+import { TrendingUp, Zap, AlertCircle, ChevronDown, Info, Star, X } from 'lucide-react';
+import { Box, Flex } from '@radix-ui/themes';
 import { settingsApi } from '../lib/api';
 
 // Priority indicator component
@@ -23,28 +24,28 @@ export function PriorityIndicator({
 
   const configs = {
     critical: {
-      color: 'bg-red-500',
+      color: 'bg-error',
       textColor: 'text-error',
       label: 'Critical',
       icon: Zap,
       pulse: true
     },
     high: {
-      color: 'bg-orange-500',
+      color: 'bg-warning',
       textColor: 'text-warning',
       label: 'High',
       icon: AlertCircle,
       pulse: false
     },
     normal: {
-      color: 'bg-blue-500',
+      color: 'bg-info',
       textColor: 'text-info',
       label: 'Normal',
       icon: TrendingUp,
       pulse: false
     },
     low: {
-      color: 'bg-mission-control-bg0',
+      color: 'bg-mission-control-border',
       textColor: 'text-mission-control-text-dim',
       label: 'Low',
       icon: ChevronDown,
@@ -56,7 +57,7 @@ export function PriorityIndicator({
   const Icon = config.icon;
 
   return (
-    <div className="flex items-center gap-1.5">
+    <Flex align="center" gap="2">
       <div className={`${sizeClasses[size]} ${config.color} rounded-full ${config.pulse ? 'animate-pulse' : ''}`} />
       {showLabel && (
         <>
@@ -67,7 +68,7 @@ export function PriorityIndicator({
           </span>
         </>
       )}
-    </div>
+    </Flex>
   );
 }
 
@@ -88,34 +89,41 @@ export function PriorityExplanation({
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="p-1 hover:bg-mission-control-border rounded-lg transition-colors"
         title="Why is this priority?"
+        aria-label="Why is this priority?"
+        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
       >
-        <Info size={14} className="text-mission-control-text-dim" />
+        <Info size={14} />
       </button>
       
       {isOpen && (
         <div className="absolute top-full right-0 mt-2 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl p-4 min-w-[320px] z-50">
-          <div className="flex items-center justify-between mb-3">
+          <Flex align="center" justify="between" mb="3">
             <h4 className="font-semibold text-sm">Priority Calculation</h4>
-            <button onClick={() => setIsOpen(false)} className="text-mission-control-text-dim hover:text-mission-control-text">
-              ×
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              aria-label="Close"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+            >
+              <X size={14} />
             </button>
-          </div>
+          </Flex>
           
           <div className="space-y-2 mb-3">
             {explanation && explanation.map((factor: any, i: number) => (
-              <div key={i} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
+              <Flex key={i} align="center" justify="between" className="text-xs">
+                <Flex align="center" gap="2">
                   <span className="text-mission-control-text-dim">{factor.factor}</span>
                   <span className="text-mission-control-accent font-mono">{Math.round(factor.score)}</span>
-                </div>
-                <div className="flex items-center gap-2">
+                </Flex>
+                <Flex align="center" gap="2">
                   <span className="text-mission-control-text-dim">×{factor.weight}</span>
                   <span className="font-semibold">=  {Math.round(factor.contribution)}</span>
-                </div>
-              </div>
+                </Flex>
+              </Flex>
             ))}
           </div>
           
@@ -123,18 +131,18 @@ export function PriorityExplanation({
             <div className="border-t border-mission-control-border pt-3 mt-3">
               <h5 className="text-xs font-semibold text-mission-control-text-dim mb-2">Sender Profile</h5>
               <div className="space-y-1 text-xs">
-                <div className="flex justify-between">
+                <Flex justify="between">
                   <span className="text-mission-control-text-dim">Importance:</span>
                   <span className="font-mono">{Math.round(senderStats.importance)}/100</span>
-                </div>
-                <div className="flex justify-between">
+                </Flex>
+                <Flex justify="between">
                   <span className="text-mission-control-text-dim">Reply Rate:</span>
                   <span className="font-mono">{Math.round(senderStats.replyRate)}%</span>
-                </div>
-                <div className="flex justify-between">
+                </Flex>
+                <Flex justify="between">
                   <span className="text-mission-control-text-dim">Avg Response:</span>
                   <span className="font-mono">{formatResponseTime(senderStats.avgResponseTime)}</span>
-                </div>
+                </Flex>
               </div>
             </div>
           )}
@@ -161,10 +169,10 @@ function formatResponseTime(seconds: number): string {
 export function PriorityStats({ stats }: { stats: any }) {
   return (
     <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-      <div className="flex items-center gap-2 mb-3">
+      <Flex align="center" gap="2" mb="3">
         <Star size={16} className="text-mission-control-accent" />
         <h3 className="font-semibold text-sm">Priority Stats</h3>
-      </div>
+      </Flex>
       
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -186,14 +194,14 @@ export function PriorityStats({ stats }: { stats: any }) {
       </div>
       
       <div className="mt-4 pt-4 border-t border-mission-control-border">
-        <div className="flex items-center justify-between text-xs">
+        <Flex align="center" justify="between" className="text-xs">
           <span className="text-mission-control-text-dim">Avg Score</span>
           <span className="font-mono font-semibold">{stats.avgScore?.toFixed(1) || 'N/A'}</span>
-        </div>
-        <div className="flex items-center justify-between text-xs mt-1">
+        </Flex>
+        <Flex align="center" justify="between" mt="1" className="text-xs">
           <span className="text-mission-control-text-dim">Learning</span>
           <span className="text-success font-medium">{stats.learnedSenders || 0} senders</span>
-        </div>
+        </Flex>
       </div>
     </div>
   );
@@ -228,13 +236,13 @@ export function PrioritySettings({
       <div className="space-y-3 mb-6">
         {weights.map(w => (
           <div key={w.key}>
-            <div className="flex items-center justify-between mb-1">
+            <Flex align="center" justify="between" mb="1">
               <div>
                 <span className="text-xs font-medium">{w.label}</span>
                 <p className="text-xs text-mission-control-text-dim">{w.desc}</p>
               </div>
               <span className="text-xs font-mono text-mission-control-accent">{config[w.key] || 0}%</span>
-            </div>
+            </Flex>
             <input
               type="range"
               min="0"
@@ -253,10 +261,10 @@ export function PrioritySettings({
       <div className="space-y-3">
         {thresholds.map(t => (
           <div key={t.key}>
-            <div className="flex items-center justify-between mb-1">
+            <Flex align="center" justify="between" mb="1">
               <span className="text-xs font-medium">{t.label}</span>
               <span className="text-xs font-mono text-mission-control-accent">{config[t.key] || 0}</span>
-            </div>
+            </Flex>
             <input
               type="range"
               min="0"

@@ -36,23 +36,23 @@ const STATUS_CONFIG: Record<AgentStatus, {
   animate: boolean;
 }> = {
   active: {
-    color: 'bg-green-500',
-    bgColor: 'bg-success-subtle',
-    pulseColor: 'bg-success-subtle',
+    color: 'bg-success',
+    bgColor: 'bg-success/10',
+    pulseColor: 'bg-success/10',
     label: 'Working',
     animate: true,
   },
   paused: {
-    color: 'bg-yellow-500',
-    bgColor: 'bg-warning-subtle',
-    pulseColor: 'bg-warning-subtle',
+    color: 'bg-warning',
+    bgColor: 'bg-warning/10',
+    pulseColor: 'bg-warning/10',
     label: 'Paused',
     animate: false,
   },
   stuck: {
-    color: 'bg-red-500',
-    bgColor: 'bg-error-subtle',
-    pulseColor: 'bg-error-subtle',
+    color: 'bg-error',
+    bgColor: 'bg-error/10',
+    pulseColor: 'bg-error/10',
     label: 'Stuck',
     animate: true,
   },

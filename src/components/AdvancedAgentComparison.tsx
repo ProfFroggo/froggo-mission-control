@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Flex } from '@radix-ui/themes';
 import {
   Users,
   TrendingUp,
@@ -8,6 +9,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Minus,
+  Check,
 } from 'lucide-react';
 import {
   RadarChart,
@@ -159,7 +161,7 @@ export default function AdvancedAgentComparison({
     });
   };
 
-  const COLORS = [CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.amber, CHART_COLORS.purple, CHART_COLORS.red];
+  const COLORS = [CHART_COLORS.blue, CHART_COLORS.accent, CHART_COLORS.amber, CHART_COLORS.purple, CHART_COLORS.red];
 
   const getTrendIcon = (value: number, threshold: number) => {
     if (value > threshold) return <ArrowUpRight size={16} className="text-success" />;
@@ -186,19 +188,20 @@ export default function AdvancedAgentComparison({
             {metrics.map((metric) => (
               <button
                 key={metric.agent}
+                type="button"
                 onClick={() => toggleAgent(metric.agent)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  selectedAgents.includes(metric.agent)
-                    ? 'bg-mission-control-accent text-white'
-                    : 'bg-mission-control-surface border border-mission-control-border hover:border-mission-control-accent'
-                }`}
                 disabled={
                   !selectedAgents.includes(metric.agent) && selectedAgents.length >= 5
                 }
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                  selectedAgents.includes(metric.agent)
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 {metric.agent}
                 {selectedAgents.includes(metric.agent) && (
-                  <span className="ml-2">✓</span>
+                  <Check size={12} className="ml-1" />
                 )}
               </button>
             ))}
@@ -235,7 +238,7 @@ export default function AdvancedAgentComparison({
               <h3 className="font-semibold mb-4">Task Completion Comparison</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={getComparisonData()}>
-                  <CartesianGrid strokeDasharray={CHART_GRID.strokeDasharray} stroke={CHART_GRID.stroke} />
+                  <CartesianGrid {...CHART_GRID} />
                   <XAxis dataKey="name" stroke={CHART_AXIS.stroke} />
                   <YAxis stroke={CHART_AXIS.stroke} />
                   <Tooltip
@@ -246,7 +249,7 @@ export default function AdvancedAgentComparison({
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="completed" fill={CHART_COLORS.green} name="Completed" />
+                  <Bar dataKey="completed" fill={CHART_COLORS.accent} name="Completed" />
                   <Bar dataKey="inProgress" fill={CHART_COLORS.amber} name="In Progress" />
                 </BarChart>
               </ResponsiveContainer>
@@ -260,28 +263,28 @@ export default function AdvancedAgentComparison({
                     <tr>
                       <th className="text-left p-4 text-sm font-medium">Agent</th>
                       <th className="text-right p-4 text-sm font-medium">
-                        <div className="flex items-center justify-end gap-1">
+                        <Flex align="center" justify="end" gap="1">
                           <Target size={14} />
                           Completed
-                        </div>
+                        </Flex>
                       </th>
                       <th className="text-right p-4 text-sm font-medium">
-                        <div className="flex items-center justify-end gap-1">
+                        <Flex align="center" justify="end" gap="1">
                           <TrendingUp size={14} />
                           Rate
-                        </div>
+                        </Flex>
                       </th>
                       <th className="text-right p-4 text-sm font-medium">
-                        <div className="flex items-center justify-end gap-1">
+                        <Flex align="center" justify="end" gap="1">
                           <Clock size={14} />
                           Avg Time
-                        </div>
+                        </Flex>
                       </th>
                       <th className="text-right p-4 text-sm font-medium">
-                        <div className="flex items-center justify-end gap-1">
+                        <Flex align="center" justify="end" gap="1">
                           <Award size={14} />
                           Efficiency
-                        </div>
+                        </Flex>
                       </th>
                       <th className="text-right p-4 text-sm font-medium">Consistency</th>
                     </tr>
@@ -297,17 +300,17 @@ export default function AdvancedAgentComparison({
                           className="border-b border-mission-control-border last:border-b-0"
                         >
                           <td className="p-4">
-                            <div className="flex items-center gap-2">
+                            <Flex align="center" gap="2">
                               <div
                                 className="w-3 h-3 rounded-full"
                                 style={{ backgroundColor: COLORS[index] }}
                               />
                               <span className="font-medium">{agentName}</span>
-                            </div>
+                            </Flex>
                           </td>
                           <td className="p-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <span className="text-success font-medium">
+                            <Flex align="center" justify="end" gap="2">
+                              <span className="text-success font-medium tabular-nums">
                                 {agent.tasksCompleted}
                               </span>
                               {getTrendIcon(
@@ -315,11 +318,11 @@ export default function AdvancedAgentComparison({
                                 metrics.reduce((sum, m) => sum + m.tasksCompleted, 0) /
                                   metrics.length
                               )}
-                            </div>
+                            </Flex>
                           </td>
                           <td className="p-4 text-right">
                             <span
-                              className={`font-medium ${
+                              className={`font-medium tabular-nums ${
                                 agent.completionRate >= 80
                                   ? 'text-success'
                                   : agent.completionRate >= 50
@@ -331,32 +334,32 @@ export default function AdvancedAgentComparison({
                             </span>
                           </td>
                           <td className="p-4 text-right">
-                            <span className="text-warning font-medium">
+                            <span className="text-warning font-medium tabular-nums">
                               {agent.avgCompletionTime.toFixed(1)}h
                             </span>
                           </td>
                           <td className="p-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <span className="text-info font-medium">
+                            <Flex align="center" justify="end" gap="2">
+                              <span className="text-info font-medium tabular-nums">
                                 {agent.efficiency.toFixed(2)}
                               </span>
                               <span className="text-xs text-mission-control-text-dim">
                                 tasks/h
                               </span>
-                            </div>
+                            </Flex>
                           </td>
                           <td className="p-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                            <Flex align="center" justify="end" gap="2">
                               <div className="w-24 bg-mission-control-bg rounded-full h-2">
                                 <div
-                                  className="bg-review rounded-full h-2 transition-all"
+                                  className="bg-review rounded-full h-2 transition-colors"
                                   style={{ width: `${agent.consistency}%` }}
                                 />
                               </div>
-                              <span className="text-review font-medium w-12">
+                              <span className="text-review font-medium tabular-nums w-12">
                                 {Math.round(agent.consistency)}%
                               </span>
-                            </div>
+                            </Flex>
                           </td>
                         </tr>
                       );

@@ -4,9 +4,10 @@
  */
 
 import { useState } from 'react';
-import { AlertTriangle, Trash2, X, Info } from 'lucide-react';
+import { AlertTriangle, Trash2, Info, X } from 'lucide-react';
+import { Button, TextField } from '@radix-ui/themes';
 import { LoadingButton } from './LoadingStates';
-import BaseModal, { BaseModalBody, BaseModalFooter } from './BaseModal';
+import BaseModal, { BaseModalBody } from './BaseModal';
 
 export type ConfirmDialogType = 'danger' | 'warning' | 'info';
 
@@ -46,25 +47,22 @@ export default function ConfirmDialog({
   const config = {
     danger: {
       icon: Trash2,
-      iconBg: 'bg-error-subtle',
-      iconColor: 'text-error',
-      confirmVariant: 'danger' as const,
+      iconWrapperClass: 'bg-error/10 text-error',
+      isDanger: true,
     },
     warning: {
       icon: AlertTriangle,
-      iconBg: 'bg-warning-subtle',
-      iconColor: 'text-warning',
-      confirmVariant: 'primary' as const,
+      iconWrapperClass: 'bg-warning/10 text-warning',
+      isDanger: false,
     },
     info: {
       icon: Info,
-      iconBg: 'bg-info-subtle',
-      iconColor: 'text-info',
-      confirmVariant: 'primary' as const,
+      iconWrapperClass: 'bg-info/10 text-info',
+      isDanger: false,
     },
   };
 
-  const { icon: Icon, iconBg, iconColor, confirmVariant } = config[type];
+  const { icon: Icon, iconWrapperClass, isDanger } = config[type];
 
   const canConfirm = !requireInput || inputValue === requireInput.expectedValue;
 
@@ -96,47 +94,39 @@ export default function ConfirmDialog({
     <BaseModal
       isOpen={open}
       onClose={handleClose}
-      size="md"
+      size="sm"
       ariaLabel={title}
       ariaDescribedby="confirm-dialog-message"
       showCloseButton={false}
       preventEscClose={isProcessing}
       preventBackdropClose={isProcessing}
+      className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl"
     >
-      {/* Header */}
-      <div className="flex items-start gap-4 p-6 border-b border-mission-control-border">
-        <div className={`w-12 h-12 rounded-full ${iconBg} flex items-center justify-center flex-shrink-0`}>
-          <Icon size={24} className={iconColor} />
+      {/* Overlay is handled by BaseModal; inner panel is solid surface */}
+      <div className="p-6">
+        {/* Icon */}
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-4 ${iconWrapperClass}`}>
+          <Icon size={20} />
         </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-mission-control-text">{title}</h3>
-          <p id="confirm-dialog-message" className="text-sm text-mission-control-text-dim mt-1">{message}</p>
-        </div>
-        <button
-          onClick={handleClose}
-          disabled={isProcessing}
-          className="p-1 hover:bg-mission-control-border rounded transition-colors disabled:opacity-50"
-          aria-label="Close dialog"
-          type="button"
-        >
-          <X size={20} className="text-mission-control-text-dim" />
-        </button>
-      </div>
 
-      {/* Content */}
-      <BaseModalBody>
+        {/* Title + message */}
+        <h3 className="text-base font-semibold text-mission-control-text text-center">{title}</h3>
+        <p id="confirm-dialog-message" className="text-sm text-mission-control-text-dim text-center mt-1 leading-relaxed">
+          {message}
+        </p>
+
+        {/* Optional input confirmation */}
         {requireInput && (
-          <div className="space-y-2">
+          <div className="space-y-2 mt-4">
             <label htmlFor="confirm-input" className="block text-sm font-medium text-mission-control-text">
               {requireInput.hint}
             </label>
-            <input
+            <TextField.Root
               id="confirm-input"
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={requireInput.placeholder}
-              className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:ring-2 focus:ring-mission-control-accent"
               /* eslint-disable-next-line jsx-a11y/no-autofocus */
               autoFocus
               disabled={isProcessing}
@@ -148,29 +138,36 @@ export default function ConfirmDialog({
             )}
           </div>
         )}
-        {actionError && (
-          <p className="text-sm text-error mt-2">{actionError}</p>
-        )}
-      </BaseModalBody>
 
-      {/* Actions */}
-      <BaseModalFooter align="right">
-        <LoadingButton
-          onClick={handleClose}
-          variant="ghost"
-          disabled={isProcessing}
-        >
-          {cancelLabel}
-        </LoadingButton>
-        <LoadingButton
-          onClick={handleConfirm}
-          variant={confirmVariant}
-          disabled={!canConfirm}
-          loading={isProcessing || loading}
-        >
-          {confirmLabel}
-        </LoadingButton>
-      </BaseModalFooter>
+        {/* Action error */}
+        {actionError && (
+          <p className="text-sm text-error mt-3 text-center">{actionError}</p>
+        )}
+
+        {/* Footer */}
+        <div className="flex gap-2 mt-6">
+          <Button
+            variant="soft"
+            size="2"
+            className="flex-1"
+            onClick={handleClose}
+            disabled={isProcessing}
+            type="button"
+          >
+            {cancelLabel}
+          </Button>
+          <LoadingButton
+            variant={isDanger ? 'danger' : 'primary'}
+            disabled={!canConfirm}
+            loading={isProcessing || loading}
+            onClick={handleConfirm}
+            className="flex-1"
+            type="button"
+          >
+            {confirmLabel}
+          </LoadingButton>
+        </div>
+      </div>
     </BaseModal>
   );
 }

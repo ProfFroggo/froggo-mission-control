@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Shield, CheckCircle, AlertTriangle, XCircle, Loader } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import WidgetLoading from './WidgetLoading';
 
 interface SystemStatus {
@@ -93,23 +94,23 @@ export default function HealthStatusWidget() {
   return (
     <div className="p-4 h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-3">
+      <Flex align="center" gap="2" className="mb-3">
         <Shield size={16} className={
           health === 'healthy' ? 'text-success' :
           health === 'warning' ? 'text-warning' :
           'text-error'
         } />
         <h3 className="text-sm font-semibold text-mission-control-text">System Health</h3>
-      </div>
+      </Flex>
 
       {/* Main status */}
       <div className="flex-1 flex flex-col justify-center gap-3">
         {/* Health indicator */}
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
           <div className={`flex items-center justify-center w-12 h-12 rounded-full ${
-            health === 'healthy' ? 'bg-success-subtle' :
-            health === 'warning' ? 'bg-warning-subtle' :
-            'bg-error-subtle'
+            health === 'healthy' ? 'bg-success/10' :
+            health === 'warning' ? 'bg-warning/10' :
+            'bg-error/10'
           }`}>
             {health === 'healthy' ? (
               <CheckCircle size={24} className="text-success" />
@@ -136,48 +137,48 @@ export default function HealthStatusWidget() {
                'Immediate attention needed'}
             </div>
           </div>
-        </div>
+        </Flex>
 
         {/* Status details */}
         <div className="space-y-2 pt-2 border-t border-mission-control-border">
           {/* Watcher status */}
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-mission-control-text-dim">Task Watcher</span>
-            <span className={status.watcherRunning ? 'text-success' : 'text-error'}>
+          <Flex align="center" justify="between" className="text-xs">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Task Processing</span>
+            <span className={`text-xs font-medium ${status.watcherRunning ? 'text-success' : 'text-error'}`}>
               {status.watcherRunning ? 'Running' : 'Stopped'}
             </span>
-          </div>
+          </Flex>
 
           {/* Kill switch */}
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-mission-control-text-dim">Safety Lock</span>
-            <span className={status.killSwitchOn ? 'text-error' : 'text-success'}>
+          <Flex align="center" justify="between" className="text-xs">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Safety Controls</span>
+            <span className={`text-xs font-medium ${status.killSwitchOn ? 'text-error' : 'text-success'}`}>
               {status.killSwitchOn ? 'Engaged' : 'Normal'}
             </span>
-          </div>
+          </Flex>
 
           {/* Active tasks */}
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-mission-control-text-dim">Active Tasks</span>
+          <Flex align="center" justify="between" className="text-xs">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Active Tasks</span>
             <div className="flex items-center gap-1.5">
               {status.inProgressTasks > 0 && (
                 <Loader size={12} className="text-info animate-spin" />
               )}
-              <span className={
+              <span className={`tabular-nums font-mono text-xs font-medium ${
                 status.inProgressTasks === 0 ? 'text-mission-control-text-dim' :
                 status.inProgressTasks > 10 ? 'text-warning' :
                 'text-info'
-              }>
+              }`}>
                 {status.inProgressTasks}
               </span>
             </div>
-          </div>
+          </Flex>
         </div>
       </div>
 
       {/* Last updated */}
-      <div className="mt-3 pt-3 border-t border-mission-control-border text-xs text-mission-control-text-dim text-center">
-        Auto-refreshing every 30s
+      <div className="mt-3 pt-3 border-t border-mission-control-border text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim/70 text-center">
+        Auto-refreshes every 60s
       </div>
     </div>
   );

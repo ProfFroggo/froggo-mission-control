@@ -18,8 +18,8 @@ interface BadgeWrapperProps {
   className?: string;
 }
 
-export default function BadgeWrapper({ 
-  children, 
+const BadgeWrapper = React.memo(function BadgeWrapper({
+  children,
   position = 'inline',
   variant = 'primary',
   size = 'md',
@@ -37,9 +37,9 @@ export default function BadgeWrapper({
   const variantClasses = {
     'primary': 'bg-mission-control-accent text-white',
     'secondary': 'bg-mission-control-border text-mission-control-text',
-    'danger': 'bg-red-500 text-white',
-    'warning': 'bg-orange-500 text-white',
-    'success': 'bg-green-500 text-white',
+    'danger': 'bg-error text-error',
+    'warning': 'bg-warning text-warning',
+    'success': 'bg-success text-success',
   };
 
   // Size classes - increased min-width to properly accommodate "99+"
@@ -67,7 +67,9 @@ export default function BadgeWrapper({
       {children}
     </span>
   );
-}
+});
+
+export default BadgeWrapper;
 
 /**
  * NumberBadge - Specialized badge for displaying numbers with proper overflow handling
@@ -126,9 +128,9 @@ export function DotBadge({
   const variantClasses = {
     'primary': 'bg-mission-control-accent',
     'secondary': 'bg-mission-control-border',
-    'danger': 'bg-red-500',
-    'warning': 'bg-orange-500',
-    'success': 'bg-green-500',
+    'danger': 'bg-error',
+    'warning': 'bg-warning',
+    'success': 'bg-success',
   };
 
   const positionClasses = {

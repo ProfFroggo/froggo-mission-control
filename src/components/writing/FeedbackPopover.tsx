@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Editor } from '@tiptap/react';
 import { Send, Loader2, ShieldCheck } from 'lucide-react';
+import { Flex, IconButton, TextField } from '@radix-ui/themes';
 import { gateway } from '../../lib/gateway';
 import { buildMemoryContext } from '../../lib/writingContext';
 import { useWritingStore } from '../../store/writingStore';
@@ -338,23 +339,23 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
       onMouseDown={(e) => e.preventDefault()}
     >
       {/* Agent picker row + fact check */}
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <AgentPicker selected={selectedAgent} onSelect={setSelectedAgent} disabled={streaming} />
         <button
+          type="button"
           onClick={handleFactCheck}
           disabled={streaming}
-          className="flex items-center gap-1 px-2 py-1 rounded-full text-xs text-mission-control-text-dim hover:text-mission-control-accent hover:bg-mission-control-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title="Fact-check highlighted claim"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ShieldCheck className="w-3 h-3" />
-          <span>Fact Check</span>
+          Fact Check
         </button>
-      </div>
+      </Flex>
 
       {/* Instruction input + send button */}
-      <div className="flex gap-2 mt-2">
-        <input
-          type="text"
+      <Flex gap="2" className="mt-2">
+        <TextField.Root
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
           onKeyDown={(e) => {
@@ -368,17 +369,19 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
               : selectedAgent === 'researcher' ? 'What should be checked?'
               : 'How should this be rewritten?'
           }
-          className="flex-1 bg-mission-control-bg border border-mission-control-border rounded px-2 py-1.5 text-sm text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
           disabled={streaming}
+          className="flex-1"
         />
-        <button
+        <IconButton
+          size="2"
+          variant="soft"
+         
           onClick={handleSend}
           disabled={streaming || !instructions.trim()}
-          className="px-2 py-1.5 rounded bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-        </button>
-      </div>
+        </IconButton>
+      </Flex>
 
       {/* Streaming content (raw text while streaming) */}
       {streaming && streamContent && (
@@ -394,8 +397,9 @@ export default function FeedbackPopover({ editor }: FeedbackPopoverProps) {
             <FeedbackAlternative key={alt.text} index={alternatives.indexOf(alt)} text={alt.text} commentary={alt.commentary} onAccept={handleAccept} />
           ))}
           <button
+            type="button"
             onClick={handleDismiss}
-            className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             Dismiss
           </button>

@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
 import { Activity, AlertTriangle, CheckCircle, Clock, Users, Zap } from 'lucide-react';
+import { Badge, Box, Flex } from '@radix-ui/themes';
 import { useStore, Agent } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
 import { useEventBus } from '../lib/useEventBus';
@@ -96,52 +97,38 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
       {/* Fleet overview cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { icon: Users,         val: totalAgents,        label: 'Total agents',          color: 'text-mission-control-text' },
-          { icon: Activity,      val: online,             label: 'Online (last hour)',     color: 'text-success' },
-          { icon: AlertTriangle, val: circuitOpenCount,   label: 'Circuit breakers open',  color: circuitOpenCount > 0 ? 'text-error' : 'text-success' },
-          { icon: Zap,           val: unassignedInProgress, label: 'Unassigned in-progress', color: unassignedInProgress > 0 ? 'text-warning' : 'text-success' },
-        ].map(({ icon: Icon, val, label, color }) => (
-          <div key={label} className="rounded-lg border border-mission-control-border bg-mission-control-surface p-4">
+          {
+            icon: Users, val: totalAgents, label: 'Total agents',
+            color: 'text-mission-control-text',
+            subLabel: 'registered',
+          },
+          {
+            icon: Activity, val: online, label: 'Online',
+            color: online > 0 ? 'text-success' : 'text-mission-control-text-dim',
+            subLabel: 'last hour',
+          },
+          {
+            icon: AlertTriangle, val: circuitOpenCount, label: 'Circuit open',
+            color: circuitOpenCount > 0 ? 'text-error' : 'text-success',
+            subLabel: circuitOpenCount > 0 ? 'needs attention' : 'all clear',
+          },
+          {
+            icon: Zap, val: unassignedInProgress, label: 'Unassigned',
+            color: unassignedInProgress > 0 ? 'text-warning' : 'text-success',
+            subLabel: 'in-progress',
+          },
+        ].map(({ icon: Icon, val, label, color, subLabel }) => (
+          <div key={label} className="bg-mission-control-surface border border-mission-control-border rounded-xl p-3">
             <div className="flex items-center gap-1.5 mb-2">
-              <Icon size={14} className={color} />
-              <span className="text-xs text-mission-control-text-dim">{label}</span>
+              <Icon size={12} className={color} />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">{label}</span>
             </div>
-            <div className={`text-2xl font-bold tabular-nums ${color}`}>{val}</div>
+            <div className="text-xl font-bold tabular-nums font-mono text-mission-control-text">{val}</div>
+            <div className="text-[11px] text-mission-control-text-dim/70 mt-0.5">{subLabel}</div>
           </div>
         ))}
       </div>
 
-      {/* Alert section */}
-      {alertRows.length > 0 && (
-        <div className="rounded-lg border border-warning-border bg-warning-subtle p-4 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-warning uppercase tracking-wider mb-1">
-            <AlertTriangle size={13} />
-            Attention required
-          </div>
-          {alertRows.map(r => (
-            <div key={r.agent.id} className="flex items-center gap-3 text-sm">
-              <span className="font-medium text-mission-control-text w-28 truncate">{r.agent.name}</span>
-              <div className="flex items-center gap-2 flex-wrap">
-                {r.circuitOpen && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-error-subtle text-error border border-error-border">
-                    Circuit open
-                  </span>
-                )}
-                {r.isStale && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-warning-subtle text-warning border border-warning-border">
-                    No activity 24h
-                  </span>
-                )}
-                {r.failuresToday > 3 && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-error-subtle text-error border border-error-border">
-                    {r.failuresToday} failures today
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Per-agent health table */}
       <div className="rounded-lg border border-mission-control-border overflow-hidden">
@@ -149,11 +136,11 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-mission-control-border bg-mission-control-surface/50">
-              <th className="text-left px-4 py-2.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Agent</th>
-              <th className="text-left px-4 py-2.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider hidden sm:table-cell">Last active</th>
-              <th className="text-left px-4 py-2.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider hidden md:table-cell">Done today</th>
-              <th className="text-left px-4 py-2.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Circuit</th>
-              <th className="text-left px-4 py-2.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider">Current task</th>
+              <th className="text-left px-4 py-2.5 text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Agent</th>
+              <th className="text-left px-4 py-2.5 text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider hidden sm:table-cell">Last active</th>
+              <th className="text-left px-4 py-2.5 text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider hidden md:table-cell">Done today</th>
+              <th className="text-left px-4 py-2.5 text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Circuit</th>
+              <th className="text-left px-4 py-2.5 text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Current task</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-mission-control-border/50">
@@ -163,38 +150,47 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
                 className={`hover:bg-mission-control-surface/40 transition-colors ${onSelectAgent ? 'cursor-pointer' : ''}`}
                 onClick={() => onSelectAgent?.(row.agent.id, row.agent.name)}
               >
-                {/* Agent name + status dot */}
+                {/* Agent name + status badge */}
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                      row.agent.status === 'busy' ? 'bg-mission-control-accent animate-pulse' :
-                      row.agent.status === 'active' || row.agent.status === 'idle' ? 'bg-success' :
-                      'bg-mission-control-text-dim/40'
+                  <Flex align="center" gap="2">
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                      row.agent.status === 'active' || row.agent.status === 'busy'
+                        ? 'bg-success agent-dot-pulse'
+                        : 'bg-mission-control-border'
                     }`} />
                     <span className="font-medium text-mission-control-text">{row.agent.name}</span>
-                  </div>
+                    {(row.agent.status === 'active' || row.agent.status === 'busy') ? (
+                      <span className="hidden sm:inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-success/10 text-success border border-success/20">
+                        online
+                      </span>
+                    ) : (
+                      <span className="hidden sm:inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-border/40 text-mission-control-text-dim">
+                        offline
+                      </span>
+                    )}
+                  </Flex>
                 </td>
 
                 {/* Last active */}
                 <td className="px-4 py-3 text-mission-control-text-dim hidden sm:table-cell">
-                  <div className="flex items-center gap-1">
+                  <Flex align="center" gap="1">
                     <Clock size={11} />
                     {formatLastActive(row.agent.lastActivity)}
-                  </div>
+                  </Flex>
                 </td>
 
                 {/* Tasks done today */}
                 <td className="px-4 py-3 hidden md:table-cell">
-                  <div className="flex items-center gap-1 text-success">
+                  <Flex align="center" gap="1" className="text-success">
                     <CheckCircle size={11} />
                     {row.tasksToday}
-                  </div>
+                  </Flex>
                 </td>
 
                 {/* Circuit status */}
                 <td className="px-4 py-3">
                   {row.circuitOpen ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-error-subtle text-error border border-error-border">
+                    <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-error/10 text-error border border-error/30">
                       <AlertTriangle size={9} /> Open
                     </span>
                   ) : (
@@ -205,7 +201,7 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
                 {/* Current task */}
                 <td className="px-4 py-3 max-w-xs">
                   {row.currentTask ? (
-                    <span className="flex items-center gap-1 text-amber-400 text-xs">
+                    <span className="flex items-center gap-1 text-warning text-xs">
                       <Zap size={11} className="flex-shrink-0" />
                       <span className="truncate">{row.currentTask}</span>
                     </span>
@@ -219,9 +215,9 @@ export default function AgentHealthDashboard({ onSelectAgent }: AgentHealthDashb
         </table>
         </div>
         {healthRows.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm text-mission-control-text-dim">
+          <Flex align="center" justify="center" px="4" py="6" className="text-sm text-mission-control-text-dim">
             No agents to display
-          </div>
+          </Flex>
         )}
       </div>
     </div>

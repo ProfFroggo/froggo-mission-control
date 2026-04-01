@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { X, ArrowRight, ArrowLeft, Check, Loader2, Mail, Calendar, HardDrive, Users, CheckCircle, AlertTriangle } from 'lucide-react';
+import { X, ArrowRight, ArrowLeft, Check, Loader2, Mail, Calendar, HardDrive, Users, CheckCircle, AlertTriangle, Globe, Cloud, Monitor, Apple } from 'lucide-react';
+import { Button, TextField, Flex } from '@radix-ui/themes';
 import { AccountProvider, DataType, AddAccountRequest } from '../types/accounts';
 import { useUserSettings } from '../store/userSettings';
 import { accountsApi } from '../lib/api';
@@ -11,19 +12,24 @@ interface Props {
 
 type Step = 'provider' | 'email' | 'dataTypes' | 'auth' | 'connecting' | 'success';
 
-const PROVIDER_INFO: Record<string, { name: string; logo: string; color: string; description: string; supportedTypes: DataType[]; authMethods: readonly string[]; comingSoon?: boolean }> = {
+const PROVIDER_ICONS: Record<string, React.ElementType> = {
+  google: Globe,
+  icloud: Cloud,
+  microsoft: Monitor,
+  apple: Apple,
+};
+
+const PROVIDER_INFO: Record<string, { name: string; color: string; description: string; supportedTypes: DataType[]; authMethods: readonly string[]; comingSoon?: boolean }> = {
   google: {
     name: 'Google',
-    logo: '🔵',
-    color: 'var(--color-info)',
+    color: 'var(--mission-control-info)',
     description: 'Gmail, Calendar, Drive, Contacts',
     supportedTypes: ['email', 'calendar', 'drive', 'contacts'] as DataType[],
     authMethods: ['oauth'] as const,
   },
   icloud: {
     name: 'iCloud',
-    logo: '☁️',
-    color: 'var(--color-info)',
+    color: 'var(--mission-control-info)',
     description: 'Mail, Calendar, Contacts',
     supportedTypes: ['email', 'calendar', 'contacts'] as DataType[],
     authMethods: ['app-password'] as const,
@@ -31,15 +37,13 @@ const PROVIDER_INFO: Record<string, { name: string; logo: string; color: string;
   },
   microsoft: {
     name: 'Microsoft',
-    logo: '🔷',
-    color: 'var(--color-info)',
+    color: 'var(--mission-control-info)',
     description: 'Outlook, Calendar, OneDrive, Contacts',
     supportedTypes: ['email', 'calendar', 'drive', 'contacts', 'tasks'] as DataType[],
     authMethods: ['oauth'] as const,
   },
   apple: {
     name: 'Apple',
-    logo: '',
     color: 'var(--mission-control-text)',
     description: 'iCloud Mail, Calendar, Contacts',
     supportedTypes: ['email', 'calendar', 'contacts'] as DataType[],
@@ -168,13 +172,13 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <Flex align="center" justify="center" p="4" className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50">
+      <div className="bg-mission-control-surface rounded-2xl shadow-2xl border border-mission-control-border max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <div>
-            <h2 className="text-xl font-semibold">Add Connected Account</h2>
-            <p className="text-sm text-mission-control-text-dim mt-1">
+            <h2 className="text-base font-semibold text-mission-control-text">Add Connected Account</h2>
+            <p className="text-xs text-mission-control-text-dim mt-0.5">
               {step === 'provider' && 'Choose your provider'}
               {step === 'email' && 'Enter your email address'}
               {step === 'dataTypes' && 'Select services to connect'}
@@ -184,9 +188,9 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
             </p>
           </div>
           <button
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-50"
             onClick={onClose}
             disabled={step === 'connecting'}
-            className="p-2 hover:bg-mission-control-bg rounded-lg transition-colors disabled:opacity-50"
             aria-label="Close wizard"
           >
             <X size={20} />
@@ -195,7 +199,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
         {/* Progress Bar */}
         <div className="px-6 pt-4">
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             {(['provider', 'email', 'dataTypes', 'auth'] as const).map((s, idx) => (
               <div key={s} className="flex items-center flex-1">
                 <div
@@ -207,7 +211,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 />
               </div>
             ))}
-          </div>
+          </Flex>
         </div>
 
         {/* Content */}
@@ -220,42 +224,39 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                 return (
                   <button
                     key={p}
+                    type="button"
                     onClick={() => {
                       if (info.comingSoon) return;
                       setProvider(p);
                       setAuthMethod(info.authMethods[0] as 'oauth' | 'app-password');
                     }}
                     disabled={info.comingSoon}
-                    className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-                      info.comingSoon
-                        ? 'border-mission-control-border opacity-50 cursor-not-allowed'
-                        : provider === p
-                          ? 'border-mission-control-accent bg-mission-control-accent/10'
-                          : 'border-mission-control-border hover:border-mission-control-accent/50'
-                    }`}
+                    className={`w-full flex items-center gap-2 px-3 py-4 rounded-lg border text-left transition-colors ${
+                      provider === p ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    <div className="flex items-center gap-4">
+                    <Flex align="center" gap="4">
                       <div
-                        className="w-16 h-16 rounded-full flex items-center justify-center text-3xl"
+                        className="w-16 h-16 rounded-full flex items-center justify-center"
                         style={{ backgroundColor: `${info.color}20` }}
                       >
-                        {info.logo}
+                        {(() => { const PIco = PROVIDER_ICONS[p] ?? Globe; return <PIco size={28} style={{ color: info.color }} />; })()}
                       </div>
                       <div className="flex-1">
-                        <div className="font-semibold text-lg mb-1 flex items-center gap-2">
+                        <Flex align="center" gap="2" className="font-semibold text-lg mb-1">
                           {info.name}
                           {info.comingSoon && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-warning/20 text-mission-control-warning">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-warning/10 text-warning">
                               Coming Soon
                             </span>
                           )}
-                        </div>
+                        </Flex>
                         <div className="text-sm text-mission-control-text-dim">{info.description}</div>
                       </div>
                       {provider === p && (
                         <Check size={24} className="text-mission-control-accent" />
                       )}
-                    </div>
+                    </Flex>
                   </button>
                 );
               })}
@@ -266,7 +267,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
           {step === 'email' && currentProviderInfo && (
             <div className="space-y-6">
               <div className="text-center">
-                <div className="text-5xl mb-4">{currentProviderInfo.logo}</div>
+                <div className="mb-4 flex items-center justify-center">{(() => { const PIco = PROVIDER_ICONS[provider!] ?? Globe; return <PIco size={48} style={{ color: currentProviderInfo.color }} />; })()}</div>
                 <h3 className="text-lg font-semibold mb-2">{currentProviderInfo.name} Account</h3>
                 <p className="text-sm text-mission-control-text-dim">
                   Enter the email address for your {currentProviderInfo.name} account
@@ -274,15 +275,16 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
               </div>
 
               <div>
-                <label htmlFor="email-input" className="block text-sm font-medium mb-2">Email Address</label>
-                <input
+                <label htmlFor="email-input" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Email Address</label>
+                <TextField.Root
                   id="email-input"
                   type="email"
                   aria-label="Email address input"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={`your.email@${provider === 'google' ? 'gmail.com' : provider === 'microsoft' ? 'outlook.com' : 'example.com'}`}
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-3 focus:outline-none focus:border-mission-control-accent"
+                  size="3"
+                  className="w-full"
                 />
               </div>
 
@@ -295,8 +297,9 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                   {provider === 'google' && useUserSettings.getState().emailAccounts.map(a => a.email).map(acc => (
                     <button
                       key={acc}
+                      type="button"
                       onClick={() => setEmail(acc)}
-                      className="w-full p-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-colors text-left"
+                      className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     >
                       {acc}
                     </button>
@@ -325,14 +328,13 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                   return (
                     <button
                       key={type}
+                      type="button"
                       onClick={() => toggleDataType(type)}
-                      className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-                        isSelected
-                          ? 'border-mission-control-accent bg-mission-control-accent/10'
-                          : 'border-mission-control-border hover:border-mission-control-accent/50'
+                      className={`w-full flex items-center gap-2 px-3 py-4 rounded-lg border text-left transition-colors ${
+                        isSelected ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
+                      <Flex align="center" gap="3">
                         <Icon size={24} className={isSelected ? 'text-mission-control-accent' : 'text-mission-control-text-dim'} />
                         <div className="flex-1">
                           <div className="font-medium mb-1">{info.label}</div>
@@ -341,19 +343,19 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                         {isSelected && (
                           <Check size={20} className="text-mission-control-accent" />
                         )}
-                      </div>
+                      </Flex>
                     </button>
                   );
                 })}
               </div>
 
-              <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
-                <div className="flex items-start gap-2 text-sm">
+              <div className="p-4 bg-info/10 border border-info/30 rounded-lg">
+                <Flex align="start" gap="2" className="text-sm">
                   <AlertTriangle size={16} className="text-info mt-0.5 flex-shrink-0" />
                   <div className="text-info">
                     You can always add or remove services later from account settings
                   </div>
-                </div>
+                </Flex>
               </div>
             </div>
           )}
@@ -372,7 +374,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
               {authMethod === 'oauth' ? (
                 <div className="space-y-4">
-                  <div className="p-6 bg-mission-control-bg rounded-lg border border-mission-control-border text-center">
+                  <div className="bg-mission-control-bg border border-mission-control-border rounded-xl p-4 text-center">
                     <div className="text-4xl mb-4">🔐</div>
                     <h4 className="font-medium mb-2">OAuth Authentication</h4>
                     <p className="text-sm text-mission-control-text-dim mb-4">
@@ -399,8 +401,8 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                     </ul>
                   </div>
 
-                  <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
-                    <div className="flex items-start gap-2 text-sm">
+                  <div className="p-4 bg-info/10 border border-info/30 rounded-lg">
+                    <Flex align="start" gap="2" className="text-sm">
                       <AlertTriangle size={16} className="text-info mt-0.5 flex-shrink-0" />
                       <div className="text-info">
                         <strong>Permissions requested:</strong>
@@ -410,45 +412,48 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
                           ))}
                         </ul>
                       </div>
-                    </div>
+                    </Flex>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="p-4 bg-warning-subtle border border-warning-border rounded-lg">
-                    <div className="flex items-start gap-2">
+                  <div className="p-4 bg-warning/10 border border-warning/30 rounded-lg">
+                    <Flex align="start" gap="2">
                       <AlertTriangle size={16} className="text-warning mt-0.5 flex-shrink-0" />
                       <div className="text-sm text-warning">
                         <strong>App-Specific Password Required</strong>
                         <p className="mt-2">
-                          {provider === 'icloud' && 
+                          {provider === 'icloud' &&
                             'Generate an app-specific password at appleid.apple.com → Sign-In and Security → App-Specific Passwords'}
-                          {provider === 'apple' && 
+                          {provider === 'apple' &&
                             'Create an app-specific password in your Apple ID settings'}
                         </p>
                       </div>
-                    </div>
+                    </Flex>
                   </div>
 
                   <div>
-                    <label htmlFor="app-password" className="block text-sm font-medium mb-2">App-Specific Password</label>
-                    <input
+                    <label htmlFor="app-password" className="text-xs font-medium text-mission-control-text-dim mb-1 block">App-Specific Password</label>
+                    <TextField.Root
                       id="app-password"
                       type="password"
                       aria-label="App-specific password input"
                       value={appPassword}
                       onChange={(e) => setAppPassword(e.target.value)}
                       placeholder="xxxx-xxxx-xxxx-xxxx"
-                      className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-3 focus:outline-none focus:border-mission-control-accent font-mono"
+                      size="3"
+                      className="w-full"
+                      style={{ fontFamily: 'monospace' }}
                     />
                   </div>
 
                   <button
+                    type="button"
                     onClick={() => window.open(
                       provider === 'icloud' ? 'https://appleid.apple.com/account/manage' : '#',
                       '_blank'
                     )}
-                    className="text-sm text-mission-control-accent hover:underline"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     How to generate an app-specific password →
                   </button>
@@ -473,7 +478,7 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
           {/* Step 6: Success */}
           {step === 'success' && (
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="w-16 h-16 rounded-full bg-success-subtle flex items-center justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mb-4">
                 <Check size={32} className="text-success" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Account Connected!</h3>
@@ -485,36 +490,39 @@ export default function AddAccountWizard({ onClose, onSuccess }: Props) {
 
           {/* Error Display */}
           {error && step !== 'connecting' && step !== 'success' && (
-            <div className="mt-6 p-4 bg-error-subtle border border-error-border rounded-lg">
-              <div className="flex items-start gap-2">
+            <div className="mt-6 p-4 bg-error/10 border border-error/30 rounded-lg">
+              <Flex align="start" gap="2">
                 <AlertTriangle size={16} className="text-error mt-0.5" />
                 <div className="text-sm text-error">{error}</div>
-              </div>
+              </Flex>
             </div>
           )}
         </div>
 
         {/* Footer Actions */}
         {step !== 'connecting' && step !== 'success' && (
-          <div className="flex items-center justify-between p-6 border-t border-mission-control-border">
-            <button
+          <div className="flex items-center justify-between px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+            <Button
+              type="button"
+              variant="ghost"
+              size="2"
               onClick={handleBack}
               disabled={step === 'provider'}
-              className="px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               <ArrowLeft size={16} />
               Back
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleNext}
-              className="px-6 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors flex items-center gap-2"
+              variant="solid"
+              size="2"
             >
               {step === 'auth' ? 'Connect' : 'Next'}
               {step !== 'auth' && <ArrowRight size={16} />}
-            </button>
+            </Button>
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }

@@ -7,8 +7,9 @@ import {
   Settings, Users, Plus, Trash2, Target, Edit3, X,
   FileText, Image, File as FileIcon, Upload, RefreshCw,
   ChevronDown, ShieldAlert, ShieldCheck, Check, Flag,
-  Activity, Calendar
+  Activity, Calendar, BookOpen
 } from 'lucide-react';
+import { Button, TextField, Select, TextArea, Flex } from '@radix-ui/themes';
 import { getProjectIcon } from './projectIcons';
 import { projectsApi, agentApi } from '../../lib/api';
 import type { Project, ProjectMember, ProjectFile, ProjectMilestone } from '../../types/projects';
@@ -21,8 +22,9 @@ import ChatRoomView from '../ChatRoomView';
 import ProjectDispatchModal from './ProjectDispatchModal';
 import Kanban from '../Kanban';
 import ProjectGanttView from '../ProjectGanttView';
+import ContextPanel from '../ContextPanel';
 
-type TabId = 'overview' | 'chat' | 'tasks' | 'automations' | 'approvals' | 'files' | 'timeline';
+type TabId = 'overview' | 'chat' | 'tasks' | 'automations' | 'approvals' | 'files' | 'timeline' | 'context';
 
 const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'overview',    label: 'Overview',    icon: LayoutGrid },
@@ -32,12 +34,13 @@ const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'automations', label: 'Automations', icon: Zap },
   { id: 'approvals',   label: 'Approvals',   icon: ShieldAlert },
   { id: 'files',       label: 'Files',       icon: FolderOpen },
+  { id: 'context',     label: 'Context',     icon: BookOpen },
 ];
 
 const STATUS_CONFIG = {
-  active:    { label: 'Active',    color: 'text-success',  bg: 'bg-success-subtle' },
-  paused:    { label: 'Paused',    color: 'text-warning',  bg: 'bg-warning-subtle' },
-  completed: { label: 'Completed', color: 'text-info',     bg: 'bg-info-subtle' },
+  active:    { label: 'Active',    color: 'text-success',  bg: 'bg-success/10' },
+  paused:    { label: 'Paused',    color: 'text-warning',  bg: 'bg-warning/10' },
+  completed: { label: 'Completed', color: 'text-info',     bg: 'bg-info/10' },
   archived:  { label: 'Archived',  color: 'text-mission-control-text-dim', bg: 'bg-mission-control-surface' },
 } as const;
 
@@ -76,7 +79,7 @@ function ProgressRing({
         cy={size / 2}
         r={r}
         fill="none"
-        stroke="var(--color-border, #2d2d3a)"
+        stroke="var(--mission-control-border)"
         strokeWidth={stroke}
       />
       <circle
@@ -159,9 +162,9 @@ function OverviewTab({
   }, [project.id]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-5 space-y-5">
+    <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-5">
       {/* Goal + Ring */}
-      <div className="flex items-start gap-5 p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
+      <Flex align="start" gap="5" p="4" className="bg-mission-control-surface border border-mission-control-border rounded-xl">
         <div className="flex flex-col items-center gap-1">
           <div className="relative">
             <ProgressRing percent={progress} size={72} stroke={6} color={project.color} />
@@ -175,26 +178,28 @@ function OverviewTab({
           <span className="text-xs text-mission-control-text-dim tabular-nums">{doneTasks}/{totalTasks}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <Flex align="center" gap="2" className="mb-1">
             <Target size={13} className="text-mission-control-text-dim flex-shrink-0" />
-            <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Goal</span>
-          </div>
+            <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Goal</span>
+          </Flex>
           <p className="text-sm text-mission-control-text leading-relaxed">
             {project.goal || <span className="text-mission-control-text-dim italic">No goal set — add one in settings.</span>}
           </p>
-          <button
+          <Button
             onClick={onDispatch}
-            className="mt-3 flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors"
+            size="1"
+            variant="soft"
+            className="mt-3"
           >
             <Bot size={12} /> Dispatch Agent
-          </button>
+          </Button>
         </div>
-      </div>
+      </Flex>
 
       {/* Team */}
       {members.length > 0 && (
         <div>
-          <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Team</h3>
+          <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">Team</h3>
           <div className="grid grid-cols-2 gap-2">
             {members.map(m => (
               <div key={m.agentId} className="flex items-center gap-2.5 p-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg">
@@ -215,9 +220,9 @@ function OverviewTab({
 
       {/* Recent Activity */}
       <div>
-        <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Recent Activity</h3>
+        <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">Recent Activity</h3>
         {activityLoading ? (
-          <div className="flex items-center justify-center py-6"><Spinner size={14} /></div>
+          <Flex align="center" justify="center" className="py-6"><Spinner size={14} /></Flex>
         ) : activity.length === 0 ? (
           <p className="text-xs text-mission-control-text-dim py-4 text-center">No activity yet — dispatch an agent to get started.</p>
         ) : (
@@ -307,84 +312,91 @@ function MilestonesSection({ project }: { project: Project }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">Milestones</h3>
+      <Flex align="center" justify="between" className="mb-2">
+        <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Milestones</h3>
         <button
           onClick={() => setAdding(v => !v)}
-          className="flex items-center gap-1 text-xs text-mission-control-accent hover:text-mission-control-accent/80 transition-colors"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <Plus size={11} /> Add
         </button>
-      </div>
+      </Flex>
 
       {adding && (
         <div className="mb-3 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg space-y-2">
-          <input
-            type="text"
+          <TextField.Root
             placeholder="Milestone title..."
             value={newTitle}
             onChange={e => setNewTitle(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
             autoFocus
-            className="w-full text-xs px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50"
+            size="1"
           />
-          <input
+          <TextField.Root
             type="date"
             value={newDue}
             onChange={e => setNewDue(e.target.value)}
-            className="w-full text-xs px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent/50"
+            size="1"
           />
-          <div className="flex gap-2">
-            <button
+          <Flex gap="2">
+            <Button
               onClick={handleAdd}
               disabled={saving || !newTitle.trim()}
-              className="flex-1 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors"
+              size="1"
+              variant="soft"
+              className="flex-1"
             >
               {saving ? 'Saving...' : 'Add'}
-            </button>
+            </Button>
             <button
               onClick={() => { setAdding(false); setNewTitle(''); setNewDue(''); }}
-              className="px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               Cancel
             </button>
-          </div>
+          </Flex>
         </div>
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center py-4"><Spinner size={12} /></div>
+        <Flex align="center" justify="center" className="py-4"><Spinner size={12} /></Flex>
       ) : milestones.length === 0 ? (
         <p className="text-xs text-mission-control-text-dim py-2">No milestones yet.</p>
       ) : (
         <div className="relative pl-3 space-y-0">
           {/* Vertical timeline line */}
-          <div className="absolute left-0 top-2 bottom-2 w-px bg-mission-control-border" />
+          <div className="absolute left-0 top-2 bottom-2 w-px bg-mission-control-border/50" />
           {milestones.map((ms, i) => {
             const overdue = ms.dueDate && !ms.completed && ms.dueDate < Date.now();
             return (
-              <div key={ms.id} className="relative flex items-start gap-2.5 py-2">
+              <div key={ms.id} className="relative flex items-start gap-3 pb-4">
                 {/* Node */}
                 <button
+                  type="button"
                   onClick={() => handleToggle(ms)}
-                  className="relative z-10 flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all"
+                  className="relative z-10 flex-shrink-0 w-3 h-3 rounded-full border-2 flex items-center justify-center transition-colors -ml-1.5 mt-1"
                   style={{
-                    borderColor: ms.completed ? project.color : 'var(--color-border, #2d2d3a)',
-                    backgroundColor: ms.completed ? project.color : 'var(--color-bg, #0e0e16)',
-                    marginLeft: -8,
+                    borderColor: ms.completed
+                      ? 'var(--color-success)'
+                      : overdue
+                        ? 'var(--color-warning)'
+                        : 'var(--mission-control-border)',
+                    backgroundColor: ms.completed
+                      ? 'var(--color-success)'
+                      : 'var(--mission-control-bg)',
                   }}
                   title={ms.completed ? 'Mark incomplete' : 'Mark complete'}
                 >
-                  {ms.completed && <Check size={8} className="text-white" />}
+                  {ms.completed && <Check size={6} className="text-white" />}
                 </button>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs leading-snug ${ms.completed ? 'line-through text-mission-control-text-dim' : 'text-mission-control-text'}`}>
+                  <p className={`text-sm font-medium leading-snug ${ms.completed ? 'line-through text-mission-control-text-dim' : 'text-mission-control-text'}`}>
                     {ms.title}
                   </p>
                   {ms.dueDate && (
-                    <p className={`text-xs mt-0.5 flex items-center gap-1 ${overdue ? 'text-error' : 'text-mission-control-text-dim'}`}>
-                      <Calendar size={9} />
-                      {new Date(ms.dueDate).toLocaleDateString()}
+                    <p className={`text-[10px] tabular-nums mt-0.5 flex items-center gap-1 ${overdue ? 'text-warning' : 'text-mission-control-text-dim'}`}>
+                      <Calendar size={8} />
+                      {new Date(ms.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       {overdue && ' — overdue'}
                     </p>
                   )}
@@ -396,10 +408,8 @@ function MilestonesSection({ project }: { project: Project }) {
                 </div>
                 <button
                   onClick={() => handleDelete(ms)}
-                  className="text-mission-control-text-dim hover:text-error transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors opacity-50"
                   title="Delete milestone"
-                  tabIndex={0}
-                  style={{ opacity: 0.5 }}
                 >
                   <X size={10} />
                 </button>
@@ -464,25 +474,26 @@ function ContextEditor({ project }: { project: Project }) {
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">CONTEXT.md</h3>
+      <Flex align="center" justify="between">
+        <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">CONTEXT.md</h3>
         <span className="text-xs text-mission-control-text-dim">
           {saving ? 'Saving...' : lastSaved ? `Saved ${formatTimeAgo(lastSaved)}` : ''}
         </span>
-      </div>
+      </Flex>
       <p className="text-xs text-mission-control-text-dim">
         This file is injected into every agent working on this project.
       </p>
       {loading ? (
-        <div className="flex items-center justify-center py-6"><Spinner size={14} /></div>
+        <Flex align="center" justify="center" className="py-6"><Spinner size={14} /></Flex>
       ) : (
-        <textarea
+        <TextArea
           value={content}
           onChange={e => handleChange(e.target.value)}
           onBlur={handleBlur}
           rows={10}
-          placeholder="# Project Context\n\nDescribe the project context, constraints, and background here..."
-          className="w-full text-xs px-3 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50 resize-y font-mono leading-relaxed"
+          placeholder="# Project Context&#10;&#10;Describe the project context, constraints, and background here..."
+          size="1"
+          className="font-mono leading-relaxed resize-y"
         />
       )}
     </div>
@@ -493,7 +504,7 @@ function ContextEditor({ project }: { project: Project }) {
 
 function OverviewSidebar({ project }: { project: Project }) {
   return (
-    <div className="w-72 flex-shrink-0 border-l border-mission-control-border overflow-y-auto p-5 space-y-6">
+    <div className="w-72 flex-shrink-0 min-h-0 border-l border-mission-control-border overflow-y-auto p-5 space-y-6">
       <MilestonesSection project={project} />
       <ContextEditor project={project} />
     </div>
@@ -535,9 +546,9 @@ function ChatTab({ project }: { project: Project }) {
 
   if (!room) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <Flex align="center" justify="center" className="h-full">
         <Spinner size={24} />
-      </div>
+      </Flex>
     );
   }
 
@@ -616,60 +627,62 @@ function AutomationsTab({ project }: { project: Project }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border">
+      <Flex align="center" justify="between" px="4" py="3" className="border-b border-mission-control-border">
         <span className="text-xs text-mission-control-text-dim">{items.length} automation{items.length !== 1 ? 's' : ''}</span>
-        <button
+        <Button
           onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-1 px-2.5 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors"
+          size="1"
+          variant="soft"
         >
           <Plus size={12} /> Add Automation
-        </button>
-      </div>
+        </Button>
+      </Flex>
       {showForm && (
         <div className="max-w-2xl mx-auto w-full px-4 py-3 bg-mission-control-surface/50 border-b border-mission-control-border space-y-2">
-          <select
-            value={newType}
-            onChange={e => setNewType(e.target.value)}
-            className="w-full text-xs px-2 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none"
-          >
-            <option value="task">Task reminder</option>
-            <option value="report">Report generation</option>
-            <option value="review">Agent review</option>
-            <option value="alert">Alert</option>
-          </select>
-          <input
+          <Select.Root value={newType} onValueChange={setNewType} size="1">
+            <Select.Trigger className="w-full" />
+            <Select.Content>
+              <Select.Item value="task">Task reminder</Select.Item>
+              <Select.Item value="report">Report generation</Select.Item>
+              <Select.Item value="review">Agent review</Select.Item>
+              <Select.Item value="alert">Alert</Select.Item>
+            </Select.Content>
+          </Select.Root>
+          <TextField.Root
             type="text"
             placeholder="Automation description..."
             value={newContent}
             onChange={e => setNewContent(e.target.value)}
-            className="w-full text-xs px-2 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none"
+            size="1"
           />
-          <input
+          <TextField.Root
             type="datetime-local"
             value={newSchedule}
             onChange={e => setNewSchedule(e.target.value)}
-            className="w-full text-xs px-2 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none"
+            size="1"
           />
-          <div className="flex gap-2">
-            <button
+          <Flex gap="2">
+            <Button
               onClick={handleAdd}
               disabled={saving || !newContent.trim()}
-              className="flex-1 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors"
+              size="1"
+              variant="soft"
+              className="flex-1"
             >
               {saving ? 'Saving...' : 'Save'}
-            </button>
+            </Button>
             <button
               onClick={() => setShowForm(false)}
-              className="px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               Cancel
             </button>
-          </div>
+          </Flex>
         </div>
       )}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex items-center justify-center h-full"><Spinner size={16} /></div>
+          <Flex align="center" justify="center" className="h-full"><Spinner size={16} /></Flex>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center gap-2">
             <Zap size={28} className="text-mission-control-text-dim" />
@@ -679,7 +692,7 @@ function AutomationsTab({ project }: { project: Project }) {
         ) : (
           <div className="divide-y divide-mission-control-border">
             {items.map(item => (
-              <div key={item.id} className="flex items-center gap-3 px-4 py-3">
+              <Flex key={item.id} align="center" gap="3" className="px-4 py-3">
                 <Zap size={14} className="text-mission-control-text-dim flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-mission-control-text truncate">{item.content}</p>
@@ -688,13 +701,13 @@ function AutomationsTab({ project }: { project: Project }) {
                   </p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  item.status === 'done' ? 'bg-success-subtle text-success' :
-                  item.status === 'failed' ? 'bg-error-subtle text-error' :
-                  'bg-info-subtle text-info'
+                  item.status === 'done' ? 'bg-success/10 text-success' :
+                  item.status === 'failed' ? 'bg-error/10 text-error' :
+                  'bg-info/10 text-info'
                 }`}>
                   {item.status}
                 </span>
-              </div>
+              </Flex>
             ))}
           </div>
         )}
@@ -756,9 +769,9 @@ function ApprovalsTab({ project }: { project: Project }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-mission-control-text-dim gap-2 text-sm">
+      <Flex align="center" justify="center" gap="2" className="h-full text-mission-control-text-dim text-sm">
         <Spinner size={16} /> Loading approvals...
-      </div>
+      </Flex>
     );
   }
 
@@ -780,16 +793,16 @@ function ApprovalsTab({ project }: { project: Project }) {
         const taskTitle = tasks.find((t: { id: string; title?: string } & { id: string }) => t.id === (a.metadata?.taskId as string | undefined))?.['title'] as string | undefined;
         return (
           <div key={a.id} className="px-5 py-4 space-y-3 border-l-2 border-warning/40">
-            <div className="flex items-start gap-2">
+            <Flex align="start" gap="2">
               <Zap size={13} className="text-warning mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium">{a.title}</div>
-                <div className="flex items-center gap-2 mt-0.5 text-xs text-mission-control-text-dim">
+                <Flex align="center" gap="2" className="mt-0.5 text-xs text-mission-control-text-dim">
                   {a.requester && <span>{a.requester}</span>}
                   {taskTitle && <><span>·</span><span className="truncate">{taskTitle}</span></>}
-                </div>
+                </Flex>
               </div>
-            </div>
+            </Flex>
             <div className="text-xs text-mission-control-text bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2.5 whitespace-pre-wrap leading-relaxed">
               {a.content}
             </div>
@@ -798,31 +811,38 @@ function ApprovalsTab({ project }: { project: Project }) {
                 {a.context}
               </div>
             )}
-            <textarea
+            <TextArea
               value={feedback[a.id] || ''}
               onChange={e => setFeedback(prev => ({ ...prev, [a.id]: e.target.value }))}
               placeholder="Optional feedback or notes..."
               rows={2}
-              className="w-full text-sm bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none"
+              size="2"
+              className="resize-none"
             />
-            <div className="flex gap-2">
-              <button
+            <Flex gap="2">
+              <Button
                 onClick={() => respond(a.id, 'approved')}
                 disabled={isBusy}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-success text-white text-xs font-semibold hover:brightness-110 disabled:opacity-50 transition-all"
+                size="2"
+                variant="soft"
+                color="green"
+                className="flex-1"
               >
                 {isBusy ? <Spinner size={12} /> : <Check size={12} />}
                 {hasNote ? 'Approve with Feedback' : 'Approve & Continue'}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => respond(a.id, 'rejected')}
                 disabled={isBusy}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-error-border bg-error-subtle text-error text-xs font-semibold hover:bg-error/20 disabled:opacity-50 transition-all"
+                size="2"
+                variant="soft"
+                color="red"
+                className="flex-1"
               >
                 {isBusy ? <Spinner size={12} /> : <X size={12} />}
                 {hasNote ? 'Reject with Reason' : 'Reject'}
-              </button>
-            </div>
+              </Button>
+            </Flex>
           </div>
         );
       })}
@@ -836,9 +856,8 @@ const StableIframe = memo(function StableIframe({ src, title }: { src: string; t
   return (
     <iframe
       src={src}
-      className="w-full h-full border border-mission-control-border rounded-lg bg-white"
+      className="w-full h-full border border-mission-control-border rounded-lg bg-mission-control-surface min-h-[500px]"
       title={title}
-      style={{ minHeight: 500 }}
     />
   );
 }, (prev, next) => prev.src === next.src);
@@ -915,7 +934,7 @@ function FileArtifactDashboard({ files, loading, projectId, onRefresh }: {
   const isMd = (name: string) => /\.(md|txt)$/i.test(name);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-full"><Spinner size={16} /></div>;
+    return <Flex align="center" justify="center" className="h-full"><Spinner size={16} /></Flex>;
   }
 
   if (files.length === 0) {
@@ -931,13 +950,14 @@ function FileArtifactDashboard({ files, loading, projectId, onRefresh }: {
   return (
     <div className="flex flex-1 overflow-hidden">
       {/* Left: File list */}
-      <div className={`${selectedFile ? 'w-72' : 'flex-1'} border-r border-mission-control-border overflow-y-auto shrink-0 transition-all`}>
+      <div className={`${selectedFile ? 'w-72' : 'flex-1'} border-r border-mission-control-border overflow-y-auto shrink-0 transition-colors`}>
         <div className="divide-y divide-mission-control-border/50">
           {files.map(file => {
             const Icon = fileIcon(file.type);
             const isActive = selectedFile?.name === file.name;
             return (
               <button
+                type="button"
                 key={file.name}
                 onClick={() => loadPreview(file)}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
@@ -972,23 +992,23 @@ function FileArtifactDashboard({ files, loading, projectId, onRefresh }: {
       {selectedFile && (
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border shrink-0">
+          <Flex align="center" justify="between" px="4" py="3" className="border-b border-mission-control-border shrink-0">
             <div className="min-w-0">
               <p className="text-sm font-medium text-mission-control-text truncate">{selectedFile.name}</p>
               <p className="text-xs text-mission-control-text-dim">{formatBytes(selectedFile.size)} · {selectedFile.type}</p>
             </div>
             <button
               onClick={() => setSelectedFile(null)}
-              className="p-1.5 hover:bg-mission-control-surface rounded-lg text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <X size={14} />
             </button>
-          </div>
+          </Flex>
 
           {/* Preview */}
           <div className="flex-1 overflow-auto p-4">
             {previewLoading ? (
-              <div className="flex items-center justify-center h-full"><Spinner size={16} /></div>
+              <Flex align="center" justify="center" className="h-full"><Spinner size={16} /></Flex>
             ) : previewContent?.startsWith('__IMAGE__') ? (
               <img src={previewContent.slice(9)} alt={selectedFile.name} className="max-w-full max-h-full mx-auto rounded-lg" />
             ) : isHtml(selectedFile.name) ? (
@@ -1096,16 +1116,26 @@ function FilesTab({ project }: { project: Project }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-1 px-4 py-3 border-b border-mission-control-border">
+      <Flex gap="1" px="4" className="border-b border-mission-control-border">
         <button
+          type="button"
           onClick={() => setActiveSection('files')}
-          className={`px-3 py-1 text-xs rounded-full transition-colors ${activeSection === 'files' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
+          className={`flex items-center gap-2 px-3 py-2.5 border-b-2 -mb-px text-xs font-medium transition-colors ${
+            activeSection === 'files'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+          }`}
         >
           Files ({files.length})
         </button>
         <button
+          type="button"
           onClick={() => setActiveSection('memory')}
-          className={`px-3 py-1 text-xs rounded-full transition-colors ${activeSection === 'memory' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
+          className={`flex items-center gap-2 px-3 py-2.5 border-b-2 -mb-px text-xs font-medium transition-colors ${
+            activeSection === 'memory'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+          }`}
         >
           Memory Search
         </button>
@@ -1114,7 +1144,7 @@ function FilesTab({ project }: { project: Project }) {
             <button
               onClick={load}
               disabled={loading}
-              className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               title="Refresh files"
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
@@ -1125,7 +1155,7 @@ function FilesTab({ project }: { project: Project }) {
             </label>
           </div>
         )}
-      </div>
+      </Flex>
 
       {activeSection === 'files' && (
         <FileArtifactDashboard files={files} loading={loading} projectId={project.id} onRefresh={load} />
@@ -1133,23 +1163,25 @@ function FilesTab({ project }: { project: Project }) {
 
       {activeSection === 'memory' && (
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex gap-2 px-4 py-3 border-b border-mission-control-border">
-            <input
+          <Flex gap="2" px="4" py="3" className="border-b border-mission-control-border">
+            <TextField.Root
               type="text"
               placeholder="Search project memory..."
               value={memoryQuery}
               onChange={e => setMemoryQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleMemorySearch()}
-              className="flex-1 text-sm px-3 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50"
+              size="2"
+              className="flex-1"
             />
-            <button
+            <Button
               onClick={handleMemorySearch}
               disabled={memoryLoading || !memoryQuery.trim()}
-              className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors"
+              size="2"
+              variant="soft"
             >
               {memoryLoading ? 'Searching...' : 'Search'}
-            </button>
-          </div>
+            </Button>
+          </Flex>
           <div className="flex-1 overflow-y-auto">
             {memoryUnavailable ? (
               <div className="flex flex-col items-center justify-center py-12 text-center px-6">
@@ -1225,13 +1257,13 @@ function ProjectSettings({
       <div className="absolute right-0 top-full mt-1 w-48 bg-mission-control-bg border border-mission-control-border rounded-lg shadow-xl z-20 py-1 overflow-hidden">
         <button
           onClick={() => setEditing(true)}
-          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-mission-control-text hover:bg-mission-control-surface transition-colors"
+          className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <Edit3 size={14} /> Edit details
         </button>
         <button
           onClick={handleArchive}
-          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-error hover:bg-error-subtle transition-colors"
+          className="inline-flex items-center gap-1.5 w-full px-2.5 py-1.5 rounded-md text-sm text-error hover:text-error/80 hover:bg-mission-control-surface transition-colors"
         >
           <Trash2 size={14} /> Archive project
         </button>
@@ -1243,36 +1275,39 @@ function ProjectSettings({
     <div className="absolute right-0 top-full mt-1 w-72 bg-mission-control-bg border border-mission-control-border rounded-lg shadow-xl z-20 p-4 space-y-3">
       <div>
         <label className="text-xs text-mission-control-text-dim mb-1 block">Name</label>
-        <input
+        <TextField.Root
           value={name}
           onChange={e => setName(e.target.value)}
-          className="w-full px-2 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent/50"
+          size="2"
         />
       </div>
       <div>
         <label className="text-xs text-mission-control-text-dim mb-1 flex items-center gap-1"><Target size={10} /> Goal</label>
-        <textarea
+        <TextArea
           value={goal}
           onChange={e => setGoal(e.target.value)}
           rows={3}
-          className="w-full px-2 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent/50 resize-none"
+          size="2"
+          className="resize-none"
         />
       </div>
-      <div className="flex gap-2">
-        <button
+      <Flex gap="2">
+        <Button
           onClick={handleSave}
           disabled={saving}
-          className="flex-1 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors"
+          size="1"
+          variant="soft"
+          className="flex-1"
         >
           {saving ? 'Saving...' : 'Save'}
-        </button>
+        </Button>
         <button
           onClick={() => setEditing(false)}
-          className="px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text transition-colors"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           Cancel
         </button>
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -1402,15 +1437,15 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
   const availableAgents = agents.filter(a => !memberAgentIds.has(a.id) && a.status !== 'archived');
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg0">
+    <Flex direction="column" height="100%" className="bg-mission-control-surface">
       {/* Workspace Header */}
       <div className="bg-mission-control-surface border-b border-mission-control-border">
         {/* Breadcrumb + members + actions */}
-        <div className="flex items-center justify-between px-4 py-2.5">
-          <div className="flex items-center gap-2 min-w-0">
+        <Flex align="center" justify="between" px="4" py="2" className="">
+          <Flex align="center" gap="2" className="min-w-0">
             <button
               onClick={onBack}
-              className="flex items-center gap-1 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors flex-shrink-0"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0"
             >
               <ArrowLeft size={14} /> Projects
             </button>
@@ -1420,10 +1455,10 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
               {project.name}
             </span>
             <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${sc.bg} ${sc.color}`}>{sc.label}</span>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          </Flex>
+          <Flex align="center" gap="2" className="flex-shrink-0">
             {/* Member avatars */}
-            <div className="flex items-center -space-x-1.5">
+            <Flex align="center" className="-space-x-1.5">
               {members.slice(0, 5).map(m => (
                 <AgentAvatar
                   key={m.agentId}
@@ -1432,25 +1467,26 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
                   className="ring-1 ring-mission-control-surface"
                 />
               ))}
-            </div>
+            </Flex>
             <button
               onClick={() => setShowMemberPanel(v => !v)}
-              className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface px-2 py-1 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <Users size={12} /> {members.length}
               <ChevronDown size={10} />
             </button>
             <div className="w-px h-4 bg-mission-control-border" />
-            <button
+            <Button
               onClick={() => setShowDispatch(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-xs font-medium"
+              size="1"
+              variant="soft"
             >
               <Bot size={13} /> Dispatch Agent
-            </button>
+            </Button>
             <div className="relative">
               <button
                 onClick={() => setShowSettings(v => !v)}
-                className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <Settings size={15} />
               </button>
@@ -1465,8 +1501,8 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
                 </>
               )}
             </div>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Member panel dropdown */}
         {showMemberPanel && (
@@ -1478,7 +1514,7 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
                   <span className="text-xs text-mission-control-text">{(m as any).agentName || m.agentId}</span>
                   <button
                     onClick={() => handleRemoveMember(m.agentId)}
-                    className="text-mission-control-text-dim hover:text-error transition-colors"
+                    className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                   >
                     <X size={10} />
                   </button>
@@ -1486,17 +1522,19 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
               ))}
               {availableAgents.length > 0 && (
                 <div className="relative">
-                  <select
-                    defaultValue=""
-                    onChange={e => { if (e.target.value) handleAddMember(e.target.value); e.target.value = ''; }}
-                    className="text-xs px-2 py-1 bg-mission-control-accent/20 border border-mission-control-accent/40 text-mission-control-accent rounded-full focus:outline-none cursor-pointer"
+                  <Select.Root
+                    key={members.length}
+                    onValueChange={val => { if (val) handleAddMember(val); }}
                     disabled={!!addingAgent}
+                    size="1"
                   >
-                    <option value="" disabled>+ Add agent</option>
-                    {availableAgents.map(a => (
-                      <option key={a.id} value={a.id}>{a.emoji ? `${a.emoji} ` : ''}{a.name}</option>
-                    ))}
-                  </select>
+                    <Select.Trigger placeholder="+ Add agent" radius="full" />
+                    <Select.Content>
+                      {availableAgents.map(a => (
+                        <Select.Item key={a.id} value={a.id}>{a.emoji ? `${a.emoji} ` : ''}{a.name}</Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Root>
                 </div>
               )}
             </div>
@@ -1504,20 +1542,21 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
         )}
 
         {/* Tab navigation */}
-        <div className="flex border-t border-mission-control-border overflow-x-auto">
+        <div className="flex border-t border-mission-control-border px-4 flex-shrink-0 overflow-x-auto">
           {TABS.map(tab => {
             const Icon = tab.icon;
             return (
               <button
+                type="button"
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
                   activeTab === tab.id
                     ? 'border-mission-control-accent text-mission-control-accent'
                     : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
-                <Icon size={13} /> {tab.label}
+                <Icon size={13} />{tab.label}
               </button>
             );
           })}
@@ -1527,10 +1566,10 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
         {activeTab === 'overview' && (
-          <div className="flex h-full">
+          <Flex className="h-full">
             <OverviewTab project={project} members={members} onDispatch={() => setShowDispatch(true)} />
             <OverviewSidebar project={project} />
-          </div>
+          </Flex>
         )}
         {activeTab === 'chat'        && <ChatTab project={project} />}
         {activeTab === 'tasks'       && <KanbanWithAdvance project={project} onDispatch={() => setShowDispatch(true)} />}
@@ -1538,6 +1577,7 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
         {activeTab === 'automations' && <AutomationsTab project={project} />}
         {activeTab === 'approvals'   && <ApprovalsTab project={project} />}
         {activeTab === 'files'       && <FilesTab project={project} />}
+        {activeTab === 'context'     && <ContextPanel entityType="project" entityId={project.id} />}
       </div>
 
       {/* Dispatch modal */}
@@ -1549,6 +1589,6 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
           onDispatched={() => { setShowDispatch(false); showToast('Task dispatched', 'success'); }}
         />
       )}
-    </div>
+    </Flex>
   );
 }

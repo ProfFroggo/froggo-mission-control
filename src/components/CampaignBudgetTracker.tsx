@@ -2,6 +2,7 @@
 
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { DollarSign, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Heading, Box, Flex } from '@radix-ui/themes';
 
 interface BudgetCategory {
   name: string;
@@ -36,7 +37,7 @@ function ProgressRing({
     <svg width={radius * 2} height={radius * 2} style={{ transform: 'rotate(-90deg)' }}>
       {/* Track */}
       <circle
-        stroke="var(--mission-control-border, #2a2a2a)"
+        stroke="var(--mission-control-border)"
         fill="transparent"
         strokeWidth={strokeWidth}
         r={normalizedRadius}
@@ -63,17 +64,17 @@ function ProgressRing({
 function varianceColor(planned: number, actual: number): string {
   if (actual === 0) return 'var(--mission-control-text-dim)';
   const ratio = actual / planned;
-  if (ratio > 1.05) return 'var(--color-error, #ef4444)';
-  if (ratio > 0.9) return 'var(--color-warning, #eab308)';
-  return 'var(--color-success, #22c55e)';
+  if (ratio > 1.05) return 'var(--color-error)';
+  if (ratio > 0.9) return 'var(--color-warning)';
+  return 'var(--color-success)';
 }
 
 function VarianceIcon({ planned, actual }: { planned: number; actual: number }) {
   if (actual === 0) return <Minus size={12} className="text-mission-control-text-dim" />;
   const ratio = actual / planned;
-  if (ratio > 1.05) return <TrendingUp size={12} style={{ color: 'var(--color-error, #ef4444)' }} />;
-  if (ratio > 0.9) return <Minus size={12} style={{ color: 'var(--color-warning, #eab308)' }} />;
-  return <TrendingDown size={12} style={{ color: 'var(--color-success, #22c55e)' }} />;
+  if (ratio > 1.05) return <TrendingUp size={12} className="text-error" />;
+  if (ratio > 0.9) return <Minus size={12} className="text-warning" />;
+  return <TrendingDown size={12} className="text-success" />;
 }
 
 export default function CampaignBudgetTracker({
@@ -89,110 +90,109 @@ export default function CampaignBudgetTracker({
   const isOverBudget = spent > budget;
 
   const ringColor = isOverBudget
-    ? 'var(--color-error, #ef4444)'
+    ? 'var(--color-error)'
     : consumedPct > 70
-      ? 'var(--color-warning, #eab308)'
-      : 'var(--color-success, #22c55e)';
+      ? 'var(--color-warning)'
+      : 'var(--color-success)';
 
   const fmt = (n: number) =>
     n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
   return (
-    <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-4">
-      <div className="flex items-center gap-1.5">
+    <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg space-y-4">
+      <Flex align="center" gap="1">
         <DollarSign size={14} className="text-mission-control-text-dim" />
-        <h3 className="text-sm font-medium text-mission-control-text">Budget Tracker</h3>
-      </div>
+        <Heading size="2" weight="medium">Budget Tracker</Heading>
+      </Flex>
 
       {/* Ring + stats */}
-      <div className="flex items-center gap-6">
+      <Flex align="center" gap="6">
         {/* Circular progress ring */}
-        <div className="relative flex-shrink-0" style={{ width: 88, height: 88 }}>
+        <Box className="relative flex-shrink-0 w-[88px] h-[88px]">
           <ProgressRing radius={44} strokeWidth={8} percentage={consumedPct} color={ringColor} />
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-base font-bold leading-none" style={{ color: ringColor }}>
+          <Flex direction="column" align="center" justify="center" className="absolute inset-0">
+            <span className="text-base font-bold leading-none tabular-nums" style={{ color: ringColor }}>
               {consumedPct}%
             </span>
             <span className="text-xs text-mission-control-text-dim mt-0.5">used</span>
-          </div>
-        </div>
+          </Flex>
+        </Box>
 
         {/* Summary stats */}
-        <div className="grid grid-cols-1 gap-2 flex-1 min-w-0">
-          <div className="flex items-center justify-between">
+        <Box className="grid grid-cols-1 gap-2 flex-1 min-w-0">
+          <Flex align="center" justify="between">
             <span className="text-xs text-mission-control-text-dim">Total budget</span>
-            <span className="text-sm font-semibold text-mission-control-text">
+            <span className="text-sm font-semibold tabular-nums text-mission-control-text">
               {currency} {fmt(budget)}
             </span>
-          </div>
-          <div className="flex items-center justify-between">
+          </Flex>
+          <Flex align="center" justify="between">
             <span className="text-xs text-mission-control-text-dim">Spent</span>
             <span
-              className="text-sm font-semibold"
-              style={{ color: isOverBudget ? 'var(--color-error, #ef4444)' : 'var(--mission-control-text-primary)' }}
+              className={`text-sm font-semibold tabular-nums ${isOverBudget ? 'text-error' : 'text-mission-control-text'}`}
             >
               {currency} {fmt(spent)}
               {isOverBudget && (
                 <span className="text-xs font-normal ml-1 text-error">(over budget)</span>
               )}
             </span>
-          </div>
-          <div className="flex items-center justify-between">
+          </Flex>
+          <Flex align="center" justify="between">
             <span className="text-xs text-mission-control-text-dim">Remaining</span>
-            <span className="text-sm font-semibold text-success">
+            <span className="text-sm font-semibold tabular-nums text-success">
               {currency} {fmt(remaining)}
             </span>
-          </div>
-        </div>
-      </div>
+          </Flex>
+        </Box>
+      </Flex>
 
       {/* Progress bar */}
-      <div>
-        <div className="h-2 bg-mission-control-border rounded-full overflow-hidden">
-          <div
-            className="h-full rounded-full transition-all duration-500"
+      <Box>
+        <Box className="h-2 bg-mission-control-border rounded-full overflow-hidden">
+          <Box
+            className="h-full rounded-full transition-colors duration-500"
             style={{ width: `${Math.min(100, consumedPct)}%`, backgroundColor: ringColor }}
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Category breakdown */}
       {categories.length > 0 && (
-        <div className="space-y-2 pt-2 border-t border-mission-control-border">
-          <h4 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
+        <Box pt="2" className="space-y-2 border-t border-mission-control-border">
+          <Heading size="1" weight="medium" className="text-mission-control-text-dim uppercase tracking-wider">
             By Category
-          </h4>
-          <div className="space-y-2">
+          </Heading>
+          <Box className="space-y-2">
             {categories.map(cat => {
               const catPct = cat.planned > 0 ? Math.min(100, Math.round((cat.actual / cat.planned) * 100)) : 0;
               const color = varianceColor(cat.planned, cat.actual);
               return (
-                <div key={cat.name} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1.5">
+                <Box key={cat.name} className="space-y-1">
+                  <Flex align="center" justify="between" className="text-xs">
+                    <Flex align="center" gap="1">
                       <VarianceIcon planned={cat.planned} actual={cat.actual} />
                       <span className="text-mission-control-text font-medium">{cat.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-mission-control-text-dim">
+                    </Flex>
+                    <Flex align="center" gap="2" className="text-mission-control-text-dim">
                       <span>
                         <span style={{ color }}>{currency} {fmt(cat.actual)}</span>
                         {' / '}
                         <span>{currency} {fmt(cat.planned)}</span>
                       </span>
-                    </div>
-                  </div>
-                  <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
+                    </Flex>
+                  </Flex>
+                  <Box className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
+                    <Box
+                      className="h-full rounded-full transition-colors"
                       style={{ width: `${catPct}%`, backgroundColor: color }}
                     />
-                  </div>
-                </div>
+                  </Box>
+                </Box>
               );
             })}
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

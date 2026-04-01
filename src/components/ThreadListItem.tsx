@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { MessageCircle, Star, ChevronRight, User, Mail, Reply } from 'lucide-react';
+import { useState, memo, useCallback } from 'react';
+import { MessageCircle, Star, Mail, Reply } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import ThreadView from './ThreadView';
 
 interface ThreadMetadata {
@@ -42,7 +43,7 @@ function formatRelativeTime(timestamp: string): string {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-export default function ThreadListItem({
+const ThreadListItem = memo(function ThreadListItem({
   thread,
   onClick,
   onToggleStar,
@@ -51,23 +52,23 @@ export default function ThreadListItem({
   const [showModal, setShowModal] = useState(false);
   const hasUnread = thread.unread_count > 0;
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     if (onClick) {
       onClick(thread.thread_id);
     } else {
       setShowModal(true);
     }
-  };
+  }, [onClick, thread.thread_id]);
 
-  const handleStarClick = (e: React.MouseEvent) => {
+  const handleStarClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     onToggleStar?.(thread.thread_id);
-  };
+  }, [onToggleStar, thread.thread_id]);
 
-  const handleMarkReadClick = (e: React.MouseEvent) => {
+  const handleMarkReadClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     onMarkRead?.(thread.thread_id, hasUnread);
-  };
+  }, [onMarkRead, thread.thread_id, hasUnread]);
 
   // Get participants display
   const participantsDisplay = thread.participants
@@ -85,99 +86,86 @@ export default function ThreadListItem({
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); }}}
         role="button"
         tabIndex={0}
-        className={`bg-mission-control-bg border rounded-lg p-3 mb-2 cursor-pointer transition-all hover:border-mission-control-accent/50 ${
-          hasUnread ? 'border-mission-control-accent/30 bg-mission-control-accent/5' : 'border-mission-control-border'
+        className={`group flex items-start gap-3 px-4 py-3 border-b border-mission-control-border/40 cursor-pointer hover:bg-mission-control-border/10 transition-colors ${
+          hasUnread ? 'bg-mission-control-surface/30' : ''
         }`}
       >
-        {/* Header row */}
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            {/* Unread indicator */}
-            {hasUnread && <div className="w-2 h-2 bg-mission-control-accent rounded-full flex-shrink-0 mt-1" />}
+        {/* Unread dot — always takes space to keep alignment */}
+        <div className="mt-1.5 flex-shrink-0 w-1.5">
+          {hasUnread && <div className="w-1.5 h-1.5 rounded-full bg-mission-control-accent" />}
+        </div>
 
-            {/* Thread icon + participant count */}
-            <div className="flex items-center gap-1 text-mission-control-text-dim flex-shrink-0">
-              <MessageCircle size={14} />
-              <span className="text-xs">{thread.message_count}</span>
-              {thread.unreplied_count > 0 && (
-                <div className="relative ml-1" title={`${thread.unreplied_count} awaiting reply`}>
-                  <Reply size={14} className="text-warning" />
-                </div>
-              )}
-            </div>
-
-            {/* Sender/participants */}
-            <div className="flex items-center gap-1 flex-1 min-w-0">
-              <User size={14} className="text-mission-control-text-dim flex-shrink-0" />
-              <span className="text-sm font-semibold text-mission-control-accent truncate">
-                {thread.sender_name || participantsDisplay || 'Unknown'}
+        {/* Content */}
+        <div className="flex-1 min-w-0 overflow-hidden">
+          {/* Top row: sender + timestamp */}
+          <Flex align="center" gap="2" className="mb-0.5">
+            <span className={`text-sm flex-1 min-w-0 truncate ${hasUnread ? 'font-bold text-mission-control-text' : 'font-semibold text-mission-control-text'}`}>
+              {thread.sender_name || participantsDisplay || 'Unknown'}
+            </span>
+            {thread.unreplied_count > 0 && (
+              <span className="flex-shrink-0 text-warning" title={`${thread.unreplied_count} awaiting reply`}>
+                <Reply size={10} />
               </span>
-            </div>
-          </div>
-
-          {/* Right side actions */}
-          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-            {/* Star button */}
-            <button
-              onClick={handleStarClick}
-              className={`p-1 rounded hover:bg-mission-control-border transition-colors ${
-                thread.has_starred ? 'text-warning' : 'text-mission-control-text-dim'
-              }`}
-              title={thread.has_starred ? 'Unstar' : 'Star'}
-            >
-              <Star size={14} fill={thread.has_starred ? 'currentColor' : 'none'} />
-            </button>
-
-            {/* Mark read/unread */}
-            <button
-              onClick={handleMarkReadClick}
-              className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim transition-colors"
-              title={hasUnread ? 'Mark as read' : 'Mark as unread'}
-            >
-              <Mail size={14} />
-            </button>
-
-            {/* Timestamp */}
-            <span className="text-xs text-mission-control-text-dim whitespace-nowrap">
+            )}
+            <span className="text-[10px] tabular-nums text-mission-control-text-dim flex-shrink-0">
               {formatRelativeTime(thread.last_activity)}
             </span>
+          </Flex>
 
-            {/* Expand arrow */}
-            <ChevronRight size={14} className="text-mission-control-text-dim" />
-          </div>
-        </div>
-
-        {/* Subject/preview line */}
-        <div className="flex flex-col gap-1">
+          {/* Subject line */}
           {thread.subject && (
-            <div className="text-sm font-medium truncate">{thread.subject}</div>
+            <div className={`text-sm truncate ${hasUnread ? 'font-semibold text-mission-control-text' : 'text-mission-control-text'}`}>
+              {thread.subject}
+            </div>
           )}
-          {thread.root_preview && (
-            <p className="text-sm text-mission-control-text-dim line-clamp-2">{thread.root_preview}</p>
-          )}
-        </div>
 
-        {/* Status badges */}
-        {(hasUnread || thread.unreplied_count > 0) && (
-          <div className="mt-2 flex gap-2">
-            {hasUnread && (
-              <span className="inline-flex items-center gap-1 text-xs bg-mission-control-accent/20 text-mission-control-accent px-2 py-0.5 rounded-full">
-                {thread.unread_count} unread
+          {/* Preview */}
+          {thread.root_preview && (
+            <p className="text-xs text-mission-control-text-dim line-clamp-1 mt-0.5">{thread.root_preview}</p>
+          )}
+
+          {/* Meta row: message count + badges */}
+          <div className="flex items-center gap-1.5 mt-1">
+            {thread.message_count > 1 && (
+              <span className="flex items-center gap-0.5 text-xs tabular-nums text-mission-control-text-dim bg-mission-control-border/60 rounded px-1 py-0.5">
+                <MessageCircle size={9} /> {thread.message_count}
               </span>
             )}
-            {thread.unreplied_count > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs bg-warning-subtle text-warning px-2 py-0.5 rounded-full">
-                {thread.unreplied_count} awaiting reply
+            {thread.unread_count > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold tabular-nums bg-mission-control-accent text-white rounded-full flex-shrink-0">
+                {thread.unread_count > 99 ? '99+' : thread.unread_count}
               </span>
             )}
           </div>
-        )}
+        </div>
+
+        {/* Action buttons — show on hover */}
+        <div className="flex flex-col gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            type="button"
+            onClick={handleStarClick}
+            title={thread.has_starred ? 'Unstar' : 'Star'}
+            aria-label={thread.has_starred ? 'Unstar' : 'Star'}
+            className={`inline-flex items-center justify-center w-6 h-6 rounded-md hover:bg-mission-control-border/40 transition-colors ${thread.has_starred ? 'text-warning opacity-100' : 'text-mission-control-text-dim'}`}
+          >
+            <Star size={12} fill={thread.has_starred ? 'currentColor' : 'none'} />
+          </button>
+          <button
+            type="button"
+            onClick={handleMarkReadClick}
+            title={hasUnread ? 'Mark as read' : 'Mark as unread'}
+            aria-label={hasUnread ? 'Mark as read' : 'Mark as unread'}
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+          >
+            <Mail size={12} />
+          </button>
+        </div>
       </div>
 
       {/* Thread view modal */}
       {showModal && (
         <div
-          className="fixed inset-0 modal-backdrop flex items-center justify-center z-50"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setShowModal(false)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowModal(false); } }}
           role="button"
@@ -210,4 +198,6 @@ export default function ThreadListItem({
       )}
     </>
   );
-}
+});
+
+export default ThreadListItem;

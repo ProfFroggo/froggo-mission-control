@@ -13,6 +13,7 @@
 
 import { useEffect, useRef, useCallback, ReactNode } from 'react';
 import { X } from 'lucide-react';
+import { Button } from '@radix-ui/themes';
 import { useFocusTrap } from '../hooks/useKeyboardNav';
 
 export interface BaseModalProps {
@@ -57,7 +58,10 @@ export interface BaseModalProps {
   
   /** ARIA label for the modal */
   ariaLabel?: string;
-  
+
+  /** ARIA labelledby - references a heading element ID for screen readers */
+  ariaLabelledby?: string;
+
   /** ARIA describedby for the modal */
   ariaDescribedby?: string;
   
@@ -107,6 +111,7 @@ export default function BaseModal({
   className = '',
   backdropClassName = '',
   ariaLabel,
+  ariaLabelledby,
   ariaDescribedby,
   animationDuration = 200,
   isClosing: externalIsClosing,
@@ -173,16 +178,16 @@ export default function BaseModal({
     return () => window.removeEventListener('keydown', handleEscape, { capture: true });
   }, [isOpen, preventEscClose]);
 
-  // Prevent body scroll when modal is open
+  // Prevent body scroll when modal is open — ref-counted so nested modals don't clobber each other
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    
+    if (!isOpen) return;
+    const count = ((window as any).__modalScrollLockCount ?? 0) + 1;
+    (window as any).__modalScrollLockCount = count;
+    document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = '';
+      const next = Math.max(0, ((window as any).__modalScrollLockCount ?? 1) - 1);
+      (window as any).__modalScrollLockCount = next;
+      if (next === 0) document.body.style.overflow = '';
     };
   }, [isOpen]);
 
@@ -233,11 +238,12 @@ export default function BaseModal({
           ref={setModalRef}
           role="dialog"
           aria-modal="true"
-          aria-label={ariaLabel}
+          aria-label={ariaLabelledby ? undefined : ariaLabel}
+          aria-labelledby={ariaLabelledby}
           aria-describedby={ariaDescribedby}
           tabIndex={-1}
           className={`
-            glass-modal rounded-lg w-full pointer-events-auto
+            glass-modal rounded-2xl w-full pointer-events-auto
             overflow-hidden flex flex-col shadow-2xl
             ${sizeClass}
             ${isClosing ? 'modal-content-exit' : 'modal-content-enter'}
@@ -250,15 +256,14 @@ export default function BaseModal({
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
         >
-          {/* Floating Close Button - Enhanced visibility and responsive positioning */}
+          {/* Floating Close Button */}
           {showCloseButton && closeButtonPosition === 'floating' && (
             <button
               onClick={handleClose}
-              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-2 bg-mission-control-surface/90 hover:bg-mission-control-border rounded-lg transition-all duration-200 shadow-lg backdrop-blur-sm hover:scale-105"
               aria-label={closeButtonLabel}
-              type="button"
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
             >
-              <X size={16} className="text-mission-control-text hover:text-mission-control-accent" />
+              <X size={16} />
             </button>
           )}
 
@@ -280,6 +285,8 @@ interface BaseModalHeaderProps {
   showCloseButton?: boolean;
   closeButtonLabel?: string;
   className?: string;
+  /** ID for the heading element, used with ariaLabelledby on BaseModal */
+  titleId?: string;
 }
 
 export function BaseModalHeader({
@@ -290,32 +297,34 @@ export function BaseModalHeader({
   showCloseButton = true,
   closeButtonLabel = 'Close modal',
   className = '',
+  titleId,
 }: BaseModalHeaderProps) {
   return (
-    <div className={`flex items-start gap-3 p-6 border-b border-mission-control-border ${className}`}>
-      {icon && (
-        <div className="flex-shrink-0 mt-0.5">
-          {icon}
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <h2 className="text-lg sm:text-xl font-semibold text-mission-control-text">
-          {title}
-        </h2>
-        {subtitle && (
-          <p className="text-sm text-mission-control-text-dim mt-1">
-            {subtitle}
-          </p>
+    <div className={`flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0 ${className}`}>
+      <div className="flex items-center gap-3 min-w-0">
+        {icon && (
+          <div className="flex-shrink-0">
+            {icon}
+          </div>
         )}
+        <div className="flex-1 min-w-0">
+          <h2 id={titleId} className="text-lg font-semibold text-mission-control-text">
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="text-xs text-mission-control-text-dim mt-0.5">
+              {subtitle}
+            </p>
+          )}
+        </div>
       </div>
       {showCloseButton && onClose && (
         <button
           onClick={onClose}
-          className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-mission-control-border rounded-lg transition-colors flex-shrink-0"
           aria-label={closeButtonLabel}
-          type="button"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
         >
-          <X size={16} className="text-mission-control-text-dim hover:text-mission-control-text" />
+          <X size={16} />
         </button>
       )}
     </div>
@@ -340,8 +349,8 @@ export function BaseModalBody({
   maxHeight,
 }: BaseModalBodyProps) {
   return (
-    <div 
-      className={`overflow-y-auto ${noPadding ? '' : 'p-6'} ${className}`}
+    <div
+      className={`flex-1 overflow-y-auto ${noPadding ? '' : 'px-6 py-4'} ${className}`}
       style={{ maxHeight }}
     >
       {children}
@@ -366,7 +375,7 @@ export function BaseModalFooter({ children, className = '', align = 'right' }: B
   }[align];
 
   return (
-    <div className={`flex flex-wrap items-center gap-3 p-6 border-t border-mission-control-border ${alignClass} ${className}`}>
+    <div className={`flex flex-wrap items-center gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0 ${alignClass} ${className}`}>
       {children}
     </div>
   );
@@ -398,32 +407,32 @@ export function BaseModalButton({
   className = '',
   size = 'md',
 }: BaseModalButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
-  
-  const sizeStyles = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-2.5 text-base',
-  }[size];
-  
-  const variantStyles = {
-    primary: 'bg-mission-control-accent text-white hover:bg-mission-control-accent-dim',
-    secondary: 'bg-mission-control-surface border border-mission-control-border hover:bg-mission-control-border',
-    danger: 'bg-error text-white hover:bg-error-hover',
-    ghost: 'hover:bg-mission-control-border',
-  }[variant];
+  const radixVariant: 'solid' | 'soft' | 'ghost' =
+    variant === 'primary' ? 'solid' :
+    variant === 'ghost' ? 'ghost' :
+    'soft';
+
+  const radixColor: 'red' | undefined =
+    variant === 'danger' ? 'red' : undefined;
+
+  const radixSize: '1' | '2' | '3' =
+    size === 'sm' ? '1' : size === 'lg' ? '3' : '2';
 
   return (
-    <button
+    <Button
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`${baseStyles} ${sizeStyles} ${variantStyles} ${className}`}
+      variant={radixVariant}
+      color={radixColor}
+      size={radixSize}
+     
+      className={className}
     >
       {loading ? (
         <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
       ) : icon}
       {children}
-    </button>
+    </Button>
   );
 }

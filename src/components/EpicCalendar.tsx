@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Video, Users, RefreshCw, X, Trash2, Edit2, AlertCircle, ExternalLink, Check, Mail, Copy, Repeat } from 'lucide-react';
+import { Button, Flex, TextField, Select, TextArea, Checkbox } from '@radix-ui/themes';
 import { useUserSettings } from '../store/userSettings';
 
 type CalendarView = 'month' | 'week' | 'day' | 'agenda';
@@ -432,61 +433,62 @@ export default function EpicCalendar({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold text-mission-control-text flex items-center gap-2">
-              <Calendar size={24} className="text-mission-control-accent" />
-              Epic Calendar
-            </h1>
+      <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between">
+          <Flex align="center" gap="4">
             <div className="text-sm text-mission-control-text-dim">
               {getDateRangeText()}
             </div>
-          </div>
+          </Flex>
 
-          <div className="flex items-center gap-3">
+          <Flex align="center" gap="3">
             {/* Refresh Button */}
             <button
+              type="button"
               onClick={fetchEvents}
               disabled={loading}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors disabled:opacity-50"
               title="Refresh events"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             </button>
 
             {/* Navigation */}
-            <div className="flex items-center gap-1">
+            <Flex align="center" gap="1">
               <button
+                type="button"
                 onClick={() => navigateDate('prev')}
-                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <ChevronLeft size={16} />
               </button>
               <button
+                type="button"
                 onClick={() => navigateDate('today')}
-                className="px-3 py-1.5 text-sm bg-mission-control-bg hover:bg-mission-control-border rounded-lg transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 Today
               </button>
               <button
+                type="button"
                 onClick={() => navigateDate('next')}
-                className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <ChevronRight size={16} />
               </button>
-            </div>
+            </Flex>
 
             {/* View Switcher */}
-            <div className="flex items-center gap-1 bg-mission-control-bg rounded-lg p-1">
+            <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
               {(['month', 'week', 'day', 'agenda'] as CalendarView[]).map((v) => (
                 <button
                   key={v}
+                  type="button"
                   onClick={() => setView(v)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  className={`px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
                     view === v
-                      ? 'bg-mission-control-accent text-white'
-                      : 'hover:bg-mission-control-border'
+                      ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                      : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
                   }`}
                 >
                   {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -495,15 +497,17 @@ export default function EpicCalendar({
             </div>
 
             {/* Create Event Button */}
-            <button
+            <Button
               onClick={onCreateClick || handleCreateEvent}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+              size="2"
+              variant="soft"
+             
             >
               <Plus size={16} />
               {createButtonLabel || 'New Event'}
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Flex>
+        </Flex>
       </div>
 
       {/* Event Detail Popover */}
@@ -562,18 +566,19 @@ export default function EpicCalendar({
       <div className="flex-1 overflow-auto">
         {/* Partial error banner - shows above calendar when some calendars fail */}
         {partialError && (
-          <div className="px-4 py-2 bg-warning-subtle border-b border-warning-border flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <Flex align="center" justify="between" px="4" py="2" className="bg-warning/10 border-b border-warning/30">
+            <Flex align="center" gap="2">
               <AlertCircle size={14} className="text-warning" />
               <span className="text-sm text-warning">{partialError}</span>
-            </div>
+            </Flex>
             <button
+              type="button"
               onClick={() => setPartialError(null)}
-              className="text-warning hover:text-warning-dim transition-colors"
+              className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <X size={14} />
             </button>
-          </div>
+          </Flex>
         )}
 
         {loading && events.length === 0 ? (
@@ -588,12 +593,15 @@ export default function EpicCalendar({
             <div className="text-center">
               <Calendar size={32} className="mx-auto mb-4 text-error" />
               <p className="text-error">{error}</p>
-              <button
+              <Button
                 onClick={fetchEvents}
-                className="mt-4 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+                size="2"
+                variant="soft"
+               
+                className="mt-4"
               >
                 Retry
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
@@ -714,7 +722,7 @@ function EventCard({
         draggable={canDrag}
         onDragStart={onDragStart ? (e) => onDragStart(e, event) : undefined}
         onDragEnd={onDragEnd}
-        className={`text-xs px-2 py-1 ${displayColor} text-white rounded mb-1 truncate ${canDrag ? 'cursor-move' : 'cursor-default'} hover:opacity-80 transition-all ${
+        className={`rounded-md px-1.5 py-0.5 text-[11px] truncate flex items-center gap-1 mb-0.5 ${displayColor} text-white ${canDrag ? 'cursor-move' : 'cursor-default'} hover:opacity-80 transition-colors ${
           isDragging ? 'opacity-50 scale-95' : ''
         }`}
         title={event.summary}
@@ -727,8 +735,8 @@ function EventCard({
         tabIndex={0}
         aria-label={`View event: ${event.summary}`}
       >
-        {!isAllDay && <span className="font-medium">{formatTime(start)} </span>}
-        {event.summary}
+        {!isAllDay && <span className="font-medium flex-shrink-0">{formatTime(start)} </span>}
+        <span className="truncate">{event.summary}</span>
       </div>
     );
   }
@@ -738,7 +746,7 @@ function EventCard({
       draggable={canDrag}
       onDragStart={onDragStart ? (e) => onDragStart(e, event) : undefined}
       onDragEnd={onDragEnd}
-      className={`bg-mission-control-surface rounded-lg border border-mission-control-border p-4 hover:border-mission-control-accent transition-all ${canDrag ? 'cursor-move' : 'cursor-default'} ${
+      className={`bg-mission-control-surface rounded-xl border border-mission-control-border p-4 hover:border-mission-control-accent transition-colors ${canDrag ? 'cursor-move' : 'cursor-default'} ${
         isDragging ? 'opacity-50 scale-95' : ''
       }`}
       onClick={(e) => {
@@ -750,40 +758,40 @@ function EventCard({
       tabIndex={0}
       aria-label={`View event: ${event.summary}`}
     >
-      <div className="flex items-start justify-between mb-2">
+      <Flex align="start" justify="between" mb="2">
         <h3 className="font-semibold flex-1">{event.summary}</h3>
         <div className={`w-2 h-2 rounded-full ${displayColor} ml-2 mt-1`} title={event.account} />
-      </div>
+      </Flex>
 
       <div className="space-y-1.5 text-sm text-mission-control-text-dim">
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <Clock size={14} />
           <span>
             {isAllDay ? 'All day' : `${formatTime(start)} - ${formatTime(end)}`}
           </span>
-        </div>
+        </Flex>
 
         {event.location && (
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <MapPin size={14} />
             <span className="truncate">{event.location}</span>
-          </div>
+          </Flex>
         )}
 
         {meetLink && (
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Video size={14} />
             <a href={meetLink} target="_blank" rel="noopener noreferrer" className="text-mission-control-accent hover:underline truncate">
               Google Meet
             </a>
-          </div>
+          </Flex>
         )}
 
         {event.attendees && event.attendees.length > 1 && (
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Users size={14} />
             <span>{event.attendees.length} attendees</span>
-          </div>
+          </Flex>
         )}
       </div>
 
@@ -855,11 +863,11 @@ function MonthView({
 
   return (
     <div className="h-full p-6">
-      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border h-full flex flex-col">
+      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border h-full flex flex-col">
         {/* Day headers */}
         <div className="grid grid-cols-7 border-b border-mission-control-border">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="text-center py-3 text-sm font-semibold text-mission-control-text-dim">
+            <div key={day} className="text-center py-3 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
               {day}
             </div>
           ))}
@@ -878,12 +886,14 @@ function MonthView({
                 return (
                   <div
                     key={dayIdx}
-                    className={`border-r border-mission-control-border last:border-r-0 p-2 transition-all overflow-hidden min-h-[80px] ${
-                      !inCurrentMonth ? 'bg-mission-control-bg opacity-50' : ''
+                    className={`min-h-[80px] p-1.5 border-r border-b border-mission-control-border/30 last:border-r-0 transition-colors overflow-hidden ${
+                      !inCurrentMonth ? 'opacity-40' : ''
                     } ${
-                      isDragOver 
-                        ? 'bg-mission-control-accent/10 border-2 border-dashed border-mission-control-accent' 
-                        : 'hover:bg-mission-control-border/30 cursor-pointer'
+                      isToday && !isDragOver
+                        ? 'bg-mission-control-surface ring-2 ring-inset ring-[var(--mission-control-accent)]'
+                        : isDragOver
+                        ? 'bg-mission-control-accent/10 border-2 border-dashed border-mission-control-accent'
+                        : 'bg-mission-control-surface hover:bg-mission-control-border/20 cursor-pointer'
                     }`}
                     onDragOver={(e) => onDragOver(e, date)}
                     onDragLeave={onDragLeave}
@@ -898,8 +908,8 @@ function MonthView({
                     }}
                     aria-label={`Calendar cell for ${date.toLocaleDateString()}`}
                   >
-                    <div className={`text-sm font-medium mb-1 ${
-                      isToday ? 'bg-mission-control-accent text-white w-6 h-6 rounded-full flex items-center justify-center' : ''
+                    <div className={`text-xs mb-1 ${
+                      isToday ? 'text-mission-control-accent font-bold' : 'text-mission-control-text/70'
                     }`}>
                       {date.getDate()}
                     </div>
@@ -991,10 +1001,10 @@ function WeekView({
 
   return (
     <div className="h-full p-6">
-      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border h-full flex flex-col overflow-hidden">
+      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border h-full flex flex-col overflow-hidden">
         {/* Day headers */}
         <div className="grid grid-cols-8 border-b border-mission-control-border flex-shrink-0">
-          <div className="p-3 text-sm font-semibold text-mission-control-text-dim border-r border-mission-control-border">
+          <div className="p-3 text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim border-r border-mission-control-border">
             Time
           </div>
           {weekDays.map(date => {
@@ -1003,14 +1013,14 @@ function WeekView({
               <div
                 key={date.toISOString()}
                 className={`text-center p-3 border-r border-mission-control-border last:border-r-0 ${
-                  isToday ? 'bg-mission-control-accent/10' : ''
+                  isToday ? 'bg-mission-control-accent/5 ring-t-2' : ''
                 }`}
               >
-                <div className="text-xs text-mission-control-text-dim">
+                <div className={`text-[10px] font-bold uppercase tracking-wider ${isToday ? 'text-mission-control-accent' : 'text-mission-control-text-dim'}`}>
                   {date.toLocaleDateString('en-US', { weekday: 'short' })}
                 </div>
-                <div className={`text-lg font-semibold ${
-                  isToday ? 'text-mission-control-accent' : ''
+                <div className={`text-lg font-semibold mt-0.5 ${
+                  isToday ? 'text-mission-control-accent' : 'text-mission-control-text/70'
                 }`}>
                   {date.getDate()}
                 </div>
@@ -1036,7 +1046,7 @@ function WeekView({
                 return (
                   <div
                     key={`${date.toISOString()}-${hour}`}
-                    className={`border-r border-mission-control-border last:border-r-0 p-1 transition-all ${
+                    className={`border-r border-mission-control-border last:border-r-0 p-1 transition-colors ${
                       isToday ? 'bg-mission-control-accent/5' : ''
                     } ${
                       isDragOver 
@@ -1136,7 +1146,7 @@ function DayView({
 
   return (
     <div className="h-full p-6">
-      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border h-full flex flex-col overflow-hidden">
+      <div className="bg-mission-control-surface rounded-xl border border-mission-control-border h-full flex flex-col overflow-hidden">
         {/* All-day events */}
         {allDayEvents.length > 0 && (
           <div className="border-b border-mission-control-border p-4 space-y-2 flex-shrink-0">
@@ -1177,7 +1187,7 @@ function DayView({
                   {hour === 0 ? '12:00 AM' : hour < 12 ? `${hour}:00 AM` : hour === 12 ? '12:00 PM' : `${hour - 12}:00 PM`}
                 </div>
                 <div 
-                  className={`flex-1 p-3 space-y-2 transition-all ${
+                  className={`flex-1 p-3 space-y-2 transition-colors ${
                     isDragOver 
                       ? 'bg-mission-control-accent/10 border-2 border-dashed border-mission-control-accent' 
                       : 'hover:bg-mission-control-border/30 cursor-pointer'
@@ -1263,7 +1273,7 @@ function AgendaView({ currentDate, events, onEventClick, eventColorResolver, isE
 
           return (
             <div key={dateStr} className="space-y-3">
-              <div className="flex items-center gap-3">
+              <Flex align="center" gap="3">
                 <h2 className="text-lg font-semibold">
                   {isToday ? 'Today' : isTomorrow ? 'Tomorrow' : dateStr}
                 </h2>
@@ -1271,7 +1281,7 @@ function AgendaView({ currentDate, events, onEventClick, eventColorResolver, isE
                 <span className="text-sm text-mission-control-text-dim">
                   {dateEvents.length} {dateEvents.length === 1 ? 'event' : 'events'}
                 </span>
-              </div>
+              </Flex>
 
               <div className="space-y-3">
                 {dateEvents.map(event => (
@@ -1331,23 +1341,25 @@ function EventDetailPopover({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
       <div className="relative bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-[360px] max-h-[90vh] overflow-y-auto">
         {/* Toolbar */}
-        <div className="flex items-center justify-end gap-1 px-3 pt-3 pb-0">
+        <Flex align="center" justify="end" gap="1" px="3" pt="3" className="pb-0">
           <button
+            type="button"
             onClick={onEdit}
-            className="p-2 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
             title="Edit event"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <Edit2 size={15} />
           </button>
           <button
+            type="button"
             onClick={onDelete}
-            className="p-2 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
             title="Delete event"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Trash2 size={15} />
           </button>
@@ -1363,17 +1375,18 @@ function EventDetailPopover({
             </a>
           )}
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
             title="Close"
+            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={15} />
           </button>
-        </div>
+        </Flex>
 
         {/* Title + Date */}
         <div className="px-5 pb-3 pt-1">
-          <div className="flex items-start gap-3">
+          <Flex align="start" gap="3">
             <div className="w-3 h-3 rounded-sm bg-info mt-1.5 flex-shrink-0" />
             <div>
               <h2 className="text-lg font-semibold leading-tight">{event.summary}</h2>
@@ -1385,7 +1398,7 @@ function EventDetailPopover({
                 </p>
               )}
             </div>
-          </div>
+          </Flex>
         </div>
 
         <div className="px-5 pb-5 space-y-4">
@@ -1401,53 +1414,53 @@ function EventDetailPopover({
                 <Video size={16} />
                 Join with Google Meet
               </a>
-              <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+              <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
                 <span className="truncate flex-1">{meetLink.replace('https://', '')}</span>
-                <button onClick={copyMeetLink} className="flex-shrink-0 hover:text-mission-control-text p-1 rounded" title="Copy link">
+                <button type="button" onClick={copyMeetLink} title="Copy link" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors flex-shrink-0">
                   <Copy size={11} />
                 </button>
-              </div>
+              </Flex>
             </div>
           )}
 
           {/* Location */}
           {event.location && !meetLink && (
-            <div className="flex items-start gap-3 text-sm">
+            <Flex align="start" gap="3" className="text-sm">
               <MapPin size={16} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
               <span className="text-mission-control-text-dim">{event.location}</span>
-            </div>
+            </Flex>
           )}
 
           {/* Description */}
           {event.description && (
-            <div className="flex items-start gap-3 text-sm">
+            <Flex align="start" gap="3" className="text-sm">
               <div className="w-4 h-4 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <div className="w-3.5 h-3.5 border border-mission-control-border rounded-sm" />
               </div>
               <p className="text-mission-control-text-dim leading-relaxed line-clamp-4">
                 {event.description.replace(/<[^>]*>/g, '')}
               </p>
-            </div>
+            </Flex>
           )}
 
           {/* Attendees */}
           {totalAttendees > 0 && (
-            <div className="flex items-start gap-3">
+            <Flex align="start" gap="3">
               <Users size={16} className="text-mission-control-text-dim mt-0.5 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-2">
+                <Flex align="center" justify="between" mb="2">
                   <span className="text-sm font-medium">{totalAttendees} guest{totalAttendees !== 1 ? 's' : ''}</span>
                   <div className="text-xs text-mission-control-text-dim flex gap-3">
                     <span>{yesAttendees.length} yes</span>
                     <span>{awaitingAttendees.length} awaiting</span>
                   </div>
-                </div>
+                </Flex>
                 <div className="space-y-2">
                   {(event.attendees ?? []).slice(0, 6).map((a, i) => {
                     const isOrganizer = (a as any).organizer || event.organizer === a.email;
                     const initials = a.email?.slice(0, 2).toUpperCase() ?? '??';
                     return (
-                      <div key={a.email ?? i} className="flex items-center gap-2.5">
+                      <Flex key={a.email ?? i} align="center" gap="3">
                         <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 text-mission-control-accent flex items-center justify-center text-[10px] font-bold flex-shrink-0">
                           {initials}
                         </div>
@@ -1459,7 +1472,7 @@ function EventDetailPopover({
                         </div>
                         {a.responseStatus === 'accepted' && <Check size={13} className="text-success flex-shrink-0" />}
                         {a.responseStatus === 'declined' && <X size={13} className="text-error flex-shrink-0" />}
-                      </div>
+                      </Flex>
                     );
                   })}
                   {(event.attendees ?? []).length > 6 && (
@@ -1469,33 +1482,33 @@ function EventDetailPopover({
                   )}
                 </div>
               </div>
-            </div>
+            </Flex>
           )}
 
           {/* Calendar/organizer */}
           {event.organizer && (
-            <div className="flex items-center gap-3 text-sm text-mission-control-text-dim">
+            <Flex align="center" gap="3" className="text-sm text-mission-control-text-dim">
               <Calendar size={16} className="flex-shrink-0" />
               <span className="truncate">{event.organizer}</span>
-            </div>
+            </Flex>
           )}
         </div>
 
         {/* RSVP Footer */}
         {totalAttendees > 0 && (
-          <div className="px-5 py-3 border-t border-mission-control-border bg-mission-control-bg/50 rounded-b-2xl flex items-center gap-3">
+          <Flex align="center" gap="3" px="5" py="3" className="border-t border-mission-control-border bg-mission-control-bg rounded-b-2xl">
             <span className="text-xs text-mission-control-text-dim mr-auto">Going?</span>
-            <button className="px-3 py-1.5 bg-info text-white text-xs font-medium rounded-lg hover:bg-info/90 transition-colors flex items-center gap-1.5">
+            <Button size="1" variant="soft">
               <Check size={12} />
               Yes
-            </button>
-            <button className="px-3 py-1.5 bg-mission-control-surface border border-mission-control-border text-xs font-medium rounded-lg hover:bg-mission-control-border transition-colors">
+            </Button>
+            <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
               No
             </button>
-            <button className="px-3 py-1.5 bg-mission-control-surface border border-mission-control-border text-xs font-medium rounded-lg hover:bg-mission-control-border transition-colors">
+            <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
               Maybe
             </button>
-          </div>
+          </Flex>
         )}
       </div>
     </div>
@@ -1607,7 +1620,7 @@ function EventModal({
   };
 
   return (
-    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border max-w-2xl w-full max-h-[90vh] overflow-auto shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-mission-control-border sticky top-0 bg-mission-control-surface z-10">
@@ -1625,8 +1638,9 @@ function EventModal({
             )}
           </h2>
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={20} />
           </button>
@@ -1639,15 +1653,12 @@ function EventModal({
             <label htmlFor="event-title" className="block text-sm font-medium mb-2">
               Title <span className="text-error">*</span>
             </label>
-            <input
+            <TextField.Root
               id="event-title"
-              type="text"
               value={formData.summary}
               onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-              className={`w-full px-4 py-2 bg-mission-control-bg border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent ${
-                errors.summary ? 'border-error' : 'border-mission-control-border'
-              }`}
               placeholder="Event title"
+              size="2"
             />
             {errors.summary && (
               <p className="text-sm text-error mt-1 flex items-center gap-1">
@@ -1662,33 +1673,34 @@ function EventModal({
             <label htmlFor="calendar-account" className="block text-sm font-medium mb-2">
               Calendar Account <span className="text-error">*</span>
             </label>
-            <select
-              id="calendar-account"
+            <Select.Root
               value={formData.account}
-              onChange={(e) => setFormData({ ...formData, account: e.target.value })}
-              className="w-full px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
+              onValueChange={(val) => setFormData({ ...formData, account: val })}
+              size="2"
             >
-              {accounts.map(acc => (
-                <option key={acc} value={acc}>
-                  {acc}
-                </option>
-              ))}
-            </select>
+              <Select.Trigger id="calendar-account" className="w-full" />
+              <Select.Content>
+                {accounts.map(acc => (
+                  <Select.Item key={acc} value={acc}>
+                    {acc}
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
           </div>
 
           {/* All-day toggle */}
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
+          <Flex align="center" gap="3">
+            <Checkbox
               id="allDay"
               checked={formData.isAllDay}
-              onChange={(e) => setFormData({ ...formData, isAllDay: e.target.checked })}
-              className="w-4 h-4 text-mission-control-accent"
+              onCheckedChange={(checked) => setFormData({ ...formData, isAllDay: !!checked })}
+              size="2"
             />
             <label htmlFor="allDay" className="text-sm font-medium cursor-pointer">
               All-day event
             </label>
-          </div>
+          </Flex>
 
           {/* Date/Time */}
           <div className="grid grid-cols-2 gap-4">
@@ -1696,24 +1708,22 @@ function EventModal({
               <label className="block text-sm font-medium mb-2">
                 Start {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-error">*</span>
               </label>
-              <input
+              <TextField.Root
                 type={formData.isAllDay ? 'date' : 'datetime-local'}
                 value={formData.start}
                 onChange={(e) => setFormData({ ...formData, start: e.target.value })}
-                className="w-full px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
+                size="2"
               />
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">
                 End {formData.isAllDay ? 'Date' : 'Date & Time'} <span className="text-error">*</span>
               </label>
-              <input
+              <TextField.Root
                 type={formData.isAllDay ? 'date' : 'datetime-local'}
                 value={formData.end}
                 onChange={(e) => setFormData({ ...formData, end: e.target.value })}
-                className={`w-full px-4 py-2 bg-mission-control-bg border rounded-lg focus:outline-none focus:ring-2 focus:ring-mission-control-accent ${
-                  errors.end ? 'border-error' : 'border-mission-control-border'
-                }`}
+                size="2"
               />
               {errors.end && (
                 <p className="text-sm text-error mt-1 flex items-center gap-1">
@@ -1730,13 +1740,12 @@ function EventModal({
               <MapPin size={16} />
               Location
             </label>
-            <input
+            <TextField.Root
               id="event-location"
-              type="text"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
               placeholder="Add location"
+              size="2"
             />
           </div>
 
@@ -1745,43 +1754,46 @@ function EventModal({
             <label htmlFor="event-description" className="block text-sm font-medium mb-2">
               Description
             </label>
-            <textarea
+            <TextArea
               id="event-description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none"
               rows={4}
               placeholder="Add description"
+              variant="soft"
+              resize="vertical"
             />
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-4 border-t border-mission-control-border">
+          <Flex align="center" justify="between" pt="4" className="border-t border-mission-control-border">
             <div>
               {mode === 'edit' && (
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="flex items-center gap-2 px-4 py-2 text-error hover:bg-error-subtle rounded-lg transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                 >
                   <Trash2 size={16} />
                   Delete Event
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <Flex align="center" gap="3">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 hover:bg-mission-control-border rounded-lg transition-colors"
                 disabled={saving}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 Cancel
               </button>
-              <button
+              <Button
                 type="submit"
                 disabled={saving}
-                className="flex items-center gap-2 px-6 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
+                size="2"
+                variant="soft"
+               
               >
                 {saving ? (
                   <>
@@ -1791,9 +1803,9 @@ function EventModal({
                 ) : (
                   mode === 'create' ? 'Create Event' : 'Save Changes'
                 )}
-              </button>
-            </div>
-          </div>
+              </Button>
+            </Flex>
+          </Flex>
         </form>
       </div>
     </div>
@@ -1811,10 +1823,10 @@ function DeleteConfirmDialog({
   onCancel: () => void;
 }) {
   return (
-    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-[60] p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
       <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border max-w-md w-full p-6 shadow-2xl">
-        <div className="flex items-start gap-4 mb-4">
-          <div className="p-3 bg-error-subtle rounded-full">
+        <Flex align="start" gap="4" mb="4">
+          <div className="p-3 bg-error/10 rounded-full">
             <Trash2 size={24} className="text-error" />
           </div>
           <div>
@@ -1823,22 +1835,26 @@ function DeleteConfirmDialog({
               Are you sure you want to delete &quot;<strong>{eventTitle}</strong>&quot;? This action cannot be undone.
             </p>
           </div>
-        </div>
+        </Flex>
 
-        <div className="flex items-center justify-end gap-3">
+        <Flex align="center" justify="end" gap="3">
           <button
+            type="button"
             onClick={onCancel}
-            className="px-4 py-2 hover:bg-mission-control-border rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             Cancel
           </button>
-          <button
+          <Button
             onClick={onConfirm}
-            className="px-4 py-2 bg-error text-white rounded-lg hover:bg-error-dim transition-colors"
+            size="2"
+            variant="soft"
+            color="red"
+           
           >
             Delete Event
-          </button>
-        </div>
+          </Button>
+        </Flex>
       </div>
     </div>
   );
@@ -1880,9 +1896,9 @@ function RescheduleConfirmDialog({
   };
 
   return (
-    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-[60] p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
       <div className="bg-mission-control-surface rounded-2xl border border-mission-control-border max-w-md w-full p-6 shadow-2xl">
-        <div className="flex items-start gap-4 mb-4">
+        <Flex align="start" gap="4" mb="4">
           <div className="p-3 bg-mission-control-accent/10 rounded-full">
             <Calendar size={24} className="text-mission-control-accent" />
           </div>
@@ -1896,31 +1912,34 @@ function RescheduleConfirmDialog({
                 <span className="text-mission-control-text-dim">From:</span>
                 <div className="text-mission-control-text font-medium">{formatDateTime(oldStart)}</div>
               </div>
-              <div className="flex items-center gap-2 text-mission-control-accent">
+              <Flex align="center" gap="2" className="text-mission-control-accent">
                 <ChevronRight size={16} />
-              </div>
+              </Flex>
               <div>
                 <span className="text-mission-control-text-dim">To:</span>
                 <div className="text-mission-control-text font-medium">{formatDateTime(newStart)}</div>
               </div>
             </div>
           </div>
-        </div>
+        </Flex>
 
-        <div className="flex items-center justify-end gap-3">
+        <Flex align="center" justify="end" gap="3">
           <button
+            type="button"
             onClick={onCancel}
-            className="px-4 py-2 hover:bg-mission-control-border rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             Cancel
           </button>
-          <button
+          <Button
             onClick={onConfirm}
-            className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+            size="2"
+            variant="soft"
+
           >
             Reschedule
-          </button>
-        </div>
+          </Button>
+        </Flex>
       </div>
     </div>
   );

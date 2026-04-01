@@ -6,12 +6,13 @@ import {
   X, Send, Check, Loader2, Bot,
   DollarSign, Leaf, Share2, Mail, Users, FileText, Megaphone, Star, Search, Briefcase,
   Eye, Target, ShoppingCart, Heart, TrendingUp, MessageCircle, Rocket,
-  SkipForward, Wand2,
+  SkipForward, Wand2, Sparkles, Upload, Trash2,
 } from 'lucide-react';
 import { campaignsApi, agentApi } from '../../lib/api';
 import type { Campaign } from '../../types/campaigns';
 import AgentAvatar from '../AgentAvatar';
 import { CHANNEL_ICONS, CHANNEL_LABELS, ALL_CHANNELS } from './channelIcons';
+import { Button, Flex, IconButton, TextArea, TextField } from '@radix-ui/themes';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -107,6 +108,71 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // ── Discovery phase (AI wizard chat, shown before main wizard) ───────────────
+  interface DiscoveryMsg { role: 'user' | 'model'; text: string; widget?: string; }
+  const [wizardPhase, setWizardPhase] = useState<'discovery' | 'main' | 'context-files'>('discovery');
+  const [discoveryMsgs, setDiscoveryMsgs] = useState<DiscoveryMsg[]>([
+    { role: 'model', text: "Tell me about this campaign. What are you trying to achieve?" },
+  ]);
+  const [discoveryInput, setDiscoveryInput] = useState('');
+  const [discoveryLoading, setDiscoveryLoading] = useState(false);
+  const [discoveryReady, setDiscoveryReady] = useState(false);
+  const [discoveryStructuredData, setDiscoveryStructuredData] = useState<Record<string, unknown> | null>(null);
+  const discoveryScrollRef = useRef<HTMLDivElement>(null);
+
+  // ── Context files (staged for upload after campaign creation) ────────────────
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
+  const [contextFilesDragging, setContextFilesDragging] = useState(false);
+  const contextFilesInputRef = useRef<HTMLInputElement>(null);
+  const [_createdCampaignId, setCreatedCampaignId] = useState<string | null>(null);
+
+  useEffect(() => {
+    discoveryScrollRef.current?.scrollTo({ top: discoveryScrollRef.current.scrollHeight, behavior: 'smooth' });
+  }, [discoveryMsgs, discoveryLoading]);
+
+  const sendDiscoveryMessage = useCallback(async (text: string, baseOverride?: Array<{ role: 'user' | 'model'; text: string; widget?: string }>) => {
+    const base = baseOverride ?? discoveryMsgs;
+    const newUserMsg = { role: 'user' as const, text };
+    const newMsgs = [...base, newUserMsg];
+    setDiscoveryMsgs(newMsgs);
+    setDiscoveryLoading(true);
+    try {
+      const res = await fetch('/api/campaigns/wizard-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMsgs.map(m => ({ role: m.role, text: m.text })) }),
+      });
+      const data = await res.json();
+      if (data.ready && data.structuredData) {
+        setDiscoveryReady(true);
+        setDiscoveryStructuredData(data.structuredData);
+      }
+      setDiscoveryMsgs(prev => [...prev, { role: 'model' as const, text: data.text || '', widget: data.widget }]);
+    } catch { /* non-critical */ }
+    finally { setDiscoveryLoading(false); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [discoveryMsgs]);
+
+  const handleDiscoverySend = useCallback(async () => {
+    const text = discoveryInput.trim();
+    if (!text || discoveryLoading) return;
+    setDiscoveryInput('');
+    await sendDiscoveryMessage(text);
+  }, [discoveryInput, discoveryLoading, sendDiscoveryMessage]);
+
+  const handleDiscoveryConfirm = () => {
+    if (discoveryStructuredData) {
+      if (typeof discoveryStructuredData.name === 'string') setName(discoveryStructuredData.name);
+      if (typeof discoveryStructuredData.goal === 'string') setGoal(discoveryStructuredData.goal);
+      if (Array.isArray(discoveryStructuredData.types)) setTypes(discoveryStructuredData.types as string[]);
+      if (Array.isArray(discoveryStructuredData.channels)) setChannels(discoveryStructuredData.channels as string[]);
+      if (typeof discoveryStructuredData.targetAudience === 'string') setTargetAudience(discoveryStructuredData.targetAudience);
+      if (typeof discoveryStructuredData.budget === 'string') setBudget(discoveryStructuredData.budget.replace(/[^0-9.]/g, ''));
+      if (typeof discoveryStructuredData.brief === 'string') setBrief(discoveryStructuredData.brief);
+    }
+    setWizardPhase('main');
+  };
 
   // ── Scroll to bottom on new messages ────────────────────────────────────────
   useEffect(() => {
@@ -263,16 +329,42 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
         color: '#6366f1',
         memberAgentIds: selectedAgents,
       }) as { success: boolean; id: string; campaign: Campaign };
-      onCreated(result.campaign ?? {
-        id: result.id, name, type: types[0] ?? 'general', types, goal,
-        status: 'draft', channels, budgetSpent: 0, currency: 'USD',
-        kpis: {}, color: '#6366f1', createdAt: Date.now(), updatedAt: Date.now(),
-      });
+
+      const campaignId = result.campaign?.id ?? result.id;
+      setCreatedCampaignId(campaignId);
+
+      // If there are staged context files, show context-files phase
+      if (stagedFiles.length > 0) {
+        setCreating(false);
+        setWizardPhase('context-files');
+        // Upload files in background
+        for (const file of stagedFiles) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('entityType', 'campaign');
+          formData.append('entityId', campaignId);
+          fetch('/api/context-files/upload', { method: 'POST', body: formData }).catch(() => {});
+        }
+        // Give it a moment then close and call onCreated
+        setTimeout(() => {
+          onCreated(result.campaign ?? {
+            id: campaignId, name, type: types[0] ?? 'general', types, goal,
+            status: 'draft', channels, budgetSpent: 0, currency: 'USD',
+            kpis: {}, color: '#6366f1', createdAt: Date.now(), updatedAt: Date.now(),
+          });
+        }, 500);
+      } else {
+        onCreated(result.campaign ?? {
+          id: campaignId, name, type: types[0] ?? 'general', types, goal,
+          status: 'draft', channels, budgetSpent: 0, currency: 'USD',
+          kpis: {}, color: '#6366f1', createdAt: Date.now(), updatedAt: Date.now(),
+        });
+      }
     } catch (err) {
       setCreationError(err instanceof Error ? err.message : 'Failed to create campaign');
       setCreating(false);
     }
-  }, [name, types, goal, channels, brief, targetAudience, startDate, endDate, budget, selectedAgents, onCreated]);
+  }, [name, types, goal, channels, brief, targetAudience, startDate, endDate, budget, selectedAgents, stagedFiles, onCreated]);
 
   // ── Toggle helpers ───────────────────────────────────────────────────────────
   const toggleType = (v: string) => setTypes(prev => prev.includes(v) ? prev.filter(t => t !== v) : [...prev, v]);
@@ -306,15 +398,10 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               const Icon = t.icon;
               const sel = types.includes(t.value);
               return (
-                <button
-                  key={t.value}
-                  onClick={() => toggleType(t.value)}
-                  className={`flex flex-col gap-1.5 p-3 rounded-lg border text-left transition-all ${
-                    sel
-                      ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                      : 'border-mission-control-border hover:border-mission-control-accent/30 text-mission-control-text-dim hover:text-mission-control-text'
-                  }`}
-                >
+                <button key={t.value} type="button" onClick={() => toggleType(t.value)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                    sel ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}>
                   <Icon size={15} />
                   <span className="text-xs font-medium">{t.label}</span>
                   <span className="text-xs opacity-60 leading-tight">{t.desc}</span>
@@ -323,16 +410,13 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             })}
           </div>
           {step === 'types' && types.length > 0 && (
-            <button
-              onClick={() => {
-                const labels = types.map(v => TYPE_OPTIONS.find(o => o.value === v)?.label ?? v).join(', ');
-                setMessages(prev => [...prev, userMsg(labels)]);
-                advanceTo('goal');
-              }}
-              className="flex items-center gap-1.5 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 transition-colors"
-            >
+            <Button variant="solid" size="1" onClick={() => {
+              const labels = types.map(v => TYPE_OPTIONS.find(o => o.value === v)?.label ?? v).join(', ');
+              setMessages(prev => [...prev, userMsg(labels)]);
+              advanceTo('goal');
+            }}>
               <Check size={14} /> Confirm selection
-            </button>
+            </Button>
           )}
         </div>
       );
@@ -343,20 +427,16 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             const Icon = g.icon;
             const sel = goal === g.value;
             return (
-              <button
-                key={g.value}
+              <button key={g.value} type="button"
                 onClick={() => {
                   if (step !== 'goal') return;
                   setGoal(g.value);
                   setMessages(prev => [...prev, userMsg(g.label)]);
                   advanceTo('channels');
                 }}
-                className={`flex flex-col gap-1.5 p-3 rounded-lg border text-left transition-all ${
-                  sel
-                    ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                    : 'border-mission-control-border hover:border-mission-control-accent/30 text-mission-control-text-dim hover:text-mission-control-text'
-                }`}
-              >
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  sel ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}>
                 <Icon size={15} />
                 <span className="text-xs font-medium">{g.label}</span>
                 <span className="text-xs opacity-60 leading-tight">{g.desc}</span>
@@ -373,15 +453,10 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               const Icon = CHANNEL_ICONS[ch];
               const sel = channels.includes(ch);
               return (
-                <button
-                  key={ch}
-                  onClick={() => toggleChannel(ch)}
-                  className={`flex items-center gap-2.5 p-3 rounded-lg border text-left transition-all ${
-                    sel
-                      ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                      : 'border-mission-control-border hover:border-mission-control-accent/30 text-mission-control-text-dim hover:text-mission-control-text'
-                  }`}
-                >
+                <button key={ch} type="button" onClick={() => toggleChannel(ch)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                    sel ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}>
                   {Icon && <Icon size={15} />}
                   <span className="text-sm font-medium">{CHANNEL_LABELS[ch]}</span>
                   {sel && <Check size={11} className="ml-auto flex-shrink-0" />}
@@ -390,16 +465,13 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             })}
           </div>
           {step === 'channels' && channels.length > 0 && (
-            <button
-              onClick={() => {
-                const labels = channels.map(c => CHANNEL_LABELS[c] ?? c).join(', ');
-                setMessages(prev => [...prev, userMsg(labels)]);
-                advanceTo('audience');
-              }}
-              className="flex items-center gap-1.5 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 transition-colors"
-            >
+            <Button variant="solid" size="1" onClick={() => {
+              const labels = channels.map(c => CHANNEL_LABELS[c] ?? c).join(', ');
+              setMessages(prev => [...prev, userMsg(labels)]);
+              advanceTo('audience');
+            }}>
               <Check size={14} /> Confirm channels
-            </button>
+            </Button>
           )}
         </div>
       );
@@ -409,7 +481,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           <div className="mt-3 flex gap-2">
             <button
               onClick={() => handleAudienceSubmit('')}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <SkipForward size={13} /> Skip
             </button>
@@ -422,7 +494,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           <div className="mt-3 flex gap-2">
             <button
               onClick={() => handleBudgetSubmit('')}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <SkipForward size={13} /> Skip
             </button>
@@ -432,7 +504,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
 
       case 'dates': return step === 'dates' ? (
         <div className="mt-3 space-y-3">
-          <div className="flex gap-3">
+          <Flex gap="3">
             <div className="flex-1">
               <label className="text-xs text-mission-control-text-dim mb-1 block">Start date</label>
               <input
@@ -451,62 +523,56 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                 className="w-full px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent text-sm"
               />
             </div>
-          </div>
-          <div className="flex gap-2">
+          </Flex>
+          <Flex gap="2">
             {(startDate || endDate) && (
-              <button
-                onClick={() => {
-                  const parts = [startDate, endDate].filter(Boolean).join(' → ');
-                  setMessages(prev => [...prev, userMsg(parts)]);
-                  advanceTo('brief');
-                }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 transition-colors"
-              >
+              <Button variant="solid" size="1" onClick={() => {
+                const parts = [startDate, endDate].filter(Boolean).join(' → ');
+                setMessages(prev => [...prev, userMsg(parts)]);
+                advanceTo('brief');
+              }}>
                 <Check size={14} /> Confirm dates
-              </button>
+              </Button>
             )}
             <button
               onClick={() => {
                 setMessages(prev => [...prev, userMsg('Skipped')]);
                 advanceTo('brief');
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <SkipForward size={13} /> Skip
             </button>
-          </div>
+          </Flex>
         </div>
       ) : null;
 
       case 'brief': return step === 'brief' ? (
         <div className="mt-3 space-y-3">
-          <textarea
+          <TextArea
             placeholder="Describe the campaign strategy, key messages, creative direction…"
             value={brief}
             onChange={e => setBrief(e.target.value)}
             rows={4}
-            className="w-full px-3 py-2.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent resize-none text-sm"
+            className="w-full resize-none"
           />
           <div className="flex flex-wrap gap-2">
             <button
               onClick={handleDraftBrief}
               disabled={draftingBrief}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-mission-control-accent/40 text-mission-control-accent rounded-lg text-sm hover:bg-mission-control-accent/10 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
             >
               {draftingBrief ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
               Draft with AI
             </button>
             {brief.trim().length > 0 && (
-              <button
-                onClick={() => handleBriefTextSubmit(brief)}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 transition-colors"
-              >
+              <Button variant="solid" size="1" onClick={() => handleBriefTextSubmit(brief)}>
                 <Check size={13} /> Use this brief
-              </button>
+              </Button>
             )}
             <button
               onClick={() => handleBriefTextSubmit('')}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <SkipForward size={13} /> Skip
             </button>
@@ -517,21 +583,18 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
       case 'team': return step === 'team' ? (
         <div className="mt-3 space-y-3">
           {loadingAgents ? (
-            <div className="flex justify-center py-4">
+            <Flex justify="center" py="4">
               <Loader2 size={18} className="animate-spin text-mission-control-text-dim" />
-            </div>
+            </Flex>
           ) : (
             <div className="space-y-1.5">
               {agents.map(agent => {
                 const sel = selectedAgents.includes(agent.id);
                 return (
-                  <button
-                    key={agent.id}
-                    onClick={() => toggleAgent(agent.id)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border transition-all text-left ${
-                      sel ? 'border-mission-control-accent/50 bg-mission-control-accent/10' : 'border-mission-control-border hover:border-mission-control-accent/30'
-                    }`}
-                  >
+                  <button key={agent.id} type="button" onClick={() => toggleAgent(agent.id)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${
+                      sel ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'
+                    }`}>
                     <AgentAvatar agentId={agent.id} size="sm" fallbackEmoji={agent.emoji} />
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-mission-control-text">{agent.name}</div>
@@ -548,17 +611,14 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
               )}
             </div>
           )}
-          <button
-            onClick={() => {
-              const agentNames = agents.filter(a => selectedAgents.includes(a.id)).map(a => a.name);
-              const label = agentNames.length > 0 ? agentNames.join(', ') : 'No agents assigned';
-              setMessages(prev => [...prev, userMsg(label)]);
-              advanceTo('review');
-            }}
-            className="flex items-center gap-1.5 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 transition-colors"
-          >
+          <Button variant="solid" size="1" onClick={() => {
+            const agentNames = agents.filter(a => selectedAgents.includes(a.id)).map(a => a.name);
+            const label = agentNames.length > 0 ? agentNames.join(', ') : 'No agents assigned';
+            setMessages(prev => [...prev, userMsg(label)]);
+            setWizardPhase('context-files');
+          }}>
             <Check size={14} /> {selectedAgents.length > 0 ? `Assign ${selectedAgents.length} agent${selectedAgents.length > 1 ? 's' : ''}` : 'Continue without agents'}
-          </button>
+          </Button>
         </div>
       ) : null;
 
@@ -566,7 +626,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
         <div className="mt-3 space-y-4">
           {/* Summary card */}
           <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4 space-y-3 text-sm">
-            <div className="flex items-center gap-3">
+            <Flex align="center" gap="3">
               <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-mission-control-accent/20 border border-mission-control-accent/30">
                 <Megaphone size={15} className="text-mission-control-accent" />
               </div>
@@ -577,7 +637,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                   {goal && ` · ${GOAL_OPTIONS.find(o => o.value === goal)?.label ?? goal}`}
                 </div>
               </div>
-            </div>
+            </Flex>
 
             <div>
               <p className="text-xs text-mission-control-text-dim mb-1.5">Channels</p>
@@ -617,19 +677,15 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           </div>
 
           {creationError && (
-            <div className="px-3 py-2.5 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+            <div className="px-3 py-2.5 bg-error/10 border border-error/30 rounded-lg text-error text-sm">
               {creationError}
             </div>
           )}
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleCreate}
-              disabled={creating}
-              className="flex items-center gap-2 px-5 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
+          <Flex align="center" gap="3">
+            <Button variant="solid" size="1" onClick={handleCreate} disabled={creating}>
               {creating ? <><Loader2 size={14} className="animate-spin" /> Creating…</> : <><Rocket size={14} /> Launch Campaign</>}
-            </button>
+            </Button>
             <button
               onClick={() => {
                 // Go back to name step — restart conversation
@@ -640,11 +696,11 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                 setBrief(''); setSelectedAgents([]); setCreationError(null);
                 sendAgentMessage("Let's set up your campaign. What's it called?", 'name', 200);
               }}
-              className="text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors underline underline-offset-2"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               Start over
             </button>
-          </div>
+          </Flex>
         </div>
       ) : null;
 
@@ -653,27 +709,330 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
     }
   }
 
+  // ── Discovery widget renderer (reuses form state, sends selection as message) ─
+  function renderDiscoveryWidget(widget: string) {
+    switch (widget) {
+      case 'types': return (
+        <div className="mt-2 space-y-2 max-w-[82%]">
+          <div className="grid grid-cols-2 gap-1.5">
+            {TYPE_OPTIONS.map(t => {
+              const Icon = t.icon;
+              const sel = types.includes(t.value);
+              return (
+                <button key={t.value} type="button" onClick={() => toggleType(t.value)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                    sel ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}>
+                  <Icon size={13} />
+                  <span className="text-xs font-medium">{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          {types.length > 0 && (
+            <Button variant="solid" size="1" onClick={() => sendDiscoveryMessage(types.map(v => TYPE_OPTIONS.find(o => o.value === v)?.label ?? v).join(', '))}>
+              <Check size={12} /> Confirm ({types.length} selected)
+            </Button>
+          )}
+        </div>
+      );
+      case 'goal': return (
+        <div className="mt-2 grid grid-cols-2 gap-1.5 max-w-[82%]">
+          {GOAL_OPTIONS.map(g => {
+            const Icon = g.icon;
+            return (
+              <button key={g.value} type="button" onClick={() => { setGoal(g.value); sendDiscoveryMessage(g.label); }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  goal === g.value ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}>
+                <Icon size={13} />
+                <span className="text-xs font-medium">{g.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      );
+      case 'channels': return (
+        <div className="mt-2 space-y-2 max-w-[82%]">
+          <div className="grid grid-cols-2 gap-1.5">
+            {ALL_CHANNELS.map(ch => {
+              const Icon = CHANNEL_ICONS[ch];
+              const sel = channels.includes(ch);
+              return (
+                <button key={ch} type="button" onClick={() => toggleChannel(ch)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                    sel ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                  }`}>
+                  {Icon && <Icon size={13} />}
+                  <span className="text-xs font-medium">{CHANNEL_LABELS[ch]}</span>
+                  {sel && <Check size={10} className="ml-auto flex-shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+          {channels.length > 0 && (
+            <Button variant="solid" size="1" onClick={() => sendDiscoveryMessage(channels.map(c => CHANNEL_LABELS[c] ?? c).join(', '))}>
+              <Check size={12} /> Confirm ({channels.length} selected)
+            </Button>
+          )}
+        </div>
+      );
+      case 'dates': return (
+        <div className="mt-2 space-y-2 max-w-[82%]">
+          <Flex gap="2">
+            <div className="flex-1">
+              <label className="text-xs text-mission-control-text-dim mb-1 block">Start</label>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent" />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs text-mission-control-text-dim mb-1 block">End</label>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text text-xs focus:outline-none focus:border-mission-control-accent" />
+            </div>
+          </Flex>
+          <Flex gap="2">
+            <Button variant="solid" size="1" onClick={() => sendDiscoveryMessage(startDate || endDate ? `${startDate || 'TBD'} → ${endDate || 'TBD'}` : 'No specific dates')}>
+              <Check size={12} /> Confirm dates
+            </Button>
+            <button
+              onClick={() => sendDiscoveryMessage('No specific dates yet')}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+            >
+              <SkipForward size={12} /> Skip
+            </button>
+          </Flex>
+        </div>
+      );
+      case 'budget': return (
+        <div className="mt-2 space-y-2 max-w-[82%]">
+          <TextField.Root type="number" placeholder="e.g. 50000" value={budget} onChange={e => setBudget(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && sendDiscoveryMessage(budget ? `$${parseFloat(budget).toLocaleString()}` : 'No budget set')}
+            className="w-full" />
+          <Flex gap="2">
+            <Button variant="solid" size="1" onClick={() => sendDiscoveryMessage(budget ? `$${parseFloat(budget).toLocaleString()}` : 'No budget set')}>
+              <Check size={12} /> Confirm budget
+            </Button>
+            <button
+              onClick={() => sendDiscoveryMessage('No budget defined yet')}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+            >
+              <SkipForward size={12} /> Skip
+            </button>
+          </Flex>
+        </div>
+      );
+      default: return null;
+    }
+  }
+
+  // ── Active discovery widget — shown below the last model message ──────────────
+  const activeDiscoveryWidget = (() => {
+    if (discoveryLoading || discoveryReady) return null;
+    const last = discoveryMsgs[discoveryMsgs.length - 1];
+    return (last?.role === 'model' && last.widget) ? last.widget : null;
+  })();
+
+  // ── Discovery phase (AI wizard) ───────────────────────────────────────────────
+  if (wizardPhase === 'discovery') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="w-full max-w-lg bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+            <Flex align="center" gap="2">
+              <Sparkles size={15} className="text-mission-control-accent" />
+              <span className="text-base font-semibold text-mission-control-text">New Campaign</span>
+            </Flex>
+            <Flex align="center" gap="2">
+              <button
+                onClick={() => setWizardPhase('main')}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+              >
+                Skip
+              </button>
+              <button
+                onClick={onClose}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+              >
+                <X size={15} />
+              </button>
+            </Flex>
+          </div>
+
+          <div ref={discoveryScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[280px]">
+            {discoveryMsgs.map((msg, i) => (
+              <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-2'} w-full`}>
+                  {msg.role === 'model' && (
+                    <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Bot size={14} className="text-mission-control-accent" />
+                    </div>
+                  )}
+                  <div className={`max-w-[82%] px-3 py-2 rounded-lg text-sm ${
+                    msg.role === 'user'
+                      ? 'bg-mission-control-accent text-white rounded-br-sm'
+                      : 'bg-mission-control-surface text-mission-control-text rounded-bl-sm'
+                  }`}>
+                    {msg.text}
+                  </div>
+                </div>
+                {/* Render widget below the last model message that has one */}
+                {msg.role === 'model' && i === discoveryMsgs.length - 1 && activeDiscoveryWidget && (
+                  <div className="pl-9 w-full">
+                    {renderDiscoveryWidget(activeDiscoveryWidget)}
+                  </div>
+                )}
+              </div>
+            ))}
+            {discoveryLoading && (
+              <Flex gap="2" align="start">
+                <div className="w-7 h-7 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center flex-shrink-0">
+                  <Bot size={14} className="text-mission-control-accent" />
+                </div>
+                <div className="bg-mission-control-surface px-4 py-3 rounded-lg rounded-bl-sm">
+                  <Flex gap="1">
+                    <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 bg-mission-control-accent/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </Flex>
+                </div>
+              </Flex>
+            )}
+            {discoveryReady && discoveryStructuredData && (
+              <div className="mt-2 p-3 bg-mission-control-surface border border-mission-control-accent/30 rounded-lg">
+                <p className="text-xs text-mission-control-text-dim mb-1 font-medium">Ready to create:</p>
+                <p className="text-sm font-semibold text-mission-control-text">{String(discoveryStructuredData.name ?? '')}</p>
+                {!!discoveryStructuredData.goal && (
+                  <p className="text-xs text-mission-control-text-dim mt-0.5 line-clamp-2">{String(discoveryStructuredData.goal)}</p>
+                )}
+                <Button variant="solid" size="1" onClick={handleDiscoveryConfirm} className="mt-2 w-full justify-center">
+                  Looks good →
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <div className="px-4 py-3 border-t border-mission-control-border">
+            <Flex gap="2">
+              <TextField.Root
+                value={discoveryInput}
+                onChange={e => setDiscoveryInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleDiscoverySend()}
+                placeholder="Tell me about your campaign..."
+                disabled={discoveryLoading}
+                className="flex-1"
+              />
+              <IconButton variant="solid" size="2" onClick={handleDiscoverySend} disabled={!discoveryInput.trim() || discoveryLoading}>
+                <Send size={14} />
+              </IconButton>
+            </Flex>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Context files phase ────────────────────────────────────────────────────────
+  if (wizardPhase === 'context-files') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="w-full max-w-lg bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+            <div>
+              <div className="text-base font-semibold text-mission-control-text">Add Context Files</div>
+              <div className="text-xs text-mission-control-text-dim mt-0.5">Optional — upload files Gemini should use as context</div>
+            </div>
+            <button
+              onClick={onClose}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+            >
+              <X size={15} />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            <div
+              onDragOver={e => { e.preventDefault(); setContextFilesDragging(true); }}
+              onDragLeave={() => setContextFilesDragging(false)}
+              onDrop={e => {
+                e.preventDefault();
+                setContextFilesDragging(false);
+                if (e.dataTransfer.files) setStagedFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)]);
+              }}
+              onClick={() => contextFilesInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-colors ${
+                contextFilesDragging
+                  ? 'border-mission-control-accent bg-mission-control-accent/10'
+                  : 'border-mission-control-border hover:border-mission-control-accent/50 hover:bg-mission-control-surface'
+              }`}
+            >
+              <input
+                ref={contextFilesInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={e => { if (e.target.files) setStagedFiles(prev => [...prev, ...Array.from(e.target.files!)]); }}
+              />
+              <Upload size={20} className="mx-auto text-mission-control-text-dim mb-2" />
+              <p className="text-sm text-mission-control-text-dim">Drop files here or click to upload</p>
+              <p className="text-xs text-mission-control-text-dim mt-1">Docs, images, PDFs, briefs — any file</p>
+            </div>
+
+            {stagedFiles.length > 0 && (
+              <div className="space-y-1.5">
+                {stagedFiles.map((f, i) => (
+                  <Flex key={i} align="center" gap="2" className="px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg">
+                    <span className="flex-1 text-sm text-mission-control-text truncate">{f.name}</span>
+                    <span className="text-xs text-mission-control-text-dim">{(f.size / 1024).toFixed(0)}KB</span>
+                    <button
+                      onClick={() => setStagedFiles(prev => prev.filter((_, idx) => idx !== i))}
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-red-400 hover:text-red-300 hover:bg-mission-control-surface transition-colors"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </Flex>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+            <Button variant="solid" size="2" onClick={() => {
+              setWizardPhase('main');
+              advanceTo('review');
+            }}>
+              {stagedFiles.length > 0 ? `Continue with ${stagedFiles.length} file${stagedFiles.length !== 1 ? 's' : ''}` : 'Continue'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-2xl bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col" style={{ maxHeight: '90vh' }}>
+      <div className="w-full max-w-2xl bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border flex-shrink-0">
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="3">
             <div className="w-8 h-8 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center">
               <Bot size={15} className="text-mission-control-accent" />
             </div>
             <div>
-              <span className="font-semibold text-mission-control-text text-sm">Campaign Planner</span>
-              <div className="flex items-center gap-1 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-base font-semibold text-mission-control-text">Campaign Planner</span>
+              <Flex align="center" gap="1" className="mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                 <span className="text-xs text-mission-control-text-dim">Active</span>
-              </div>
+              </Flex>
             </div>
-          </div>
-          <button onClick={onClose} className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
-            <X size={16} />
+          </Flex>
+          <button
+            onClick={onClose}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+          >
+            <X size={15} />
           </button>
         </div>
 
@@ -684,7 +1043,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           style={{ minHeight: 0 }}
         >
           {messages.map(msg => (
-            <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <Flex key={msg.id} gap="3" justify={msg.role === 'user' ? 'end' : 'start'}>
               {msg.role === 'agent' && (
                 <div className="flex-shrink-0 w-7 h-7 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center mt-0.5">
                   <Bot size={13} className="text-mission-control-accent" />
@@ -705,12 +1064,12 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                   </div>
                 )}
               </div>
-            </div>
+            </Flex>
           ))}
 
           {/* Typing indicator */}
           {agentTyping && (
-            <div className="flex gap-3 justify-start">
+            <Flex gap="3" justify="start">
               <div className="flex-shrink-0 w-7 h-7 rounded-full bg-mission-control-accent/20 border border-mission-control-accent/30 flex items-center justify-center">
                 <Bot size={13} className="text-mission-control-accent" />
               </div>
@@ -721,16 +1080,16 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                   <span className="w-1.5 h-1.5 rounded-full bg-mission-control-text-dim animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
-            </div>
+            </Flex>
           )}
         </div>
 
         {/* Bottom free-text input — shown for text entry steps */}
         {showTextInput && (
           <div className="flex-shrink-0 border-t border-mission-control-border px-4 py-3">
-            <div className="flex items-center gap-2">
-              <input
-                ref={inputRef}
+            <Flex align="center" gap="2">
+              <TextField.Root
+                ref={inputRef as React.RefObject<HTMLInputElement>}
                 type={step === 'budget' ? 'number' : 'text'}
                 placeholder={inputPlaceholder}
                 value={freeInput}
@@ -738,16 +1097,12 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                 onKeyDown={handleInputKeyDown}
                 min={step === 'budget' ? '0' : undefined}
                 autoFocus
-                className="flex-1 px-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent text-sm"
+                className="flex-1"
               />
-              <button
-                onClick={handleInputSend}
-                disabled={step === 'name' ? freeInput.trim().length < 2 : false}
-                className="flex items-center justify-center w-9 h-9 bg-mission-control-accent rounded-lg text-white hover:bg-mission-control-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
-              >
+              <IconButton variant="solid" size="2" onClick={handleInputSend} disabled={step === 'name' ? freeInput.trim().length < 2 : false} className="flex-shrink-0">
                 <Send size={15} />
-              </button>
-            </div>
+              </IconButton>
+            </Flex>
           </div>
         )}
       </div>

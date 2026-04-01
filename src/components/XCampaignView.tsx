@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Rocket, Plus, Trash2, Calendar, Clock, ChevronDown, ChevronUp, GripVertical, Send, MessageSquare, Sparkles } from 'lucide-react';
+import { Button, Badge, Spinner, TextField, TextArea, Select, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface CampaignStage {
@@ -285,7 +286,7 @@ export default function XCampaignView() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-mission-control-bg">
-        <div className="w-8 h-8 border-2 border-info border-t-transparent rounded-full animate-spin" />
+        <Spinner size="3" />
       </div>
     );
   }
@@ -296,109 +297,100 @@ export default function XCampaignView() {
 
     return (
       <div className="flex flex-col h-full bg-mission-control-bg">
-        <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+          <Flex align="center" gap="2">
             <Rocket className="w-5 h-5 text-info" />
             <h3 className="text-lg font-semibold text-mission-control-text">
               {editingCampaign.status === 'draft' && !campaigns.find(c => c.id === editingCampaign.id) ? 'New Campaign' : 'Edit Campaign'}
             </h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setEditingCampaign(null)}
-              className="px-3 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={saveCampaign}
-              className="px-4 py-2 text-sm bg-info hover:bg-info/80 text-mission-control-text rounded-lg transition-colors"
-            >
-              Save Draft
-            </button>
-          </div>
-        </div>
+          </Flex>
+          <Flex align="center" gap="2">
+            <button type="button" onClick={() => setEditingCampaign(null)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">Cancel</button>
+            <Button onClick={saveCampaign} variant="solid" color="blue" size="2">Save Draft</Button>
+          </Flex>
+        </Flex>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           <div className="space-y-4">
             <div>
               <label htmlFor="campaign-title" className="block text-sm font-medium text-mission-control-text mb-2">Campaign Title</label>
-              <input
+              <TextField.Root
                 id="campaign-title"
-                type="text"
                 value={editingCampaign.title}
                 onChange={e => setEditingCampaign({ ...editingCampaign, title: e.target.value })}
                 placeholder="e.g., AI Agents Launch Week"
-                className="w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
+                size="2"
               />
             </div>
             <div>
               <label htmlFor="campaign-subject" className="block text-sm font-medium text-mission-control-text mb-2">Subject / Theme</label>
-              <textarea
+              <TextArea
                 id="campaign-subject"
                 value={editingCampaign.subject}
                 onChange={e => setEditingCampaign({ ...editingCampaign, subject: e.target.value })}
                 placeholder="What is this campaign about? Describe the narrative arc, key messages, and goals..."
                 rows={3}
-                className="w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
+                size="2"
               />
             </div>
-            <div className="flex gap-4">
+            <Flex gap="4">
               <div className="flex-1">
                 <label htmlFor="campaign-start-date" className="block text-sm font-medium text-mission-control-text mb-2">
                   <Calendar className="w-4 h-4 inline mr-1" />
                   Start Date
                 </label>
-                <input
+                <TextField.Root
                   id="campaign-start-date"
                   type="date"
                   value={editingCampaign.start_date || ''}
                   onChange={e => setEditingCampaign({ ...editingCampaign, start_date: e.target.value })}
-                  className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
+                  size="2"
                 />
               </div>
               <div className="flex-1">
                 <span className="block text-sm font-medium text-mission-control-text mb-2">Total Stages</span>
-                <div className="px-4 py-2 bg-mission-control-bg-alt border border-mission-control-border rounded-lg text-mission-control-text">
+                <div className="px-4 py-2 bg-mission-control-border/20 border border-mission-control-border rounded-lg text-mission-control-text">
                   {editingCampaign.stages.length} tweets over {Math.max(...editingCampaign.stages.map(s => s.dayOffset), 0) + 1} days
                 </div>
               </div>
-            </div>
+            </Flex>
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <Flex align="center" justify="between" className="mb-3">
               <h4 className="text-sm font-semibold text-mission-control-text">Campaign Timeline</h4>
               <button
+                type="button"
                 onClick={addStage}
-                className="flex items-center gap-1 text-sm text-info hover:text-info/80 transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Add Stage
               </button>
-            </div>
+            </Flex>
 
             <div className="space-y-3">
               {sortedStages.map((stage, idx) => {
                 const isExpanded = expandedStages.has(stage.id);
                 return (
-                  <div key={stage.id} className="bg-mission-control-bg-alt border border-mission-control-border rounded-lg overflow-hidden">
+                  <div key={stage.id} className="bg-mission-control-border/20 border border-mission-control-border rounded-lg overflow-hidden">
                     <button
                       onClick={() => toggleStage(stage.id)}
                       className="w-full flex items-center gap-3 p-3 hover:bg-mission-control-surface transition-colors text-left"
+                      type="button"
                     >
                       <GripVertical className="w-4 h-4 text-mission-control-text-dim flex-shrink-0" />
                       <span className="w-8 h-8 flex items-center justify-center bg-info/20 text-info text-sm font-bold rounded-full flex-shrink-0">
                         {idx + 1}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <Flex align="center" gap="2">
                           <span className="text-sm font-medium text-mission-control-text">Day {stage.dayOffset + 1}</span>
                           <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
                             <Clock className="w-3 h-3" />{stage.time}
                           </span>
-                          <span className="px-2 py-0.5 text-xs bg-info-subtle text-info rounded-full">{stage.type}</span>
-                        </div>
+                          <Badge color="blue" variant="soft" radius="full">{stage.type}</Badge>
+                        </Flex>
                         {!isExpanded && stage.content && (
                           <p className="text-xs text-mission-control-text-dim truncate mt-1">{stage.content.slice(0, 80)}...</p>
                         )}
@@ -408,74 +400,76 @@ export default function XCampaignView() {
 
                     {isExpanded && (
                       <div className="p-4 pt-0 space-y-3 border-t border-mission-control-border">
-                        <div className="flex gap-3 pt-3">
+                        <Flex gap="3" className="pt-3">
                           <div className="w-24">
                             <label htmlFor={`stage-day-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Day</label>
-                            <input
+                            <TextField.Root
                               id={`stage-day-${stage.id}`}
                               type="number"
                               min={0}
                               value={stage.dayOffset}
                               onChange={e => updateStage(stage.id, { dayOffset: Math.max(0, parseInt(e.target.value) || 0) })}
-                              className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-mission-control-accent"
+                              size="2"
                             />
                           </div>
                           <div className="w-28">
                             <label htmlFor={`stage-time-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Time</label>
-                            <input
+                            <TextField.Root
                               id={`stage-time-${stage.id}`}
                               type="time"
                               value={stage.time}
                               onChange={e => updateStage(stage.id, { time: e.target.value })}
-                              className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-mission-control-accent"
+                              size="2"
                             />
                           </div>
                           <div className="flex-1">
                             <label htmlFor={`stage-type-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Type</label>
-                            <select
-                              id={`stage-type-${stage.id}`}
+                            <Select.Root
                               value={stage.type}
-                              onChange={e => updateStage(stage.id, { type: e.target.value as CampaignStage['type'] })}
-                              className="w-full bg-mission-control-surface text-mission-control-text border border-mission-control-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-mission-control-accent"
+                              onValueChange={val => updateStage(stage.id, { type: val as CampaignStage['type'] })}
+                              size="2"
                             >
-                              {STAGE_TYPES.map(t => (
-                                <option key={t.value} value={t.value}>{t.label}</option>
-                              ))}
-                            </select>
+                              <Select.Trigger className="w-full" />
+                              <Select.Content>
+                                {STAGE_TYPES.map(t => (
+                                  <Select.Item key={t.value} value={t.value}>{t.label}</Select.Item>
+                                ))}
+                              </Select.Content>
+                            </Select.Root>
                           </div>
-                        </div>
+                        </Flex>
 
                         <div>
                           <label htmlFor={`stage-content-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Tweet Content</label>
-                          <textarea
+                          <TextArea
                             id={`stage-content-${stage.id}`}
                             value={stage.content}
                             onChange={e => updateStage(stage.id, { content: e.target.value })}
                             placeholder="Write the tweet content for this stage..."
                             rows={3}
-                            className="w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-info"
+                            size="2"
                           />
                           <div className={`text-xs mt-1 ${countChars(stage.content) > 280 ? 'text-error' : 'text-mission-control-text-dim'}`}>
-                            {countChars(stage.content)}/280
+                            <span className="tabular-nums">{countChars(stage.content)}/280</span>
                           </div>
                         </div>
 
                         <div>
                           <label htmlFor={`stage-notes-${stage.id}`} className="block text-xs text-mission-control-text-dim mb-1">Notes (internal)</label>
-                          <input
+                          <TextField.Root
                             id={`stage-notes-${stage.id}`}
-                            type="text"
                             value={stage.notes}
                             onChange={e => updateStage(stage.id, { notes: e.target.value })}
                             placeholder="e.g., Hook tweet, builds curiosity..."
-                            className="w-full bg-mission-control-surface text-mission-control-text placeholder-mission-control-text-dim border border-mission-control-border rounded px-3 py-1.5 text-sm"
+                            size="2"
                           />
                         </div>
 
                         {editingCampaign.stages.length > 1 && (
                           <button
+                            type="button"
                             onClick={() => removeStage(stage.id)}
-                            className="flex items-center gap-1 text-xs text-error hover:text-error/80 transition-colors"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-error hover:bg-mission-control-surface transition-colors"
                           >
                             <Trash2 className="w-3 h-3" />
                             Remove stage
@@ -490,47 +484,35 @@ export default function XCampaignView() {
           </div>
         </div>
 
-        <div className="p-4 border-t border-mission-control-border flex gap-3">
-          <button
-            onClick={saveCampaign}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-mission-control-bg-alt hover:bg-mission-control-surface text-mission-control-text font-medium rounded-lg border border-mission-control-border transition-colors"
-          >
-            Save Draft
-          </button>
-          <button
-            onClick={scheduleCampaign}
-            disabled={!editingCampaign.start_date}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-info hover:bg-info/80 disabled:opacity-50 disabled:cursor-not-allowed text-mission-control-text font-medium rounded-lg transition-colors"
-          >
+        <Flex gap="3" className="p-4 border-t border-mission-control-border">
+          <Button onClick={saveCampaign} variant="soft" color="gray" size="3" className="flex-1">Save Draft</Button>
+          <Button onClick={scheduleCampaign} disabled={!editingCampaign.start_date} variant="solid" color="grass" size="3" className="flex-1">
             <Send className="w-4 h-4" />
             Schedule Campaign
-          </button>
-        </div>
+          </Button>
+        </Flex>
       </div>
     );
   }
 
   // Campaign list + AI proposal banner
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-2">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="2">
           <Rocket className="w-5 h-5 text-info" />
           <h3 className="text-lg font-semibold text-mission-control-text">Campaigns</h3>
-        </div>
-        <button
-          onClick={createNewCampaign}
-          className="flex items-center gap-2 px-3 py-2 text-sm bg-info hover:bg-info/80 text-mission-control-text rounded-lg transition-colors"
-        >
+        </Flex>
+        <Button onClick={createNewCampaign} variant="solid" color="blue" size="2">
           <Plus className="w-4 h-4" />
           Manual
-        </button>
-      </div>
+        </Button>
+      </Flex>
 
       {/* AI Proposal Banner */}
       {aiProposal && (
         <div className="mx-4 mt-4 p-4 bg-mission-control-accent/10 border-2 border-mission-control-accent/40 rounded-lg animate-in fade-in">
-          <div className="flex items-start gap-3">
+          <Flex align="start" gap="3">
             <Sparkles className="w-5 h-5 text-mission-control-accent flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <h4 className="text-sm font-semibold text-mission-control-text mb-1">Agent Proposed a Campaign</h4>
@@ -541,23 +523,21 @@ export default function XCampaignView() {
               <p className="text-xs text-mission-control-text-dim mt-1">
                 {aiProposal.stages.length} stages over {Math.max(...aiProposal.stages.map(s => s.dayOffset), 0) + 1} days
               </p>
-              <div className="flex gap-2 mt-3">
-                <button
-                  onClick={acceptProposal}
-                  className="flex items-center gap-2 px-4 py-2 text-sm bg-mission-control-accent hover:bg-mission-control-accent/80 text-white font-medium rounded-lg transition-colors"
-                >
+              <Flex gap="2" className="mt-3">
+                <Button onClick={acceptProposal} variant="solid" color="grass" size="2">
                   <Sparkles className="w-4 h-4" />
-                  Review & Edit
-                </button>
+                  Review &amp; Edit
+                </Button>
                 <button
+                  type="button"
                   onClick={dismissProposal}
-                  className="px-4 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   Dismiss
                 </button>
-              </div>
+              </Flex>
             </div>
-          </div>
+          </Flex>
         </div>
       )}
 
@@ -570,13 +550,14 @@ export default function XCampaignView() {
             <p className="text-sm mt-2">Build campaigns two ways:</p>
             <div className="mt-4 space-y-3">
               <button
+                type="button"
                 onClick={createNewCampaign}
-                className="w-full px-4 py-3 text-sm bg-mission-control-bg-alt hover:bg-mission-control-surface text-mission-control-text rounded-lg border border-mission-control-border transition-colors flex items-center gap-3"
+                className="w-full inline-flex items-center gap-3 px-4 py-3 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
-                <Plus className="w-5 h-5 text-info" />
+                <Plus className="w-5 h-5" />
                 <div className="text-left">
                   <span className="font-medium block">Manual</span>
-                  <span className="text-xs text-mission-control-text-dim">Build stages yourself</span>
+                  <span className="text-xs opacity-70">Build stages yourself</span>
                 </div>
               </button>
               <div className="w-full px-4 py-3 text-sm bg-mission-control-accent/10 text-mission-control-text rounded-lg border border-mission-control-accent/30 flex items-center gap-3">
@@ -595,46 +576,48 @@ export default function XCampaignView() {
             const stageCount = campaign.stages?.length || 0;
             const daySpan = campaign.stages ? Math.max(...campaign.stages.map((s: any) => s.dayOffset || 0), 0) + 1 : 0;
             const statusColors: Record<string, string> = {
-              draft: 'bg-mission-control-bg-alt text-mission-control-text-dim',
-              ready: 'bg-warning-subtle text-warning',
-              scheduled: 'bg-info-subtle text-info',
-              active: 'bg-success-subtle text-success',
-              completed: 'bg-mission-control-bg-alt text-mission-control-text-dim',
+              draft: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-mission-control-border text-mission-control-text-dim text-xs font-medium',
+              ready: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning/10 text-warning text-xs font-medium',
+              scheduled: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-info/10 text-info text-xs font-medium',
+              active: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/10 text-success text-xs font-medium',
+              completed: 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-mission-control-border text-mission-control-text-dim text-xs font-medium',
             };
             return (
               <div
                 key={campaign.id}
                 role="button"
                 tabIndex={0}
-                className="bg-mission-control-bg-alt border border-mission-control-border rounded-lg p-4 hover:border-info/50 transition-colors cursor-pointer"
+                className="bg-mission-control-border/20 border border-mission-control-border rounded-lg p-4 hover:border-info/50 transition-colors cursor-pointer"
                 onClick={() => { setEditingCampaign(campaign); setExpandedStages(new Set()); }}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setEditingCampaign(campaign); setExpandedStages(new Set()); } }}
               >
-                <div className="flex items-start justify-between mb-2">
+                <Flex align="start" justify="between" className="mb-2">
                   <h4 className="text-sm font-bold text-mission-control-text">{campaign.title || 'Untitled Campaign'}</h4>
-                  <span className={`px-2 py-1 text-xs rounded-full ${statusColors[campaign.status] || statusColors.draft}`}>
+                  <span className={statusColors[campaign.status] || statusColors.draft}>
                     {campaign.status}
                   </span>
-                </div>
+                </Flex>
                 {campaign.subject && (
                   <p className="text-xs text-mission-control-text-dim mb-2 line-clamp-2">{campaign.subject}</p>
                 )}
-                <div className="flex items-center gap-3 text-xs text-mission-control-text-dim">
+                <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim tabular-nums">
                   <span>{stageCount} stage{stageCount !== 1 ? 's' : ''}</span>
                   <span>{daySpan} day{daySpan !== 1 ? 's' : ''}</span>
                   <span>{new Date(campaign.created_at).toLocaleDateString()}</span>
                   <button
+                    type="button"
                     onClick={e => { e.stopPropagation(); deleteCampaign(campaign.id); }}
-                    className="ml-auto text-error hover:text-error/80 transition-colors"
+                    aria-label="Delete campaign"
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-error hover:bg-mission-control-surface transition-colors ml-auto"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                </div>
+                </Flex>
               </div>
             );
           })}
         </div>
       ) : null}
-    </div>
+    </Flex>
   );
 }

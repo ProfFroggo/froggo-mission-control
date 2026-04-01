@@ -59,6 +59,7 @@ import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
 import { Skeleton } from './LoadingStates';
 import ModuleLibraryPanel from './ModuleLibraryPanel';
 import type { CatalogModule } from '../types/catalog';
+import { Flex, Switch, Box } from '@radix-ui/themes';
 
 // ─── Activity log helpers ──────────────────────────────────────────────────────
 
@@ -185,22 +186,22 @@ interface ModuleCardData {
 function ModuleCardSkeleton() {
   return (
     <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-3">
+      <Flex align="start" justify="between" gap="2">
+        <Flex align="center" gap="3">
           <Skeleton width="w-10" height="h-10" rounded="lg" />
           <div className="space-y-1.5">
             <Skeleton width="w-24" height="h-4" />
             <Skeleton width="w-16" height="h-3" />
           </div>
-        </div>
+        </Flex>
         <Skeleton width="w-10" height="h-5" rounded="full" />
-      </div>
+      </Flex>
       <Skeleton width="w-full" height="h-3" />
       <Skeleton width="w-4/5" height="h-3" />
-      <div className="flex items-center gap-2 pt-1">
+      <Flex align="center" gap="2" className="pt-1">
         <Skeleton width="w-16" height="h-5" rounded="full" />
         <Skeleton width="w-20" height="h-6" rounded="lg" />
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -215,9 +216,9 @@ function CredentialStatusDot({
   details: CredentialDetail[];
 }) {
   const colorMap = {
-    green: 'bg-green-400',
-    yellow: 'bg-yellow-400',
-    red: 'bg-red-400',
+    green: 'bg-success',
+    yellow: 'bg-warning',
+    red: 'bg-error',
   };
 
   const tooltip = details
@@ -252,22 +253,13 @@ function ToggleSwitch({
   disabled?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
+    <Switch
+      checked={checked}
+      onCheckedChange={onChange}
       disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-mission-control-accent focus:ring-offset-2 focus:ring-offset-mission-control-bg disabled:opacity-40 disabled:cursor-not-allowed ${
-        checked ? 'bg-mission-control-accent' : 'bg-mission-control-border'
-      }`}
-    >
-      <span
-        className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-          checked ? 'translate-x-5' : 'translate-x-0'
-        }`}
-      />
-    </button>
+      color="violet"
+      size="2"
+    />
   );
 }
 
@@ -286,10 +278,10 @@ function CategoryChip({
     <button
       type="button"
       onClick={onClick}
-      className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors capitalize ${
+      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors capitalize ${
         selected
-          ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-          : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-text-dim'
+          ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+          : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
       }`}
     >
       {label}
@@ -334,11 +326,11 @@ function ModuleCard({
 
   return (
     <div
-      className={`bg-mission-control-surface border border-mission-control-border rounded-lg p-4 transition-all hover:border-mission-control-text-dim/30 flex flex-col ${cardClass}`}
+      className={`bg-mission-control-surface border border-mission-control-border rounded-lg p-4 transition-colors hover:border-mission-control-text-dim/30 flex flex-col ${cardClass}`}
     >
       {/* Header row */}
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="flex items-center gap-3 min-w-0">
+      <Flex align="start" justify="between" gap="2" className="mb-3">
+        <Flex align="center" gap="3" className="min-w-0">
           {/* Icon */}
           <div className="w-10 h-10 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">
             <IconComponent size={20} className="text-mission-control-accent" />
@@ -368,7 +360,7 @@ function ModuleCard({
               {manifest.author && ` · ${manifest.author}`}
             </span>
           </div>
-        </div>
+        </Flex>
 
         {/* Right-side controls */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -379,7 +371,7 @@ function ModuleCard({
               title={`Settings for ${manifest.name}`}
               aria-label={`Open settings for ${manifest.name}`}
               onClick={() => onSettingsClick(manifest.id)}
-              className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <Settings size={14} />
             </button>
@@ -394,7 +386,7 @@ function ModuleCard({
             <button
               type="button"
               onClick={() => onToggle(data, true)}
-              className="text-xs px-2.5 py-1 rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-text-dim transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               Re-enable
             </button>
@@ -406,7 +398,7 @@ function ModuleCard({
             />
           )}
         </div>
-      </div>
+      </Flex>
 
       {/* Description */}
       {manifest.description && (
@@ -435,13 +427,13 @@ function ModuleCard({
       <div className="flex-1" />
 
       {/* Footer row: category badge + configure button */}
-      <div className="flex items-center gap-2 mt-auto pt-1">
+      <Flex align="center" gap="2" className="mt-auto pt-1">
         <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-border/60 text-mission-control-text-dim capitalize">
           {category}
         </span>
 
         {isUnconfigured && (
-          <span className="text-xs text-red-400">Unconfigured</span>
+          <span className="text-xs text-error">Unconfigured</span>
         )}
 
         {isDisabled && (
@@ -452,13 +444,13 @@ function ModuleCard({
           <button
             type="button"
             onClick={() => onConfigure(data)}
-            className="ml-auto flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors px-2 py-1 rounded-lg border border-mission-control-border hover:border-mission-control-text-dim"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors ml-auto"
           >
             <Key size={12} />
             Configure
           </button>
         )}
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -672,10 +664,10 @@ export default function ModulesPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full overflow-y-auto">
+    <Box className="h-full overflow-y-auto">
       {/* Header */}
       <div className="px-6 py-4 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center gap-3">
+        <Flex align="center" gap="3">
           <div className="p-2 bg-mission-control-accent/20 rounded-lg">
             <Puzzle size={24} className="text-mission-control-accent" />
           </div>
@@ -683,32 +675,27 @@ export default function ModulesPage() {
             <h1 className="text-xl font-semibold text-mission-control-text">Modules</h1>
             <p className="text-sm text-mission-control-text-dim">Manage installed modules, configure credentials, and toggle features</p>
           </div>
-        </div>
+        </Flex>
       </div>
       {/* View tabs */}
       <div className="flex border-b border-mission-control-border px-6">
-        <button
-          type="button"
-          onClick={() => setView('installed')}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-            view === 'installed'
-              ? 'border-mission-control-accent text-mission-control-accent'
-              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-          }`}
-        >
-          <Puzzle size={15} /> Installed
-        </button>
-        <button
-          type="button"
-          onClick={() => setView('library')}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-            view === 'library'
-              ? 'border-mission-control-accent text-mission-control-accent'
-              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-          }`}
-        >
-          <Library size={15} /> Library
-        </button>
+        {([
+          { id: 'installed', label: 'Installed', icon: Puzzle },
+          { id: 'library',   label: 'Library',   icon: Library },
+        ] as const).map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setView(id)}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
+              view === id
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
+          >
+            <Icon size={14} /> {label}
+          </button>
+        ))}
       </div>
       <div className="p-6 space-y-6">
 
@@ -802,6 +789,6 @@ export default function ModulesPage() {
         type={confirmConfig.type}
       />
       </div>
-    </div>
+    </Box>
   );
 }

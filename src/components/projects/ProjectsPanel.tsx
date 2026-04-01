@@ -7,6 +7,8 @@ import {
   CheckCircle2, Clock, AlertCircle, ChevronRight,
   Users, Zap, LayoutGrid, List, BarChart3, TrendingUp, RotateCcw,
 } from 'lucide-react';
+import { Button, IconButton, Flex } from '@radix-ui/themes';
+import SearchInput from '../SearchInput';
 import { getProjectIcon } from './projectIcons';
 import { projectsApi } from '../../lib/api';
 import type { Project } from '../../types/projects';
@@ -18,9 +20,9 @@ import ProjectWorkspace from './ProjectWorkspace';
 
 // Status config
 const STATUS_CONFIG = {
-  active:    { label: 'Active',    color: 'text-success',  bg: 'bg-success-subtle border-success-border',   icon: CheckCircle2 },
-  paused:    { label: 'Paused',    color: 'text-warning',  bg: 'bg-warning-subtle border-warning-border',   icon: Clock },
-  completed: { label: 'Completed', color: 'text-info',     bg: 'bg-info-subtle border-info-border',         icon: CheckCircle2 },
+  active:    { label: 'Active',    color: 'text-success',  bg: 'bg-success/10 border-success/30',   icon: CheckCircle2 },
+  paused:    { label: 'Paused',    color: 'text-warning',  bg: 'bg-warning/10 border-warning/30',   icon: Clock },
+  completed: { label: 'Completed', color: 'text-info',     bg: 'bg-info/10 border-info/30',         icon: CheckCircle2 },
   archived:  { label: 'Archived',  color: 'text-mission-control-text-dim', bg: 'bg-mission-control-surface border-mission-control-border', icon: Archive },
 } as const;
 
@@ -32,9 +34,9 @@ function HealthRing({ score, size = 36 }: { score: number; size?: number }) {
   const circ = 2 * Math.PI * r;
   const offset = circ - (score / 100) * circ;
   const color =
-    score >= 80 ? 'var(--color-success, #22c55e)' :
-    score >= 60 ? 'var(--color-warning, #f59e0b)' :
-    'var(--color-error, #ef4444)';
+    score >= 80 ? 'var(--color-success)' :
+    score >= 60 ? 'var(--color-warning)' :
+    'var(--color-error)';
   return (
     <svg
       width={size}
@@ -46,7 +48,7 @@ function HealthRing({ score, size = 36 }: { score: number; size?: number }) {
       <circle
         cx={size / 2} cy={size / 2} r={r}
         fill="none"
-        stroke="var(--color-border, #2d2d3a)"
+        stroke="var(--mission-control-border)"
         strokeWidth={stroke}
       />
       <circle
@@ -64,7 +66,7 @@ function HealthRing({ score, size = 36 }: { score: number; size?: number }) {
 
 // ─── Sparkline ─────────────────────────────────────────────────────────────────
 
-function Sparkline({ points, color = '#6366f1', width = 64, height = 24 }: {
+function Sparkline({ points, color = 'var(--mission-control-accent)', width = 64, height = 24 }: {
   points: number[];
   color?: string;
   width?: number;
@@ -210,12 +212,12 @@ function StatsStrip({ projects }: StatsStripProps) {
         );
       })}
       {topAgentId && (
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-mission-control-surface border border-mission-control-border text-xs whitespace-nowrap">
+        <Flex align="center" gap="2" className="px-3 py-1 rounded-full bg-mission-control-surface border border-mission-control-border text-xs whitespace-nowrap">
           <Users size={11} className="text-mission-control-accent" />
           <span className="text-mission-control-text-dim">Top agent</span>
           <AgentAvatar agentId={topAgentId} size="xs" />
           <span className="font-semibold text-mission-control-accent">{agentDone[topAgentId]} tasks</span>
-        </div>
+        </Flex>
       )}
     </div>
   );
@@ -240,7 +242,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
   const lastActivity = Number(project.lastTaskActivity) || project.updatedAt;
   const health = computeHealthScore(project);
   const spark = makeSparkline(project);
-  const sparkColor = health >= 80 ? '#22c55e' : health >= 60 ? '#f59e0b' : '#ef4444';
+  const sparkColor = health >= 80 ? 'var(--color-success)' : health >= 60 ? 'var(--color-warning)' : 'var(--color-error)';
 
   // Cap members at 3 + overflow
   const displayedMembers = (project.members ?? []).slice(0, 3);
@@ -249,78 +251,80 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
   const isArchived = project.status === 'archived';
 
   return (
-    <div className="group relative w-full bg-mission-control-surface border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-all duration-200">
+    <div className="group relative w-full bg-mission-control-surface border border-mission-control-border rounded-xl hover:border-mission-control-accent/50 transition-colors duration-200">
       {/* Quick-action overlay (visible on hover) */}
       <div className="absolute top-2 right-2 hidden group-hover:flex items-center gap-1 z-10">
         {!isArchived && onArchive && (
           <button
+            type="button"
             onClick={e => { e.stopPropagation(); onArchive(); }}
             title="Archive project"
-            className="p-1.5 rounded-md bg-mission-control-bg0 border border-mission-control-border text-mission-control-text-dim hover:text-warning hover:border-warning/50 transition-colors"
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <Archive size={12} />
           </button>
         )}
         {isArchived && onRestore && (
           <button
+            type="button"
             onClick={e => { e.stopPropagation(); onRestore(); }}
             title="Restore project"
-            className="p-1.5 rounded-md bg-mission-control-bg0 border border-mission-control-border text-mission-control-text-dim hover:text-success hover:border-success/50 transition-colors"
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <RotateCcw size={12} />
           </button>
         )}
         <button
+          type="button"
           onClick={e => { e.stopPropagation(); onClick(); }}
           title="Open project"
-          className="p-1.5 rounded-md bg-mission-control-bg0 border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-accent hover:border-mission-control-accent/50 transition-colors"
+          className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
           <ChevronRight size={12} />
         </button>
       </div>
 
       <button
+        type="button"
         onClick={onClick}
-        className="w-full text-left p-5 focus:outline-none focus:ring-2 focus:ring-mission-control-accent/30 rounded-lg"
+        className="w-full text-left p-4 block"
       >
         {/* Header */}
-        <div className="flex items-start gap-3 mb-3 pr-14">
+        <Flex align="start" gap="3" className="mb-3 pr-12">
           <div
-            className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+            className="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
             style={{ backgroundColor: `${project.color}20`, border: `1px solid ${project.color}40` }}
           >
-            {(() => { const ProjIcon = getProjectIcon(project.emoji); return <ProjIcon size={18} style={{ color: project.color }} />; })()}
+            {(() => { const ProjIcon = getProjectIcon(project.emoji); return <ProjIcon size={16} style={{ color: project.color }} />; })()}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-mission-control-text truncate group-hover:text-mission-control-accent transition-colors">
-                {project.name}
-              </h3>
-            </div>
+            <h3 className="font-semibold text-sm text-mission-control-text truncate group-hover:text-mission-control-accent transition-colors">
+              {project.name}
+            </h3>
             {project.description && (
-              <p className="text-xs text-mission-control-text-dim truncate mt-0.5">{project.description}</p>
+              <p className="text-xs text-mission-control-text-dim/70 truncate mt-0.5">{project.description}</p>
             )}
           </div>
-        </div>
+        </Flex>
 
         {/* Status badge */}
-        <div className="flex items-center gap-2 mb-3">
-          <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${sc.bg} ${sc.color}`}>
-            <StatusIcon size={10} />
+        <Flex align="center" gap="2" className="mb-3">
+          <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border font-medium ${sc.bg} ${sc.color}`}>
+            <StatusIcon size={9} />
             {sc.label}
           </span>
-        </div>
+        </Flex>
 
         {/* Progress bar */}
         {totalTasks > 0 && (
           <div className="mb-3">
-            <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1 tabular-nums">
+            <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim/70 mb-1.5 tabular-nums">
               <span>{doneTasks}/{totalTasks} tasks</span>
               <span>{progress}%</span>
-            </div>
-            <div className="h-1.5 bg-mission-control-bg0 rounded-full overflow-hidden">
+            </Flex>
+            <div className="h-1.5 bg-mission-control-border/40 rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full transition-all duration-500"
+                className="h-full rounded-full transition-[width] duration-500"
                 style={{ width: `${progress}%`, backgroundColor: project.color }}
               />
             </div>
@@ -328,7 +332,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between">
+        <Flex align="center" justify="between">
           {/* Agent avatars (max 3 + overflow) */}
           <div className="flex items-center -space-x-1.5">
             {displayedMembers.map(m => (
@@ -353,7 +357,7 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-3 text-xs text-mission-control-text-dim">
+          <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim">
             {inProgressTasks > 0 && (
               <span className="flex items-center gap-1 text-warning">
                 <Zap size={11} /> {inProgressTasks} active
@@ -362,8 +366,8 @@ function ProjectCard({ project, onClick, onArchive, onRestore }: ProjectCardProp
             <span className="flex items-center gap-1">
               <Clock size={11} /> {formatTimeAgo(lastActivity)}
             </span>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
       </button>
     </div>
   );
@@ -381,12 +385,9 @@ function EmptyProjects({ onNew }: { onNew: () => void }) {
       <p className="text-sm text-mission-control-text-dim max-w-xs mb-6">
         Create a project to organise tasks, chats, automations, and files around a shared goal.
       </p>
-      <button
-        onClick={onNew}
-        className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-sm font-medium"
-      >
+      <Button onClick={onNew} size="2" variant="solid">
         <Plus size={16} /> New Project
-      </button>
+      </Button>
     </div>
   );
 }
@@ -487,10 +488,10 @@ export default function ProjectsPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg0">
+    <Flex direction="column" height="100%" className="bg-mission-control-surface">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between" className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" gap="3">
           <div className="p-2 bg-mission-control-accent/20 rounded-lg">
             <FolderKanban size={24} className="text-mission-control-accent" />
           </div>
@@ -498,140 +499,153 @@ export default function ProjectsPanel() {
             <h1 className="text-xl font-semibold text-mission-control-text">Projects</h1>
             <p className="text-sm text-mission-control-text-dim">{nonArchivedProjects.filter(p => p.status === 'active').length} active</p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           <button
+            type="button"
             onClick={() => load(false)}
             disabled={refreshing}
-            className="p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             title="Refresh"
             aria-label="Refresh projects"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
           </button>
           <div className="flex items-center rounded-lg border border-mission-control-border overflow-hidden">
             <button
+              type="button"
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 transition-colors ${viewMode === 'grid' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
               title="Grid view"
+              className={`p-2 transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+              }`}
             >
               <LayoutGrid size={14} />
             </button>
             <button
+              type="button"
               onClick={() => setViewMode('list')}
-              className={`p-1.5 transition-colors ${viewMode === 'list' ? 'bg-mission-control-accent text-white' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'}`}
               title="List view"
+              className={`p-2 transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+              }`}
             >
               <List size={14} />
             </button>
           </div>
-          <button
-            onClick={() => setShowCreateWizard(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-sm font-medium"
-          >
+          <Button onClick={() => setShowCreateWizard(true)} size="2" variant="solid">
             <Plus size={15} /> New Project
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Flex>
+      </Flex>
 
 
       {/* Tab strip */}
-      <div className="flex items-center gap-1 px-6 pt-3 border-b border-mission-control-border">
+      <Flex gap="1" className="px-4 border-b border-mission-control-border">
         <button
+          type="button"
           onClick={() => setTabView('active')}
-          className={`px-3 py-1.5 text-sm font-medium rounded-t transition-colors ${
+          className={`flex items-center gap-2 px-4 py-3 border-b-2 -mb-px text-sm font-medium transition-colors ${
             tabView === 'active'
-              ? 'text-mission-control-accent border-b-2 border-mission-control-accent'
-              : 'text-mission-control-text-dim hover:text-mission-control-text'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
           }`}
         >
           Active ({nonArchivedProjects.length})
         </button>
         <button
+          type="button"
           onClick={() => setTabView('archived')}
-          className={`px-3 py-1.5 text-sm font-medium rounded-t transition-colors flex items-center gap-1.5 ${
+          className={`flex items-center gap-2 px-4 py-3 border-b-2 -mb-px text-sm font-medium transition-colors ${
             tabView === 'archived'
-              ? 'text-mission-control-accent border-b-2 border-mission-control-accent'
-              : 'text-mission-control-text-dim hover:text-mission-control-text'
+              ? 'border-mission-control-accent text-mission-control-accent'
+              : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
           }`}
         >
           <Archive size={13} />
           Archived ({archivedProjects.length})
         </button>
-      </div>
+      </Flex>
 
       {/* Filters (only for active tab) */}
       {tabView === 'active' && (
-        <div className="flex items-center gap-3 px-6 py-3 border-b border-mission-control-border">
-          <div className="relative flex-1 max-w-xs">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
-              aria-label="Search projects"
-              placeholder="Search projects..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50"
-            />
-          </div>
-          <div className="flex items-center gap-1">
+        <Flex align="center" gap="3" className="px-4 py-3 border-b border-mission-control-border">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search projects..."
+            aria-label="Search projects"
+            className="flex-1 max-w-xs"
+            size="md"
+          />
+          <div className="flex items-center border border-mission-control-border rounded-lg overflow-hidden">
             {(['all', 'active', 'paused', 'completed'] as const).map(s => (
               <button
                 key={s}
+                type="button"
                 onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1 text-xs rounded-full transition-colors capitalize ${
+                className={`px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
                   statusFilter === s
-                    ? 'bg-mission-control-accent text-white'
-                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
                 }`}
               >
                 {s === 'all' ? `All (${nonArchivedProjects.length})` : s}
               </button>
             ))}
           </div>
-        </div>
+        </Flex>
       )}
 
       {/* Archived search */}
       {tabView === 'archived' && (
-        <div className="flex items-center gap-3 px-6 py-3 border-b border-mission-control-border">
-          <div className="relative flex-1 max-w-xs">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
-              aria-label="Search archived projects"
-              placeholder="Search archived..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50"
-            />
-          </div>
-        </div>
+        <Flex align="center" gap="3" className="px-4 py-3 border-b border-mission-control-border">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search archived..."
+            aria-label="Search archived projects"
+            className="flex-1 max-w-xs"
+            size="md"
+          />
+        </Flex>
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 overflow-y-auto px-4 py-4">
         {loading && (
-          <div className="flex items-center justify-center py-16">
+          <Flex align="center" justify="center" className="py-16">
             <Spinner size={24} />
-          </div>
+          </Flex>
         )}
 
         {error && !loading && (
-          <div className="flex items-center gap-2 px-4 py-3 bg-error-subtle border border-error/30 rounded-lg text-error text-sm">
+          <Flex align="center" gap="2" className="px-4 py-3 bg-error/10 border border-error/30 rounded-lg text-error text-sm">
             <AlertCircle size={15} />
             {error}
-          </div>
+          </Flex>
         )}
 
         {!loading && !error && visibleProjects.length === 0 && (
           tabView === 'archived' ? (
-            <div className="text-center py-16 text-mission-control-text-dim text-sm">
-              {search ? `No archived projects matching "${search}"` : 'No archived projects'}
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Archive size={32} className="text-mission-control-text-dim mb-3 opacity-50" />
+              <p className="text-sm font-medium text-mission-control-text-dim">
+                {search ? `No archived projects match "${search}"` : 'No archived projects'}
+              </p>
+              <p className="text-xs text-mission-control-text-dim mt-1 opacity-70">
+                {search ? 'Try a different search term' : 'Archived projects will appear here'}
+              </p>
             </div>
           ) : search ? (
-            <div className="text-center py-16 text-mission-control-text-dim text-sm">
-              No projects matching &quot;{search}&quot;
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Search size={32} className="text-mission-control-text-dim mb-3 opacity-50" />
+              <p className="text-sm font-medium text-mission-control-text-dim">No projects match &quot;{search}&quot;</p>
+              <p className="text-xs text-mission-control-text-dim mt-1 opacity-70">Try a different search term</p>
             </div>
           ) : (
             <EmptyProjects onNew={() => setShowCreateWizard(true)} />
@@ -663,6 +677,6 @@ export default function ProjectsPanel() {
           onCreated={handleProjectCreated}
         />
       )}
-    </div>
+    </Flex>
   );
 }

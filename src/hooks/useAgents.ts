@@ -220,7 +220,7 @@ export interface UseAgentsResult {
 /**
  * @param pollIntervalMs - How often to re-fetch (0 = no polling). Default 15000.
  */
-export function useAgents(pollIntervalMs = 15000): UseAgentsResult {
+export function useAgents(pollIntervalMs = 120000): UseAgentsResult {
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

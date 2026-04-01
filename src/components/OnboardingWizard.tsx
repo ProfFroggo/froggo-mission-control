@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Bot,
+  Check,
   CheckCircle,
   XCircle,
   Loader,
@@ -27,6 +28,7 @@ import {
   SkipForward,
   X,
 } from 'lucide-react';
+import { Button, Checkbox, Flex, TextField } from '@radix-ui/themes';
 
 interface OnboardingWizardProps {
   onComplete: (startTour: boolean) => void;
@@ -400,10 +402,15 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ value: geminiKey.trim() }),
       });
-      // Quick validation: try a minimal Gemini REST call
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey.trim()}`
-      );
+      // Validate via server-side proxy (F-02: key never sent from browser)
+      const res = await fetch('/api/gemini/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: 'Reply with OK' }] }],
+          generationConfig: { maxOutputTokens: 8 },
+        }),
+      });
       if (res.ok) {
         setGeminiStatus('ok');
       } else {
@@ -556,13 +563,13 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // ─────────────────────────────────────────────
   const statusIcon = (status: CheckStatus | 'ok' | 'fail' | 'checking') => {
     if (status === 'checking') return <Loader size={16} className="text-mission-control-text-dim animate-spin" />;
-    if (status === 'ok') return <CheckCircle size={16} className="text-green-500" />;
-    return <XCircle size={16} className="text-red-500" />;
+    if (status === 'ok') return <CheckCircle size={16} className="text-success" />;
+    return <XCircle size={16} className="text-error" />;
   };
 
   const permIcon = (status: PermStatus) => {
-    if (status === 'granted') return <CheckCircle size={16} className="text-green-500" />;
-    if (status === 'denied') return <XCircle size={16} className="text-red-500" />;
+    if (status === 'granted') return <CheckCircle size={16} className="text-success" />;
+    if (status === 'denied') return <XCircle size={16} className="text-error" />;
     return <div className="w-4 h-4 rounded-full border-2 border-mission-control-border" />;
   };
 
@@ -587,21 +594,20 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
           { icon: Package, label: 'Modular by design' },
           { icon: Shield, label: 'You control approvals' },
         ].map(({ icon: Icon, label }) => (
-          <div key={label} className="flex items-center gap-2 p-2 rounded-lg bg-mission-control-bg border border-mission-control-border">
-            <Icon size={14} className="text-mission-control-accent flex-shrink-0" />
-            <span className="text-xs text-mission-control-text-dim">{label}</span>
+          <div key={label} className="flex items-center gap-2 p-2.5 rounded-lg bg-mission-control-surface border border-mission-control-border">
+            <div className="flex-shrink-0 w-6 h-6 rounded-md bg-mission-control-accent/10 flex items-center justify-center">
+              <Icon size={12} className="text-mission-control-accent" />
+            </div>
+            <span className="text-xs text-mission-control-text">{label}</span>
           </div>
         ))}
       </div>
-      <button
-        onClick={goNext}
-        className="px-6 py-3 bg-mission-control-accent text-white rounded-lg font-medium hover:bg-mission-control-accent-dim transition-colors w-full max-w-xs"
-      >
+      <Button onClick={goNext} variant="solid" color="violet" size="3" className="w-full max-w-xs">
         Get Started
-      </button>
+      </Button>
       <button
         onClick={handleSkip}
-        className="mt-3 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors mt-3"
       >
         Skip Setup
       </button>
@@ -620,30 +626,30 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
     return (
       <div className="py-4">
-        <div className="flex items-center gap-2 mb-1">
+        <Flex align="center" gap="2" mb="1">
           <Sparkles size={18} className="text-mission-control-accent" />
           <h2 className="text-xl font-bold text-mission-control-text">System Check</h2>
-        </div>
+        </Flex>
         <p className="text-mission-control-text-dim text-sm mb-5">
           Verifying your environment before setup continues.
         </p>
         <div className="space-y-2 mb-5">
           {checks.map(({ key, label, critical }) => (
-            <div key={key} className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
+            <Flex key={key} align="center" gap="3" className="p-3 rounded-xl bg-mission-control-bg border border-mission-control-border">
               {statusIcon(sysCheck[key])}
               <span className="text-sm text-mission-control-text flex-1">{label}</span>
               {critical && sysCheck[key] === 'fail' && (
-                <span className="text-xs text-red-400 font-medium">Required</span>
+                <span className="text-xs text-error font-medium">Required</span>
               )}
               {sysCheck[key] === 'ok' && (
-                <span className="text-xs text-green-500">Ready</span>
+                <span className="text-xs text-success">Ready</span>
               )}
-            </div>
+            </Flex>
           ))}
         </div>
         {sysCheck.cli === 'fail' && (
-          <div className="p-3 rounded-lg bg-amber-500/10 border border-warning-border mb-3 text-xs space-y-1.5">
-            <p className="font-medium text-amber-400">Claude CLI not detected</p>
+          <div className="p-3 rounded-xl bg-warning/10 border border-warning/30 mb-3 text-xs space-y-1.5">
+            <p className="font-medium text-warning">Claude CLI not detected</p>
             <p className="text-mission-control-text-dim">Mission Control requires the Claude Code CLI to spawn agents.</p>
             <a
               href="https://docs.anthropic.com/claude-code"
@@ -657,13 +663,13 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
           </div>
         )}
         {criticalFailed && (
-          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 mb-4 text-xs text-red-400 space-y-1">
-            <p className="text-mission-control-text-dim">Run <code className="font-mono text-red-300">mission-control restart</code> in your terminal, then click Re-check.</p>
+          <div className="p-3 rounded-xl bg-error-subtle border border-error-border mb-4 text-xs space-y-1">
+            <p className="text-mission-control-text-dim">Run <code className="font-mono text-error">mission-control restart</code> in your terminal, then click Re-check.</p>
           </div>
         )}
         <button
           onClick={runSystemCheck}
-          className="flex items-center gap-2 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <RefreshCw size={13} />
           Re-check
@@ -675,45 +681,48 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // STEP 2 — Agent Permissions
   const renderAgentPermissions = () => (
     <div className="py-4">
-      <div className="flex items-center gap-2 mb-1">
+      <Flex align="center" gap="2" mb="1">
         <Shield size={18} className="text-mission-control-accent" />
         <h2 className="text-xl font-bold text-mission-control-text">Agent Permissions</h2>
-      </div>
+      </Flex>
       <p className="text-mission-control-text-dim text-sm mb-5">
         Agents need the following tool permissions to do their work. Review and confirm before continuing.
       </p>
       <div className="space-y-2 mb-5">
         {AGENT_PERMISSIONS.map(({ tool, icon: Icon, why }) => (
-          <div key={tool} className="p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
-            <div className="flex items-center gap-2 mb-1">
+          <div key={tool} className="p-3 rounded-xl bg-mission-control-bg border border-mission-control-border">
+            <Flex align="center" gap="2" mb="1">
               <Icon size={14} className="text-mission-control-accent flex-shrink-0" />
               <span className="text-sm font-medium text-mission-control-text font-mono">{tool}</span>
-            </div>
+            </Flex>
             <p className="text-xs text-mission-control-text-dim leading-relaxed pl-5">{why}</p>
           </div>
         ))}
       </div>
-      <div className="p-3 rounded-lg bg-mission-control-accent/5 border border-mission-control-accent/20 mb-4 text-xs text-mission-control-text-dim space-y-1">
+      <div className="p-3 rounded-xl bg-mission-control-accent/5 border border-mission-control-accent/20 mb-4 text-xs text-mission-control-text-dim space-y-1">
         <p>These are platform-wide defaults defined in <code className="font-mono text-mission-control-text">.claude/settings.json</code>.</p>
         <p>Per-agent permissions — which tools each agent can use — are configured individually on the <span className="text-mission-control-text font-medium">Agents</span> page after setup.</p>
       </div>
       {permissionsConfirmed ? (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-success-border">
-          <CheckCircle size={16} className="text-green-500" />
+        <Flex align="center" gap="2" p="3" className="rounded-xl bg-success-subtle border border-success-border">
+          <CheckCircle size={16} className="text-success" />
           <span className="text-sm text-mission-control-text">Permissions confirmed</span>
-        </div>
+        </Flex>
       ) : (
-        <button
+        <Button
           onClick={confirmPermissions}
           disabled={confirmingPermissions}
-          className="w-full py-2.5 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          variant="solid"
+          color="violet"
+          size="2"
+          className="w-full"
         >
           {confirmingPermissions ? (
             <><Loader size={14} className="animate-spin" /> Confirming…</>
           ) : (
-            <><Shield size={14} /> Confirm & Allow</>
+            <><Shield size={14} /> Confirm &amp; Allow</>
           )}
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -721,10 +730,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // STEP 3 — Gemini API Key
   const renderGeminiKey = () => (
     <div className="py-4">
-      <div className="flex items-center gap-2 mb-1">
+      <Flex align="center" gap="2" mb="1">
         <Key size={18} className="text-mission-control-accent" />
         <h2 className="text-xl font-bold text-mission-control-text">Gemini API Key</h2>
-      </div>
+      </Flex>
       <p className="text-mission-control-text-dim text-sm mb-1">
         Required for voice chat and real-time meeting features.
       </p>
@@ -733,31 +742,34 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       </p>
 
       {geminiStatus === 'ok' ? (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-success-border mb-4">
-          <CheckCircle size={16} className="text-green-500" />
+        <Flex align="center" gap="2" p="3" mb="4" className="rounded-xl bg-success-subtle border border-success-border">
+          <CheckCircle size={16} className="text-success" />
           <span className="text-sm text-mission-control-text">API key validated and saved</span>
-        </div>
+        </Flex>
       ) : (
         <>
-          <div className="flex gap-2 mb-3">
-            <input
+          <Flex gap="2" mb="3">
+            <TextField.Root
+              size="2"
+              className="flex-1 font-mono"
               type="password"
               value={geminiKey}
-              onChange={e => setGeminiKey(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGeminiKey(e.target.value)}
               placeholder="AIza..."
-              className="flex-1 px-3 py-2 text-sm rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent transition-colors font-mono"
-              onKeyDown={e => e.key === 'Enter' && validateGeminiKey()}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && validateGeminiKey()}
             />
-            <button
+            <Button
               onClick={validateGeminiKey}
               disabled={!geminiKey.trim() || geminiStatus === 'validating'}
-              className="px-3 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+              variant="solid"
+              color="violet"
+              size="2"
             >
               {geminiStatus === 'validating' ? <Loader size={14} className="animate-spin" /> : 'Validate'}
-            </button>
-          </div>
+            </Button>
+          </Flex>
           {geminiStatus === 'error' && (
-            <p className="text-xs text-red-400 mb-3">{geminiError}</p>
+            <p className="text-xs text-error mb-3">{geminiError}</p>
           )}
         </>
       )}
@@ -765,17 +777,17 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       {!geminiSkipped && geminiStatus !== 'ok' && (
         <button
           onClick={() => setGeminiSkipped(true)}
-          className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
-          <AlertTriangle size={12} className="text-yellow-500" />
-          Skip for now — voice features won't be available
+          <AlertTriangle size={12} className="text-warning" />
+          Skip for now — voice features won&apos;t be available
         </button>
       )}
       {geminiSkipped && (
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-500/10 border border-warning-border text-xs text-yellow-500">
+        <Flex align="center" gap="2" p="2" className="rounded-xl bg-warning-subtle border border-warning-border text-xs text-warning">
           <AlertTriangle size={12} />
           Skipped — add your key later in Settings
-        </div>
+        </Flex>
       )}
     </div>
   );
@@ -783,57 +795,60 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // STEP 4 — Google Workspace
   const renderGoogleWorkspace = () => (
     <div className="py-4">
-      <div className="flex items-center gap-2 mb-1">
+      <Flex align="center" gap="2" mb="1">
         <Mail size={18} className="text-mission-control-accent" />
         <h2 className="text-xl font-bold text-mission-control-text">Google Workspace</h2>
-      </div>
+      </Flex>
       <p className="text-mission-control-text-dim text-sm mb-5">
         Connect your Google account to enable Gmail and Calendar integration in the Inbox module.
       </p>
 
       {googleStatus === 'checking' && (
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
+        <Flex align="center" gap="3" p="3" className="rounded-xl bg-mission-control-bg border border-mission-control-border">
           <Loader size={16} className="animate-spin text-mission-control-accent" />
           <span className="text-sm text-mission-control-text">Checking connection…</span>
-        </div>
+        </Flex>
       )}
 
       {googleStatus === 'connected' && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-success-border mb-4">
-          <CheckCircle size={16} className="text-green-500" />
+        <Flex align="center" gap="2" p="3" mb="4" className="rounded-xl bg-success-subtle border border-success-border">
+          <CheckCircle size={16} className="text-success" />
           <span className="text-sm text-mission-control-text">
             Connected{googleEmail ? ` as ${googleEmail}` : ''}
           </span>
-        </div>
+        </Flex>
       )}
 
       {(googleStatus === 'disconnected' || googleStatus === 'error') && (
         <>
-          <button
+          <Button
             onClick={connectGoogle}
             disabled={googleConnecting}
-            className="w-full py-2.5 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mb-3"
+            variant="solid"
+            color="violet"
+            size="2"
+            className="w-full mb-3"
           >
             {googleConnecting ? (
               <><Loader size={14} className="animate-spin" /> Redirecting…</>
             ) : (
               <><Mail size={14} /> Connect Google Account</>
             )}
-          </button>
+          </Button>
           {!googleSkipped && (
             <button
               onClick={() => setGoogleSkipped(true)}
-              className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
-              <AlertTriangle size={12} className="text-yellow-500" />
-              Skip — I'll connect Google later
+              <AlertTriangle size={12} className="text-warning" />
+              Skip — I&apos;ll connect Google later
             </button>
           )}
           {googleSkipped && (
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-yellow-500/10 border border-warning-border text-xs text-yellow-500">
+            <Flex align="center" gap="2" p="2" className="rounded-xl bg-warning-subtle border border-warning-border text-xs text-warning">
               <AlertTriangle size={12} />
               Skipped — connect later via Settings
-            </div>
+            </Flex>
           )}
         </>
       )}
@@ -852,24 +867,24 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
   const renderObsidianAndPermissions = () => (
     <div className="py-4">
-      <div className="flex items-center gap-2 mb-1">
+      <Flex align="center" gap="2" mb="1">
         <BookOpen size={18} className="text-mission-control-accent" />
         <h2 className="text-xl font-bold text-mission-control-text">Memory Vault & Permissions</h2>
-      </div>
+      </Flex>
       <p className="text-mission-control-text-dim text-sm mb-5">
         Obsidian provides a visual interface for the agent memory vault. Agents work without it, but you won't be able to browse memory files visually.
       </p>
 
       {/* Obsidian vault status */}
       <div className="mb-4">
-        <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Memory Vault (Recommended)</p>
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
+        <p className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">Memory Vault (Recommended)</p>
+        <Flex align="center" gap="3" p="3" className="rounded-xl bg-mission-control-bg border border-mission-control-border">
           {obsidianStatus === 'checking' && <Loader size={16} className="animate-spin text-mission-control-accent" />}
-          {obsidianStatus === 'found' && <CheckCircle size={16} className="text-green-500" />}
+          {obsidianStatus === 'found' && <CheckCircle size={16} className="text-success" />}
           {obsidianStatus === 'not-found' && (
             obsidianOpening
               ? <Loader size={16} className="animate-spin text-mission-control-accent" />
-              : <AlertTriangle size={16} className="text-yellow-500" />
+              : <AlertTriangle size={16} className="text-warning" />
           )}
           <div className="flex-1">
             <span className="text-sm text-mission-control-text">
@@ -887,62 +902,59 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
               </p>
             )}
           </div>
-        </div>
+        </Flex>
 
         {/* Open in Obsidian button */}
-        <div className="flex items-center gap-2 mt-3">
-          <button
+        <Flex align="center" gap="2" mt="3">
+          <Button
             onClick={handleOpenObsidian}
             disabled={obsidianOpening}
-            className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="soft"
+            color="violet"
+            size="2"
           >
             {obsidianOpening
               ? <Loader size={14} className="animate-spin" />
               : <BookOpen size={14} />
             }
             Open in Obsidian
-          </button>
-          <button
-            onClick={checkObsidian}
-            className="flex items-center gap-1 px-3 py-2 text-xs rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-          >
+          </Button>
+          <Button onClick={checkObsidian} variant="soft" color="gray" size="2">
             <RefreshCw size={12} />
             Re-check
-          </button>
-        </div>
+          </Button>
+        </Flex>
 
         {/* Confirmation checkbox */}
         {!obsidianSkipped && (
           <label className="flex items-center gap-3 mt-4 cursor-pointer select-none">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={obsidianConfirmed}
-              onChange={e => setObsidianConfirmed(e.target.checked)}
-              className="w-4 h-4 rounded accent-mission-control-accent"
+              onCheckedChange={(val) => setObsidianConfirmed(val === true)}
             />
             <span className="text-sm text-mission-control-text">I've opened the vault in Obsidian</span>
           </label>
         )}
         {obsidianSkipped ? (
-          <div className="flex items-center gap-2 mt-3 p-2 rounded-lg bg-yellow-500/10 border border-warning-border text-xs text-yellow-500">
+          <Flex align="center" gap="2" mt="3" p="2" className="rounded-xl bg-warning-subtle border border-warning-border text-xs text-warning">
             <AlertTriangle size={12} />
             Skipped — open Obsidian and load ~/mission-control/memory as a vault anytime
-          </div>
+          </Flex>
         ) : (
           !obsidianConfirmed && obsidianStatus !== 'found' && (
             <button
               onClick={() => setObsidianSkipped(true)}
-              className="flex items-center gap-1 mt-3 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors mt-3"
             >
-              <AlertTriangle size={12} className="text-yellow-500" />
-              Skip — I'll set up Obsidian later
+              <AlertTriangle size={12} className="text-warning" />
+              Skip — I&apos;ll set up Obsidian later
             </button>
           )
         )}
       </div>
 
       {/* Microphone & Camera */}
-      <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Browser Permissions</p>
+      <p className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">Browser Permissions</p>
       <div className="space-y-2">
         {([
           { type: 'microphone' as const, icon: Mic, label: 'Microphone', desc: 'Required for voice chat with agents' },
@@ -950,7 +962,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         ]).map(({ type, icon: Icon, label, desc }) => {
           const status = permStatus[type];
           return (
-            <div key={type} className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
+            <Flex key={type} align="center" gap="3" className="p-3 rounded-xl bg-mission-control-bg border border-mission-control-border">
               <Icon size={16} className="text-mission-control-text-dim flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <span className="text-sm text-mission-control-text">{label}</span>
@@ -959,15 +971,12 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
               <div className="flex items-center gap-2 flex-shrink-0">
                 {permIcon(status)}
                 {status !== 'granted' && (
-                  <button
-                    onClick={() => requestPermission(type)}
-                    className="px-2.5 py-1 text-xs rounded-lg bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30 transition-colors"
-                  >
+                  <Button onClick={() => requestPermission(type)} variant="soft" color="violet" size="1">
                     Grant
-                  </button>
+                  </Button>
                 )}
               </div>
-            </div>
+            </Flex>
           );
         })}
       </div>
@@ -998,16 +1007,16 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     if (loadingCatalog) {
       return (
         <div className="py-2">
-          <div className="flex items-center gap-2 mb-1">
+          <Flex align="center" gap="2" mb="1">
             <Package size={18} className="text-mission-control-accent" />
             <h2 className="text-xl font-bold text-mission-control-text">Agents & Modules</h2>
-          </div>
+          </Flex>
           <p className="text-mission-control-text-dim text-sm mb-4">
             Loading catalog…
           </p>
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-10 rounded-lg bg-mission-control-bg border border-mission-control-border animate-pulse" />
+              <div key={i} className="h-10 rounded-xl bg-mission-control-bg border border-mission-control-border animate-pulse" />
             ))}
           </div>
         </div>
@@ -1016,31 +1025,31 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
     return (
       <div className="py-2">
-        <div className="flex items-center gap-2 mb-1">
+        <Flex align="center" gap="2" mb="1">
           <Package size={18} className="text-mission-control-accent" />
           <h2 className="text-xl font-bold text-mission-control-text">Agents & Modules</h2>
-        </div>
+        </Flex>
         <p className="text-mission-control-text-dim text-sm mb-4">
           Core agents and modules are pre-selected. Add any optional ones you need.
         </p>
 
         {/* Core Agents */}
-        <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Core Agents</p>
+        <p className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">Core Agents</p>
         <div className="space-y-1.5 mb-4">
           {coreAgents.map(agent => (
-            <div key={agent.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-mission-control-bg border border-mission-control-border opacity-80">
+            <div key={agent.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-mission-control-bg border border-mission-control-border opacity-80">
               <Lock size={12} className="text-mission-control-accent flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <span className="text-sm font-medium text-mission-control-text">{agent.name}</span>
                 <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>
               </div>
-              <CheckCircle size={14} className="text-green-500 flex-shrink-0" />
+              <CheckCircle size={14} className="text-success flex-shrink-0" />
             </div>
           ))}
         </div>
 
         {/* Optional Agents */}
-        <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Optional Agents</p>
+        <p className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">Optional Agents</p>
         <div className="space-y-1.5 mb-4">
           {optionalAgents.map(agent => {
             const selected = selectedOptionalAgents.has(agent.id);
@@ -1049,7 +1058,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
                 key={agent.id}
                 type="button"
                 onClick={() => toggleAgent(agent.id)}
-                className={`w-full flex items-center gap-3 p-2.5 rounded-lg border text-left transition-all ${
+                className={`w-full flex items-center gap-3 p-2.5 rounded-xl border text-left transition-colors ${
                   selected
                     ? 'border-mission-control-accent bg-mission-control-accent/10'
                     : 'border-mission-control-border bg-mission-control-bg hover:border-mission-control-accent/40'
@@ -1058,7 +1067,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
                 <div className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
                   selected ? 'border-mission-control-accent bg-mission-control-accent' : 'border-mission-control-border'
                 }`}>
-                  {selected && <CheckCircle size={10} className="text-white" />}
+                  {selected && <Check size={10} className="text-white" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="text-sm font-medium text-mission-control-text">{agent.name}</span>
@@ -1070,22 +1079,22 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         </div>
 
         {/* Core Modules */}
-        <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Core Modules</p>
+        <p className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">Core Modules</p>
         <div className="space-y-1.5 mb-4">
           {coreModules.map(mod => (
-            <div key={mod.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-mission-control-bg border border-mission-control-border opacity-80">
+            <div key={mod.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-mission-control-bg border border-mission-control-border opacity-80">
               <Lock size={12} className="text-mission-control-accent flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <span className="text-sm font-medium text-mission-control-text">{mod.name}</span>
                 <p className="text-xs text-mission-control-text-dim truncate">{mod.description}</p>
               </div>
-              <CheckCircle size={14} className="text-green-500 flex-shrink-0" />
+              <CheckCircle size={14} className="text-success flex-shrink-0" />
             </div>
           ))}
         </div>
 
         {/* Optional Modules */}
-        <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide mb-2">Optional Modules</p>
+        <p className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">Optional Modules</p>
         <div className="space-y-1.5">
           {optionalModules.map(mod => {
             const selected = selectedOptionalModules.has(mod.id);
@@ -1094,7 +1103,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
                 key={mod.id}
                 type="button"
                 onClick={() => toggleModule(mod.id)}
-                className={`w-full flex items-center gap-3 p-2.5 rounded-lg border text-left transition-all ${
+                className={`w-full flex items-center gap-3 p-2.5 rounded-xl border text-left transition-colors ${
                   selected
                     ? 'border-mission-control-accent bg-mission-control-accent/10'
                     : 'border-mission-control-border bg-mission-control-bg hover:border-mission-control-accent/40'
@@ -1103,7 +1112,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
                 <div className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
                   selected ? 'border-mission-control-accent bg-mission-control-accent' : 'border-mission-control-border'
                 }`}>
-                  {selected && <CheckCircle size={10} className="text-white" />}
+                  {selected && <Check size={10} className="text-white" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="text-sm font-medium text-mission-control-text">{mod.name}</span>
@@ -1124,17 +1133,17 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
     return (
       <div className="py-4">
-        <div className="flex items-center gap-2 mb-1">
+        <Flex align="center" gap="2" mb="1">
           <Sparkles size={18} className="text-mission-control-accent" />
           <h2 className="text-xl font-bold text-mission-control-text">Setting Up</h2>
-        </div>
+        </Flex>
         <p className="text-mission-control-text-dim text-sm mb-5">
           Installing selected agents and modules…
         </p>
 
         <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1 mb-4">
           {installItems.map(item => (
-            <div key={`${item.kind}-${item.id}`} className="flex items-center gap-3 p-2.5 rounded-lg bg-mission-control-bg border border-mission-control-border">
+            <Flex key={`${item.kind}-${item.id}`} align="center" gap="3" className="p-2.5 rounded-xl bg-mission-control-bg border border-mission-control-border">
               <div className="w-5 flex-shrink-0 flex items-center justify-center">
                 {item.status === 'pending' && (
                   <div className="w-3 h-3 rounded-full border-2 border-mission-control-border" />
@@ -1143,25 +1152,25 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
                   <Loader size={14} className="text-mission-control-accent animate-spin" />
                 )}
                 {item.status === 'done' && (
-                  <CheckCircle size={14} className="text-green-500" />
+                  <CheckCircle size={14} className="text-success" />
                 )}
                 {item.status === 'error' && (
-                  <XCircle size={14} className="text-red-500" />
+                  <XCircle size={14} className="text-error" />
                 )}
               </div>
               <span className="text-sm text-mission-control-text flex-1">{item.name}</span>
               <span className="text-xs text-mission-control-text-dim capitalize">{item.kind}</span>
               {item.status === 'error' && item.error && (
-                <span className="text-xs text-red-400 truncate max-w-24">{item.error}</span>
+                <span className="text-xs text-error truncate max-w-24">{item.error}</span>
               )}
-            </div>
+            </Flex>
           ))}
         </div>
 
         {hasErrors && allDone && (
           <button
             onClick={retryFailedItems}
-            className="flex items-center gap-2 text-sm text-mission-control-accent hover:text-mission-control-accent-dim transition-colors mb-3"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors mb-3"
           >
             <RotateCcw size={13} />
             Retry failed items
@@ -1169,17 +1178,17 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         )}
 
         {allDone && !hasErrors && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-success-border">
-            <CheckCircle size={16} className="text-green-500" />
+          <Flex align="center" gap="2" p="3" className="rounded-xl bg-success-subtle border border-success-border">
+            <CheckCircle size={16} className="text-success" />
             <span className="text-sm text-mission-control-text">All items installed successfully</span>
-          </div>
+          </Flex>
         )}
 
         {!installStarted && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-mission-control-bg border border-mission-control-border">
+          <Flex align="center" gap="2" p="3" className="rounded-xl bg-mission-control-bg border border-mission-control-border">
             <Loader size={16} className="animate-spin text-mission-control-accent" />
             <span className="text-sm text-mission-control-text">Preparing install…</span>
-          </div>
+          </Flex>
         )}
       </div>
     );
@@ -1199,40 +1208,39 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
   const renderTourLaunch = () => (
     <div className="py-6">
-      <div className="flex items-center gap-2 mb-1">
+      <Flex align="center" gap="2" mb="1">
         <Map size={18} className="text-mission-control-accent" />
         <h2 className="text-xl font-bold text-mission-control-text">Interactive Tour</h2>
-      </div>
+      </Flex>
       <p className="text-mission-control-text-dim text-sm mb-5">
         Take an 8-stop tour of Mission Control and discover what each panel does.
       </p>
 
       <div className="space-y-1.5 mb-5">
         {TOUR_STOPS.map((stop, i) => (
-          <div
+          <Flex
             key={stop.label}
-            className="flex items-start gap-3 p-2.5 rounded-lg bg-mission-control-bg border border-mission-control-border"
+            align="start"
+            gap="3"
+            className="p-2.5 rounded-xl bg-mission-control-bg border border-mission-control-border"
           >
             <span className="text-xs font-mono text-mission-control-accent mt-0.5 w-4 flex-shrink-0">{i + 1}</span>
             <div className="min-w-0">
               <span className="text-sm font-medium text-mission-control-text">{stop.label}</span>
               <p className="text-xs text-mission-control-text-dim">{stop.desc}</p>
             </div>
-          </div>
+          </Flex>
         ))}
       </div>
 
       <div className="flex flex-col gap-2 mt-1">
-        <button
-          onClick={() => { handleFinish(true); }}
-          className="flex items-center justify-center gap-2 w-full py-2.5 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
-        >
+        <Button onClick={() => { handleFinish(true); }} variant="solid" color="violet" size="2" className="w-full">
           <Map size={14} />
           Start Tour
-        </button>
+        </Button>
         <button
           onClick={() => { handleFinish(false); }}
-          className="flex items-center justify-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors py-1"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <SkipForward size={12} />
           Skip tour — go straight to Dashboard
@@ -1241,16 +1249,16 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
       {/* Back nav row */}
       <div className="mt-4 pt-4 border-t border-mission-control-border">
-        <div className="flex items-center justify-between">
+        <Flex align="center" justify="between">
           <button
             onClick={goBack}
-            className="flex items-center gap-1 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <ArrowLeft size={14} />
             Back
           </button>
           <span className="text-xs text-mission-control-text-dim">9 / {STEP_COUNT}</span>
-        </div>
+        </Flex>
       </div>
     </div>
   );
@@ -1265,12 +1273,9 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       <p className="text-mission-control-text-dim max-w-sm mb-8 text-sm">
         Mission Control is configured and ready. Head to the Dashboard to get started.
       </p>
-      <button
-        onClick={() => { handleFinish(false); }}
-        className="px-6 py-3 bg-mission-control-accent text-white rounded-lg font-medium hover:bg-mission-control-accent-dim transition-colors w-full max-w-xs"
-      >
+      <Button onClick={() => { handleFinish(false); }} variant="solid" color="violet" size="3" className="w-full max-w-xs">
         Go to Dashboard
-      </button>
+      </Button>
     </div>
   );
 
@@ -1318,14 +1323,22 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-lg bg-mission-control-surface rounded-2xl shadow-2xl border border-mission-control-border overflow-hidden flex flex-col max-h-[90vh]">
+        {/* Progress bar at top */}
+        <div className="h-1 bg-mission-control-border flex-shrink-0">
+          <div
+            className="h-full bg-mission-control-accent transition-[width] duration-500"
+            style={{ width: `${((currentStep + 1) / STEP_COUNT) * 100}%` }}
+          />
+        </div>
+
         {/* Step progress dots */}
-        <div className="flex items-center justify-center gap-1.5 pt-5 pb-2 flex-shrink-0">
+        <div className="flex items-center justify-center gap-1.5 pt-4 pb-2 flex-shrink-0">
           {Array.from({ length: STEP_COUNT }).map((_, i) => (
             <div
               key={i}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`h-1.5 rounded-full transition-[width] duration-300 ${
                 i === currentStep
                   ? 'w-5 bg-mission-control-accent'
                   : i < currentStep
@@ -1338,20 +1351,20 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
         {/* Resume banner */}
         {showResumeBanner && (
-          <div className="mx-8 mb-2 flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg bg-info-subtle border border-info-border text-sm">
+          <div className="mx-8 mb-2 flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl bg-info/10 border border-info/30 text-sm">
             <span className="text-mission-control-text">Continuing from step {currentStep + 1} of {STEP_COUNT}</span>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 type="button"
                 onClick={() => { setCurrentStep(0); setShowResumeBanner(false); }}
-                className="text-xs text-mission-control-text-dim hover:text-mission-control-text underline transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 Start over
               </button>
               <button
                 type="button"
                 onClick={() => setShowResumeBanner(false)}
-                className="text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 aria-label="Dismiss"
               >
                 <X size={14} />
@@ -1369,44 +1382,46 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         {showSharedNav && (
           <div className="px-8 pb-6 flex-shrink-0 border-t border-mission-control-border pt-4 mt-2">
             {criticalFailed && (
-              <p className="text-xs text-red-400 text-center mb-3">Fix the critical issues above before continuing.</p>
+              <p className="text-xs text-error text-center mb-3">Fix the critical issues above before continuing.</p>
             )}
             {permissionsRequired && (
-              <p className="text-xs text-yellow-500 text-center mb-3">Confirm agent permissions above to continue.</p>
+              <p className="text-xs text-warning text-center mb-3">Confirm agent permissions above to continue.</p>
             )}
             {obsidianRequired && (
-              <p className="text-xs text-yellow-500 text-center mb-3">Open the vault in Obsidian and check the box above to continue.</p>
+              <p className="text-xs text-warning text-center mb-3">Open the vault in Obsidian and check the box above to continue.</p>
             )}
-            <div className="flex items-center justify-between">
+            <Flex align="center" justify="between">
               <button
                 onClick={goBack}
-                className="flex items-center gap-1 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-mission-control-border text-sm font-medium text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-text-dim/40 transition-colors"
               >
                 <ArrowLeft size={14} />
                 Back
               </button>
-              <span className="text-xs text-mission-control-text-dim">
+              <span className="text-xs text-mission-control-text-dim/70 font-mono">
                 {currentStep + 1} / {STEP_COUNT}
               </span>
-              <div className="flex items-center gap-2">
+              <Flex align="center" gap="2">
                 {isSkippable && (
                   <button
                     onClick={handleSkipStep}
-                    className="px-3 py-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text border border-mission-control-border rounded-lg transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-mission-control-border text-sm font-medium text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-text-dim/40 transition-colors"
                   >
                     {skipLabels[currentStep] ?? 'Skip'}
                   </button>
                 )}
-                <button
+                <Button
                   onClick={goNext}
                   disabled={!canContinue}
-                  className="flex items-center gap-1 px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  variant="solid"
+                  color="violet"
+                  size="2"
                 >
                   Continue
                   <ArrowRight size={14} />
-                </button>
-              </div>
-            </div>
+                </Button>
+              </Flex>
+            </Flex>
           </div>
         )}
       </div>

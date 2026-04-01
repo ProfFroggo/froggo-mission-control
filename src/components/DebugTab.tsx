@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Wifi, WifiOff, RefreshCw, Terminal, Activity, AlertCircle } from 'lucide-react';
+import { Button, Flex, Box } from '@radix-ui/themes';
 import { gateway, reconnectGateway } from '../lib/gateway';
 import type { ConnectionState } from '../lib/gateway';
 import { showToast } from './Toast';
@@ -75,37 +76,37 @@ export default function DebugTab() {
   };
 
   return (
-    <div className="flex-1 overflow-auto p-6 space-y-6">
+    <Box p="5" className="flex-1 overflow-auto space-y-6">
       {/* Gateway Connection */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
         <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Activity size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Gateway Connection</h2>
-          </div>
-          <button type="button" onClick={handleReconnect} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border rounded-lg text-sm hover:bg-mission-control-border/80">
+          </Flex>
+          <Button onClick={handleReconnect} size="2" variant="soft">
             <RefreshCw size={14} /> Reconnect
-          </button>
+          </Button>
         </div>
         <div className="p-4">
-          <div className="flex items-center gap-3 mb-3">
+          <Flex align="center" gap="3" className="mb-3">
             <StateIcon size={24} className={stateColor[gwState]} />
             <div>
               <div className={`font-medium ${stateColor[gwState]}`}>{gwState.charAt(0).toUpperCase() + gwState.slice(1)}</div>
               <div className="text-sm text-mission-control-text-dim">Session: {gateway.getSessionKey()}</div>
             </div>
-          </div>
+          </Flex>
         </div>
       </div>
 
       {/* Active Sessions */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
         <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Terminal size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Active Sessions ({sessions.length})</h2>
-          </div>
-          <button type="button" onClick={loadData} disabled={loading} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border rounded-lg text-sm hover:bg-mission-control-border/80" aria-label="Refresh sessions">
+          </Flex>
+          <button type="button" onClick={loadData} disabled={loading} aria-label="Refresh sessions" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
@@ -115,7 +116,7 @@ export default function DebugTab() {
           ) : sessions.map((s: any, i: number) => (
             <div key={i} className="p-3 flex items-center gap-3 hover:bg-mission-control-bg/50">
               <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                Date.now() - (s.updatedAt || 0) < 300000 ? 'bg-success' : 'bg-mission-control-bg0'
+                Date.now() - (s.updatedAt || 0) < 300000 ? 'bg-success' : 'bg-mission-control-surface'
               }`} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">{s.label || s.key || s.sessionKey}</div>
@@ -130,13 +131,13 @@ export default function DebugTab() {
       {/* Recent Logs */}
       <div className="bg-mission-control-surface border border-mission-control-border rounded-lg overflow-hidden">
         <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <AlertCircle size={16} className="text-mission-control-accent" />
             <h2 className="font-semibold">Recent Logs</h2>
-          </div>
-          <button type="button" onClick={refreshLogs} className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border rounded-lg text-sm hover:bg-mission-control-border/80">
+          </Flex>
+          <Button onClick={refreshLogs} size="2" variant="soft">
             <RefreshCw size={14} /> Load More
-          </button>
+          </Button>
         </div>
         <div className="max-h-80 overflow-y-auto p-2 bg-mission-control-bg font-mono text-xs">
           {logs.length === 0 ? (
@@ -152,6 +153,6 @@ export default function DebugTab() {
           })}
         </div>
       </div>
-    </div>
+    </Box>
   );
 }

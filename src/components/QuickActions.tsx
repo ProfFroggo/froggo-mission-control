@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import {
   MessageSquare, CheckCircle, Search, Send, X,
-  ChevronLeft, ChevronRight, GripVertical, Mic, MicOff, Phone, PhoneOff, ListTodo, Play, Sparkles, Monitor, Camera, CameraOff,
+  ChevronLeft, ChevronRight, GripVertical, Mic, MicOff, Phone, PhoneOff, ListTodo, Play, Sparkles, Monitor, Camera, CameraOff, StickyNote, Plus,
 } from 'lucide-react';
+import { Button, IconButton, Text, Flex, TextArea, Select, Spinner } from '@radix-ui/themes';
+import { TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { useStore } from '../store/store';
-import { chatApi, settingsApi } from '../lib/api';
+import { chatApi, authHeaders } from '../lib/api';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('QuickActions');
@@ -13,6 +15,7 @@ import AgentAvatar from './AgentAvatar';
 import { ChatAgent, fetchAgentList } from './AgentSelector';
 import { GeminiLiveService, VideoMode, getGeminiVoiceForAgent, GeminiToolCall } from '../lib/geminiLiveService';
 import { loadAgentContext, invalidateAgentContext } from '../lib/agentContext';
+import { GeminiStt } from '../lib/globalStt';
 import MarkdownMessage from './MarkdownMessage';
 import { buildSystemInstruction, buildAgentTools, executeToolCall, loadRecentChatHistory, type AgentContext } from '../lib/voiceCallShared';
 import ScreenSourcePicker, { ScreenSource } from './ScreenSourcePicker';
@@ -209,69 +212,75 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
 
   return (
     <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-3 max-h-[28rem] overflow-y-auto`}>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-medium flex items-center gap-2">
+      <Flex align="center" justify="between" className="mb-2">
+        <Text size="2" weight="medium" className="flex items-center gap-2">
           <Phone size={14} className="text-mission-control-accent" />
           {activeCall ? 'Active Call' : 'Call Agent'}
-        </h3>
-        <div className="flex items-center gap-1">
+        </Text>
+        <Flex align="center" gap="1">
           <button
             onClick={() => setShowSettings(s => !s)}
-            className={`p-1 rounded transition-colors ${showSettings ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'hover:bg-mission-control-border'}`}
             title="Mic settings"
+            aria-label="Microphone settings"
+            className={`inline-flex items-center justify-center w-6 h-6 rounded transition-colors ${
+              showSettings
+                ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Mic size={13} />
           </button>
-          <button onClick={onClose} className="p-1 hover:bg-mission-control-border rounded"><X size={14} /></button>
-        </div>
-      </div>
+          <button type="button" onClick={onClose} aria-label="Close" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+            <X size={14} />
+          </button>
+        </Flex>
+      </Flex>
 
       {/* Mic settings panel */}
       {showSettings && (
         <div className="mb-3 p-2 bg-mission-control-bg border border-mission-control-border rounded-lg">
-          <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider mb-1.5 flex items-center gap-1">
+          <Flex align="center" gap="1" className="text-xs text-mission-control-text-dim uppercase tracking-wider mb-1.5">
             <Mic size={10} /> Microphone Input
-          </div>
+          </Flex>
           {micDevices.length === 0 ? (
             <p className="text-xs text-mission-control-text-dim">No microphone devices found</p>
           ) : (
-            <select
-              value={selectedMic}
-              onChange={e => handleMicChange(e.target.value)}
-              className="w-full text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 focus:outline-none focus:border-mission-control-accent"
-            >
-              <option value="default">System Default</option>
-              {micDevices.map(d => (
-                <option key={d.deviceId} value={d.deviceId}>
-                  {d.label || `Microphone ${d.deviceId.slice(0, 8)}`}
-                </option>
-              ))}
-            </select>
+            <Select.Root value={selectedMic} onValueChange={handleMicChange} size="1">
+              <Select.Trigger className="w-full" />
+              <Select.Content>
+                <Select.Item value="default">System Default</Select.Item>
+                {micDevices.map(d => (
+                  <Select.Item key={d.deviceId} value={d.deviceId}>
+                    {d.label || `Microphone ${d.deviceId.slice(0, 8)}`}
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
           )}
         </div>
       )}
 
       {activeCall && (
-        <div className="mb-2 p-2 bg-error-subtle border border-error-border rounded-lg flex items-center gap-2">
-          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+        <Flex align="center" gap="2" className="mb-2 p-2 bg-error/10 border border-error/30 rounded-lg">
+          <span className="w-2 h-2 bg-error rounded-full animate-pulse" />
           <span className="text-xs text-error">In call with {activeCall.agentName}</span>
-        </div>
+        </Flex>
       )}
       <div className="space-y-1">
         {fetchAgentList().filter(a => a.id !== 'voice').map(agent => (
           <button
             key={agent.id}
             onClick={() => onSelect(agent)}
-            className={`w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm ${
+            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs font-medium border transition-colors ${
               activeCall?.agentId === agent.id
-                ? 'bg-error-subtle border border-error-border'
-                : 'hover:bg-mission-control-border'
+                ? 'bg-destructive/10 border-destructive/30 text-destructive'
+                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
             }`}
           >
             <AgentAvatar agentId={agent.id} size="sm" />
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 text-left">
               <div className="font-medium text-xs">{agent.name}</div>
-              <div className="text-[10px] text-mission-control-text-dim truncate">{agent.role}</div>
+              <div className="text-xs text-mission-control-text-dim truncate">{agent.role}</div>
             </div>
             {activeCall?.agentId === agent.id && (
               <PhoneOff size={14} className="text-error" />
@@ -305,23 +314,25 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
 
   return (
     <div className={`${panelPos} w-80 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-4`}>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium flex items-center gap-2">
+      <Flex align="center" justify="between" className="mb-3">
+        <Text size="2" weight="medium" className="flex items-center gap-2">
           <Sparkles size={14} className="text-mission-control-accent" />
           Context Chat
-        </h3>
-        <button onClick={onClose} className="p-1 hover:bg-mission-control-border rounded"><X size={14} /></button>
-      </div>
+        </Text>
+        <button type="button" onClick={onClose} aria-label="Close" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+          <X size={14} />
+        </button>
+      </Flex>
 
       {/* Context indicator */}
       <div className="mb-3 p-2 bg-mission-control-accent/10 border border-mission-control-accent/20 rounded-lg">
-        <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Current Context</div>
+        <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Current Context</div>
         <div className="text-xs font-medium text-mission-control-accent">{viewLabel}</div>
       </div>
 
       {/* Suggested agents */}
       <div className="mb-3">
-        <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider mb-1.5">
+        <div className="text-xs text-mission-control-text-dim uppercase tracking-wider mb-1.5">
           Suggested for {viewLabel}
         </div>
         <div className="flex gap-1.5 flex-wrap">
@@ -329,22 +340,25 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
             <button
               key={agent.id}
               onClick={() => setSelectedAgent(agent)}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-colors ${
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                 selectedAgent.id === agent.id
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-border hover:bg-mission-control-border/80'
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
               }`}
             >
               <AgentAvatar agentId={agent.id} size="xs" />
               {agent.name}
             </button>
           ))}
-          <button
+          <Button
             onClick={() => setShowAllAgents(!showAllAgents)}
-            className="px-2 py-1 rounded-full text-xs bg-mission-control-border hover:bg-mission-control-border/80 transition-colors"
+            variant="soft"
+            color="gray"
+            size="1"
+            radius="full"
           >
             {showAllAgents ? 'Less' : 'More...'}
-          </button>
+          </Button>
         </div>
         {showAllAgents && (
           <div className="flex gap-1.5 flex-wrap mt-1.5">
@@ -352,10 +366,10 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
               <button
                 key={agent.id}
                 onClick={() => { setSelectedAgent(agent); setShowAllAgents(false); }}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-colors ${
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                   selectedAgent.id === agent.id
-                    ? 'bg-mission-control-accent text-white'
-                    : 'bg-mission-control-border hover:bg-mission-control-border/80'
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
                 }`}
               >
                 <AgentAvatar agentId={agent.id} size="xs" />
@@ -367,11 +381,12 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
       </div>
 
       {/* Message */}
-      <textarea
+      <TextArea
         value={message}
         onChange={e => setMessage(e.target.value)}
         placeholder={`Ask ${selectedAgent.name} about ${viewLabel}...`}
-        className="w-full h-20 bg-mission-control-bg border border-mission-control-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
+        rows={3}
+        size="2"
         onKeyDown={e => {
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && message.trim()) {
             onStartChat(selectedAgent, message);
@@ -380,9 +395,13 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
           }
         }}
       />
-      <div className="flex justify-between items-center mt-2">
-        <span className="text-[10px] text-mission-control-text-dim">⌘+Enter to send</span>
-        <button
+      <Flex justify="between" align="center" className="mt-2">
+        <span className="text-xs text-mission-control-text-dim">⌘+Enter to send</span>
+        <Button
+          size="2"
+          variant="solid"
+          color="violet"
+          disabled={!message.trim()}
           onClick={() => {
             if (message.trim()) {
               onStartChat(selectedAgent, message);
@@ -390,13 +409,11 @@ function ContextChatModal({ isOpen, onClose, currentView, onStartChat, panelPos 
               onClose();
             }
           }}
-          disabled={!message.trim()}
-          className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-50 text-sm"
         >
           <Send size={12} />
           Chat with {selectedAgent.name}
-        </button>
-      </div>
+        </Button>
+      </Flex>
     </div>
   );
 }
@@ -443,25 +460,29 @@ function TaskShortcutsModal({ isOpen, onClose, panelPos }: {
 
   return (
     <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-3 max-h-80 overflow-y-auto`}>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-medium flex items-center gap-2">
+      <Flex align="center" justify="between" className="mb-2">
+        <Text size="2" weight="medium" className="flex items-center gap-2">
           <ListTodo size={14} className="text-mission-control-accent" />
           Task Shortcuts
-        </h3>
-        <button onClick={onClose} className="p-1 hover:bg-mission-control-border rounded"><X size={14} /></button>
-      </div>
+        </Text>
+        <button type="button" onClick={onClose} aria-label="Close" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+          <X size={14} />
+        </button>
+      </Flex>
 
       {/* Quick status filters */}
-      <div className="flex gap-1 mb-2">
+      <div className="flex gap-1 mb-2 flex-wrap">
         {TASK_STATUSES.map(s => (
-          <button
+          <Button
             key={s.value}
-            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] bg-mission-control-border hover:bg-mission-control-border/80 transition-colors"
+            variant="soft"
+            color="gray"
+            size="1"
             title={`View ${s.label} tasks`}
           >
             <s.icon size={10} className={s.color} />
             {s.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -474,17 +495,17 @@ function TaskShortcutsModal({ isOpen, onClose, panelPos }: {
           {recentTasks.map(task => (
             <div key={task.id} className="p-2 bg-mission-control-bg rounded-lg">
               <div className="text-xs font-medium truncate mb-1">{task.title}</div>
-              <div className="flex gap-1">
+              <div className="flex gap-1 flex-wrap">
                 {TASK_STATUSES.map(s => (
                   <button
                     key={s.value}
                     onClick={() => updateTaskStatus(task.id, s.value)}
-                    className={`px-1.5 py-0.5 rounded text-[9px] transition-colors ${
-                      task.status === s.value
-                        ? 'bg-mission-control-accent text-white'
-                        : 'bg-mission-control-border hover:bg-mission-control-border/80 text-mission-control-text-dim'
-                    }`}
                     title={`Set to ${s.label}`}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-colors ${
+                      task.status === s.value
+                        ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                        : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+                    }`}
                   >
                     {s.label}
                   </button>
@@ -522,6 +543,11 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   const [agentCallModalOpen, setAgentCallModalOpen] = useState(false);
   const [contextChatOpen, setContextChatOpen] = useState(false);
   const [taskShortcutsOpen, setTaskShortcutsOpen] = useState(false);
+  const [quickNoteOpen, setQuickNoteOpen] = useState(false);
+  const [quickNoteText, setQuickNoteText] = useState('');
+  const [quickNoteSaving, setQuickNoteSaving] = useState(false);
+  const [quickNoteListening, setQuickNoteListening] = useState(false);
+  const quickNoteSttRef = useRef<GeminiStt | null>(null);
 
   // FEATURE 2: Call persistence + real voice state
   const [activeCall, setActiveCall] = useState<{ agentId: string; agentName: string } | null>(loadActiveCall);
@@ -555,6 +581,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setContextChatOpen(false);
     setTaskShortcutsOpen(false);
     setAgentChatModalOpen(false);
+    setQuickNoteOpen(false);
+    if (quickNoteSttRef.current) { quickNoteSttRef.current.stop(); setQuickNoteListening(false); }
   };
 
   // Persist toolbar state (not in floating mode — don't clobber in-app state)
@@ -576,6 +604,51 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       textarea?.focus();
     }
   }, [quickMessageOpen]);
+
+  // ─── Quick Note helpers ────────────────────────────────────────────────────
+  const saveQuickNote = async () => {
+    if (!quickNoteText.trim()) return;
+    setQuickNoteSaving(true);
+    try {
+      const res = await fetch('/api/notes', {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: quickNoteText.trim() }),
+      });
+      if (res.ok) {
+        showToast('success', 'Note saved', quickNoteText.trim().slice(0, 60));
+        setQuickNoteText('');
+        setQuickNoteOpen(false);
+      } else {
+        showToast('error', 'Failed', 'Could not save note');
+      }
+    } catch {
+      showToast('error', 'Error', 'Network error saving note');
+    }
+    setQuickNoteSaving(false);
+  };
+
+  const toggleQuickNoteSTT = () => {
+    if (quickNoteListening && quickNoteSttRef.current) {
+      quickNoteSttRef.current.stop();
+      setQuickNoteListening(false);
+      return;
+    }
+
+    const stt = new GeminiStt({
+      continuous: true,
+      chunkDurationMs: 8000,
+      onTranscript: (text) => { setQuickNoteText(prev => prev ? `${prev} ${text}` : text); },
+      onError: (err) => {
+        showToast('error', 'STT error', err);
+        setQuickNoteListening(false);
+      },
+      onEnd: () => { setQuickNoteListening(false); },
+    });
+    quickNoteSttRef.current = stt;
+    stt.start();
+    setQuickNoteListening(true);
+  };
 
   // Agent context for voice calls
   const agentContextRef = useRef<AgentContext | null>(null);
@@ -654,14 +727,6 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     setCallRinging(false);
   };
 
-  const getGeminiApiKey = async (): Promise<string> => {
-    try {
-      const result = await settingsApi.get('gemini_api_key');
-      if (result?.value) return result.value;
-    } catch { /* ignore */ }
-    return '';
-  };
-
   // ─── FEATURE 2: Agent call handling (real Gemini Live) ───
   const handleAgentCall = async (agent: ChatAgent) => {
     if (activeCall?.agentId === agent.id) {
@@ -678,8 +743,12 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       if (isMeetingActive) toggleMeeting();
       showToast('success', 'Call Ended', `Disconnected from ${agent.name}`);
     } else {
-      // Start call
-      const apiKey = await getGeminiApiKey();
+      // Start call — fetch API key from server (F-02: key never stored client-side)
+      let apiKey = '';
+      try {
+        const res = await fetch('/api/gemini/live-token', { headers: { ...authHeaders() } });
+        if (res.ok) { const data = await res.json(); apiKey = data.apiKey || ''; }
+      } catch { /* ignore */ }
       if (!apiKey) {
         showToast('error', 'No API Key', 'Set Gemini API key in Settings');
         return;
@@ -1031,34 +1100,86 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       {/* Quick Message Modal */}
       {quickMessageOpen && !state.isCollapsed && (
         <div className={`${panelPos} w-80 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-4`}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-medium flex items-center gap-2">
+          <Flex align="center" justify="between" className="mb-3">
+            <Text weight="medium" className="flex items-center gap-2">
               <MessageSquare size={16} className="text-mission-control-accent" />
               Quick Message
-            </h3>
-            <button onClick={() => setQuickMessageOpen(false)} className="p-1 hover:bg-mission-control-border rounded">
+            </Text>
+            <button type="button" onClick={() => setQuickMessageOpen(false)} aria-label="Close" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <X size={16} />
             </button>
-          </div>
-          <textarea
+          </Flex>
+          <TextArea
             value={quickMessage}
             onChange={e => setQuickMessage(e.target.value)}
             placeholder="Ask Mission Control something quick..."
-            className="w-full h-24 bg-mission-control-bg border border-mission-control-border rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-mission-control-accent"
+            rows={4}
+            size="2"
             onKeyDown={e => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleQuickMessage();
             }}
           />
-          <div className="flex justify-end mt-2">
-            <button
-              onClick={handleQuickMessage}
+          <Flex justify="end" mt="2">
+            <Button
+              size="2"
+              variant="solid"
+              color="violet"
               disabled={!quickMessage.trim() || sending}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-50"
+              onClick={handleQuickMessage}
             >
               <Send size={14} />
               {sending ? 'Sending...' : 'Send'}
+            </Button>
+          </Flex>
+        </div>
+      )}
+
+      {/* Quick Note Modal */}
+      {quickNoteOpen && !state.isCollapsed && (
+        <div className={`${panelPos} w-80 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-4`}>
+          <Flex align="center" justify="between" className="mb-3">
+            <Text weight="medium" className="flex items-center gap-2">
+              <StickyNote size={16} className="text-mission-control-accent" />
+              Quick Note
+            </Text>
+            <button type="button" onClick={() => setQuickNoteOpen(false)} aria-label="Close" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+              <X size={16} />
             </button>
-          </div>
+          </Flex>
+          <TextArea
+            value={quickNoteText}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setQuickNoteText(e.target.value)}
+            placeholder="Type a note and press Enter..."
+            rows={3}
+            size="2"
+            onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveQuickNote(); }
+            }}
+          />
+          <Flex justify="between" align="center" mt="2">
+            <button
+              type="button"
+              onClick={toggleQuickNoteSTT}
+              title={quickNoteListening ? 'Stop listening' : 'Voice input'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                quickNoteListening
+                  ? 'bg-destructive/10 text-destructive animate-pulse'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'
+              }`}
+            >
+              {quickNoteListening ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
+            <Button
+              size="2"
+              variant="solid"
+              color="violet"
+              disabled={!quickNoteText.trim() || quickNoteSaving}
+              onClick={saveQuickNote}
+            >
+              {quickNoteSaving ? <Spinner size="1" /> : <Plus size={14} />}
+              Save
+            </Button>
+          </Flex>
         </div>
       )}
 
@@ -1090,24 +1211,24 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
             {/* Agent profile pic — shown when no video */}
             {callVideoMode === 'none' && (
-              <div className="absolute inset-0 flex items-center justify-center">
+              <Flex align="center" justify="center" className="absolute inset-0">
                 <img
                   src={`/api/agents/${activeCall.agentId}/avatar`}
                   alt={activeCall.agentName}
-                  className={`w-32 h-32 rounded-full object-cover border-4 transition-all duration-300 ${
-                    callRinging ? 'border-yellow-500 animate-pulse scale-95'
-                    : callSpeaking ? 'border-green-500 scale-110 shadow-lg shadow-green-500/30'
-                    : callListening ? 'border-blue-500 scale-105 shadow-lg shadow-blue-500/20'
+                  className={`w-32 h-32 rounded-full object-cover border-4 transition-colors duration-300 ${
+                    callRinging ? 'border-warning animate-pulse scale-95'
+                    : callSpeaking ? 'border-success scale-110 shadow-lg'
+                    : callListening ? 'border-info scale-105 shadow-lg'
                     : 'border-mission-control-border'
                   }`}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
-              </div>
+              </Flex>
             )}
 
             {/* Status overlay */}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-              <div className="flex items-center justify-between">
+              <Flex align="center" justify="between">
                 <div>
                   <div className="text-sm font-semibold text-white">{activeCall.agentName}</div>
                   <div className="text-[11px] text-white/70">
@@ -1115,15 +1236,20 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                   </div>
                 </div>
                 {callVideoMode !== 'none' && (
-                  <span className="text-[10px] bg-success-subtle text-white px-2 py-0.5 rounded-full">
+                  <span className="text-xs bg-success/10 text-white px-2 py-0.5 rounded-full">
                     {callVideoMode === 'screen' ? 'Screen' : 'Camera'}
                   </span>
                 )}
-              </div>
+              </Flex>
             </div>
 
             {/* Close button */}
-            <button onClick={() => setCallDialogOpen(false)} className="absolute top-2 right-2 p-1.5 bg-black/40 hover:bg-black/60 rounded-full text-white/80 hover:text-white transition-colors">
+            <button
+              type="button"
+              onClick={() => setCallDialogOpen(false)}
+              className="absolute top-2 right-2 inline-flex items-center justify-center w-5 h-5 rounded-md bg-black/40 hover:bg-black/60 text-white/80 hover:text-white transition-colors"
+              aria-label="Close call window"
+            >
               <X size={12} />
             </button>
           </div>
@@ -1136,41 +1262,66 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               </div>
             )}
             {callTranscript.map((entry, i) => (
-              <div key={i} className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <Flex key={i} justify={entry.role === 'user' ? 'end' : 'start'}>
                 <div className={`max-w-[85%] px-2.5 py-1.5 rounded-lg ${
                   entry.role === 'user' ? 'bg-mission-control-accent text-white'
-                  : entry.role === 'system' ? 'bg-mission-control-bg text-mission-control-text-dim italic text-[10px]'
+                  : entry.role === 'system' ? 'bg-mission-control-bg text-mission-control-text-dim italic text-xs'
                   : 'bg-mission-control-border/50 text-mission-control-text'
                 }`}>
                   {entry.text}
                 </div>
-              </div>
+              </Flex>
             ))}
           </div>
 
           {/* Controls bar */}
-          <div className="flex items-center justify-center gap-3 px-3 py-3 border-t border-mission-control-border bg-mission-control-bg/50">
-            <button onClick={toggleCallMute} disabled={!callConnected}
-              className={`p-2.5 rounded-full transition-colors ${callMuted ? 'bg-error-subtle text-error' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'} disabled:opacity-30`}
-              title={callMuted ? 'Unmute' : 'Mute'}>
+          <Flex align="center" justify="center" gap="3" className="px-3 py-3 border-t border-mission-control-border bg-mission-control-bg/50">
+            <button
+              onClick={toggleCallMute}
+              disabled={!callConnected}
+              title={callMuted ? 'Unmute' : 'Mute'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                callMuted
+                  ? 'bg-destructive/10 border border-destructive/30 text-destructive'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
+            >
               {callMuted ? <MicOff size={16} /> : <Mic size={16} />}
             </button>
-            <button onClick={toggleCallScreen} disabled={!callConnected}
-              className={`p-2.5 rounded-full transition-colors ${callVideoMode === 'screen' ? 'bg-success-subtle text-success' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'} disabled:opacity-30`}
-              title="Share Screen">
+            <button
+              onClick={toggleCallScreen}
+              disabled={!callConnected}
+              title="Share Screen"
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                callVideoMode === 'screen'
+                  ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
+            >
               <Monitor size={16} />
             </button>
-            <button onClick={toggleCallCamera} disabled={!callConnected}
-              className={`p-2.5 rounded-full transition-colors ${callVideoMode === 'camera' ? 'bg-success-subtle text-success' : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'} disabled:opacity-30`}
-              title="Camera">
+            <button
+              onClick={toggleCallCamera}
+              disabled={!callConnected}
+              title="Camera"
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                callVideoMode === 'camera'
+                  ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
+            >
               {callVideoMode === 'camera' ? <CameraOff size={16} /> : <Camera size={16} />}
             </button>
-            <button onClick={endActiveCall}
-              className="p-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors"
-              title="End Call">
+            <IconButton
+              variant="solid"
+              color="red"
+              size="2"
+              onClick={endActiveCall}
+              title="End Call"
+            >
               <PhoneOff size={16} />
-            </button>
-          </div>
+            </IconButton>
+          </Flex>
         </div>
       )}
 
@@ -1185,24 +1336,27 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       {/* Agent Chat Picker */}
       {agentChatModalOpen && !state.isCollapsed && (
         <div className={`${panelPos} w-72 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl p-3 max-h-80 overflow-y-auto`}>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium flex items-center gap-2">
+          <Flex align="center" justify="between" className="mb-2">
+            <Text size="2" weight="medium" className="flex items-center gap-2">
               <MessageSquare size={14} className="text-mission-control-accent" />
               Chat with Agent
-            </h3>
-            <button onClick={() => setAgentChatModalOpen(false)} className="p-1 hover:bg-mission-control-border rounded"><X size={14} /></button>
-          </div>
+            </Text>
+            <button type="button" onClick={() => setAgentChatModalOpen(false)} aria-label="Close" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+              <X size={14} />
+            </button>
+          </Flex>
           <div className="space-y-1">
             {fetchAgentList().filter(a => a.id !== 'voice').map(agent => (
               <button
                 key={agent.id}
+                type="button"
                 onClick={() => handleStartAgentChat(agent)}
-                className="w-full flex items-center gap-2 p-2 rounded-lg text-left transition-colors text-sm hover:bg-mission-control-border"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors w-full"
               >
                 <AgentAvatar agentId={agent.id} size="sm" />
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 text-left">
                   <div className="font-medium text-xs">{agent.name}</div>
-                  <div className="text-[10px] text-mission-control-text-dim truncate">{agent.role}</div>
+                  <div className="text-xs text-mission-control-text-dim truncate">{agent.role}</div>
                 </div>
               </button>
             ))}
@@ -1214,18 +1368,18 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       {agentChatOpen && chatAgent && (
         <div className={`${panelPos} w-[320px] bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl overflow-hidden`}>
           {/* Header */}
-          <div className="flex items-center justify-between px-3 py-2.5 bg-mission-control-bg/50 border-b border-mission-control-border">
-            <div className="flex items-center gap-2">
+          <Flex align="center" justify="between" className="px-3 py-2.5 bg-mission-control-bg/50 border-b border-mission-control-border">
+            <Flex align="center" gap="2">
               <AgentAvatar agentId={chatAgent.id} size="sm" />
               <div>
                 <div className="text-xs font-semibold">{chatAgent.name}</div>
-                <div className="text-[10px] text-mission-control-text-dim">{chatLoading ? 'Typing...' : 'Online'}</div>
+                <div className="text-xs text-mission-control-text-dim">{chatLoading ? 'Typing...' : 'Online'}</div>
               </div>
-            </div>
-            <button onClick={() => setAgentChatOpen(false)} className="p-1 hover:bg-mission-control-border rounded">
+            </Flex>
+            <button type="button" onClick={() => setAgentChatOpen(false)} aria-label="Close chat" className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <X size={12} />
             </button>
-          </div>
+          </Flex>
 
           {/* Messages */}
           <div ref={chatScrollRef} className="h-[320px] overflow-y-auto px-3 py-2 space-y-2 text-xs">
@@ -1235,7 +1389,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
               </div>
             )}
             {chatMessages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <Flex key={i} justify={msg.role === 'user' ? 'end' : 'start'}>
                 <div className={`max-w-[85%] px-3 py-2 rounded-lg ${
                   msg.role === 'user'
                     ? 'bg-mission-control-accent text-white'
@@ -1243,35 +1397,38 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 }`}>
                   {msg.role === 'user' ? msg.content : <MarkdownMessage content={msg.content} />}
                 </div>
-              </div>
+              </Flex>
             ))}
             {chatLoading && chatMessages.length > 0 && (
-              <div className="flex justify-start">
+              <Flex justify="start">
                 <div className="bg-mission-control-border/50 px-3 py-2 rounded-lg text-mission-control-text-dim">
                   <span className="animate-pulse">●●●</span>
                 </div>
-              </div>
+              </Flex>
             )}
           </div>
 
           {/* Input */}
-          <div className="px-3 py-2.5 border-t border-mission-control-border bg-mission-control-surface flex gap-2">
-            <input
-              type="text"
+          <Flex gap="2" className="px-3 py-2.5 border-t border-mission-control-border bg-mission-control-surface">
+            <TextField.Root
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
               placeholder={`Message ${chatAgent.name}...`}
-              className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-mission-control-accent"
+              size="1"
+              className="flex-1"
             />
-            <button
-              onClick={sendChatMessage}
+            <IconButton
+              variant="solid"
+              color="violet"
+              size="2"
               disabled={!chatInput.trim() || chatLoading}
-              className="p-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 disabled:opacity-40 transition-colors"
+              onClick={sendChatMessage}
+              aria-label="Send message"
             >
               <Send size={12} />
-            </button>
-          </div>
+            </IconButton>
+          </Flex>
         </div>
       )}
 
@@ -1297,7 +1454,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
 
       {/* ─── Toolbar Pill ─── */}
       <div
-        className={`flex items-center gap-1 bg-mission-control-surface border border-mission-control-border rounded-full transition-all duration-300 px-1.5 py-1 ${
+        className={`flex items-center gap-1 bg-mission-control-surface border border-mission-control-border rounded-full transition-colors duration-300 px-1.5 py-1 ${
           isFloating ? 'shadow-none' : 'shadow-lg'
         } ${dragging ? 'cursor-grabbing shadow-2xl scale-105 opacity-90' : ''}`}
         style={isFloating ? noDrag : {}}
@@ -1321,30 +1478,58 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 if (activeCall) { setCallDialogOpen(!callDialogOpen); }
                 else { setAgentCallModalOpen(!agentCallModalOpen); }
               }}
-              className={`p-2.5 rounded-full transition-colors ${
-                callRinging ? 'bg-yellow-500 text-white animate-pulse'
-                : activeCall ? 'bg-red-500 text-white' : 'hover:bg-mission-control-border'
-              }`}
               title={activeCall ? activeCall.agentName : 'Call Agent'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                callRinging || activeCall
+                  ? 'bg-destructive/10 border border-destructive/30 text-destructive'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              } ${callRinging ? 'animate-pulse' : ''}`}
               style={isFloating ? noDrag : {}}
             >
-              {activeCall ? <PhoneOff size={16} /> : <Phone size={16} className="text-mission-control-text-dim" />}
+              {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
             </button>
             {activeCall && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-error" style={isFloating ? noDrag : {}}>
-                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-error" style={isFloating ? noDrag : {}}>
+                <span className="w-1.5 h-1.5 bg-error rounded-full animate-pulse" />
                 {activeCall.agentName}
               </span>
             )}
-            <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-mission-control-border transition-colors" title="Expand toolbar" style={isFloating ? noDrag : {}}>
-              <ChevronLeft size={16} className="text-mission-control-text-dim" />
+            <button
+              type="button"
+              onClick={toggleCollapse}
+              title="Expand toolbar"
+              style={isFloating ? noDrag : {}}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+            >
+              <ChevronLeft size={16} />
             </button>
           </>
         ) : (
           <>
             {/* Standard actions */}
-            <button onClick={onSearch} className="p-2.5 rounded-full hover:bg-mission-control-border transition-colors" title="Search (⌘/)" style={isFloating ? noDrag : {}}>
-              <Search size={16} className="text-mission-control-text-dim" />
+            <button
+              type="button"
+              onClick={onSearch}
+              title="Search (⌘/)"
+              style={isFloating ? noDrag : {}}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+            >
+              <Search size={16} />
+            </button>
+
+            {/* Quick Note button */}
+            <button
+              type="button"
+              onClick={() => { closeAllModals(); setQuickNoteOpen(!quickNoteOpen); }}
+              title="Quick Note"
+              style={isFloating ? noDrag : {}}
+              className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
+                quickNoteOpen
+                  ? 'text-mission-control-accent bg-mission-control-accent/10'
+                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'
+              }`}
+            >
+              <StickyNote size={16} />
             </button>
 
             {/* Agent Chat button */}
@@ -1354,36 +1539,45 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                 if (agentChatOpen) { setAgentChatOpen(false); }
                 else { setAgentChatModalOpen(!agentChatModalOpen); }
               }}
-              className={`p-2.5 rounded-full transition-colors ${
-                agentChatOpen || agentChatModalOpen ? 'bg-mission-control-accent text-white' : 'hover:bg-mission-control-border'
-              }`}
               title="Chat with Agent"
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                agentChatOpen || agentChatModalOpen
+                  ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
               style={isFloating ? noDrag : {}}
             >
-              <MessageSquare size={16} className={agentChatOpen || agentChatModalOpen ? '' : 'text-mission-control-text-dim'} />
+              <MessageSquare size={16} />
             </button>
 
-            {/* Primary: Call button (was where meeting button was) */}
+            {/* Primary: Call button */}
             <button
               onClick={() => {
                 closeAllModals();
                 if (activeCall) { setCallDialogOpen(!callDialogOpen); }
                 else { setAgentCallModalOpen(!agentCallModalOpen); }
               }}
-              className={`p-2.5 rounded-full transition-colors ${
-                callRinging ? 'bg-yellow-500 text-white animate-pulse'
-                : activeCall ? 'bg-red-500 text-white hover:bg-red-600'
-                : agentCallModalOpen ? 'bg-mission-control-accent text-white'
-                : 'hover:bg-mission-control-border'
-              }`}
               title={activeCall ? `In call with ${activeCall.agentName}` : 'Call Agent'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                callRinging || activeCall
+                  ? 'bg-destructive/10 border border-destructive/30 text-destructive'
+                  : agentCallModalOpen
+                    ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              } ${callRinging ? 'animate-pulse' : ''}`}
               style={isFloating ? noDrag : {}}
             >
               {activeCall ? <PhoneOff size={16} /> : <Phone size={16} />}
             </button>
 
-            <button onClick={toggleCollapse} className="p-2 rounded-full hover:bg-mission-control-border transition-colors" title="Collapse toolbar" style={isFloating ? noDrag : {}}>
-              <ChevronRight size={16} className="text-mission-control-text-dim" />
+            <button
+              type="button"
+              onClick={toggleCollapse}
+              title="Collapse toolbar"
+              style={isFloating ? noDrag : {}}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+            >
+              <ChevronRight size={16} />
             </button>
           </>
         )}
@@ -1410,7 +1604,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
   return (
     <div
       ref={toolbarRef}
-      className={`fixed z-40 ${dragging ? '' : 'transition-all duration-300 ease-out'}`}
+      className={`fixed z-40 ${dragging ? '' : 'transition-colors duration-300 ease-out'}`}
       style={{ ...snapStyle, position: 'fixed' }}
     >
       {pillContent}

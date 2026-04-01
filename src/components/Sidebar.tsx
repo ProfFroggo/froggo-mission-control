@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, type ComponentType } from 'react';
+import { useState, useEffect, type ComponentType } from 'react';
+import { IconButton, Box, Flex } from '@radix-ui/themes';
 import {
   Settings, ChevronLeft, ChevronRight, HelpCircle, SlidersHorizontal,
   LayoutDashboard, Mail, Kanban, MessageSquare, ShieldAlert, Bot, Bell, Puzzle,
-  FolderOpen, FolderKanban, CalendarClock, BookOpen, Search, Megaphone, Menu, X, Zap, Keyboard,
+  FolderOpen, FolderKanban, CalendarClock, BookOpen, Search, Megaphone, Menu, X, Zap, Keyboard, Workflow,
 } from 'lucide-react';
 import { useStore } from '../store/store';
 import { NumberBadge } from './BadgeWrapper';
@@ -11,6 +12,7 @@ import { FocusModeSelector, useFocusMode } from './FocusMode';
 import { ViewRegistry } from '../core/ViewRegistry';
 import { useVisibilityPolling } from '../hooks/useVisibilityPolling';
 import { useEventBus } from '../lib/useEventBus';
+import { useInboxCount, setInboxCountExternal } from '../hooks/useInboxCount';
 import AgentActivityBar from './AgentActivityBar';
 
 // Static icon map for built-in panels — renders nav instantly before ViewRegistry populates.
@@ -26,11 +28,13 @@ const BUILTIN_PANEL_ICONS: Record<string, ComponentType<any>> = {
   library:       FolderOpen,
   knowledge:     BookOpen,
   campaigns:     Megaphone,
+  'workflow-studio': Workflow,
   automations:   Zap,
   agents:        Bot,
   notifications: Bell,
   modules:       Puzzle,
 };
+
 
 // View IDs are dynamic — any registered view ID is valid
 type View = string;
@@ -49,6 +53,7 @@ interface SidebarProps {
 export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthChange, onOpenSearch, onOpenShortcuts }: SidebarProps) {
   // Load persisted sidebar state from localStorage
   const [expanded, setExpanded] = useState(() => {
+    if (typeof window === 'undefined') return true;
     const saved = localStorage.getItem('sidebarExpanded');
     return saved !== null ? saved === 'true' : true; // Default: open
   });
@@ -65,7 +70,6 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     window.addEventListener('sidebarStateChange', handler);
     return () => window.removeEventListener('sidebarStateChange', handler);
   }, []);
-  const [inboxCount, setInboxCount] = useState(0);
   // Computed selectors — only re-render when the derived value changes
   const activeTasks = useStore(s =>
     s.tasks.filter(t => t.status === 'todo' || t.status === 'in-progress' || t.status === 'review').length
@@ -97,41 +101,17 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     localStorage.setItem('sidebarExpanded', String(expanded));
   }, [expanded]);
 
-  // Load pending inbox item count — used for both approvals and notifications badges
-  // Also counts human-review tasks so the approvals badge reflects "needs your attention" total
-  const loadInboxCount = useCallback(async () => {
-    try {
-      const [inboxRes, humanReviewRes, approvalsRes] = await Promise.allSettled([
-        fetch('/api/inbox?status=pending'),
-        fetch('/api/tasks?status=human-review'),
-        fetch('/api/approvals?status=pending'),
-      ]);
-      let count = 0;
-      if (inboxRes.status === 'fulfilled' && inboxRes.value.ok) {
-        const data = await inboxRes.value.json();
-        count += Array.isArray(data) ? data.length : (data?.items?.length || 0);
-      }
-      if (humanReviewRes.status === 'fulfilled' && humanReviewRes.value.ok) {
-        const data = await humanReviewRes.value.json();
-        count += Array.isArray(data) ? data.length : 0;
-      }
-      if (approvalsRes.status === 'fulfilled' && approvalsRes.value.ok) {
-        const data = await approvalsRes.value.json();
-        count += Array.isArray(data) ? data.length : 0;
-      }
-      setInboxCount(count);
-    } catch {
-      // Failed to load inbox count
-    }
-  }, []);
+  // Shared inbox count hook — deduplicates with DashInboxCard and other consumers
+  const { count: inboxCount, refresh: refreshInboxCount } = useInboxCount();
 
-  useVisibilityPolling(loadInboxCount, 60_000);
+  // Periodic refresh of inbox count (visibility-aware)
+  useVisibilityPolling(refreshInboxCount, 60_000);
 
   // Subscribe to SSE inbox.count events — updates badge immediately when approvals are resolved
   useEventBus('inbox.count', (data) => {
     const d = data as { count: number };
     if (typeof d?.count === 'number') {
-      setInboxCount(d.count);
+      setInboxCountExternal(d.count);
     }
   });
 
@@ -156,15 +136,16 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     </a>
 
     {/* Mobile hamburger button — only visible on small screens when sidebar is closed */}
-    <button
+    <IconButton
       onClick={() => setMobileOpen(true)}
-      className={`fixed top-3 left-3 z-40 p-2.5 size-11 rounded-lg bg-mission-control-surface border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-all duration-200 md:hidden ${
-        mobileOpen ? 'hidden' : 'flex items-center justify-center'
-      }`}
+      size="3"
+      variant="outline"
+     
+      className={`fixed top-3 left-3 z-40 md:hidden ${mobileOpen ? 'hidden' : 'flex'}`}
       aria-label="Open navigation"
     >
       <Menu size={20} aria-hidden="true" />
-    </button>
+    </IconButton>
 
     {/* Mobile backdrop — closes sidebar when tapped outside */}
     {mobileOpen && (
@@ -176,7 +157,7 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     )}
 
     <aside
-      className={`bg-mission-control-surface border-r border-mission-control-border flex flex-col transition-all duration-300 ease-in-out
+      className={`bg-mission-control-surface border-r border-mission-control-border flex flex-col transition-colors duration-300 ease-in-out
         fixed inset-y-0 left-0 z-40
         md:relative md:translate-x-0 md:z-0
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
@@ -186,20 +167,20 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
     >
       {/* Mobile close button inside the sidebar */}
       <button
+        type="button"
         onClick={() => setMobileOpen(false)}
-        className="absolute top-3 right-3 p-1.5 size-11 flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all md:hidden"
+        className="absolute top-3 right-3 md:hidden inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
         aria-label="Close navigation"
       >
         <X size={16} aria-hidden="true" />
       </button>
 
       {/* Search button */}
-      <div className="px-2 pt-3 pb-1">
+      <Box px="2" pt="3" pb="1">
         <button
+          type="button"
           onClick={onOpenSearch}
-          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all duration-200 border border-mission-control-border/50 ${
-            expanded ? 'justify-start' : 'justify-center'
-          }`}
+          className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50 ${expanded ? 'justify-start' : 'justify-center'}`}
           title={expanded ? undefined : 'Search (⌘K)'}
           aria-label="Search (⌘K)"
         >
@@ -213,77 +194,76 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
             </kbd>
           )}
         </button>
-      </div>
+      </Box>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto pt-2 pb-4 px-2" aria-label="Primary navigation">
         <div className="space-y-1">
           {/* Configurable panels - ordered and filtered by panel config */}
-          {[...panelConfig]
-            .sort((a, b) => a.order - b.order)
-            .filter(p => p.visible)
-            .map((p, idx) => {
-              const Icon = ViewRegistry.getIcon(p.id) ?? BUILTIN_PANEL_ICONS[p.id];
-              if (!Icon) return null;
-              const id = p.id as View;
-              const label = p.label;
-              const shortcutNum = idx < 10 ? `⌘${idx + 1 > 9 ? 0 : idx + 1}` : undefined;
-              const shortcut = shortcutNum || '';
-              return { id, icon: Icon, label, shortcut };
-            })
-            .filter(Boolean)
-            .map(({ id, icon: Icon, label, shortcut }: any) => {
-            const isActive = currentView === id;
-            let badge = 0;
-            if (id === 'inbox') badge = inboxCount;
-            if (id === 'approvals') badge = inboxCount;
-            if (id === 'notifications') badge = inboxCount;
-            if (id === 'kanban') badge = activeTasks;
+          {(() => {
+            const navItems = [...panelConfig]
+              .sort((a, b) => a.order - b.order)
+              .filter(p => p.visible)
+              .reduce<{ id: string; icon: any; label: string; shortcut: string }[]>((acc, p, idx) => {
+                const Icon = ViewRegistry.getIcon(p.id) ?? BUILTIN_PANEL_ICONS[p.id];
+                if (!Icon) return acc;
+                const shortcutNum = acc.length < 10 ? `⌘${acc.length + 1 > 9 ? 0 : acc.length + 1}` : undefined;
+                acc.push({ id: p.id as View, icon: Icon, label: p.label, shortcut: shortcutNum || '' });
+                return acc;
+              }, []);
 
-            return (
-              <button
-                key={id}
-                onClick={() => handleNavigate(id)}
-                className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative focus-visible:ring-2 focus-visible:ring-mission-control-accent focus-visible:ring-offset-1 focus-visible:ring-offset-mission-control-bg ${
-                  isActive
-                    ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
-                    : 'text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
-                } ${expanded ? '' : 'justify-center'}`}
-                title={expanded ? undefined : `${label} (${shortcut})`}
-                aria-label={`${label}${badge > 0 ? ` (${badge} items)` : ''}`}
-                aria-current={isActive ? 'page' : undefined}
-                data-view={id}
-              >
-                <Icon size={20} className="flex-shrink-0" aria-hidden="true" />
+            return navItems.map(({ id, icon: Icon, label, shortcut }) => {
+              const isActive = currentView === id;
+              let badge = 0;
+              if (id === 'inbox') badge = inboxCount;
+              if (id === 'kanban') badge = activeTasks;
 
-                {expanded && (
-                  <>
-                    <span className="text-sm font-medium flex-1 text-left truncate">{label}</span>
-                    {badge > 0 && (
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => handleNavigate(id)}
+                  className={`no-drag w-full flex items-center gap-3 px-3 py-2.5 relative group transition-colors text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50 ${expanded ? '' : 'justify-center'} ${
+                    isActive
+                      ? 'bg-mission-control-accent/12 text-mission-control-accent rounded-lg'
+                      : 'rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
+                  }`}
+                  title={expanded ? undefined : `${label} (${shortcut})`}
+                  aria-label={`${label}${badge > 0 ? ` (${badge} items)` : ''}`}
+                  aria-current={isActive ? 'page' : undefined}
+                  data-view={id}
+                >
+                    <Icon size={20} className="flex-shrink-0" aria-hidden="true" />
+
+                    {expanded && (
+                      <>
+                        <span className="flex-1 text-left truncate">{label}</span>
+                        {badge > 0 && (
+                          <NumberBadge
+                            count={badge}
+                            maxCount={999}
+                            position="inline"
+                            variant={isActive ? 'secondary' : 'primary'}
+                            size="sm"
+                            className="min-w-[18px] h-[18px] rounded-full text-[10px] font-bold tabular-nums flex items-center justify-center bg-mission-control-accent text-white px-1"
+                          />
+                        )}
+                      </>
+                    )}
+
+                    {!expanded && badge > 0 && (
                       <NumberBadge
                         count={badge}
-                        maxCount={99}
-                        position="inline"
-                        variant={isActive ? 'secondary' : 'primary'}
+                        maxCount={999}
+                        position="absolute-top-right"
+                        variant="primary"
                         size="sm"
-                        className={isActive ? 'bg-mission-control-text/20 text-mission-control-text' : 'bg-mission-control-accent/20 text-mission-control-accent'}
                       />
                     )}
-                  </>
-                )}
-
-                {!expanded && badge > 0 && (
-                  <NumberBadge
-                    count={badge}
-                    maxCount={99}
-                    position="absolute-top-right"
-                    variant="primary"
-                    size="sm"
-                  />
-                )}
-              </button>
-            );
-          })}
+                </button>
+              );
+            });
+          })()}
         </div>
       </nav>
 
@@ -291,14 +271,15 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
       <AgentActivityBar onNavigate={handleNavigate} expanded={expanded} />
 
       {/* Bottom section */}
-      <div className="p-2 border-t border-mission-control-border space-y-1" role="group" aria-label="Settings">
+      <Box p="2" className="border-t border-mission-control-border mt-2 space-y-1" role="group" aria-label="Settings">
         {/* Action icons in a compact horizontal row */}
-        <div className={`flex items-center ${expanded ? 'justify-between' : 'justify-center'} gap-0.5 px-1`}>
+        <Flex align="center" justify={expanded ? 'between' : 'center'} gap="1" px="1">
           {/* Edit Panels - only visible when expanded */}
           {expanded && (
             <button
+              type="button"
               onClick={openEditModal}
-              className="no-drag p-1.5 size-11 flex items-center justify-center rounded-lg transition-all duration-200 text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
+              className="no-drag p-1.5 rounded-lg transition-colors text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
               title="Edit Panels (⌘⇧E)"
               aria-label="Edit Panels"
             >
@@ -308,8 +289,9 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           {/* Help - only visible when expanded */}
           {expanded && onOpenHelp && (
             <button
+              type="button"
               onClick={onOpenHelp}
-              className="no-drag p-1.5 size-11 flex items-center justify-center rounded-lg transition-all duration-200 text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
+              className="no-drag p-1.5 rounded-lg transition-colors text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
               title="Help (⌘H)"
               aria-label="Help"
             >
@@ -319,8 +301,9 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           {/* Keyboard shortcuts — always visible */}
           {onOpenShortcuts && (
             <button
+              type="button"
               onClick={onOpenShortcuts}
-              className="no-drag p-1.5 size-11 flex items-center justify-center rounded-lg transition-all duration-200 text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text"
+              className="no-drag p-1.5 rounded-lg transition-colors text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
               title="Keyboard shortcuts (?)"
               aria-label="Keyboard shortcuts"
             >
@@ -329,11 +312,12 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           )}
           {/* Settings - always visible */}
           <button
+            type="button"
             onClick={() => handleNavigate('settings')}
-            className={`no-drag p-1.5 size-11 flex items-center justify-center rounded-lg transition-all duration-200 ${
+            className={`no-drag p-1.5 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50 ${
               currentView === 'settings'
-                ? 'bg-mission-control-accent text-white shadow-lg shadow-mission-control-accent/20'
-                : 'text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text'
+                ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/30'
             }`}
             title="Settings (⌘,)"
             aria-label="Settings"
@@ -343,16 +327,17 @@ export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthCh
           </button>
           {/* Expand/Collapse - always visible */}
           <button
+            type="button"
             onClick={() => setExpanded(!expanded)}
-            className="no-drag p-1.5 size-11 flex items-center justify-center rounded-lg text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-all duration-200"
+            className="no-drag w-6 h-6 rounded-md flex items-center justify-center transition-colors text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
             title={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
             aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
             aria-expanded={expanded}
           >
             {expanded ? <ChevronLeft size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
           </button>
-        </div>
-      </div>
+        </Flex>
+      </Box>
     </aside>
 
     {/* Focus Mode Selector */}

@@ -65,7 +65,7 @@ export function SpeciesSpotlight() {
 
                     {/* Did you know callout */}
                     <div className="frog-callout mt-5">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-[var(--frog-amber)] mb-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--frog-amber)] mb-1">
                         Did you know?
                       </p>
                       <p className="text-sm text-[var(--frog-parchment)]">

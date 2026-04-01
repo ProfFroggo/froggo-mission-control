@@ -6,7 +6,7 @@ import {
   ArrowLeft, MessageSquare, LayoutGrid, Image as ImageIcon, BarChart2, Radio, FileText,
   Users, Bot, Settings, Plus, X, ChevronDown, Edit3, Trash2, Check,
   Upload, RefreshCw, TrendingUp, TrendingDown, Minus, Link, StickyNote,
-  CalendarDays, CheckCircle2, CircleDot, Square, ClipboardList,
+  CalendarDays, CheckCircle2, CircleDot, Square, ClipboardList, BookOpen,
 } from 'lucide-react';
 import { Megaphone, Calendar, DollarSign, Copy, ListTodo, Zap } from 'lucide-react';
 import { campaignsApi, agentApi } from '../../lib/api';
@@ -22,10 +22,11 @@ import CampaignDispatchModal from './CampaignDispatchModal';
 import { CHANNEL_ICONS, CHANNEL_LABELS, ALL_CHANNELS } from './channelIcons';
 import { STATUS_CONFIG, TYPE_COLORS, TYPE_LABELS } from './CampaignCard';
 import CampaignROIDashboard from '../CampaignROIDashboard';
-import CampaignCommentsPanel from '../CampaignCommentsPanel';
 import ReactMarkdown from 'react-markdown';
+import ContextPanel from '../ContextPanel';
+import { Button, IconButton, Flex, TextField, Select, TextArea } from '@radix-ui/themes';
 
-type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'assets' | 'channels' | 'performance' | 'roi' | 'comments' | 'checklist';
+type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'assets' | 'channels' | 'results' | 'checklist' | 'context';
 
 const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'overview',    label: 'Overview',    icon: FileText },
@@ -34,10 +35,9 @@ const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'timeline',    label: 'Timeline / Schedule', icon: Calendar },
   { id: 'assets',      label: 'Assets',      icon: ImageIcon },
   { id: 'channels',    label: 'Channels',    icon: Radio },
-  { id: 'performance', label: 'Performance', icon: BarChart2 },
-  { id: 'roi',         label: 'ROI',         icon: TrendingUp },
-  { id: 'comments',    label: 'Comments',    icon: MessageSquare },
+  { id: 'results',     label: 'Results',     icon: BarChart2 },
   { id: 'checklist',   label: 'Checklist',   icon: ClipboardList },
+  { id: 'context',     label: 'Context',     icon: BookOpen },
 ];
 
 const KPI_LABELS: Record<string, string> = {
@@ -109,11 +109,11 @@ function AssetsTab({ campaign }: { campaign: Campaign }) {
 
   function assetBadge(type: string) {
     const map: Record<string, string> = {
-      image: 'text-info bg-info-subtle',
+      image: 'text-info bg-info/10',
       video: 'text-review bg-review-subtle',
-      copy: 'text-success bg-success-subtle',
-      brief: 'text-warning bg-warning-subtle',
-      report: 'text-info bg-info-subtle',
+      copy: 'text-success bg-success/10',
+      brief: 'text-warning bg-warning/10',
+      report: 'text-info bg-info/10',
     };
     return map[type] ?? 'text-muted bg-muted-subtle';
   }
@@ -121,8 +121,8 @@ function AssetsTab({ campaign }: { campaign: Campaign }) {
   function statusBadge(status: string) {
     const map: Record<string, string> = {
       draft: 'text-muted bg-muted-subtle',
-      approved: 'text-success bg-success-subtle',
-      live: 'text-info bg-info-subtle',
+      approved: 'text-success bg-success/10',
+      live: 'text-info bg-info/10',
       archived: 'text-mission-control-text-dim bg-mission-control-surface',
     };
     return map[status] ?? 'text-muted bg-muted-subtle';
@@ -131,15 +131,14 @@ function AssetsTab({ campaign }: { campaign: Campaign }) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-mission-control-border flex-wrap">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
           {ASSET_TYPES.map(t => (
             <button
               key={t}
+              type="button"
               onClick={() => setFilterType(t)}
-              className={`px-2.5 py-1 text-xs rounded-full transition-colors capitalize ${
-                filterType === t
-                  ? 'bg-mission-control-accent text-white'
-                  : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface'
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                filterType === t ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               {t || 'All'}
@@ -147,7 +146,7 @@ function AssetsTab({ campaign }: { campaign: Campaign }) {
           ))}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <button onClick={load} disabled={loading} className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
+          <button type="button" onClick={load} disabled={loading} className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
           <label className="flex items-center gap-1 px-2.5 py-1 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors cursor-pointer">
@@ -158,7 +157,7 @@ function AssetsTab({ campaign }: { campaign: Campaign }) {
       </div>
       <div className="flex-1 overflow-y-auto p-4">
         {loading ? (
-          <div className="flex items-center justify-center py-10"><Spinner size={16} /></div>
+          <Flex align="center" justify="center" py="6"><Spinner size={16} /></Flex>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <ImageIcon size={24} className="text-mission-control-text-dim mb-2" />
@@ -220,34 +219,34 @@ function ChannelsTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
             const Icon = CHANNEL_ICONS[ch];
             return (
               <div key={ch} className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <Flex align="center" justify="between">
+                  <Flex align="center" gap="2">
                     {Icon && <Icon size={16} className="text-mission-control-text" />}
                     <span className="font-medium text-sm text-mission-control-text">{CHANNEL_LABELS[ch] ?? ch}</span>
-                  </div>
-                  <button onClick={() => handleToggleChannel(ch)} className="text-xs text-mission-control-text-dim hover:text-error transition-colors">
+                  </Flex>
+                  <button type="button" onClick={() => handleToggleChannel(ch)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                     Remove
                   </button>
-                </div>
+                </Flex>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-xs text-mission-control-text-dim mb-1 flex items-center gap-1"><Link size={10} /> Live URL</label>
-                    <input
+                    <TextField.Root
                       type="url"
                       placeholder="https://..."
                       value={channelLinks[ch] ?? ''}
                       onChange={e => setChannelLinks(prev => ({ ...prev, [ch]: e.target.value }))}
-                      className="w-full px-2 py-1.5 text-xs bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50"
+                      size="1"
                     />
                   </div>
                   <div>
                     <label className="text-xs text-mission-control-text-dim mb-1 flex items-center gap-1"><StickyNote size={10} /> Notes</label>
-                    <input
+                    <TextField.Root
                       type="text"
                       placeholder="Quick note..."
                       value={channelNotes[ch] ?? ''}
                       onChange={e => setChannelNotes(prev => ({ ...prev, [ch]: e.target.value }))}
-                      className="w-full px-2 py-1.5 text-xs bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50"
+                      size="1"
                     />
                   </div>
                 </div>
@@ -261,11 +260,7 @@ function ChannelsTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
             {ALL_CHANNELS.filter(ch => !activeChannels.includes(ch)).map(ch => {
               const Icon = CHANNEL_ICONS[ch];
               return (
-                <button
-                  key={ch}
-                  onClick={() => handleToggleChannel(ch)}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-mission-control-border rounded-lg text-mission-control-text-dim hover:border-mission-control-accent/40 hover:text-mission-control-accent transition-colors"
-                >
+                <button key={ch} type="button" onClick={() => handleToggleChannel(ch)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                   {Icon && <Icon size={11} />}
                   {CHANNEL_LABELS[ch]}
                   <Plus size={10} />
@@ -313,7 +308,8 @@ function PerformanceTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: 
     return Math.min(100, Math.round((k.actual / k.target) * 100));
   }
 
-  function TrendIcon({ pct }: { pct: number }) {
+  function TrendIcon({ pct, hasData }: { pct: number; hasData: boolean }) {
+    if (!hasData) return <Minus size={13} className="text-mission-control-text-dim/40" />;
     if (pct >= 100) return <TrendingUp size={13} className="text-success" />;
     if (pct >= 50) return <Minus size={13} className="text-warning" />;
     return <TrendingDown size={13} className="text-error" />;
@@ -321,41 +317,42 @@ function PerformanceTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: 
 
   return (
     <div className="flex flex-col h-full overflow-y-auto p-4 space-y-4">
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <h3 className="text-sm font-medium text-mission-control-text">KPI Tracker</h3>
-        <button onClick={() => setEditing(v => !v)} className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-accent transition-colors">
+        <button type="button" onClick={() => setEditing(v => !v)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
           <Edit3 size={12} /> {editing ? 'Cancel' : 'Update Metrics'}
         </button>
-      </div>
+      </Flex>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {Object.entries(KPI_LABELS).map(([key, label]) => {
           const entry = kpis[key] ?? { target: 0, actual: 0 };
           const pct = kpiPct(entry);
+          const hasData = (entry.target > 0) || (entry.actual > 0);
           return (
             <div key={key} className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 space-y-2">
-              <div className="flex items-center justify-between">
+              <Flex align="center" justify="between">
                 <span className="text-xs text-mission-control-text-dim">{label}</span>
-                <TrendIcon pct={pct} />
-              </div>
+                <TrendIcon pct={pct} hasData={hasData} />
+              </Flex>
               {editing ? (
                 <div className="space-y-1.5">
                   <div>
                     <label className="text-xs text-mission-control-text-dim">Target</label>
-                    <input
+                    <TextField.Root
                       type="number"
                       value={entry.target || ''}
                       onChange={e => setKpis(prev => ({ ...prev, [key]: { ...entry, target: parseFloat(e.target.value) || 0 } }))}
-                      className="w-full px-2 py-1 text-xs bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent/50"
+                      size="1"
                     />
                   </div>
                   <div>
                     <label className="text-xs text-mission-control-text-dim">Actual</label>
-                    <input
+                    <TextField.Root
                       type="number"
                       value={entry.actual || ''}
                       onChange={e => setKpis(prev => ({ ...prev, [key]: { ...entry, actual: parseFloat(e.target.value) || 0 } }))}
-                      className="w-full px-2 py-1 text-xs bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent/50"
+                      size="1"
                     />
                   </div>
                 </div>
@@ -366,17 +363,14 @@ function PerformanceTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: 
                   </div>
                   {entry.target > 0 && (
                     <>
-                      <div className="flex items-center justify-between text-xs text-mission-control-text-dim tabular-nums">
+                      <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim tabular-nums">
                         <span>Target: {entry.target.toLocaleString()}</span>
                         <span>{pct}%</span>
-                      </div>
+                      </Flex>
                       <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
                         <div
-                          className="h-full rounded-full transition-all"
-                          style={{
-                            width: `${pct}%`,
-                            backgroundColor: pct >= 100 ? 'var(--color-success)' : pct >= 50 ? 'var(--color-warning)' : 'var(--color-error)',
-                          }}
+                          className={`h-full rounded-full transition-colors ${pct >= 100 ? 'bg-success' : pct >= 50 ? 'bg-warning' : 'bg-error'}`}
+                          style={{ width: `${pct}%` }}
                         />
                       </div>
                     </>
@@ -389,10 +383,9 @@ function PerformanceTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: 
       </div>
 
       {editing && (
-        <button onClick={handleSaveKpis} disabled={saving}
-          className="flex items-center gap-1.5 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors">
+        <Button variant="solid" size="1" onClick={handleSaveKpis} disabled={saving}>
           {saving ? <Spinner size={12} /> : <Check size={14} />} Save Metrics
-        </button>
+        </Button>
       )}
 
       {budget > 0 && (
@@ -413,16 +406,13 @@ function PerformanceTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: 
             </div>
           </div>
           <div>
-            <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1 tabular-nums">
+            <Flex align="center" justify="between" mb="1" className="text-xs text-mission-control-text-dim tabular-nums">
               <span>Spend rate</span><span>{spendPct}%</span>
-            </div>
+            </Flex>
             <div className="h-2 bg-mission-control-border rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${spendPct}%`,
-                  backgroundColor: spendPct > 90 ? 'var(--color-error)' : spendPct > 70 ? 'var(--color-warning)' : 'var(--color-success)',
-                }}
+                className={`h-full rounded-full transition-colors ${spendPct > 90 ? 'bg-error' : spendPct > 70 ? 'bg-warning' : 'bg-success'}`}
+                style={{ width: `${spendPct}%` }}
               />
             </div>
           </div>
@@ -432,13 +422,13 @@ function PerformanceTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: 
       {start && end && (
         <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-3">
           <h4 className="text-sm font-medium text-mission-control-text">Timeline</h4>
-          <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1">
+          <Flex align="center" justify="between" mb="1" className="text-xs text-mission-control-text-dim">
             <span>{new Date(start).toLocaleDateString()}</span>
             <span>{timelineProgress}% elapsed</span>
             <span>{new Date(end).toLocaleDateString()}</span>
-          </div>
-          <div className="h-2 bg-mission-control-border rounded-full overflow-hidden">
-            <div className="h-full bg-mission-control-accent rounded-full transition-all" style={{ width: `${timelineProgress}%` }} />
+          </Flex>
+          <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
+            <div className="h-full bg-mission-control-accent rounded-full transition-colors" style={{ width: `${timelineProgress}%` }} />
           </div>
         </div>
       )}
@@ -497,9 +487,9 @@ function TimelineTab({ campaign }: { campaign: Campaign }) {
   const nowPct = pct(now);
 
   function dotColor(m: TimelineMilestone) {
-    if (m.type === 'start') return 'var(--color-success, #22c55e)';
-    if (m.type === 'end') return m.date < now ? 'var(--color-error, #ef4444)' : 'var(--color-info, #6366f1)';
-    return m.date < now ? 'var(--mission-control-text-dim, #888)' : 'var(--color-info, #6366f1)';
+    if (m.type === 'start') return 'var(--color-success)';
+    if (m.type === 'end') return m.date < now ? 'var(--color-error)' : 'var(--color-info)';
+    return m.date < now ? 'var(--mission-control-border)' : 'var(--mission-control-accent)';
   }
 
   return (
@@ -529,7 +519,7 @@ function TimelineTab({ campaign }: { campaign: Campaign }) {
 
         return (
           <div>
-            <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-3">
+            <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-3">
               {refDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
             </h3>
             <div className="grid grid-cols-7 gap-px bg-mission-control-border rounded-lg overflow-hidden">
@@ -568,35 +558,35 @@ function TimelineTab({ campaign }: { campaign: Campaign }) {
 
       {/* Vertical timeline */}
       <div>
-        <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-4">Timeline</h3>
+        <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-4">Timeline</h3>
         <div className="relative ml-3">
           {/* Vertical line */}
-          <div className="absolute left-[5px] top-0 bottom-0 w-px bg-mission-control-border" />
+          <div className="absolute left-[5px] top-0 bottom-0 w-px bg-mission-control-border/50" />
           <div className="space-y-0">
             {milestones.map((m, i) => {
               const isPast = m.date < now;
               const isToday = Math.abs(m.date - now) < 86_400_000;
               const isSoon = !isPast && m.date <= now + 7 * 86_400_000;
               return (
-                <div key={i} className="relative flex items-start gap-4 pb-4">
+                <div key={i} className="relative flex items-start gap-3 pb-4">
                   {/* Dot on the line */}
                   <div
-                    className={`relative z-10 w-3 h-3 rounded-full border-2 flex-shrink-0 mt-1 ${isToday ? 'ring-4 ring-mission-control-accent/20' : ''}`}
+                    className={`relative z-10 w-3 h-3 rounded-full flex-shrink-0 mt-1 ${isToday ? 'ring-4 ring-mission-control-accent/20' : ''}`}
                     style={{
                       backgroundColor: isPast ? dotColor(m) : 'var(--mission-control-bg)',
-                      borderColor: dotColor(m),
+                      border: `2px solid ${dotColor(m)}`,
                     }}
                   />
                   {/* Content */}
                   <div className={`flex-1 flex items-center justify-between gap-3 pb-3 ${i < milestones.length - 1 ? 'border-b border-mission-control-border/30' : ''}`}>
                     <div className="min-w-0">
-                      <span className={`text-sm ${isPast ? 'text-mission-control-text-dim line-through' : isSoon ? 'text-mission-control-accent font-medium' : 'text-mission-control-text'}`}>
+                      <span className={`text-sm font-medium ${isPast ? 'text-mission-control-text-dim line-through' : isSoon ? 'text-mission-control-accent' : 'text-mission-control-text'}`}>
                         {m.label}
                       </span>
-                      {isToday && <span className="ml-2 text-xs text-mission-control-accent font-semibold">Today</span>}
+                      {isToday && <span className="ml-2 text-[10px] tabular-nums text-mission-control-accent font-semibold">Today</span>}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs text-mission-control-text-dim tabular-nums">
+                      <span className="text-[10px] tabular-nums text-mission-control-text-dim">
                         {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       </span>
                       {isPast && <CheckCircle2 size={13} className="text-success" />}
@@ -637,7 +627,7 @@ function BudgetTracker({ campaign }: { campaign: Campaign }) {
 
   return (
     <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-3">
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <h3 className="text-sm font-medium text-mission-control-text flex items-center gap-1.5">
           <DollarSign size={14} className="text-mission-control-text-dim" />
           Budget Tracker
@@ -645,7 +635,7 @@ function BudgetTracker({ campaign }: { campaign: Campaign }) {
         {isEstimated && (
           <span className="text-xs text-mission-control-text-dim italic">est. from task hours</span>
         )}
-      </div>
+      </Flex>
       <div className="grid grid-cols-3 gap-3 text-center tabular-nums">
         <div>
           <div className="text-base font-semibold text-mission-control-text">${budget.toLocaleString()}</div>
@@ -663,20 +653,14 @@ function BudgetTracker({ campaign }: { campaign: Campaign }) {
         </div>
       </div>
       <div>
-        <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1.5 tabular-nums">
+        <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim mb-1.5 tabular-nums">
           <span>{consumedPct}% consumed</span>
           <span>{campaign.currency ?? 'USD'}</span>
-        </div>
-        <div className="h-2.5 bg-mission-control-border rounded-full overflow-hidden">
+        </Flex>
+        <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
           <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{
-              width: `${consumedPct}%`,
-              backgroundColor:
-                consumedPct > 90 ? 'var(--color-error)' :
-                consumedPct > 70 ? 'var(--color-warning)' :
-                'var(--color-success)',
-            }}
+            className={`h-full rounded-full transition-colors duration-500 ${consumedPct > 90 ? 'bg-error' : consumedPct > 70 ? 'bg-warning' : 'bg-success'}`}
+            style={{ width: `${consumedPct}%` }}
           />
         </div>
       </div>
@@ -757,30 +741,30 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
   const isOverdue = timelineEnd != null && now > timelineEnd && campaign.status !== 'completed' && campaign.status !== 'archived';
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
 
       {/* Quick-stats strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {/* Tasks */}
         <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 space-y-1.5">
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
             <CheckCircle2 size={12} /> Tasks
-          </div>
+          </Flex>
           <div className="text-lg font-semibold text-mission-control-text leading-none tabular-nums">
             {totalTasks > 0 ? `${doneTasks}/${totalTasks}` : '—'}
           </div>
           {totalTasks > 0 && (
             <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
-              <div className="h-full rounded-full" style={{ width: `${taskProgress}%`, backgroundColor: 'var(--color-success)' }} />
+              <div className="h-full rounded-full bg-success" style={{ width: `${taskProgress}%` }} />
             </div>
           )}
         </div>
 
         {/* In progress */}
         <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 space-y-1.5">
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
             <CircleDot size={12} /> In Progress
-          </div>
+          </Flex>
           <div className={`text-lg font-semibold leading-none ${inProgressTasks > 0 ? 'text-warning' : 'text-mission-control-text'}`}>
             {inProgressTasks > 0 ? inProgressTasks : '—'}
           </div>
@@ -788,9 +772,9 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
 
         {/* Members */}
         <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 space-y-1.5">
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
             <Users size={12} /> Agents
-          </div>
+          </Flex>
           <div className="text-lg font-semibold text-mission-control-text leading-none">
             {memberCount > 0 ? memberCount : '—'}
           </div>
@@ -801,9 +785,9 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
 
         {/* Timeline */}
         <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-3 space-y-1.5">
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim">
+          <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
             <CalendarDays size={12} /> Timeline
-          </div>
+          </Flex>
           {timelinePct !== null ? (
             <>
               <div className={`text-lg font-semibold leading-none ${isOverdue ? 'text-error' : daysRemaining !== null && daysRemaining <= 7 ? 'text-warning' : 'text-mission-control-text'}`}>
@@ -811,11 +795,8 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
               </div>
               <div className="h-1 bg-mission-control-border rounded-full overflow-hidden">
                 <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${timelinePct}%`,
-                    backgroundColor: isOverdue ? 'var(--color-error)' : daysRemaining !== null && daysRemaining <= 7 ? 'var(--color-warning)' : 'var(--color-info, #6366f1)',
-                  }}
+                  className={`h-full rounded-full ${isOverdue ? 'bg-error' : daysRemaining !== null && daysRemaining <= 7 ? 'bg-warning' : 'bg-info'}`}
+                  style={{ width: `${timelinePct}%` }}
                 />
               </div>
             </>
@@ -826,59 +807,54 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
       </div>
 
       <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-        <div className="flex items-center justify-between mb-3">
+        <Flex align="center" justify="between" mb="3">
           <h3 className="text-sm font-medium text-mission-control-text">Campaign Details</h3>
-          <button onClick={() => setEditingDetails(v => !v)} className="text-xs text-mission-control-text-dim hover:text-mission-control-accent transition-colors flex items-center gap-1">
+          <button type="button" onClick={() => setEditingDetails(v => !v)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
             <Edit3 size={11} /> {editingDetails ? 'Cancel' : 'Edit'}
           </button>
-        </div>
+        </Flex>
         {editingDetails ? (
           <div className="space-y-3">
             <div>
               <label className="text-xs text-mission-control-text-dim mb-1 block">Status</label>
-              <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}
-                className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none">
-                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-              </select>
+              <Select.Root value={form.status} onValueChange={val => setForm(p => ({ ...p, status: val }))}>
+                <Select.Trigger className="w-full" />
+                <Select.Content>
+                  {STATUS_OPTIONS.map(s => <Select.Item key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</Select.Item>)}
+                </Select.Content>
+              </Select.Root>
             </div>
             <div>
               <label className="text-xs text-mission-control-text-dim mb-1 block">Description</label>
-              <input type="text" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none" />
+              <TextField.Root value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} size="1" />
             </div>
             <div>
               <label className="text-xs text-mission-control-text-dim mb-1 block">Target audience</label>
-              <input type="text" value={form.targetAudience} onChange={e => setForm(p => ({ ...p, targetAudience: e.target.value }))}
-                className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none" />
+              <TextField.Root value={form.targetAudience} onChange={e => setForm(p => ({ ...p, targetAudience: e.target.value }))} size="1" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs text-mission-control-text-dim mb-1 block">Budget (USD)</label>
-                <input type="number" value={form.budget} onChange={e => setForm(p => ({ ...p, budget: e.target.value }))}
-                  className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none" />
+                <TextField.Root type="number" value={form.budget} onChange={e => setForm(p => ({ ...p, budget: e.target.value }))} size="1" />
               </div>
               <div />
               <div>
                 <label className="text-xs text-mission-control-text-dim mb-1 block">Start date</label>
-                <input type="date" value={form.startDate} onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))}
-                  className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none" />
+                <TextField.Root type="date" value={form.startDate} onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))} size="1" />
               </div>
               <div>
                 <label className="text-xs text-mission-control-text-dim mb-1 block">End date</label>
-                <input type="date" value={form.endDate} onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))}
-                  className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none" />
+                <TextField.Root type="date" value={form.endDate} onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))} size="1" />
               </div>
             </div>
-            <div className="flex gap-2">
-              <button onClick={handleSaveDetails} disabled={saving}
-                className="flex items-center gap-1 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors">
+            <Flex gap="2">
+              <Button variant="solid" size="1" onClick={handleSaveDetails} disabled={saving}>
                 {saving ? <Spinner size={12} /> : <Check size={12} />} Save
-              </button>
-              <button onClick={() => setEditingDetails(false)}
-                className="px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text transition-colors">
+              </Button>
+              <button type="button" onClick={() => setEditingDetails(false)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                 Cancel
               </button>
-            </div>
+            </Flex>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 text-sm">
@@ -924,27 +900,24 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
       </div>
 
       <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-        <div className="flex items-center justify-between mb-3">
+        <Flex align="center" justify="between" mb="3">
           <h3 className="text-sm font-medium text-mission-control-text">Campaign Brief</h3>
-          <button onClick={() => setEditingBrief(v => !v)} className="text-xs text-mission-control-text-dim hover:text-mission-control-accent transition-colors flex items-center gap-1">
+          <button type="button" onClick={() => setEditingBrief(v => !v)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
             <Edit3 size={11} /> {editingBrief ? 'Cancel' : 'Edit'}
           </button>
-        </div>
+        </Flex>
         {editingBrief ? (
           <div className="space-y-2">
-            <textarea value={brief} onChange={e => setBrief(e.target.value)} rows={6}
-              className="w-full px-3 py-2 text-sm bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent/50 resize-none"
+            <TextArea value={brief} onChange={e => setBrief(e.target.value)} rows={6} variant="soft"
               placeholder="Write the campaign brief: strategy, key messages, creative direction..." />
-            <div className="flex gap-2">
-              <button onClick={handleSaveBrief} disabled={saving}
-                className="flex items-center gap-1 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors">
+            <Flex gap="2">
+              <Button variant="solid" size="1" onClick={handleSaveBrief} disabled={saving}>
                 {saving ? <Spinner size={12} /> : <Check size={12} />} Save Brief
-              </button>
-              <button onClick={() => { setEditingBrief(false); setBrief(campaign.briefContent ?? ''); }}
-                className="px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text transition-colors">
+              </Button>
+              <button type="button" onClick={() => { setEditingBrief(false); setBrief(campaign.briefContent ?? ''); }} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                 Cancel
               </button>
-            </div>
+            </Flex>
           </div>
         ) : (
           <div className="text-sm text-mission-control-text leading-relaxed min-h-[60px] prose prose-invert prose-sm max-w-none">
@@ -964,12 +937,15 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
             const Icon = CHANNEL_ICONS[ch];
             const active = (campaign.channels ?? []).includes(ch);
             return (
-              <button key={ch} onClick={() => handleChannelToggle(ch)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg border transition-all ${
+              <button
+                key={ch}
+                onClick={() => handleChannelToggle(ch)}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                   active
-                    ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                    : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent/30'
-                }`}>
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
+                }`}
+              >
                 {Icon && <Icon size={11} />}
                 {CHANNEL_LABELS[ch]}
               </button>
@@ -1031,66 +1007,72 @@ function LinkAutomationModal({ campaignId, onClose }: { campaignId: string; onCl
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-md p-5 space-y-4">
-        <div className="flex items-center justify-between">
+        <Flex align="center" justify="between">
           <h2 className="text-sm font-semibold text-mission-control-text flex items-center gap-2">
             <Zap size={15} className="text-mission-control-accent" /> Link Automation
           </h2>
-          <button onClick={onClose} className="text-mission-control-text-dim hover:text-mission-control-text transition-colors">
+          <button type="button" onClick={onClose} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
             <X size={16} />
           </button>
-        </div>
+        </Flex>
 
         {loading ? (
-          <div className="flex items-center justify-center py-8"><Spinner size={20} /></div>
+          <Flex align="center" justify="center" py="4"><Spinner size={20} /></Flex>
         ) : (
           <>
             {linked.length > 0 && (
               <div className="space-y-2">
-                <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Linked</p>
+                <p className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Linked</p>
                 {linked.map(l => {
                   const auto = allAutomations.find(a => a.id === l.automationId);
                   return (
-                    <div key={l.automationId} className="flex items-center justify-between bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2">
+                    <Flex key={l.automationId} align="center" justify="between" className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2">
                       <div>
                         <p className="text-xs font-medium text-mission-control-text">{auto?.name ?? l.automationId}</p>
                         <p className="text-[10px] text-mission-control-text-dim capitalize">{l.campaignTriggerType.replace(/-/g, ' ')}</p>
                       </div>
-                      <button onClick={() => handleUnlink(l.automationId)} className="text-mission-control-text-dim hover:text-error transition-colors p-1">
+                      <button type="button" onClick={() => handleUnlink(l.automationId)} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                         <X size={12} />
                       </button>
-                    </div>
+                    </Flex>
                   );
                 })}
               </div>
             )}
 
             <div className="space-y-3">
-              <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Add automation</p>
+              <p className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Add automation</p>
               {available.length === 0 ? (
-                <p className="text-xs text-mission-control-text-dim py-2">All automations already linked, or none exist.</p>
+                <p className="text-xs text-mission-control-text-dim py-2">
+                  {allAutomations.length === 0
+                    ? 'No automations found. Create one in the Automations panel first.'
+                    : 'All available automations are already linked.'}
+                </p>
               ) : (
                 <>
                   <div>
                     <label className="text-xs text-mission-control-text-dim mb-1 block">Automation</label>
-                    <select value={selectedId} onChange={e => setSelectedId(e.target.value)}
-                      className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none">
-                      <option value="">Select automation...</option>
-                      {available.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                    </select>
+                    <Select.Root value={selectedId} onValueChange={setSelectedId}>
+                      <Select.Trigger className="w-full" placeholder="Select automation..." />
+                      <Select.Content>
+                        {available.map(a => <Select.Item key={a.id} value={a.id}>{a.name}</Select.Item>)}
+                      </Select.Content>
+                    </Select.Root>
                   </div>
                   <div>
                     <label className="text-xs text-mission-control-text-dim mb-1 block">Trigger</label>
-                    <select value={triggerType} onChange={e => setTriggerType(e.target.value)}
-                      className="w-full text-sm px-2 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none">
-                      {TRIGGER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                    </select>
+                    <Select.Root value={triggerType} onValueChange={setTriggerType}>
+                      <Select.Trigger className="w-full" />
+                      <Select.Content>
+                        {TRIGGER_OPTIONS.map(t => <Select.Item key={t.value} value={t.value}>{t.label}</Select.Item>)}
+                      </Select.Content>
+                    </Select.Root>
                   </div>
-                  <button onClick={handleLink} disabled={!selectedId || saving}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-mission-control-accent text-white rounded-lg text-sm font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors w-full justify-center">
+                  <Button variant="solid" size="1" onClick={handleLink} disabled={!selectedId || saving} className="w-full justify-center">
                     {saving ? <Spinner size={12} /> : <Zap size={13} />} Link Automation
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -1131,14 +1113,14 @@ function CampaignSettings({
   if (!editing) {
     return (
       <div className="absolute right-0 top-full mt-1 w-52 bg-mission-control-bg border border-mission-control-border rounded-xl shadow-xl z-20 py-1 overflow-hidden">
-        <button onClick={() => setEditing(true)} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-mission-control-text hover:bg-mission-control-surface transition-colors">
+        <button type="button" onClick={() => setEditing(true)} className="inline-flex items-center gap-2 w-full px-3 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
           <Edit3 size={14} /> Rename
         </button>
-        <button onClick={onDuplicate} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-mission-control-text hover:bg-mission-control-surface transition-colors">
+        <button type="button" onClick={onDuplicate} className="inline-flex items-center gap-2 w-full px-3 py-2 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
           <Copy size={14} /> Duplicate
         </button>
         <div className="my-1 border-t border-mission-control-border" />
-        <button onClick={handleArchive} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-error hover:bg-mission-control-surface transition-colors">
+        <button type="button" onClick={handleArchive} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors w-full">
           <Trash2 size={14} /> Archive
         </button>
       </div>
@@ -1149,19 +1131,16 @@ function CampaignSettings({
     <div className="absolute right-0 top-full mt-1 w-64 bg-mission-control-bg border border-mission-control-border rounded-lg shadow-xl z-20 p-4 space-y-3">
       <div>
         <label className="text-xs text-mission-control-text-dim mb-1 block">Name</label>
-        <input value={name} onChange={e => setName(e.target.value)}
-          className="w-full px-2 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none" />
+        <TextField.Root value={name} onChange={e => setName(e.target.value)} size="1" />
       </div>
-      <div className="flex gap-2">
-        <button onClick={handleSave} disabled={saving}
-          className="flex-1 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium disabled:opacity-40 hover:bg-mission-control-accent/90 transition-colors">
+      <Flex gap="2">
+        <Button variant="solid" size="1" onClick={handleSave} disabled={saving} className="flex-1">
           {saving ? 'Saving...' : 'Save'}
-        </button>
-        <button onClick={() => setEditing(false)}
-          className="px-3 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-xs hover:text-mission-control-text transition-colors">
+        </Button>
+        <button type="button" onClick={() => setEditing(false)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
           Cancel
         </button>
-      </div>
+      </Flex>
     </div>
   );
 }
@@ -1174,12 +1153,12 @@ interface ChecklistItem {
   category: string;
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  planning:   'var(--mission-control-accent, #6366f1)',
-  creative:   'var(--color-success, #22c55e)',
-  compliance: 'var(--color-error, #ef4444)',
-  technical:  'var(--color-warning, #eab308)',
-  general:    'var(--mission-control-text-dim, #888)',
+const CATEGORY_CLASSES: Record<string, { text: string; bg: string }> = {
+  planning:   { text: 'text-mission-control-accent', bg: 'bg-mission-control-accent' },
+  creative:   { text: 'text-success',                bg: 'bg-success' },
+  compliance: { text: 'text-error',                  bg: 'bg-error' },
+  technical:  { text: 'text-warning',                bg: 'bg-warning' },
+  general:    { text: 'text-mission-control-text-dim', bg: 'bg-mission-control-text-dim' },
 };
 
 function ChecklistTab({ campaign }: { campaign: Campaign }) {
@@ -1233,75 +1212,61 @@ function ChecklistTab({ campaign }: { campaign: Campaign }) {
   const categories = [...new Set(items.map(i => i.category))];
 
   if (loading) {
-    return <div className="flex items-center justify-center py-12"><Spinner size={24} /></div>;
+    return <Flex align="center" justify="center" py="5"><Spinner size={24} /></Flex>;
   }
 
   return (
     <div className="flex flex-col gap-6 p-6 overflow-y-auto">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between">
+        <Flex align="center" gap="3">
           <ClipboardList size={16} className="text-mission-control-text-dim" />
           <div>
             <p className="text-sm font-medium text-mission-control-text">Pre-launch checklist</p>
             <p className="text-xs text-mission-control-text-dim">{doneCount} of {items.length} complete</p>
           </div>
-        </div>
-        <button
-          onClick={reset}
-          disabled={resetting}
-          className="flex items-center gap-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors px-2 py-1 rounded-lg border border-mission-control-border"
-        >
+        </Flex>
+        <button type="button" onClick={reset} disabled={resetting} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50">
           {resetting ? <Spinner size={12} /> : <RefreshCw size={12} />}
           Reset
         </button>
-      </div>
+      </Flex>
 
       <div>
-        <div className="flex items-center justify-between mb-1.5">
+        <Flex align="center" justify="between" className="mb-1.5">
           <span className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Progress</span>
           <span className="text-xs font-semibold text-mission-control-text">{pct}%</span>
-        </div>
-        <div className="h-2 bg-mission-control-border rounded-full overflow-hidden">
+        </Flex>
+        <div className="h-1.5 bg-mission-control-border rounded-full overflow-hidden">
           <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{
-              width: `${pct}%`,
-              backgroundColor: pct === 100
-                ? 'var(--color-success, #22c55e)'
-                : 'var(--mission-control-accent, #6366f1)',
-            }}
+            className={`h-full rounded-full transition-colors duration-500 ${pct === 100 ? 'bg-success' : 'bg-mission-control-accent'}`}
+            style={{ width: `${pct}%` }}
           />
         </div>
       </div>
 
       {categories.map(cat => {
         const catItems = items.filter(i => i.category === cat);
-        const catColor = CATEGORY_COLORS[cat] ?? CATEGORY_COLORS.general;
+        const catCls = CATEGORY_CLASSES[cat] ?? CATEGORY_CLASSES.general;
         return (
           <div key={cat} className="space-y-2">
             <h4
-              className="text-[10px] font-medium uppercase tracking-wider flex items-center gap-1.5"
-              style={{ color: catColor }}
+              className={`text-[10px] font-medium uppercase tracking-wider flex items-center gap-1.5 ${catCls.text}`}
             >
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: catColor }} />
+              <span className={`w-1.5 h-1.5 rounded-full ${catCls.bg}`} />
               {cat}
             </h4>
             {catItems.map(item => (
               <button
                 key={item.id}
                 onClick={() => toggle(item)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors text-left"
-                style={{
-                  borderColor: item.checked
-                    ? 'var(--color-success, #22c55e)40'
-                    : 'var(--mission-control-border)',
-                  backgroundColor: item.checked
-                    ? 'var(--color-success, #22c55e)08'
-                    : 'var(--mission-control-surface)',
-                }}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors w-full text-left ${
+                  item.checked
+                    ? 'bg-success/10 border-success/30 text-success'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+                }`}
               >
                 {item.checked ? (
-                  <CheckCircle2 size={16} style={{ color: 'var(--color-success, #22c55e)', flexShrink: 0 }} />
+                  <CheckCircle2 size={16} className="text-success flex-shrink-0" />
                 ) : (
                   <Square size={16} className="text-mission-control-text-dim flex-shrink-0" />
                 )}
@@ -1413,11 +1378,11 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
   const tc = TYPE_COLORS[campaign.type] ?? TYPE_COLORS.general;
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg0">
+    <div className="flex flex-col h-full bg-mission-control-surface">
       <div className="bg-mission-control-surface border-b border-mission-control-border">
-        <div className="flex items-center justify-between px-4 py-2.5">
-          <div className="flex items-center gap-2 min-w-0">
-            <button onClick={onBack} className="flex items-center gap-1 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors flex-shrink-0">
+        <Flex align="center" justify="between" px="4" py="2">
+          <Flex align="center" gap="2" className="min-w-0">
+            <button type="button" onClick={onBack} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0">
               <ArrowLeft size={14} /> Campaigns
             </button>
             <span className="text-mission-control-text-dim flex-shrink-0">/</span>
@@ -1428,41 +1393,29 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
               {sc.label}
             </span>
             <span className={`text-xs px-2 py-0.5 rounded-full border flex-shrink-0 ${tc}`}>{TYPE_LABELS[campaign.type] ?? campaign.type}</span>
-          </div>
+          </Flex>
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="flex items-center -space-x-1.5">
               {members.slice(0, 5).map(m => (
                 <AgentAvatar key={m.agentId} agentId={m.agentId} size="xs" className="ring-1 ring-mission-control-surface" />
               ))}
             </div>
-            <button onClick={() => setShowMemberPanel(v => !v)}
-              className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface px-2 py-1 rounded transition-colors">
+            <button type="button" onClick={() => setShowMemberPanel(v => !v)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <Users size={12} /> {members.length} <ChevronDown size={10} />
             </button>
             <div className="w-px h-4 bg-mission-control-border" />
-            <button
-              onClick={handleGenerateTasks}
-              disabled={generatingTasks}
-              title="Generate standard tasks from campaign type"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg hover:border-mission-control-accent/50 hover:text-mission-control-accent transition-colors text-xs disabled:opacity-40"
-            >
+            <button type="button" onClick={handleGenerateTasks} disabled={generatingTasks} title="Generate standard tasks from campaign type" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               {generatingTasks ? <Spinner size={12} /> : <ListTodo size={13} />}
               Tasks
             </button>
-            <button
-              onClick={() => setShowLinkAutomation(true)}
-              title="Link an automation to this campaign"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 border border-mission-control-border text-mission-control-text-dim rounded-lg hover:border-mission-control-accent/50 hover:text-mission-control-accent transition-colors text-xs"
-            >
+            <button type="button" onClick={() => setShowLinkAutomation(true)} title="Link an automation to this campaign" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <Zap size={13} /> Automation
             </button>
-            <button onClick={() => setShowDispatch(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/90 transition-colors text-xs font-medium">
+            <Button variant="solid" size="1" onClick={() => setShowDispatch(true)}>
               <Bot size={13} /> Dispatch Agent
-            </button>
+            </Button>
             <div className="relative">
-              <button onClick={() => setShowSettings(v => !v)}
-                className="p-1.5 text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface rounded-lg transition-colors">
+              <button type="button" onClick={() => setShowSettings(v => !v)} className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                 <Settings size={15} />
               </button>
               {showSettings && (
@@ -1478,7 +1431,7 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
               )}
             </div>
           </div>
-        </div>
+        </Flex>
 
         {showMemberPanel && (
           <div className="px-4 pb-3 border-t border-mission-control-border pt-3">
@@ -1487,34 +1440,38 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
                 <div key={m.agentId} className="flex items-center gap-1.5 bg-mission-control-surface border border-mission-control-border rounded-full px-2 py-1">
                   <AgentAvatar agentId={m.agentId} size="xs" />
                   <span className="text-xs text-mission-control-text">{(m as any).agentName || m.agentId}</span>
-                  <button onClick={() => handleRemoveMember(m.agentId)} className="text-mission-control-text-dim hover:text-error transition-colors">
+                  <button type="button" onClick={() => handleRemoveMember(m.agentId)} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                     <X size={10} />
                   </button>
                 </div>
               ))}
               {availableAgents.length > 0 && (
-                <select defaultValue="" onChange={e => { if (e.target.value) handleAddMember(e.target.value); e.target.value = ''; }}
-                  disabled={!!addingAgent}
-                  className="text-xs px-2 py-1 bg-mission-control-accent/20 border border-mission-control-accent/40 text-mission-control-accent rounded-full focus:outline-none cursor-pointer">
-                  <option value="" disabled>+ Add agent</option>
-                  {availableAgents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
+                <Select.Root value="" onValueChange={val => { if (val) handleAddMember(val); }} disabled={!!addingAgent}>
+                  <Select.Trigger placeholder="+ Add agent" />
+                  <Select.Content>
+                    {availableAgents.map(a => <Select.Item key={a.id} value={a.id}>{a.name}</Select.Item>)}
+                  </Select.Content>
+                </Select.Root>
               )}
             </div>
           </div>
         )}
 
-        <div className="flex border-t border-mission-control-border overflow-x-auto">
+        <div className="flex border-t border-mission-control-border px-4 flex-shrink-0 overflow-x-auto">
           {TABS.map(tab => {
             const Icon = tab.icon;
             return (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors flex-shrink-0 ${
+              <button
+                type="button"
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
                   activeTab === tab.id
                     ? 'border-mission-control-accent text-mission-control-accent'
                     : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-                }`}>
-                <Icon size={13} /> {tab.label}
+                }`}
+              >
+                <Icon size={13} />{tab.label}
               </button>
             );
           })}
@@ -1525,18 +1482,47 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
         {activeTab === 'overview'    && <OverviewTab campaign={campaign} onUpdate={reload} />}
         {activeTab === 'chat'        && <ChatTab campaign={campaign} />}
         {activeTab === 'tasks'       && <Kanban projectId={campaign.id} projectName={campaign.name} onNewTask={() => setShowDispatch(true)} />}
-        {activeTab === 'timeline'    && <EpicCalendar />}
+        {activeTab === 'timeline'    && (() => {
+          // Build campaign events for the calendar
+          const campaignEvents: CalendarEvent[] = [];
+          if (campaign.startDate) {
+            campaignEvents.push({
+              id: `campaign-${campaign.id}-start`,
+              summary: `${campaign.name} — Start`,
+              description: campaign.description || '',
+              source: 'mission-control',
+              start: { date: new Date(campaign.startDate).toISOString().slice(0, 10) },
+              end: { date: new Date(campaign.startDate).toISOString().slice(0, 10) },
+            });
+          }
+          if (campaign.endDate) {
+            campaignEvents.push({
+              id: `campaign-${campaign.id}-end`,
+              summary: `${campaign.name} — End`,
+              description: campaign.description || '',
+              source: 'mission-control',
+              start: { date: new Date(campaign.endDate).toISOString().slice(0, 10) },
+              end: { date: new Date(campaign.endDate).toISOString().slice(0, 10) },
+            });
+          }
+          if (campaign.startDate && campaign.endDate && campaign.endDate > campaign.startDate) {
+            campaignEvents.push({
+              id: `campaign-${campaign.id}-span`,
+              summary: campaign.name,
+              description: campaign.description || '',
+              source: 'mission-control',
+              start: { date: new Date(campaign.startDate).toISOString().slice(0, 10) },
+              end: { date: new Date(campaign.endDate).toISOString().slice(0, 10) },
+            });
+          }
+          return <EpicCalendar externalEvents={campaignEvents} createButtonLabel="Add Campaign Event" />;
+        })()}
         {activeTab === 'assets'      && <AssetsTab campaign={campaign} />}
         {activeTab === 'channels'    && <ChannelsTab campaign={campaign} onUpdate={reload} />}
-        {activeTab === 'performance' && <PerformanceTab campaign={campaign} onUpdate={reload} />}
-        {activeTab === 'roi'         && (
-          <div className="h-full overflow-y-auto">
+        {activeTab === 'results'     && (
+          <div className="h-full overflow-y-auto divide-y divide-mission-control-border">
+            <PerformanceTab campaign={campaign} onUpdate={reload} />
             <CampaignROIDashboard campaign={campaign} />
-          </div>
-        )}
-        {activeTab === 'comments'    && (
-          <div className="h-full overflow-hidden flex flex-col">
-            <CampaignCommentsPanel campaignId={campaign.id} />
           </div>
         )}
         {activeTab === 'checklist'   && (
@@ -1544,6 +1530,7 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
             <ChecklistTab campaign={campaign} />
           </div>
         )}
+        {activeTab === 'context'     && <ContextPanel entityType="campaign" entityId={campaign.id} />}
       </div>
 
       {showDispatch && (

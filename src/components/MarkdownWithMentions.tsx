@@ -37,7 +37,7 @@ export default function MarkdownWithMentions({ content, agentIds, agentNames }: 
         .mention-highlight {
           font-weight: 500;
           background-color: rgba(var(--mission-control-accent-rgb, 99, 102, 241), 0.15);
-          color: var(--mission-control-accent, #6366f1);
+          color: var(--mission-control-accent);
           padding: 2px 6px;
           border-radius: 4px;
         }

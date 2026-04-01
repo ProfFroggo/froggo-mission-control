@@ -2,6 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { Button, Flex, IconButton } from '@radix-ui/themes';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 import {
   Plus, MoreHorizontal, Trash2, Clock, Play, Zap,
   CheckSquare, AlertTriangle, ArrowUp, ArrowDown, Circle,
@@ -19,14 +25,14 @@ import type { Project } from '../../types/projects';
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 const PRIORITIES: { id: TaskPriority; label: string; color: string; bg: string; icon: React.ReactNode }[] = [
-  { id: 'p0', label: 'Urgent', color: 'text-error', bg: 'bg-error-subtle', icon: <AlertTriangle size={12} /> },
-  { id: 'p1', label: 'High', color: 'text-warning', bg: 'bg-warning-subtle', icon: <ArrowUp size={12} /> },
-  { id: 'p2', label: 'Medium', color: 'text-warning', bg: 'bg-warning-subtle', icon: <Circle size={12} /> },
-  { id: 'p3', label: 'Low', color: 'text-mission-control-text-dim', bg: 'bg-mission-control-bg0/20', icon: <ArrowDown size={12} /> },
+  { id: 'p0', label: 'Urgent', color: 'text-error', bg: 'bg-error/10', icon: <AlertTriangle size={12} /> },
+  { id: 'p1', label: 'High', color: 'text-warning', bg: 'bg-warning/10', icon: <ArrowUp size={12} /> },
+  { id: 'p2', label: 'Medium', color: 'text-warning', bg: 'bg-warning/10', icon: <Circle size={12} /> },
+  { id: 'p3', label: 'Low', color: 'text-mission-control-text-dim', bg: 'bg-mission-control-surface/20', icon: <ArrowDown size={12} /> },
 ];
 
 const COLUMNS: { id: TaskStatus; label: string; color: string; iconColor: string; borderColor: string; icon: React.ReactNode }[] = [
-  { id: 'todo',            label: 'To Do',            color: 'text-[#6b7a8d]', iconColor: 'text-[#6b7a8d]', borderColor: 'border-t-[#6b7a8d]', icon: <FileText size={13} /> },
+  { id: 'todo',            label: 'To Do',            color: 'text-muted', iconColor: 'text-muted', borderColor: 'border-t-muted', icon: <FileText size={13} /> },
   { id: 'internal-review', label: 'Pre-review',   color: 'text-review',  iconColor: 'text-review',  borderColor: 'border-t-review',  icon: <Search size={13} /> },
   { id: 'in-progress',     label: 'In Progress',      color: 'text-info', iconColor: 'text-info', borderColor: 'border-t-info', icon: <Zap size={13} /> },
   { id: 'review',          label: 'Agent Review',     color: 'text-review',  iconColor: 'text-review',  borderColor: 'border-t-review',  icon: <Bot size={13} /> },
@@ -64,10 +70,6 @@ function TaskCard({
   onOpen, onDelete, onStartAgent, onSetPriority,
   onDragStart, onDragEnd,
 }: CardProps) {
-  const [showMenu, setShowMenu] = useState(false);
-  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
-  const [showPriority, setShowPriority] = useState(false);
-  const [priorPos, setPriorPos] = useState<{ top: number; left: number } | null>(null);
 
   const priorityConfig = PRIORITIES.find(p => p.id === task.priority);
   const assignedAgent = agents.find(a => a.id === task.assignedTo);
@@ -83,38 +85,78 @@ function TaskCard({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onClick={onOpen}
-      className={`group bg-mission-control-bg border rounded-lg p-3 cursor-pointer select-none transition-all duration-150 ${
+      className={`group bg-mission-control-surface border rounded-xl p-3 cursor-pointer select-none transition-colors duration-150 ${
         isDragging ? 'opacity-40 scale-95 rotate-1 shadow-lg' :
-        dueInfo?.isOverdue ? 'border-error-border bg-error-subtle/30' :
-        task.priority === 'p0' ? 'border-error-border' :
-        'border-mission-control-border hover:border-mission-control-accent/50 hover:shadow-md hover:-translate-y-0.5'
+        dueInfo?.isOverdue ? 'border-error/30 bg-error/10/30' :
+        task.priority === 'p0' ? 'border-error/30' :
+        'border-mission-control-border hover:border-mission-control-accent/30 hover:shadow-lg hover:-translate-y-0.5'
       }`}
     >
       {/* Top row */}
       <div className="flex items-start gap-1.5 mb-2">
         {priorityConfig && (
-          <button
-            onClick={e => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); setPriorPos({ top: r.bottom + 4, left: r.left }); setShowPriority(true); }}
-            className={`p-0.5 rounded flex-shrink-0 ${priorityConfig.bg} ${priorityConfig.color}`}
-            title={priorityConfig.label}
-          >
-            {priorityConfig.icon}
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onClick={e => e.stopPropagation()}
+                title={priorityConfig.label}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+              >
+                {priorityConfig.icon}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Set Priority</DropdownMenuLabel>
+              {PRIORITIES.map(p => (
+                <DropdownMenuItem key={p.id} onClick={e => { e.stopPropagation(); onSetPriority(p.id); }}
+                  className={task.priority === p.id ? 'text-mission-control-accent' : ''}>
+                  <span className={p.color}>{p.icon}</span> {p.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
-        <h4 className="font-medium text-sm leading-tight flex-1 min-w-0 line-clamp-2">{task.title}</h4>
-        <button
-          onClick={e => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); setMenuPos({ top: r.bottom + 4, left: r.right - 160 }); setShowMenu(true); }}
-          className="flex-shrink-0 p-0.5 text-mission-control-text-dim opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity"
-        >
-          <MoreHorizontal size={15} />
-        </button>
+        <h4 className="text-sm font-medium text-mission-control-text leading-snug flex-1 min-w-0 line-clamp-2">{task.title}</h4>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              onClick={e => e.stopPropagation()}
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+            >
+              <MoreHorizontal size={15} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={e => { e.stopPropagation(); onOpen(); }}>
+              <FolderOpen size={14} /> Open
+            </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Flag size={14} /> Set Priority
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {PRIORITIES.map(p => (
+                  <DropdownMenuItem key={p.id} onClick={e => { e.stopPropagation(); onSetPriority(p.id); }}>
+                    <span className={p.color}>{p.icon}</span> {p.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem destructive onClick={e => { e.stopPropagation(); onDelete(); }} disabled={isDeleting}>
+              {isDeleting ? <Spinner size={14} /> : <Trash2 size={14} />} Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Clara review badge */}
       {task.reviewStatus && (
         <div className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded mb-2 w-fit ${
-          task.reviewStatus === 'approved' ? 'bg-green-500/10 text-green-400' :
-          task.reviewStatus === 'rejected' || task.reviewStatus === 'needs-changes' ? 'bg-error-subtle text-error' :
+          task.reviewStatus === 'approved' ? 'bg-success text-success' :
+          task.reviewStatus === 'rejected' || task.reviewStatus === 'needs-changes' ? 'bg-error/10 text-error' :
           'bg-mission-control-accent/10 text-mission-control-accent animate-pulse'
         }`}>
           {task.reviewStatus === 'approved' ? <ShieldCheck size={11} /> :
@@ -127,23 +169,23 @@ function TaskCard({
       {/* Subtask progress */}
       {subtaskCount > 0 && (
         <div className="mb-2">
-          <div className="flex items-center gap-1 text-xs text-mission-control-text-dim mb-1">
+          <Flex align="center" gap="1" className="text-xs text-mission-control-text-dim mb-1">
             <CheckSquare size={11} /> {completedSubtasks}/{subtaskCount}
-          </div>
+          </Flex>
           <div className="h-1 bg-mission-control-surface rounded-full overflow-hidden">
-            <div className={`h-full transition-all ${subtaskProgress === 100 ? 'bg-green-500' : 'bg-mission-control-accent'}`}
+            <div className={`h-full transition-colors ${subtaskProgress === 100 ? 'bg-success' : 'bg-mission-control-accent'}`}
               style={{ width: `${subtaskProgress}%` }} />
           </div>
         </div>
       )}
 
       {/* Bottom row */}
-      <div className="flex items-center justify-between gap-2 text-xs">
+      <Flex align="center" justify="between" gap="2" className="text-xs">
         <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-hidden">
           {dueInfo && (
             <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded flex-shrink-0 ${
-              dueInfo.isOverdue ? 'bg-error-subtle text-error' :
-              dueInfo.isDueSoon ? 'bg-warning-subtle text-warning' :
+              dueInfo.isOverdue ? 'bg-error/10 text-error' :
+              dueInfo.isDueSoon ? 'bg-warning/10 text-warning' :
               'bg-mission-control-surface text-mission-control-text-dim'
             }`}>
               <Calendar size={10} /> {dueInfo.text}
@@ -152,69 +194,26 @@ function TaskCard({
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {task.status === 'in-progress' ? (
-            <span className="flex items-center justify-center w-5 h-5 rounded bg-green-500/20 text-green-400 animate-pulse" title="Agent working">
+            <span className="flex items-center justify-center w-5 h-5 rounded bg-success text-success animate-pulse" title="Agent working">
               <Zap size={11} />
             </span>
           ) : canStart ? (
-            <button
+            <IconButton
+              variant="solid"
+              size="1"
               onClick={e => { e.stopPropagation(); onStartAgent(); }}
               disabled={isSpawning}
-              className="flex items-center justify-center w-5 h-5 rounded bg-green-500 text-white hover:bg-green-600 disabled:opacity-50"
               title="Start agent"
             >
               {isSpawning ? <Spinner size={11} /> : <Play size={11} />}
-            </button>
+            </IconButton>
           ) : null}
           {assignedAgent && (
             <AgentAvatar agentId={assignedAgent.id} size="xs" />
           )}
         </div>
-      </div>
+      </Flex>
 
-      {/* Priority picker portal */}
-      {showPriority && priorPos && createPortal(
-        <>
-          <div className="fixed inset-0 z-[100]" onClick={() => setShowPriority(false)} />
-          <div className="fixed bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl p-2 z-[101] min-w-[150px]"
-            style={{ top: priorPos.top, left: priorPos.left }}
-            onClick={e => e.stopPropagation()}>
-            <div className="text-xs text-mission-control-text-dim mb-2 px-2 font-medium">Set Priority</div>
-            {PRIORITIES.map(p => (
-              <button key={p.id} onClick={() => { onSetPriority(p.id); setShowPriority(false); }}
-                className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-sm hover:bg-mission-control-border transition-colors ${task.priority === p.id ? `${p.bg} ${p.color}` : ''}`}>
-                <span className={p.color}>{p.icon}</span> {p.label}
-              </button>
-            ))}
-          </div>
-        </>,
-        document.body
-      )}
-
-      {/* Card menu portal */}
-      {showMenu && menuPos && createPortal(
-        <>
-          <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} />
-          <div className="fixed bg-mission-control-surface border border-mission-control-border rounded-lg shadow-xl py-1 z-[101] min-w-[140px]"
-            style={{ top: menuPos.top, left: menuPos.left }}
-            onClick={e => e.stopPropagation()}>
-            <button onClick={() => { setShowMenu(false); onOpen(); }}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-mission-control-border">
-              <FolderOpen size={14} /> Open
-            </button>
-            <button onClick={() => { setPriorPos(menuPos); setShowPriority(true); setShowMenu(false); }}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-mission-control-border">
-              <Flag size={14} /> Set Priority
-            </button>
-            <hr className="my-1 border-mission-control-border" />
-            <button onClick={() => { setShowMenu(false); onDelete(); }}
-              disabled={isDeleting}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-mission-control-border text-error disabled:opacity-50">
-              {isDeleting ? <Spinner size={14} /> : <Trash2 size={14} />} Delete
-            </button>
-          </div>
-        </>,
-        document.body
-      )}
     </div>
   );
 }
@@ -308,21 +307,19 @@ export default function ProjectKanban({ project, onNewTask }: ProjectKanbanProps
     <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border bg-mission-control-surface/50 flex-shrink-0">
-        <div className="flex items-center gap-3 text-xs text-mission-control-text-dim">
+        <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim">
           <span>{projectTasks.length} tasks</span>
           <span className="text-success">{doneCount} done</span>
           <span className="text-warning">{openCount} open</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={handleRefresh} disabled={isRefreshing}
-            className="p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+        </Flex>
+        <Flex align="center" gap="2">
+          <button type="button" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50" onClick={handleRefresh} disabled={isRefreshing} title="Refresh">
             <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
           </button>
-          <button onClick={onNewTask}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-xs font-medium hover:bg-mission-control-accent/90 transition-colors">
+          <Button variant="solid" size="1" onClick={onNewTask}>
             <Plus size={13} /> New Task
-          </button>
-        </div>
+          </Button>
+        </Flex>
       </div>
 
       {/* Board */}
@@ -334,26 +331,25 @@ export default function ProjectKanban({ project, onNewTask }: ProjectKanbanProps
             return (
               <div
                 key={col.id}
-                className={`flex flex-col rounded-lg border transition-colors flex-shrink-0 w-52 ${
-                  isDragTarget ? 'border-mission-control-accent bg-mission-control-accent/5' : 'border-mission-control-border bg-mission-control-surface/30'
+                className={`flex flex-col rounded-xl transition-colors flex-shrink-0 w-52 ${
+                  isDragTarget ? 'bg-mission-control-accent/5 ring-1 ring-mission-control-accent' : 'bg-mission-control-bg'
                 }`}
                 onDragOver={e => { e.preventDefault(); setDragOverCol(col.id); }}
                 onDragLeave={() => setDragOverCol(null)}
                 onDrop={e => handleDrop(e, col.id)}
               >
                 {/* Column header */}
-                <div className={`flex items-center justify-between px-3 py-2.5 border-b border-mission-control-border border-t-2 ${col.borderColor} rounded-t-xl flex-shrink-0`}>
-                  <div className="flex items-center gap-2">
+                <div className={`flex items-center justify-between px-3 py-2.5 border-b border-mission-control-border/40 border-t-2 ${col.borderColor} rounded-t-xl flex-shrink-0`}>
+                  <Flex align="center" gap="1.5">
                     <span className={col.iconColor}>{col.icon}</span>
-                    <span className="text-xs font-semibold text-mission-control-text">{col.label}</span>
-                    <span className="text-xs text-mission-control-text-dim bg-mission-control-surface px-1.5 py-0.5 rounded-full">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">{col.label}</span>
+                    <span className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full bg-mission-control-border/50 text-mission-control-text-dim">
                       {colTasks.length}
                     </span>
-                  </div>
-                  <button onClick={onNewTask} title="Add task"
-                    className="p-0.5 text-mission-control-text-dim hover:text-mission-control-accent transition-colors opacity-0 group-hover:opacity-100">
-                    <Plus size={14} />
-                  </button>
+                  </Flex>
+                  <Button variant="ghost" size="1" onClick={onNewTask} title="Add task">
+                    <Plus size={13} />
+                  </Button>
                 </div>
 
                 {/* Cards */}
@@ -375,7 +371,7 @@ export default function ProjectKanban({ project, onNewTask }: ProjectKanbanProps
                     />
                   ))}
                   {colTasks.length === 0 && (
-                    <div className="flex items-center justify-center h-16 text-xs text-mission-control-text-dim/50 italic">
+                    <div className="flex items-center justify-center h-16 text-xs text-mission-control-text-dim/70 italic">
                       Empty
                     </div>
                   )}

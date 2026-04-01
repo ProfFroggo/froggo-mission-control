@@ -3,7 +3,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
 import { MessageSquare, Trash2, CornerDownRight, Send } from 'lucide-react';
-import { Spinner } from './LoadingStates';
+import { Button, Spinner, TextArea, Box, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface Comment {
@@ -46,41 +46,43 @@ function CommentRow({
   isReply?: boolean;
 }) {
   return (
-    <div className={`flex gap-3 ${isReply ? 'pl-8' : ''}`}>
+    <Flex gap="3" className={isReply ? 'pl-8' : ''}>
       {isReply && (
         <CornerDownRight size={14} className="text-mission-control-text-dim flex-shrink-0 mt-1" />
       )}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
+      <Box className="flex-1 min-w-0">
+        <Flex align="center" gap="2" mb="1">
           <span className="text-xs font-semibold text-mission-control-text">
             {comment.author}
           </span>
-          <span className="text-[10px] text-mission-control-text-dim">
+          <span className="text-xs text-mission-control-text-dim">
             {formatDate(comment.createdAt)}
           </span>
-        </div>
+        </Flex>
         <p className="text-sm text-mission-control-text whitespace-pre-wrap break-words leading-relaxed">
           {comment.body}
         </p>
-        <div className="flex items-center gap-3 mt-1.5">
+        <Flex align="center" gap="3" mt="2">
           {!isReply && (
             <button
+              type="button"
               onClick={() => onReply(comment.id)}
-              className="text-[11px] text-mission-control-text-dim hover:text-mission-control-accent transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               Reply
             </button>
           )}
           <button
+            type="button"
             onClick={() => onDelete(comment.id)}
-            className="text-[11px] text-mission-control-text-dim hover:text-mission-control-error transition-colors flex items-center gap-1"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-error hover:bg-mission-control-surface transition-colors"
           >
             <Trash2 size={10} />
             Delete
           </button>
-        </div>
-      </div>
-    </div>
+        </Flex>
+      </Box>
+    </Flex>
   );
 }
 
@@ -131,36 +133,36 @@ function CommentComposer({
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <textarea
+    <Flex direction="column" gap="2">
+      <TextArea
         value={text}
         onChange={e => setText(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         autoFocus={autoFocus}
         rows={3}
-        className="w-full px-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim resize-none focus:outline-none focus:border-mission-control-accent transition-colors"
+        resize="none"
       />
-      <div className="flex items-center gap-2 justify-end">
+      <Flex align="center" gap="2" justify="end">
         {onCancel && (
           <button
+            type="button"
             onClick={onCancel}
-            className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors px-2 py-1"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             Cancel
           </button>
         )}
-        <button
+        <Button
           onClick={handleSubmit}
           disabled={!text.trim() || saving}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-40"
-          style={{ backgroundColor: 'var(--mission-control-accent)', color: '#fff' }}
+          size="2"
         >
-          {saving ? <Spinner size={12} /> : <Send size={12} />}
+          {saving ? <Spinner size="1" /> : <Send size={12} />}
           {parentId ? 'Reply' : 'Post'}
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Flex>
+    </Flex>
   );
 }
 
@@ -214,23 +216,23 @@ export default function CampaignCommentsPanel({ campaignId }: CampaignCommentsPa
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Spinner size={24} />
-      </div>
+      <Flex align="center" justify="center" py="9">
+        <Spinner size="3" />
+      </Flex>
     );
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex-1 overflow-y-auto p-6 space-y-5">
+    <Flex direction="column" height="100%" className="overflow-hidden">
+      <Box p="6" className="flex-1 overflow-y-auto space-y-5">
         {topLevel.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-            <MessageSquare size={28} className="text-mission-control-text-dim" />
-            <p className="text-sm text-mission-control-text-dim">No comments yet.</p>
+          <Flex direction="column" align="center" justify="center" height="100%" py="9" gap="3" className="text-center">
+            <MessageSquare size={32} className="text-mission-control-text-dim opacity-40" />
+            <p className="text-sm font-medium text-mission-control-text">No comments yet</p>
             <p className="text-xs text-mission-control-text-dim">
               Be the first to leave a comment on this campaign.
             </p>
-          </div>
+          </Flex>
         )}
 
         {topLevel.map(comment => (
@@ -268,15 +270,15 @@ export default function CampaignCommentsPanel({ campaignId }: CampaignCommentsPa
             )}
           </div>
         ))}
-      </div>
+      </Box>
 
-      <div className="border-t border-mission-control-border p-4">
+      <Box p="4" className="border-t border-mission-control-border">
         <CommentComposer
           campaignId={campaignId}
           placeholder="Add a comment… (Cmd+Enter to post)"
           onSubmit={load}
         />
-      </div>
-    </div>
+      </Box>
+    </Flex>
   );
 }

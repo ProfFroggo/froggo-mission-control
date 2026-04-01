@@ -1,6 +1,7 @@
 // Setup wizard for Social Media module — verifies X/Twitter API, wires agents, syncs data
 import { useState, useEffect, useCallback } from 'react';
-import { Twitter, Key, CheckCircle, AlertTriangle, ArrowRight, ExternalLink, RefreshCw, Eye, EyeOff, XCircle, User, BarChart2, Bot } from 'lucide-react';
+import { Twitter as XIcon, Key, CheckCircle, AlertTriangle, ArrowRight, ExternalLink, RefreshCw, Eye, EyeOff, XCircle, User, BarChart2, Bot, ChevronDown, ChevronUp } from 'lucide-react';
+import { Button, Spinner, TextField, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 interface XSetupWizardProps {
@@ -50,6 +51,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
   const [loading, setLoading] = useState(true);
   const [values, setValues] = useState<Record<string, string>>({});
   const [showKeys, setShowKeys] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Verify state
@@ -72,7 +74,8 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
     })();
   }, []);
 
-  const requiredFilled = TWITTER_KEYS.filter(k => k.required).every(k => values[k.id]?.trim());
+  const ESSENTIAL_KEYS = ['twitter_api_key', 'twitter_api_secret', 'twitter_bearer_token'] as const;
+  const requiredFilled = ESSENTIAL_KEYS.every(id => values[id]?.trim());
   const anyFilled = TWITTER_KEYS.some(k => values[k.id]?.trim());
 
   const handleSaveKeys = async () => {
@@ -85,7 +88,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
     }
     setSaving(false);
     if (ok) {
-      showToast('Keys saved to keychain', 'success');
+      showToast('Credentials saved', 'success');
       setStep('verify');
       // Auto-verify after saving
       handleVerify();
@@ -139,7 +142,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <RefreshCw size={24} className="text-mission-control-accent animate-spin" />
+        <Spinner size="3" />
       </div>
     );
   }
@@ -154,16 +157,16 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
   const stepIdx = STEPS.findIndex(s => s.id === step);
 
   return (
-    <div className="flex items-center justify-center h-full p-8">
+    <Flex align="center" justify="center" height="100%" p="6">
       <div className="max-w-lg w-full space-y-6">
         {/* Header */}
         <div className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-info-subtle flex items-center justify-center mx-auto mb-4">
-            <Twitter size={32} className="text-info" />
+          <div className="w-16 h-16 rounded-2xl bg-mission-control-accent/20 flex items-center justify-center mx-auto mb-4">
+            <XIcon size={32} className="text-info" />
           </div>
           <h1 className="text-2xl font-bold text-mission-control-text mb-2">Connect X / Twitter</h1>
           <p className="text-sm text-mission-control-text-dim">
-            {step === 'keys' && 'Add your API credentials. Keys are stored securely in your OS keychain.'}
+            {step === 'keys' && 'Add your API credentials. Keys are stored securely in the local database.'}
             {step === 'verify' && 'Testing your credentials against the X API...'}
             {step === 'agent' && 'Configuring your social media agent...'}
             {step === 'done' && 'Everything is connected and ready to go!'}
@@ -171,62 +174,97 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
         </div>
 
         {/* Progress */}
-        <div className="flex items-center justify-center gap-1">
+        <Flex align="center" justify="center" gap="1">
           {STEPS.map((s, i) => (
-            <div key={s.id} className="flex items-center gap-1">
+            <Flex key={s.id} align="center" gap="1">
               {i > 0 && <div className={`w-6 h-px ${i <= stepIdx ? 'bg-mission-control-accent' : 'bg-mission-control-border'}`} />}
-              <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+              <Flex align="center" gap="1" className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                 i === stepIdx ? 'bg-mission-control-accent/20 text-mission-control-accent' :
-                i < stepIdx ? 'bg-success-subtle text-success' :
+                i < stepIdx ? 'bg-success/10 text-success' :
                 'bg-mission-control-border text-mission-control-text-dim'
               }`}>
                 {i < stepIdx && <CheckCircle size={10} />}
                 {s.label}
-              </div>
-            </div>
+              </Flex>
+            </Flex>
           ))}
-        </div>
+        </Flex>
 
         {/* Step 1: Keys */}
         {step === 'keys' && (
           <div className="space-y-4">
-            <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-mission-control-text flex items-center gap-2"><Key size={14} /> API Credentials</h3>
-                <button onClick={() => setShowKeys(!showKeys)} className="text-xs text-mission-control-text-dim hover:text-mission-control-text flex items-center gap-1">
-                  {showKeys ? <EyeOff size={12} /> : <Eye size={12} />} {showKeys ? 'Hide' : 'Show'}
-                </button>
-              </div>
-              {TWITTER_KEYS.map(k => (
-                <div key={k.id}>
-                  <label className="block text-xs text-mission-control-text-dim mb-1">
-                    {k.label} {k.required && <span className="text-error">*</span>}
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showKeys ? 'text' : 'password'}
-                      value={values[k.id] || ''}
-                      onChange={e => setValues(p => ({ ...p, [k.id]: e.target.value }))}
-                      placeholder={k.placeholder}
-                      className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-                    />
-                    {values[k.id]?.trim() && <CheckCircle size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-success" />}
-                  </div>
-                </div>
-              ))}
-            </div>
             <a href="https://developer.x.com/en/portal/dashboard" target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-2 text-xs text-mission-control-text-dim hover:text-mission-control-accent transition-colors">
               <ExternalLink size={12} /> Get credentials from the X Developer Portal
             </a>
-            <button
+            <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-5 space-y-3">
+              <Flex align="center" justify="between">
+                <h3 className="text-sm font-medium text-mission-control-text flex items-center gap-2"><Key size={14} /> API Credentials</h3>
+                <button type="button" onClick={() => setShowKeys(!showKeys)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+                  {showKeys ? <EyeOff size={12} /> : <Eye size={12} />} {showKeys ? 'Hide' : 'Show'}
+                </button>
+              </Flex>
+              {/* Essential fields */}
+              {TWITTER_KEYS.filter(k => ['twitter_api_key', 'twitter_api_secret', 'twitter_bearer_token'].includes(k.id)).map(k => (
+                <div key={k.id}>
+                  <label className="block text-xs text-mission-control-text-dim mb-1">
+                    {k.label} <span className="text-error">*</span>
+                  </label>
+                  <TextField.Root
+                    type={showKeys ? 'text' : 'password'}
+                    value={values[k.id] || ''}
+                    onChange={e => setValues(p => ({ ...p, [k.id]: e.target.value }))}
+                    placeholder={k.placeholder}
+                    size="2"
+                  >
+                    {values[k.id]?.trim() && (
+                      <TextField.Slot side="right">
+                        <CheckCircle size={14} className="text-mission-control-text-dim" />
+                      </TextField.Slot>
+                    )}
+                  </TextField.Root>
+                </div>
+              ))}
+              {/* Advanced fields (collapsible) */}
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(v => !v)}
+                className="flex items-center gap-1.5 text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors w-full pt-1"
+              >
+                {showAdvanced ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                Advanced credentials (Access Token, OAuth 2.0)
+              </button>
+              {showAdvanced && TWITTER_KEYS.filter(k => !['twitter_api_key', 'twitter_api_secret', 'twitter_bearer_token'].includes(k.id)).map(k => (
+                <div key={k.id}>
+                  <label className="block text-xs text-mission-control-text-dim mb-1">
+                    {k.label} {!k.required && <span className="text-mission-control-text-dim/50">(optional)</span>}
+                  </label>
+                  <TextField.Root
+                    type={showKeys ? 'text' : 'password'}
+                    value={values[k.id] || ''}
+                    onChange={e => setValues(p => ({ ...p, [k.id]: e.target.value }))}
+                    placeholder={k.placeholder}
+                    size="2"
+                  >
+                    {values[k.id]?.trim() && (
+                      <TextField.Slot side="right">
+                        <CheckCircle size={14} className="text-mission-control-text-dim" />
+                      </TextField.Slot>
+                    )}
+                  </TextField.Root>
+                </div>
+              ))}
+            </div>
+            <Button
               onClick={handleSaveKeys}
               disabled={saving || !requiredFilled}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40"
+              variant="solid"
+              size="3"
+              className="w-full"
             >
-              {saving ? <RefreshCw size={14} className="animate-spin" /> : <ArrowRight size={14} />}
+              {saving ? <Spinner size="1" /> : <ArrowRight size={14} />}
               {saving ? 'Saving...' : 'Save & Verify'}
-            </button>
+            </Button>
           </div>
         )}
 
@@ -235,7 +273,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
           <div className="space-y-4">
             {/* OAuth Connect Button — uses OAuth 2.0 PKCE to get user token */}
             {!verifyResult?.success && !verifying && (
-              <button
+              <Button
                 onClick={() => {
                   // Open X OAuth in popup
                   const w = window.open('/api/x/oauth', 'x-oauth', 'width=600,height=700');
@@ -247,33 +285,35 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                     }
                   }, 500);
                 }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#000] text-white rounded-lg text-sm font-medium hover:bg-[#1a1a1a] transition-colors"
+                size="3"
+                variant="solid"
+                className="w-full justify-center"
               >
-                <Twitter size={16} />
+                <XIcon size={16} />
                 Connect with X
-              </button>
+              </Button>
             )}
 
             <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6">
               {verifying ? (
                 <div className="text-center py-4">
-                  <RefreshCw size={32} className="mx-auto text-mission-control-accent animate-spin mb-3" />
+                  <Spinner size="3" className="mx-auto mb-3" />
                   <p className="text-sm text-mission-control-text-dim">Verifying credentials with X API...</p>
                 </div>
               ) : verifyResult?.success ? (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-4">
+                  <Flex align="center" gap="4">
                     {verifyResult.user?.profile_image_url ? (
                       <img src={verifyResult.user.profile_image_url} alt="" className="w-14 h-14 rounded-full" />
                     ) : (
-                      <div className="w-14 h-14 rounded-full bg-info-subtle flex items-center justify-center"><User size={24} className="text-info" /></div>
+                      <div className="w-14 h-14 rounded-full bg-info/10 flex items-center justify-center"><User size={24} className="text-info" /></div>
                     )}
                     <div>
                       <p className="font-semibold text-mission-control-text">{verifyResult.user?.name}</p>
                       <p className="text-sm text-mission-control-accent">@{verifyResult.user?.username}</p>
                     </div>
                     <CheckCircle size={24} className="text-success ml-auto" />
-                  </div>
+                  </Flex>
                   {verifyResult.user?.public_metrics && (
                     <div className="grid grid-cols-3 gap-3 pt-3 border-t border-mission-control-border">
                       <div className="text-center">
@@ -299,7 +339,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                   {verifyResult.checks && (
                     <div className="flex flex-wrap justify-center gap-2 pt-2">
                       {Object.entries(verifyResult.checks).map(([k, v]) => (
-                        <span key={k} className={`text-xs px-2 py-0.5 rounded-full ${v ? 'bg-success-subtle text-success' : 'bg-error-subtle text-error'}`}>
+                        <span key={k} className={`text-xs px-2 py-0.5 rounded-full ${v ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}>
                           {v ? <CheckCircle size={10} className="inline mr-1" /> : <XCircle size={10} className="inline mr-1" />}
                           {k.replace(/_/g, ' ')}
                         </span>
@@ -309,23 +349,20 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                 </div>
               ) : null}
             </div>
-            <div className="flex gap-3">
-              <button onClick={() => setStep('keys')} className="flex-1 px-4 py-2.5 border border-mission-control-border text-mission-control-text-dim rounded-lg text-sm hover:text-mission-control-text transition-colors">
+            <Flex gap="3">
+              <Button onClick={() => setStep('keys')} variant="outline" color="gray" size="2" className="flex-1">
                 Back
-              </button>
+              </Button>
               {verifyResult?.success ? (
-                <button onClick={() => { setStep('agent'); handleWireAgent(); }}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent-dim transition-colors">
+                <Button onClick={() => { setStep('agent'); handleWireAgent(); }} variant="solid" color="violet" size="2" className="flex-1">
                   <ArrowRight size={14} /> Continue
-                </button>
+                </Button>
               ) : (
-                <button onClick={handleVerify} disabled={verifying}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40">
-                  {verifying ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                  {verifying ? 'Verifying...' : 'Retry Verification'}
-                </button>
+                <Button onClick={handleVerify} disabled={verifying} variant="solid" color="violet" size="2" className="flex-1">
+                  {verifying ? <><Spinner size="1" /> Verifying...</> : <><RefreshCw size={14} /> Retry Verification</>}
+                </Button>
               )}
-            </div>
+            </Flex>
           </div>
         )}
 
@@ -333,7 +370,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
         {step === 'agent' && (
           <div className="space-y-4">
             <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 space-y-4">
-              <div className="flex items-center gap-3">
+              <Flex align="center" gap="3">
                 <div className="w-10 h-10 rounded-lg bg-mission-control-accent/20 flex items-center justify-center">
                   <Bot size={20} className="text-mission-control-accent" />
                 </div>
@@ -342,48 +379,52 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                   <p className="text-xs text-mission-control-text-dim">Configuring tools and permissions...</p>
                 </div>
                 {agentWiring ? (
-                  <RefreshCw size={16} className="text-mission-control-accent animate-spin ml-auto" />
+                  <Spinner size="1" className="ml-auto" />
                 ) : agentWired ? (
                   <CheckCircle size={16} className="text-success ml-auto" />
                 ) : null}
-              </div>
+              </Flex>
 
               <div className="space-y-2 text-xs">
-                <div className="flex items-center gap-2">
+                <Flex align="center" gap="2">
                   <CheckCircle size={12} className="text-success" />
-                  <span className="text-mission-control-text">API credentials stored in keychain</span>
-                </div>
-                <div className="flex items-center gap-2">
+                  <span className="text-mission-control-text">API credentials saved</span>
+                </Flex>
+                <Flex align="center" gap="2">
                   <CheckCircle size={12} className="text-success" />
                   <span className="text-mission-control-text">X API connection verified</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {agentWired ? <CheckCircle size={12} className="text-success" /> : <RefreshCw size={12} className="text-mission-control-text-dim animate-spin" />}
+                </Flex>
+                <Flex align="center" gap="2">
+                  {agentWired ? <CheckCircle size={12} className="text-success" /> : <Spinner size="1" />}
                   <span className="text-mission-control-text">{agentWired ? 'Agent tools configured' : 'Configuring agent tools...'}</span>
-                </div>
+                </Flex>
               </div>
             </div>
-            <button
+            <Button
               onClick={() => setStep('done')}
               disabled={!agentWired}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40"
+              variant="solid"
+              color="violet"
+              size="3"
+              className="w-full"
             >
               <ArrowRight size={14} /> Finish Setup
-            </button>
+            </Button>
           </div>
         )}
 
         {/* Step 4: Done */}
         {step === 'done' && (
           <div className="space-y-4">
-            <div className="bg-mission-control-surface border border-success-border rounded-lg p-6 text-center space-y-3">
+            <div className="bg-mission-control-surface border border-success/30 rounded-lg p-6 text-center space-y-3">
               <CheckCircle size={48} className="mx-auto text-success" />
               <h2 className="text-lg font-semibold text-mission-control-text">X / Twitter Connected</h2>
               <p className="text-sm text-mission-control-text-dim">
-                Your account is verified, credentials are in the keychain, and the social agent is configured.
+                Your account is verified, credentials are saved, and the social agent is configured.
               </p>
             </div>
-            <button onClick={async () => {
+            <Button
+              onClick={async () => {
                 // Save setup completion flag
                 await fetch('/api/settings/twitter_setup_complete', {
                   method: 'PUT',
@@ -392,12 +433,16 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                 }).catch(() => {});
                 onComplete();
               }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:bg-mission-control-accent-dim transition-colors">
+              variant="solid"
+              color="violet"
+              size="3"
+              className="w-full"
+            >
               <BarChart2 size={14} /> Open Social Dashboard
-            </button>
+            </Button>
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }

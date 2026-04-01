@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Pencil, Trash2, GripVertical } from 'lucide-react';
+import { Flex, TextField } from '@radix-ui/themes';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { WritingChapter } from '../../store/writingStore';
@@ -81,9 +82,8 @@ export default function ChapterListItem({
     return (
       <div ref={setNodeRef} style={style} className="flex items-center group">
         <div className="px-3 py-2 flex-1">
-          <input
+          <TextField.Root
             ref={inputRef}
-            type="text"
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
             onKeyDown={(e) => {
@@ -91,7 +91,7 @@ export default function ChapterListItem({
               if (e.key === 'Escape') handleRenameCancel();
             }}
             onBlur={handleRenameConfirm}
-            className="w-full px-2 py-1 rounded bg-mission-control-bg border border-mission-control-accent text-mission-control-text text-xs focus:outline-none"
+            size="1"
           />
         </div>
       </div>
@@ -104,29 +104,30 @@ export default function ChapterListItem({
         <button
           {...attributes}
           {...listeners}
-          className="p-1 ml-1 text-mission-control-text-dim hover:text-mission-control-text cursor-grab active:cursor-grabbing touch-none flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="ml-1 inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors cursor-grab active:cursor-grabbing touch-none flex-shrink-0 opacity-0 group-hover:opacity-100"
           aria-label={`Drag to reorder ${chapter.title}`}
         >
           <GripVertical size={14} />
         </button>
         <button
+          type="button"
           onClick={onSelect}
-          className={`flex-1 text-left px-2 py-2 transition-colors relative ${
+          className={`flex-1 text-left px-2 py-2 relative transition-colors ${
             isActive
-              ? 'bg-mission-control-border/50 border-l-2 border-l-mission-control-accent'
-              : 'hover:bg-mission-control-border/30 border-l-2 border-l-transparent'
+              ? 'bg-mission-control-surface border-l-2 border-l-mission-control-accent text-mission-control-text'
+              : 'border-l-2 border-l-transparent text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
           }`}
         >
           <div className="flex items-start justify-between min-w-0">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
+              <Flex align="center" gap="2">
                 <span className="text-[10px] text-mission-control-text-dim font-mono">
                   {chapter.position + 1}.
                 </span>
                 <span className="text-xs font-medium text-mission-control-text truncate">
                   {chapter.title}
                 </span>
-              </div>
+              </Flex>
               <span className="text-[10px] text-mission-control-text-dim ml-4">
                 {chapter.wordCount.toLocaleString()} words
               </span>
@@ -136,15 +137,15 @@ export default function ChapterListItem({
             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
               <button
                 onClick={handleStartRename}
-                className="p-1 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
                 title="Rename chapter"
+                className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <Pencil size={12} />
               </button>
               <button
                 onClick={handleDelete}
-                className="p-1 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                 title="Delete chapter"
+                className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <Trash2 size={12} />
               </button>

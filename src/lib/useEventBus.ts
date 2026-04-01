@@ -1,8 +1,8 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
-// Phase 82: SSE client hook — connects to /api/events and dispatches to handlers
+// Phase 82+88.4: SSE client hook — connects to /api/events and dispatches to handlers
 // Replaces component-level polling as the primary update mechanism.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 
 type EventHandler = (data: unknown) => void;
 
@@ -10,10 +10,23 @@ type EventHandler = (data: unknown) => void;
 let eventSource: EventSource | null = null;
 const handlers = new Map<string, Set<EventHandler>>();
 
+// Connection state tracking (Phase 88.4)
+type ConnectionState = 'connected' | 'reconnecting' | 'disconnected';
+let connectionState: ConnectionState = 'disconnected';
+const connectionListeners = new Set<() => void>();
+
+function setConnectionState(state: ConnectionState) {
+  if (connectionState !== state) {
+    connectionState = state;
+    connectionListeners.forEach(l => l());
+  }
+}
+
 const EVENT_TYPES = [
   'connected',
   'task.created',
   'task.updated',
+  'task.deleted',
   'agent.status',
   'inbox.count',
   'module.installed',
@@ -26,6 +39,11 @@ const EVENT_TYPES = [
   'automation.failed',
   'notification.new',
   'clara.review_needed',
+  'budget.alert',
+  'budget.dispatch_blocked',
+  'dispatch.auto_routed',
+  'approval.created',
+  'approval.updated',
 ];
 
 function dispatchEvent(type: string, data: unknown) {
@@ -58,6 +76,8 @@ function detachListeners(es: EventSource): void {
   namedListeners.clear();
 }
 
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
 function connectEventSource(): EventSource {
   if (eventSource && eventSource.readyState !== EventSource.CLOSED) {
     return eventSource;
@@ -68,11 +88,32 @@ function connectEventSource(): EventSource {
     detachListeners(eventSource);
   }
 
+  setConnectionState('reconnecting');
   eventSource = new EventSource('/api/events');
   attachListeners(eventSource);
 
+  eventSource.onopen = () => {
+    setConnectionState('connected');
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+  };
+
   eventSource.onerror = () => {
-    // EventSource auto-reconnects — no manual retry needed
+    if (eventSource?.readyState === EventSource.CLOSED) {
+      setConnectionState('disconnected');
+      // EventSource gave up — schedule manual reconnect
+      if (!reconnectTimer) {
+        reconnectTimer = setTimeout(() => {
+          reconnectTimer = null;
+          connectEventSource();
+        }, 5000);
+      }
+    } else {
+      // CONNECTING state — EventSource is auto-reconnecting
+      setConnectionState('reconnecting');
+    }
   };
 
   return eventSource;
@@ -105,4 +146,16 @@ export function useEventBus(eventType: string, handler: EventHandler) {
       handlers.get(eventType)?.delete(stableHandler);
     };
   }, [eventType]); // eventType is stable by convention
+}
+
+/**
+ * React hook: returns current SSE connection state ('connected' | 'reconnecting' | 'disconnected').
+ * Uses useSyncExternalStore for tear-safe reads.
+ */
+export function useSSEConnectionState(): ConnectionState {
+  return useSyncExternalStore(
+    (cb) => { connectionListeners.add(cb); return () => { connectionListeners.delete(cb); }; },
+    () => connectionState,
+    () => 'disconnected' as ConnectionState, // server snapshot
+  );
 }

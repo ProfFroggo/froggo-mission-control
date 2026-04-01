@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect } from 'react';
 import { History, X, Clock, RotateCcw } from 'lucide-react';
+import { Button, Flex } from '@radix-ui/themes';
 
 interface KBVersion {
   id: number;
@@ -103,10 +104,9 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
   const diffLines = selected ? computeDiff(selected.content, currentContent) : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <Flex align="center" justify="center" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
       <div
-        className="relative w-full max-w-4xl mx-4 rounded-lg bg-mission-control-surface border border-mission-control-border shadow-2xl flex flex-col"
-        style={{ maxHeight: '90vh' }}
+        className="relative w-full max-w-4xl mx-4 rounded-2xl bg-mission-control-surface border border-mission-control-border shadow-2xl flex flex-col max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -114,9 +114,10 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
           <History size={16} className="text-mission-control-text-dim" />
           <span className="font-semibold text-mission-control-text flex-1 text-sm">Revision History</span>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim"
             aria-label="Close"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={14} />
           </button>
@@ -149,21 +150,22 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
                     return (
                       <button
                         key={v.id}
+                        type="button"
                         onClick={() => setSelected(selected?.id === v.id ? null : v)}
                         className={`w-full text-left px-3 py-2.5 rounded transition-colors ${
                           selected?.id === v.id
-                            ? 'bg-blue-600/20 border border-blue-500/40'
+                            ? 'bg-info/10 border border-info/30'
                             : 'hover:bg-mission-control-border border border-transparent'
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-1">
+                        <Flex align="center" justify="between" gap="1">
                           <span className="text-xs font-medium text-mission-control-text">
                             v{versions.length - idx}
                           </span>
-                          <span className={`text-xs font-mono ${diff > 0 ? 'text-green-400' : diff < 0 ? 'text-red-400' : 'text-mission-control-text-dim'}`}>
+                          <span className={`text-xs font-mono tabular-nums ${diff > 0 ? 'text-success' : diff < 0 ? 'text-error' : 'text-mission-control-text-dim'}`}>
                             {diff > 0 ? `+${diff}` : diff === 0 ? '±0' : String(diff)}w
                           </span>
-                        </div>
+                        </Flex>
                         <div className="text-xs text-mission-control-text-dim mt-0.5">
                           {new Date(v.editedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                           {' '}
@@ -202,35 +204,38 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
                       <span className="ml-2 text-xs text-mission-control-text-dim opacity-70">· {selected.versionNote}</span>
                     )}
                   </div>
-                  <button
+                  <Button
                     onClick={handleRestore}
                     disabled={restoring}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs"
+                    size="1"
+                    variant="solid"
+                    color="blue"
+                   
                   >
                     <RotateCcw size={11} />
                     {restoring ? 'Restoring...' : 'Restore this version'}
-                  </button>
+                  </Button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4">
-                  <div className="flex gap-2 mb-3 text-xs text-mission-control-text-dim">
+                  <Flex gap="2" className="mb-3 text-xs text-mission-control-text-dim">
                     <span className="flex items-center gap-1">
-                      <span className="w-3 h-3 rounded-sm bg-green-500/20 border border-green-500/40 inline-block" />
+                      <span className="w-3 h-3 rounded-sm bg-success/10 border border-success/30 inline-block" />
                       Added
                     </span>
                     <span className="flex items-center gap-1">
-                      <span className="w-3 h-3 rounded-sm bg-red-500/20 border border-red-500/40 inline-block" />
+                      <span className="w-3 h-3 rounded-sm bg-error/10 border border-error/30 inline-block" />
                       Removed
                     </span>
-                  </div>
+                  </Flex>
                   <div className="font-mono text-xs rounded border border-mission-control-border overflow-hidden">
                     {(diffLines ?? []).map((line, i) => (
                       <div
                         key={i}
                         className={`px-3 py-0.5 leading-5 whitespace-pre-wrap break-all ${
                           line.type === 'added'
-                            ? 'bg-green-500/10 text-green-300'
+                            ? 'bg-success/10 text-success'
                             : line.type === 'removed'
-                            ? 'bg-red-500/10 text-red-300 line-through opacity-70'
+                            ? 'bg-error/10 text-error line-through opacity-70'
                             : 'text-mission-control-text-dim'
                         }`}
                       >
@@ -247,6 +252,6 @@ export default function ArticleRevisionHistory({ articleId, currentContent, onRe
           </div>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

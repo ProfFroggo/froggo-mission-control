@@ -19,13 +19,13 @@ import {
   List,
   Rocket,
   CheckCheck,
-  Loader2,
   Search,
   AlertCircle,
   Heart,
   Repeat2,
   MessageCircle,
 } from 'lucide-react';
+import { Button, IconButton, Badge, TextArea, TextField, Spinner, Flex } from '@radix-ui/themes';
 import { approvalApi } from '../lib/api';
 import EpicCalendar from './EpicCalendar';
 import { showToast } from './Toast';
@@ -84,12 +84,12 @@ type ListFilter = 'all' | 'ideas' | 'drafts' | 'approved' | 'rejected' | 'schedu
 // ─────────────────────────────────────────────
 
 const COLUMNS: Column[] = [
-  { id: 'ideas',     label: 'Ideas',     icon: <Lightbulb size={14} />, accent: 'var(--color-mission-control-text-dim)', emptyLabel: 'No ideas yet' },
+  { id: 'ideas',     label: 'Ideas',     icon: <Lightbulb size={14} />, accent: 'var(--mission-control-text-dim)', emptyLabel: 'No ideas yet' },
   { id: 'drafting',  label: 'Drafting',  icon: <Edit3 size={14} />,     accent: 'var(--color-warning)',                  emptyLabel: 'Nothing drafting' },
   { id: 'in-review', label: 'In Review', icon: <Clock size={14} />,     accent: 'var(--color-info)',                     emptyLabel: 'Nothing in review' },
   { id: 'approved',  label: 'Approved',  icon: <CheckCircle size={14} />, accent: 'var(--color-success)',               emptyLabel: 'Nothing approved' },
-  { id: 'scheduled', label: 'Scheduled', icon: <Calendar size={14} />,  accent: 'var(--color-purple, #a855f7)',          emptyLabel: 'Nothing scheduled' },
-  { id: 'published', label: 'Published', icon: <Send size={14} />,      accent: 'var(--color-emerald, #10b981)',         emptyLabel: 'Nothing published this week' },
+  { id: 'scheduled', label: 'Scheduled', icon: <Calendar size={14} />,  accent: 'var(--color-review)',                   emptyLabel: 'Nothing scheduled' },
+  { id: 'published', label: 'Published', icon: <Send size={14} />,      accent: 'var(--color-success)',                  emptyLabel: 'Nothing published this week' },
 ];
 
 const LIST_FILTERS: { id: ListFilter; label: string }[] = [
@@ -184,24 +184,24 @@ function matchesListFilter(item: PipelineItem, filter: ListFilter): boolean {
 
 function statusBadgeClass(status: string): string {
   switch (status?.toLowerCase()) {
-    case 'approved': return 'bg-success-subtle text-success';
-    case 'rejected': return 'bg-error-subtle text-error';
-    case 'idea': return 'bg-info-subtle text-info';
-    case 'scheduled': return 'bg-purple-500/10 text-purple-400';
+    case 'approved': return 'bg-success/10 text-success';
+    case 'rejected': return 'bg-error/10 text-error';
+    case 'idea': return 'bg-info/10 text-info';
+    case 'scheduled': return 'bg-info/10 text-info';
     case 'published':
-    case 'sent': return 'bg-emerald-500/10 text-emerald-400';
-    case 'pending': return 'bg-info-subtle text-info';
-    default: return 'bg-warning-subtle text-warning';
+    case 'sent': return 'bg-success/10 text-success';
+    case 'pending': return 'bg-info/10 text-info';
+    default: return 'bg-mission-control-border/50 text-mission-control-text-dim';
   }
 }
 
 function typeBadgeClass(type: string): string {
   switch (type?.toLowerCase()) {
-    case 'plan': return 'bg-blue-500/10 text-blue-400';
-    case 'thread': return 'bg-purple-500/10 text-purple-400';
+    case 'plan': return 'bg-info/10 text-info';
+    case 'thread': return 'bg-info/10 text-info';
     case 'campaign': return 'bg-mission-control-accent/10 text-mission-control-accent';
-    case 'idea': return 'bg-info-subtle text-info';
-    default: return 'bg-mission-control-surface text-mission-control-text-dim';
+    case 'idea': return 'bg-info/10 text-info';
+    default: return 'bg-mission-control-border/50 text-mission-control-text-dim';
   }
 }
 
@@ -211,10 +211,10 @@ function typeBadgeClass(type: string): string {
 
 function eventColorResolver(event: CalendarEvent): string | undefined {
   const colorId = (event as unknown as { colorId?: string }).colorId || '';
-  if (colorId === 'research')  return 'bg-purple-500';
-  if (colorId === 'plan')      return 'bg-blue-500';
-  if (colorId === 'draft')     return 'bg-amber-500';
-  if (colorId === 'scheduled') return 'bg-emerald-500';
+  if (colorId === 'research')  return 'bg-review';
+  if (colorId === 'plan')      return 'bg-info';
+  if (colorId === 'draft')     return 'bg-warning';
+  if (colorId === 'scheduled') return 'bg-success';
   return undefined;
 }
 
@@ -290,20 +290,26 @@ function DateTimePicker({ onSchedule, onCancel }: DateTimePickerProps) {
         onChange={e => setValue(e.target.value)}
         className="w-full text-sm bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-mission-control-text mb-2 focus:outline-none focus:border-mission-control-accent"
       />
-      <div className="flex gap-2">
-        <button
+      <Flex gap="2">
+        <Button
           onClick={() => onSchedule(new Date(value).toISOString())}
-          className="flex-1 text-xs px-2 py-1 bg-info hover:bg-info/80 text-white rounded transition-colors"
+          variant="solid"
+          color="blue"
+          size="1"
+          className="flex-1"
         >
           Schedule
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={onCancel}
-          className="flex-1 text-xs px-2 py-1 bg-mission-control-bg-alt hover:bg-mission-control-border text-mission-control-text rounded transition-colors"
+          variant="soft"
+          color="gray"
+          size="1"
+          className="flex-1"
         >
           Cancel
-        </button>
-      </div>
+        </Button>
+      </Flex>
     </div>
   );
 }
@@ -358,20 +364,20 @@ function PipelineDetailModal({ item, onClose, onAction }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-xl max-h-[85vh] overflow-y-auto bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 flex items-center justify-between px-5 py-3 border-b border-mission-control-border bg-mission-control-surface rounded-t-2xl z-10">
-          <div className="flex items-center gap-2">
-            <span className={`px-2 py-0.5 text-xs rounded ${typeBadgeClass(item.type)}`}>
+        <div className="sticky top-0 flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0 bg-mission-control-surface rounded-t-2xl z-10">
+          <Flex align="center" gap="2">
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${typeBadgeClass(item.type)}`}>
               {typeBadgeLabel(item.type)}
             </span>
             {mentionType && (
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
                 mentionType === 'reply'
-                  ? isReplyToUs ? 'bg-success-subtle text-success' : 'bg-info-subtle text-info'
-                  : mentionType === 'quote' ? 'bg-warning-subtle text-warning'
-                  : 'bg-mission-control-surface text-mission-control-text-dim border border-mission-control-border'
+                  ? isReplyToUs ? 'bg-success/10 text-success' : 'bg-info/10 text-info'
+                  : mentionType === 'quote' ? 'bg-warning/10 text-warning'
+                  : 'bg-mission-control-border/50 text-mission-control-text-dim'
               }`}>
                 {mentionType === 'reply'
                   ? isReplyToUs ? 'Reply to you' : 'Reply (tagged)'
@@ -379,14 +385,18 @@ function PipelineDetailModal({ item, onClose, onAction }: {
               </span>
             )}
             {confidence != null && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                confidence >= 0.8 ? 'bg-success-subtle text-success'
-                : confidence >= 0.5 ? 'bg-info-subtle text-info'
-                : 'bg-warning-subtle text-warning'
+              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                confidence >= 0.8 ? 'bg-success/10 text-success'
+                : confidence >= 0.5 ? 'bg-info/10 text-info'
+                : 'bg-warning/10 text-warning'
               }`}>{Math.round(confidence * 100)}%</span>
             )}
-          </div>
-          <button onClick={onClose} className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-bg-alt">
+          </Flex>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+          >
             <X size={18} />
           </button>
         </div>
@@ -394,7 +404,7 @@ function PipelineDetailModal({ item, onClose, onAction }: {
         <div className="p-5 space-y-4">
           {/* Author */}
           {mentionAuthor && (
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <div className="font-medium text-mission-control-text">@{mentionAuthor}</div>
               {meta.author_followers != null && (
                 <span className="text-xs text-mission-control-text-dim">{meta.author_followers.toLocaleString()} followers</span>
@@ -404,7 +414,7 @@ function PipelineDetailModal({ item, onClose, onAction }: {
                   View on X
                 </a>
               )}
-            </div>
+            </Flex>
           )}
 
           {/* Parent tweet context */}
@@ -446,19 +456,20 @@ function PipelineDetailModal({ item, onClose, onAction }: {
                     onClick={() => setReplyText(reply)}
                     className={`w-full text-left px-4 py-3 text-sm rounded-xl border transition-colors ${
                       isRec
-                        ? 'border-info bg-info-subtle/40 hover:bg-info-subtle/60'
+                        ? 'border-info bg-info/10/40 hover:bg-info/10/60'
                         : 'border-mission-control-border bg-mission-control-surface hover:border-info'
                     }`}
+                    type="button"
                   >
-                    <div className="flex items-center gap-2">
-                      {isRec && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-info text-white flex-shrink-0">BEST</span>}
+                    <Flex align="center" gap="2">
+                      {isRec && <Badge color="blue" variant="solid" size="1">BEST</Badge>}
                       <span className="text-mission-control-text">{reply}</span>
-                    </div>
+                    </Flex>
                   </button>
                 );
               })}
               {aiReplies.reasoning && (
-                <div className="text-[11px] text-mission-control-text-dim italic px-1">{aiReplies.reasoning}</div>
+                <div className="text-xs text-mission-control-text-dim italic px-1">{aiReplies.reasoning}</div>
               )}
             </div>
           )}
@@ -466,52 +477,53 @@ function PipelineDetailModal({ item, onClose, onAction }: {
           {/* Reply composer */}
           {isMention && (
             <div className="space-y-2 pt-2 border-t border-mission-control-border">
-              <textarea
+              <TextArea
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
                 placeholder="Write or edit your reply..."
-                className="w-full px-4 py-3 text-sm border border-mission-control-border rounded-xl resize-none bg-mission-control-bg text-mission-control-text focus:outline-none focus:ring-2 focus:ring-info"
+                variant="soft"
                 rows={3}
                 maxLength={280}
+                className="w-full"
               />
-              <div className="flex items-center justify-between">
+              <Flex align="center" justify="between">
                 <span className="text-xs text-mission-control-text-dim">{replyText.length}/280</span>
-                <div className="flex gap-2">
-                  <button onClick={onClose} className="px-4 py-2 text-sm border border-mission-control-border rounded-lg text-mission-control-text hover:bg-mission-control-surface">
-                    Cancel
-                  </button>
-                  <button
+                <Flex gap="2">
+                  <Button onClick={onClose} variant="soft" color="gray" size="2">Cancel</Button>
+                  <Button
                     onClick={() => handleSendReply(replyText)}
                     disabled={!replyText.trim() || replyText.length > 280 || sending}
-                    className="px-4 py-2 text-sm bg-info text-white rounded-lg hover:bg-info/80 disabled:opacity-50 flex items-center gap-1.5"
+                    variant="solid"
+                    color="blue"
+                    size="2"
                   >
-                    <Send size={14} />
+                    {sending ? <Spinner size="1" /> : <Send size={14} />}
                     {sending ? 'Sending...' : 'Send for Approval'}
-                  </button>
-                </div>
-              </div>
+                  </Button>
+                </Flex>
+              </Flex>
             </div>
           )}
 
           {/* Non-mention actions */}
           {!isMention && (
-            <div className="flex gap-2 pt-2 border-t border-mission-control-border">
+            <Flex gap="2" className="pt-2 border-t border-mission-control-border">
               {item.column === 'in-review' && (
                 <>
-                  <button onClick={() => { onAction(item.id, 'approve'); onClose(); }} className="flex-1 py-2 text-sm bg-success/10 text-success rounded-lg hover:bg-success/20 flex items-center justify-center gap-1.5">
+                  <Button onClick={() => { onAction(item.id, 'approve'); onClose(); }} variant="solid" color="grass" size="2" className="flex-1">
                     <Check size={14} /> Approve
-                  </button>
-                  <button onClick={() => { onAction(item.id, 'reject'); onClose(); }} className="flex-1 py-2 text-sm bg-error/10 text-error rounded-lg hover:bg-error/20 flex items-center justify-center gap-1.5">
+                  </Button>
+                  <Button onClick={() => { onAction(item.id, 'reject'); onClose(); }} variant="soft" color="red" size="2" className="flex-1">
                     <X size={14} /> Reject
-                  </button>
+                  </Button>
                 </>
               )}
               {item.column === 'ideas' && (
-                <button onClick={() => { onAction(item.id, 'draft'); onClose(); }} className="flex-1 py-2 text-sm bg-warning/10 text-warning rounded-lg hover:bg-warning/20 flex items-center justify-center gap-1.5">
+                <Button onClick={() => { onAction(item.id, 'draft'); onClose(); }} variant="soft" color="amber" size="2" className="flex-1">
                   <Edit3 size={14} /> Move to Drafting
-                </button>
+                </Button>
               )}
-            </div>
+            </Flex>
           )}
         </div>
       </div>
@@ -558,23 +570,23 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => { setHovered(false); setShowDatePicker(false); }}
       onClick={() => onSelect?.(item)}
-      className="relative bg-mission-control-bg-alt border border-mission-control-border rounded-lg p-3 cursor-pointer transition-shadow hover:shadow-md"
+      className="relative bg-mission-control-surface border border-mission-control-border rounded-xl p-3 cursor-pointer hover:border-mission-control-accent/30 hover:shadow-lg hover:-translate-y-0.5 transition-colors duration-150"
       style={{ opacity: acting ? 0.6 : 1 }}
     >
       {/* Type badge */}
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <span className={`px-1.5 py-0.5 text-xs rounded ${typeBadgeClass(item.type)}`}>
+      <Flex align="center" gap="2" className="mb-1.5">
+        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${typeBadgeClass(item.type)}`}>
           {badgeLabel}
         </span>
         {mentionAuthorCard && (
-          <span className="px-1.5 py-0.5 text-xs bg-mission-control-surface text-mission-control-text-dim rounded">
+          <span className="text-[10px] font-medium px-1.5 py-0.5 bg-mission-control-border/50 text-mission-control-text-dim rounded-full">
             @{mentionAuthorCard}
           </span>
         )}
         {!mentionAuthorCard && item.platform && (
-          <span className="px-1.5 py-0.5 text-xs bg-info-subtle text-info rounded">{item.platform}</span>
+          <span className="text-[10px] font-medium px-1.5 py-0.5 bg-info/10 text-info rounded-full">{item.platform}</span>
         )}
-      </div>
+      </Flex>
 
       {/* Mention: original tweet + suggested reply */}
       {isMentionCard ? (
@@ -584,18 +596,18 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
           )}
           {suggestedReply && (
             <div className="border-l-2 border-info/50 pl-2">
-              <p className="text-xs text-mission-control-text-dim mb-0.5 uppercase tracking-wide" style={{ fontSize: '10px' }}>Suggested reply</p>
-              <p className="text-sm text-mission-control-text leading-relaxed line-clamp-2">{suggestedReply}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Suggested reply</p>
+              <p className="text-sm font-medium text-mission-control-text leading-snug line-clamp-2">{suggestedReply}</p>
             </div>
           )}
         </div>
       ) : (
         /* Content preview */
-        <p className="text-sm text-mission-control-text leading-relaxed mb-2">{preview}</p>
+        <p className="text-sm font-medium text-mission-control-text leading-snug mb-2">{preview}</p>
       )}
 
       {/* Footer: agent + time */}
-      <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+      <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim mt-2">
         {proposedBy && (
           <span className="flex items-center gap-1">
             <User size={10} />
@@ -603,11 +615,11 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
           </span>
         )}
         {ts && <span>{ts}</span>}
-      </div>
+      </Flex>
 
       {/* Pending approval indicator */}
       {hasPendingApproval && (item.column === 'in-review' || item.column === 'approved') && (
-        <div className="mt-1.5 flex items-center gap-1 text-[10px] text-info">
+        <div className="mt-1.5 flex items-center gap-1 text-xs text-info">
           <Clock size={10} />
           Pending approval
         </div>
@@ -615,7 +627,7 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
 
       {/* Published metrics */}
       {item.column === 'published' && item.parsedMeta.public_metrics && (
-        <div className="mt-1.5 flex items-center gap-3 text-[10px] text-mission-control-text-dim">
+        <div className="mt-1.5 flex items-center gap-3 text-xs text-mission-control-text-dim">
           {item.parsedMeta.public_metrics.like_count != null && (
             <span className="flex items-center gap-0.5"><Heart size={9} /> {item.parsedMeta.public_metrics.like_count}</span>
           )}
@@ -632,43 +644,28 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
       {hovered && (
         <div className="mt-2 pt-2 border-t border-mission-control-border flex flex-wrap gap-1.5" onClick={e => e.stopPropagation()}>
           {item.column === 'ideas' && (
-            <button
-              onClick={() => doAction('draft')}
-              className="flex items-center gap-1 px-2 py-1 text-xs bg-warning-subtle text-warning rounded hover:bg-warning/20 transition-colors"
-            >
+            <Button onClick={() => doAction('draft')} variant="soft" color="amber" size="1">
               <Edit3 size={10} /> Draft
-            </button>
+            </Button>
           )}
           {item.column === 'drafting' && (
-            <button
-              onClick={() => doAction('submit')}
-              className="flex items-center gap-1 px-2 py-1 text-xs bg-info-subtle text-info rounded hover:bg-info/20 transition-colors"
-            >
+            <Button onClick={() => doAction('submit')} variant="soft" color="blue" size="1">
               <ChevronRight size={10} /> Submit for review
-            </button>
+            </Button>
           )}
           {item.column === 'in-review' && (
             <>
-              <button
-                onClick={() => doAction('approve')}
-                className="flex items-center gap-1 px-2 py-1 text-xs bg-success-subtle text-success rounded hover:bg-success/20 transition-colors"
-              >
+              <Button onClick={() => doAction('approve')} variant="soft" color="grass" size="1">
                 <Check size={10} /> Approve
-              </button>
-              <button
-                onClick={() => doAction('reject')}
-                className="flex items-center gap-1 px-2 py-1 text-xs bg-error-subtle text-error rounded hover:bg-error/20 transition-colors"
-              >
+              </Button>
+              <Button onClick={() => doAction('reject')} variant="soft" color="red" size="1">
                 <X size={10} /> Reject
-              </button>
+              </Button>
             </>
           )}
           {item.column === 'approved' && (
             <div className="relative">
-              <button
-                onClick={() => setShowDatePicker(v => !v)}
-                className="flex items-center gap-1 px-2 py-1 text-xs bg-mission-control-surface text-mission-control-text-dim rounded hover:text-mission-control-text transition-colors"
-              >
+              <button onClick={() => setShowDatePicker(v => !v)} type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                 <Calendar size={10} /> Schedule
               </button>
               {showDatePicker && (
@@ -680,12 +677,9 @@ function PipelineCard({ item, onAction, hasPendingApproval, onSelect }: CardProp
             </div>
           )}
           {item.column === 'scheduled' && (
-            <button
-              onClick={() => doAction('publish')}
-              className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-500/10 text-emerald-400 rounded hover:bg-emerald-500/20 transition-colors"
-            >
+            <Button onClick={() => doAction('publish')} variant="soft" color="grass" size="1">
               <Send size={10} /> Publish now
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -720,41 +714,39 @@ function QuickAddIdea({ onAdd }: QuickAddProps) {
 
   if (!open) {
     return (
-      <button
+      <Button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 w-full px-3 py-2 text-xs text-mission-control-text-dim hover:text-mission-control-text border border-dashed border-mission-control-border rounded-lg transition-colors"
+        variant="outline"
+        color="gray"
+        size="1"
+        className="w-full"
+        style={{ borderStyle: 'dashed' }}
       >
         <Plus size={12} /> New idea
-      </button>
+      </Button>
     );
   }
 
   return (
     <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-2">
-      <textarea
+      <TextArea
         autoFocus
         value={text}
         onChange={e => setText(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); if (e.key === 'Escape') setOpen(false); }}
+        onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); if (e.key === 'Escape') setOpen(false); }}
         placeholder="Describe the content idea..."
         rows={3}
-        className="w-full text-sm bg-mission-control-bg border border-mission-control-border rounded px-2 py-1 text-mission-control-text resize-none mb-2 placeholder:text-mission-control-text-dim"
+        variant="soft"
+        className="w-full mb-2"
       />
-      <div className="flex gap-1.5">
-        <button
-          onClick={submit}
-          disabled={saving || !text.trim()}
-          className="flex-1 text-xs px-2 py-1 bg-info hover:bg-info/80 text-white rounded transition-colors disabled:opacity-50"
-        >
+      <Flex gap="2">
+        <Button onClick={submit} disabled={saving || !text.trim()} variant="solid" color="blue" size="1" className="flex-1">
           {saving ? 'Adding...' : 'Add idea'}
-        </button>
-        <button
-          onClick={() => setOpen(false)}
-          className="px-2 py-1 text-xs bg-mission-control-bg-alt hover:bg-mission-control-border text-mission-control-text rounded transition-colors"
-        >
+        </Button>
+        <Button onClick={() => setOpen(false)} variant="soft" color="gray" size="1">
           Cancel
-        </button>
-      </div>
+        </Button>
+      </Flex>
     </div>
   );
 }
@@ -798,22 +790,26 @@ interface ViewModeToggleProps {
 
 function ViewModeToggle({ viewMode, onChange }: ViewModeToggleProps) {
   return (
-    <div className="flex items-center gap-1 px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
-      {VIEW_MODES.map(mode => (
-        <button
-          key={mode.id}
-          onClick={() => onChange(mode.id)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-            viewMode === mode.id
-              ? 'bg-info-subtle text-info'
-              : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt'
-          }`}
-        >
-          {mode.icon}
-          {mode.label}
-        </button>
-      ))}
-    </div>
+    <Flex align="center" gap="1" className="px-4 border-b border-mission-control-border bg-mission-control-surface">
+      {VIEW_MODES.map(mode => {
+        const isActive = viewMode === mode.id;
+        return (
+          <button
+            key={mode.id}
+            type="button"
+            onClick={() => onChange(mode.id)}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors focus-visible:outline-none ${
+              isActive
+                ? 'border-mission-control-accent text-mission-control-accent'
+                : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
+          >
+            {mode.icon}
+            {mode.label}
+          </button>
+        );
+      })}
+    </Flex>
   );
 }
 
@@ -880,26 +876,30 @@ function PipelineListView({ items, onAction }: ListViewProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Filter pills + search + bulk actions */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-mission-control-border flex-wrap">
-        <div className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0">
+      {/* Filter tabs + bulk actions */}
+      <div className="flex items-center gap-2 border-b border-mission-control-border flex-wrap">
+        <div className="flex items-center overflow-x-auto flex-1 min-w-0 px-4">
           {LIST_FILTERS.map(f => {
             const count = f.id === 'all' ? items.length : items.filter(i => matchesListFilter(i, f.id)).length;
+            const isActive = filter === f.id;
             return (
               <button
                 key={f.id}
+                type="button"
                 onClick={() => setFilter(f.id)}
-                className={`flex items-center gap-1.5 px-3 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
-                  filter === f.id
-                    ? 'bg-info-subtle text-info font-medium'
-                    : 'bg-mission-control-bg-alt text-mission-control-text-dim hover:text-mission-control-text border border-mission-control-border'
+                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors focus-visible:outline-none ${
+                  isActive
+                    ? 'border-mission-control-accent text-mission-control-accent'
+                    : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {f.label}
                 {count > 0 && (
-                  <span className={`text-xs ${filter === f.id ? 'text-info/70' : 'text-mission-control-text-dim'}`}>
-                    {count}
-                  </span>
+                  <span className={`px-1.5 py-0.5 rounded-full text-xs font-mono tabular-nums ${
+                    isActive
+                      ? 'bg-mission-control-accent/20 text-mission-control-accent'
+                      : 'bg-mission-control-border text-mission-control-text-dim'
+                  }`}>{count}</span>
                 )}
               </button>
             );
@@ -907,28 +907,34 @@ function PipelineListView({ items, onAction }: ListViewProps) {
         </div>
 
         {pendingItems.length > 0 && (
-          <button
+          <Button
             onClick={handleBulkApprove}
             disabled={approvingAll}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-success-subtle text-success border border-success/30 rounded-lg hover:bg-success/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+            variant="solid"
+            color="grass"
+            size="1"
+            className="whitespace-nowrap mr-4"
           >
-            {approvingAll ? <Loader2 size={12} className="animate-spin" /> : <CheckCheck size={12} />}
+            {approvingAll ? <Spinner size="1" /> : <CheckCheck size={12} />}
             Approve all ({pendingItems.length})
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Search input */}
       <div className="px-4 py-2 border-b border-mission-control-border">
         <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-          <input
-            type="text"
+          <TextField.Root
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search content..."
-            className="w-full text-sm bg-mission-control-bg-alt border border-mission-control-border rounded-lg pl-9 pr-3 py-1.5 text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
-          />
+            size="2"
+            className="w-full"
+          >
+            <TextField.Slot>
+              <Search size={14} className="text-mission-control-text-dim" />
+            </TextField.Slot>
+          </TextField.Root>
         </div>
       </div>
 
@@ -957,12 +963,12 @@ function PipelineListView({ items, onAction }: ListViewProps) {
               return (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-mission-control-bg-alt/50 transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-mission-control-border/20/50 transition-colors"
                 >
                   {/* Content preview */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-mission-control-text truncate leading-relaxed">{preview}</p>
-                    <div className="flex items-center gap-2 mt-1">
+                    <Flex align="center" gap="2" className="mt-1">
                       {proposedBy && (
                         <span className="flex items-center gap-1 text-xs text-mission-control-text-dim">
                           <User size={10} />
@@ -970,63 +976,44 @@ function PipelineListView({ items, onAction }: ListViewProps) {
                         </span>
                       )}
                       {ts && <span className="text-xs text-mission-control-text-dim">{ts}</span>}
-                    </div>
+                    </Flex>
                   </div>
 
                   {/* Type badge */}
-                  <span className={`px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${typeBadgeClass(item.type)}`}>
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap ${typeBadgeClass(item.type)}`}>
                     {typeBadgeLabel(item.type)}
                   </span>
 
                   {/* Status badge */}
-                  <span className={`px-2 py-0.5 text-xs rounded-full whitespace-nowrap ${statusBadgeClass(item.status)}`}>
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap ${statusBadgeClass(item.status)}`}>
                     {item.status}
                   </span>
 
                   {/* Actions */}
                   <div className="flex items-center gap-1.5 flex-shrink-0 relative">
                     {item.column === 'ideas' && (
-                      <button
-                        onClick={() => doAction(item.id, 'draft')}
-                        disabled={isLoading}
-                        className="flex items-center gap-1 px-2 py-1 text-xs bg-warning-subtle text-warning rounded hover:bg-warning/20 transition-colors disabled:opacity-50"
-                      >
-                        {isLoading ? <Loader2 size={10} className="animate-spin" /> : <Edit3 size={10} />} Draft
-                      </button>
+                      <Button onClick={() => doAction(item.id, 'draft')} disabled={isLoading} variant="soft" color="amber" size="1">
+                        {isLoading ? <Spinner size="1" /> : <Edit3 size={10} />} Draft
+                      </Button>
                     )}
                     {item.column === 'drafting' && (
-                      <button
-                        onClick={() => doAction(item.id, 'submit')}
-                        disabled={isLoading}
-                        className="flex items-center gap-1 px-2 py-1 text-xs bg-info-subtle text-info rounded hover:bg-info/20 transition-colors disabled:opacity-50"
-                      >
-                        {isLoading ? <Loader2 size={10} className="animate-spin" /> : <ChevronRight size={10} />} Submit
-                      </button>
+                      <Button onClick={() => doAction(item.id, 'submit')} disabled={isLoading} variant="soft" color="blue" size="1">
+                        {isLoading ? <Spinner size="1" /> : <ChevronRight size={10} />} Submit
+                      </Button>
                     )}
                     {item.column === 'in-review' && (
                       <>
-                        <button
-                          onClick={() => doAction(item.id, 'approve')}
-                          disabled={isLoading}
-                          className="flex items-center gap-1 px-2 py-1 text-xs bg-success-subtle text-success rounded hover:bg-success/20 transition-colors disabled:opacity-50"
-                        >
-                          {isLoading ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />} Approve
-                        </button>
-                        <button
-                          onClick={() => doAction(item.id, 'reject')}
-                          disabled={isLoading}
-                          className="flex items-center gap-1 px-2 py-1 text-xs bg-error-subtle text-error rounded hover:bg-error/20 transition-colors disabled:opacity-50"
-                        >
-                          {isLoading ? <Loader2 size={10} className="animate-spin" /> : <X size={10} />} Reject
-                        </button>
+                        <Button onClick={() => doAction(item.id, 'approve')} disabled={isLoading} variant="solid" color="grass" size="1">
+                          {isLoading ? <Spinner size="1" /> : <Check size={10} />} Approve
+                        </Button>
+                        <Button onClick={() => doAction(item.id, 'reject')} disabled={isLoading} variant="soft" color="red" size="1">
+                          {isLoading ? <Spinner size="1" /> : <X size={10} />} Reject
+                        </Button>
                       </>
                     )}
                     {item.column === 'approved' && (
                       <div className="relative">
-                        <button
-                          onClick={() => setShowDatePickerFor(showDatePickerFor === item.id ? null : item.id)}
-                          className="flex items-center gap-1 px-2 py-1 text-xs bg-mission-control-surface text-mission-control-text-dim rounded hover:text-mission-control-text transition-colors"
-                        >
+                        <button type="button" onClick={() => setShowDatePickerFor(showDatePickerFor === item.id ? null : item.id)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                           <Calendar size={10} /> Schedule
                         </button>
                         {showDatePickerFor === item.id && (
@@ -1038,13 +1025,9 @@ function PipelineListView({ items, onAction }: ListViewProps) {
                       </div>
                     )}
                     {item.column === 'scheduled' && (
-                      <button
-                        onClick={() => doAction(item.id, 'publish')}
-                        disabled={isLoading}
-                        className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-500/10 text-emerald-400 rounded hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
-                      >
-                        {isLoading ? <Loader2 size={10} className="animate-spin" /> : <Send size={10} />} Publish
-                      </button>
+                      <Button onClick={() => doAction(item.id, 'publish')} disabled={isLoading} variant="soft" color="grass" size="1">
+                        {isLoading ? <Spinner size="1" /> : <Send size={10} />} Publish
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -1084,30 +1067,24 @@ function FloatingQuickCompose({ onAdd, onClose }: FloatingQuickComposeProps) {
 
   return (
     <div className="w-72 bg-mission-control-surface border border-mission-control-border rounded-lg p-3 shadow-lg">
-      <textarea
+      <TextArea
         autoFocus
         value={text}
         onChange={e => setText(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); if (e.key === 'Escape') onClose(); }}
+        onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); if (e.key === 'Escape') onClose(); }}
         placeholder="Quick idea..."
         rows={3}
-        className="w-full text-sm bg-mission-control-bg border border-mission-control-border rounded px-2 py-1.5 text-mission-control-text resize-none mb-2 placeholder:text-mission-control-text-dim focus:outline-none focus:border-info"
+        variant="soft"
+        className="w-full mb-2"
       />
-      <div className="flex gap-1.5">
-        <button
-          onClick={submit}
-          disabled={saving || !text.trim()}
-          className="flex-1 text-xs px-2 py-1.5 bg-info hover:bg-info/80 text-white rounded transition-colors disabled:opacity-50"
-        >
+      <Flex gap="2">
+        <Button onClick={submit} disabled={saving || !text.trim()} variant="solid" color="blue" size="1" className="flex-1">
           {saving ? 'Adding...' : 'Add idea'}
-        </button>
-        <button
-          onClick={onClose}
-          className="px-2 py-1.5 text-xs bg-mission-control-bg-alt hover:bg-mission-control-border text-mission-control-text rounded transition-colors"
-        >
+        </Button>
+        <Button onClick={onClose} variant="soft" color="gray" size="1">
           Cancel
-        </button>
-      </div>
+        </Button>
+      </Flex>
     </div>
   );
 }
@@ -1275,7 +1252,7 @@ export default function XPipelineView() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-mission-control-bg">
-        <div className="w-8 h-8 border-2 border-info border-t-transparent rounded-full animate-spin" />
+        <Spinner size="3" />
       </div>
     );
   }
@@ -1284,18 +1261,15 @@ export default function XPipelineView() {
     return (
       <div className="flex flex-col items-center justify-center h-full bg-mission-control-bg gap-3">
         <p className="text-error text-sm">{error}</p>
-        <button
-          onClick={load}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg hover:bg-mission-control-bg-alt transition-colors text-mission-control-text"
-        >
+        <Button onClick={load} variant="outline" color="gray" size="2">
           <RefreshCw size={14} /> Retry
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="relative flex flex-col h-full bg-mission-control-bg overflow-hidden">
+    <Flex direction="column" height="100%" className="relative bg-mission-control-bg overflow-hidden">
       {/* Stats bar */}
       <StatsBar counts={counts} total={items.length} />
 
@@ -1316,18 +1290,18 @@ export default function XPipelineView() {
                 >
                   {/* Column accent + header */}
                   <div style={{ height: 3, background: col.accent }} />
-                  <div className="flex items-center justify-between px-3 py-2.5 border-b border-mission-control-border bg-mission-control-surface">
-                    <div className="flex items-center gap-1.5 text-mission-control-text-dim">
+                  <Flex align="center" justify="between" className="px-3 py-2.5 border-b border-mission-control-border bg-mission-control-bg/50">
+                    <Flex align="center" gap="2" className="text-mission-control-text-dim">
                       {col.icon}
-                      <span className="text-xs font-medium text-mission-control-text">{col.label}</span>
-                    </div>
-                    <span className="px-1.5 py-0.5 text-xs bg-mission-control-bg text-mission-control-text-dim rounded-full min-w-[20px] text-center">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">{col.label}</span>
+                    </Flex>
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 bg-mission-control-border/50 text-mission-control-text-dim rounded-full min-w-[20px] text-center tabular-nums">
                       {colItems.length}
                     </span>
-                  </div>
+                  </Flex>
 
                   {/* Cards */}
-                  <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                  <div className="flex-1 overflow-y-auto p-2 space-y-2 bg-mission-control-bg/50">
                     {/* Quick add — only in Ideas column, at top */}
                     {col.id === 'ideas' && (
                       <QuickAddIdea onAdd={handleAddIdea} />
@@ -1381,13 +1355,16 @@ export default function XPipelineView() {
             onClose={() => setShowQuickCompose(false)}
           />
         ) : (
-          <button
+          <IconButton
             onClick={() => setShowQuickCompose(true)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-info hover:bg-info/80 text-white shadow-lg transition-colors"
+            variant="solid"
+            color="blue"
+            size="3"
             title="Quick add idea"
+            style={{ borderRadius: '50%' }}
           >
             <Plus size={20} />
-          </button>
+          </IconButton>
         )}
       </div>
 
@@ -1402,6 +1379,6 @@ export default function XPipelineView() {
           }}
         />
       )}
-    </div>
+    </Flex>
   );
 }

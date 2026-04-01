@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Bot, Play, Square, StopCircle, RefreshCw, Plus, Zap, Clock, CheckCircle, BarChart3, Settings, Library, AlertTriangle, Pencil, Check, Activity, Search, Trophy } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Bot, Play, Square, StopCircle, RefreshCw, Plus, Zap, Clock, CheckCircle, BarChart3, Settings, Library, AlertTriangle, Activity, Search, Trophy } from 'lucide-react';
+import VirtualList from './VirtualList';
 import { useEventBus } from '../lib/useEventBus';
 import { showToast } from './Toast';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -11,7 +12,6 @@ import HRAgentCreationModal from './HRAgentCreationModal';
 import AgentDetailModal from './AgentDetailModal';
 // AgentManagementModal replaced by AgentDetailModal (richer UI)
 import AgentHealthDashboard from './AgentHealthDashboard';
-import AgentMetricsCard from './AgentMetricsCard';
 import HRSection from './HRSection';
 import AgentLibraryPanel from './AgentLibraryPanel';
 import AgentLeaderboard from './AgentLeaderboard';
@@ -23,7 +23,10 @@ import type { CatalogAgent } from '../types/catalog';
 
 import { getAgentTheme } from '../utils/agentThemes';
 import { createLogger } from '../utils/logger';
-import { agentApi, analyticsApi } from '../lib/api';
+import { agentApi } from '../lib/api';
+import { Button, IconButton, Badge, Select, Box, Flex } from '@radix-ui/themes';
+import SearchInput from './SearchInput';
+import TabNav from './TabNav';
 
 const logger = createLogger('AgentPanel');
 const getTheme = getAgentTheme;
@@ -60,7 +63,7 @@ function AvatarWithFallback({ agentId, agentName, themeRing, themeBg, themeText,
       ) : (
         <span
           className={`absolute inset-0 flex items-center justify-center text-sm font-semibold ${themeText}`}
-          style={{ backgroundColor: themeColor + '22' }}
+          style={{ backgroundColor: `color-mix(in srgb, ${themeColor} 13%, transparent)` }}
         >
           {getInitials(agentName, agentId)}
         </span>
@@ -85,9 +88,7 @@ export default function AgentPanel() {
   const loadTasksFromDB = useStore(s => s.loadTasksFromDB);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
-  const [agentMetrics, setAgentMetrics] = useState<Record<string, any>>({});
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -95,12 +96,8 @@ export default function AgentPanel() {
   const [soulEditAgent, setSoulEditAgent] = useState<{ id: string; name: string } | null>(null);
   const [view, setView] = useState<'active' | 'health' | 'library' | 'leaderboard'>('active');
   const [circuitOpenAgents, setCircuitOpenAgents] = useState<Set<string>>(new Set());
-  const [editingTrustTierAgent, setEditingTrustTierAgent] = useState<string | null>(null);
-  const [pendingTrustTier, setPendingTrustTier] = useState<number>(1);
   const { open: confirmOpen, config: confirmConfig, onConfirm: onConfirmCallback, showConfirm, closeConfirm } = useConfirmDialog();
   const [agentSearch, setAgentSearch] = useState('');
-  // Per-agent token stats (last 7 days) — { agentId -> { tokens, cost } }
-  const [agentTokenStats, setAgentTokenStats] = useState<Record<string, { tokens: number; cost: number }>>({});
 
   // Subscribe to circuit.open SSE events
   useEventBus('circuit.open', (data) => {
@@ -120,19 +117,6 @@ export default function AgentPanel() {
     fetchAgents();
   });
 
-  // Fetch per-agent token stats (last 7 days) once on mount
-  useEffect(() => {
-    fetch('/api/token-usage?days=7')
-      .then(r => r.ok ? r.json() : null)
-      .then((d: { byAgent?: Array<{ agentId: string; tokens: number; cost: number }> } | null) => {
-        if (d?.byAgent) {
-          const map: Record<string, { tokens: number; cost: number }> = {};
-          for (const row of d.byAgent) map[row.agentId] = { tokens: row.tokens, cost: row.cost };
-          setAgentTokenStats(map);
-        }
-      })
-      .catch(() => { /* non-critical */ });
-  }, []);
 
   useEffect(() => {
     Promise.all([fetchAgents(), loadGatewaySessions(), loadTasksFromDB()])
@@ -182,20 +166,9 @@ export default function AgentPanel() {
     };
   }, [fetchAgents, loadGatewaySessions, loadTasksFromDB]);
 
-  useEffect(() => { loadAgentMetrics(); }, []);
-
-  const loadAgentMetrics = async () => {
-    setLoadingMetrics(true);
-    try {
-      const data = await analyticsApi.getAgentActivity();
-      if (data) setAgentMetrics(data);
-    } catch (e) { logger.error('Failed to load agent metrics:', e); }
-    finally { setLoadingMetrics(false); }
-  };
-
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    try { await Promise.all([loadGatewaySessions(), loadAgentMetrics()]); }
+    try { await loadGatewaySessions(); }
     finally { setIsRefreshing(false); }
   };
 
@@ -217,21 +190,6 @@ export default function AgentPanel() {
     });
   };
 
-  const handleTrustTierSave = async (agentId: string, tier: number) => {
-    try {
-      await fetch(`/api/agents/${agentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trust_tier: tier }),
-      });
-      await fetchAgents();
-      setEditingTrustTierAgent(null);
-      showToast('success', 'Trust tier updated — permissions recalculated');
-    } catch (err) {
-      showToast('error', 'Failed to update trust tier', (err as Error).message);
-    }
-  };
-
   const handleAgentStart = async (agentId: string) => {
     try {
       await agentApi.updateStatus(agentId, 'active');
@@ -241,6 +199,11 @@ export default function AgentPanel() {
       showToast('error', 'Failed to enable agent', (err as Error).message);
     }
   };
+
+  const totalTokens = useMemo(
+    () => gatewaySessions.reduce((sum, s) => sum + (s.totalTokens || 0), 0),
+    [gatewaySessions]
+  );
 
   const realSubagents = gatewaySessions.filter(s => s.type === 'subagent');
   const activeSubagents = realSubagents.filter(s => s.isActive);
@@ -252,14 +215,23 @@ export default function AgentPanel() {
     busy:       { color: 'bg-warning',               label: 'Working…' },
     // idle / offline → gray, no pulse
     idle:       { color: 'bg-mission-control-border', label: 'Idle' },
-    offline:    { color: 'bg-mission-control-bg0',   label: 'Offline',   hideDot: true },
+    offline:    { color: 'bg-mission-control-surface',   label: 'Offline',   hideDot: true },
     suspended:  { color: 'bg-error',                 label: 'Suspended', hideDot: true },
-    archived:   { color: 'bg-mission-control-bg0',   label: 'Archived',  hideDot: true },
+    archived:   { color: 'bg-mission-control-surface',   label: 'Archived',  hideDot: true },
     draft:      { color: 'bg-mission-control-border', label: 'Draft',    hideDot: true },
     disabled:   { color: 'bg-error',                 label: 'Stopped',   hideDot: true },
   };
 
-  const getAgentTasks = (agentId: string) => tasks.filter(t => t.assignedTo === agentId && t.status !== 'done');
+  const tasksByAgent = useMemo(() => {
+    const map = new Map<string, typeof tasks>();
+    tasks.forEach(t => {
+      if (t.status === 'done') return;
+      if (!t.assignedTo) return;
+      if (!map.has(t.assignedTo)) map.set(t.assignedTo, []);
+      map.get(t.assignedTo)!.push(t);
+    });
+    return map;
+  }, [tasks]);
 
   const AGENT_ROLES: Record<string, string> = {
     'mission-control': 'orchestrator',
@@ -270,30 +242,33 @@ export default function AgentPanel() {
 
   // Skip phantom/legacy agents — use exclusion so new agents auto-appear
   const PHANTOM_AGENTS = ['main', 'chat-agent'];
-  const realAgents = agents.filter(a => !PHANTOM_AGENTS.includes(a.id));
-  
-  // Remove duplicates by ID (in case store has dupes)
-  const uniqueAgents = Array.from(new Map(realAgents.map(a => [a.id, a])).values());
-  
-  // Split into main agents and workers
-  const mainAgents = uniqueAgents.filter(a => !a.id.startsWith('worker-'));
-  const workerAgents = agents.filter(a => a.id.startsWith('worker-'));
+
+  const { uniqueAgents, mainAgents, workerAgents } = useMemo(() => {
+    const realAgents = agents.filter(a => !PHANTOM_AGENTS.includes(a.id));
+    // Remove duplicates by ID (in case store has dupes)
+    const unique = Array.from(new Map(realAgents.map(a => [a.id, a])).values());
+    // Split into main agents and workers
+    const main = unique.filter(a => !a.id.startsWith('worker-'));
+    const workers = agents.filter(a => a.id.startsWith('worker-'));
+    return { uniqueAgents: unique, mainAgents: main, workerAgents: workers };
+  }, [agents]);
 
   // Client-side search filter — applied to core agents list
-  const searchQuery = agentSearch.trim().toLowerCase();
-  const filteredMainAgents = searchQuery
-    ? mainAgents.filter(a =>
-        a.name.toLowerCase().includes(searchQuery) ||
-        (a.description || '').toLowerCase().includes(searchQuery) ||
-        (a.capabilities || []).some(c => c.toLowerCase().includes(searchQuery))
-      )
-    : mainAgents;
+  const filteredMainAgents = useMemo(() => {
+    const searchQuery = agentSearch.trim().toLowerCase();
+    if (!searchQuery) return mainAgents;
+    return mainAgents.filter(a =>
+      a.name.toLowerCase().includes(searchQuery) ||
+      (a.description || '').toLowerCase().includes(searchQuery) ||
+      (a.capabilities || []).some(c => c.toLowerCase().includes(searchQuery))
+    );
+  }, [mainAgents, agentSearch]);
 
   if (initialLoading) {
     return (
-      <div className="h-full flex items-center justify-center">
+      <Flex align="center" justify="center" height="100%">
         <Spinner size={32} />
-      </div>
+      </Flex>
     );
   }
 
@@ -308,98 +283,105 @@ export default function AgentPanel() {
   }
 
   return (
-    <div className="h-full overflow-auto p-4">
-      <div className="w-full">
+    <Box p="4" className="h-full overflow-auto">
+      <Box>
         {/* Header */}
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-mission-control-accent/20 rounded-lg">
+        <Flex align="center" justify="between" mb="4">
+          <Flex align="center" gap="3">
+            <Box p="2" className="bg-mission-control-accent/20 rounded-lg">
               <Bot size={24} className="text-mission-control-accent" />
-            </div>
-            <div>
+            </Box>
+            <Box>
               <h1 className="text-xl font-semibold text-mission-control-text tracking-tight">Agents</h1>
               <p className="text-sm text-mission-control-text-dim">
                 {uniqueAgents.length} agent{uniqueAgents.length !== 1 ? 's' : ''} · {activeSubagents.length} sub-agent{activeSubagents.length !== 1 ? 's' : ''} running
               </p>
-            </div>
-          </div>
+            </Box>
+          </Flex>
           <div className="icon-text gap-2">
             {view === 'active' && (
-              <button type="button" onClick={() => setShowAnalytics(!showAnalytics)}
-                className={`icon-text px-3 py-2 border rounded-lg transition-colors text-sm ${showAnalytics ? 'text-info border-info-border bg-info-subtle' : 'border-mission-control-border hover:bg-mission-control-border/50'}`}>
-                <BarChart3 size={15} className="flex-shrink-0" /> Analytics
-              </button>
+              <Button
+                type="button"
+                variant={showAnalytics ? 'soft' : 'surface'}
+                color={showAnalytics ? 'blue' : 'gray'}
+                size="2"
+                onClick={() => setShowAnalytics(!showAnalytics)}
+                aria-expanded={showAnalytics}
+                aria-controls="agent-analytics-panel"
+              >
+                <BarChart3 size={15} aria-hidden="true" /> Analytics
+              </Button>
             )}
             {view === 'active' && (
-              <button type="button" onClick={handleRefresh} disabled={isRefreshing} className="icon-btn border border-mission-control-border disabled:opacity-50" title="Refresh" aria-label="Refresh agents">
-                <RefreshCw size={15} className={`flex-shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </button>
-            )}
-            {view === 'active' && (
-              <button type="button" onClick={() => setShowCreateModal(true)} className="icon-text px-3 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors text-sm">
-                <Plus size={15} className="flex-shrink-0" /> New Agent
-              </button>
+              <IconButton
+                type="button"
+                variant="surface"
+                color="gray"
+                size="2"
+                disabled={isRefreshing}
+                onClick={handleRefresh}
+                title="Refresh"
+                aria-label="Refresh agents"
+              >
+                <RefreshCw size={15} className={isRefreshing ? 'animate-spin' : ''} />
+              </IconButton>
             )}
           </div>
-        </div>
+        </Flex>
 
         {/* View tabs */}
-        <div className="flex border-b border-mission-control-border mb-5">
-          {([
-            { key: 'active'      as const, icon: Bot,     label: 'Active'      },
-            { key: 'health'      as const, icon: Activity, label: 'Health'     },
-            { key: 'library'     as const, icon: Library,  label: 'Library'    },
-            { key: 'leaderboard' as const, icon: Trophy,   label: 'Leaderboard'},
-          ]).map(tab => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setView(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-                view === tab.key
-                  ? 'border-mission-control-accent text-mission-control-accent'
-                  : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
-              }`}
-            >
-              <tab.icon size={15} /> {tab.label}
-            </button>
-          ))}
-        </div>
+        <Box mb="5">
+          <TabNav
+            tabs={[
+              { id: 'active',      label: 'Active',      icon: Bot      },
+              { id: 'health',      label: 'Health',      icon: Activity },
+              { id: 'library',     label: 'Library',     icon: Library  },
+              { id: 'leaderboard', label: 'Leaderboard', icon: Trophy   },
+            ]}
+            activeTab={view}
+            onTabChange={(id) => setView(id as typeof view)}
+            paddingX="px-0"
+          />
+        </Box>
 
         {/* Health view */}
         {view === 'health' && (
-          <AgentHealthDashboard
-            onSelectAgent={(id, name) => setManagingAgent({ id, name })}
-          />
+          <div role="tabpanel" id="agent-tabpanel-health" aria-labelledby="agent-tab-health">
+            <AgentHealthDashboard
+              onSelectAgent={(id, name) => setManagingAgent({ id, name })}
+            />
+          </div>
         )}
 
         {/* Library view */}
         {view === 'library' && (
-          <AgentLibraryPanel
-            onHire={(_agent: CatalogAgent) => {
-              setView('active');
-            }}
-          />
+          <div role="tabpanel" id="agent-tabpanel-library" aria-labelledby="agent-tab-library">
+            <AgentLibraryPanel
+              onHire={(_agent: CatalogAgent) => {
+                setView('active');
+              }}
+            />
+          </div>
         )}
 
         {/* Leaderboard view */}
         {view === 'leaderboard' && (
-          <AgentLeaderboard />
+          <div role="tabpanel" id="agent-tabpanel-leaderboard" aria-labelledby="agent-tab-leaderboard">
+            <AgentLeaderboard />
+          </div>
         )}
 
         {/* Active view content */}
-        {view === 'active' && (<>
+        {view === 'active' && (<div role="tabpanel" id="agent-tabpanel-active" aria-labelledby="agent-tab-active">
 
         {/* Analytics */}
         {showAnalytics && (
-          <div className="mb-6 rounded-lg border border-mission-control-border p-5">
+          <div id="agent-analytics-panel" className="mb-6 rounded-lg border border-mission-control-border p-5">
             <h2 className="icon-text text-heading-3 mb-4">
               <BarChart3 size={18} className="flex-shrink-0" /> Performance
-              {loadingMetrics && <InlineLoader size="sm" />}
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {(() => {
-                const totalTokens = gatewaySessions.reduce((sum, s) => sum + (s.totalTokens || 0), 0);
                 const activeAgentCount = agents.filter(a => a.status === 'active' || a.status === 'busy').length;
                 const formatTokens = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(0)}K` : String(n);
                 return [
@@ -428,20 +410,19 @@ export default function AgentPanel() {
 
         {/* Core Agents — Profile Card Grid */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-widest">Core Agents</h2>
-          </div>
+          <Flex align="center" justify="between" className="mb-4">
+            <h2 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Core Agents</h2>
+          </Flex>
 
           {/* Search / filter bar */}
-          <div className="relative mb-4">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none" />
-            <input
-              type="search"
+          <div className="mb-4">
+            <SearchInput
               value={agentSearch}
-              onChange={e => setAgentSearch(e.target.value)}
+              onChange={setAgentSearch}
               placeholder="Search agents by name, role, or capability…"
-              className="w-full pl-8 pr-3 py-2 text-sm rounded-lg border border-mission-control-border bg-mission-control-surface text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent transition-colors"
               aria-label="Search agents"
+              className="w-full"
+              size="md"
             />
           </div>
 
@@ -454,16 +435,17 @@ export default function AgentPanel() {
               size="md"
             />
           ) : filteredMainAgents.length === 0 ? (
-            <div className="py-10 text-center text-sm text-mission-control-text-dim">
-              No agents match &ldquo;{agentSearch}&rdquo;
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Search size={32} className="text-mission-control-text-dim mb-3 opacity-50" />
+              <p className="text-sm font-medium text-mission-control-text-dim">No agents match &ldquo;{agentSearch}&rdquo;</p>
+              <p className="text-xs text-mission-control-text-dim mt-1 opacity-70">Try a different name, role, or capability</p>
             </div>
           ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredMainAgents.map((agent) => {
               const theme = getTheme(agent.id);
-              const agentTasks = getAgentTasks(agent.id);
+              const agentTasks = tasksByAgent.get(agent.id) ?? [];
               const currentTask = tasks.find(t => t.id === agent.currentTaskId);
-              const metrics = agentMetrics[agent.id] || {};
               const sc = statusConfig[agent.status];
               // Hide dot when: no current task, task is done/review, or status says hideDot
               const hasActiveTask = currentTask && !['done', 'review', 'completed'].includes(currentTask.status);
@@ -472,9 +454,19 @@ export default function AgentPanel() {
               return (
                 <div
                   key={agent.id}
-                  onClick={() => setManagingAgent({ id: agent.id, name: agent.name })}
-                  className={`group relative rounded-2xl border-2 transition-all duration-200 hover:-translate-y-0.5 hover:bg-mission-control-surface/50 cursor-pointer flex flex-col ${theme.border}`}
+                  className={`group relative rounded-xl border bg-mission-control-surface transition-colors duration-150 hover:-translate-y-0.5 hover:shadow-lg cursor-pointer flex flex-col ${selectedAgent === agent.id ? 'border-mission-control-accent bg-[var(--mission-control-accent)]/5' : 'border-mission-control-border'}`}
                 >
+                  {/* Full-card button — covers background/inactive areas for mouse + keyboard access.
+                      z-[1] puts it above static content (which is z-auto) so pointer events on
+                      non-interactive card areas route here. Interactive sections use relative z-[2]
+                      to sit above this button. Settings button keeps its existing z-10. */}
+                  <button
+                    type="button"
+                    className="absolute inset-0 z-[1] rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-success"
+                    onClick={() => setManagingAgent({ id: agent.id, name: agent.name })}
+                    aria-label={`Open ${agent.name} management`}
+                  />
+
                   {/* Color accent bar */}
                   <div className="absolute top-0 left-4 right-4 h-0.5 rounded-b" style={{ backgroundColor: theme.color }} />
 
@@ -482,160 +474,59 @@ export default function AgentPanel() {
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setManagingAgent({ id: agent.id, name: agent.name }); }}
-                    className="absolute top-2 right-2 p-1 rounded-md text-mission-control-text-dim opacity-0 group-hover:opacity-100 transition-all hover:text-mission-control-text hover:bg-mission-control-border/50 z-10"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-colors z-10 inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     title="Manage agent"
                     aria-label={`Manage ${agent.name}`}
                   >
                     <Settings size={12} />
                   </button>
 
-                  <div className="p-4 flex flex-col flex-1">
+                  <div className="p-3 flex flex-col flex-1">
 
                     {/* Header: avatar + name + status dot */}
-                    <div className="flex items-start gap-3 mb-3">
+                    <Flex align="start" gap="3">
                       {/* Avatar */}
                       <AvatarWithFallback agentId={agent.id} agentName={agent.name} themeRing={theme.ring} themeBg={theme.bg} themeText={theme.text} themeColor={theme.color}>
-                        {showDot && <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-mission-control-bg ${sc.color} ${sc.pulse ? 'animate-pulse' : ''}`} />}
+                        {showDot && <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-mission-control-bg ${sc.color} ${sc.pulse ? 'agent-dot-pulse' : ''}`} />}
                       </AvatarWithFallback>
 
                       {/* Name + role */}
                       <div className="flex-1 min-w-0 pt-0.5">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <h3 className="font-semibold text-sm leading-normal truncate">{agent.name}</h3>
+                        <Flex align="center" gap="2" className="mb-0.5">
+                          <h3 className="text-sm font-semibold text-mission-control-text truncate" title={agent.name}>{agent.name}</h3>
                           {/* Only show non-idle status badges — idle is conveyed by Available below */}
                           {(agent.status === 'busy' || agent.status === 'disabled' || agent.status === 'suspended' || agent.status === 'archived' || agent.status === 'draft') && (
-                            <span className={`text-xs font-medium uppercase tracking-wider px-1.5 py-0.5 rounded flex-shrink-0 ${theme.bg} ${theme.text}`}>
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                              agent.status === 'busy'
+                                ? 'bg-warning/10 text-warning'
+                                : 'bg-mission-control-border/50 text-mission-control-text-dim'
+                            }`}>
                               {sc.label}
                             </span>
                           )}
                           {circuitOpenAgents.has(agent.id) && (
-                            <span className="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded font-medium bg-error-subtle text-error border border-error-border flex-shrink-0">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 bg-error/10 text-error">
                               <AlertTriangle size={9} /> Circuit open
                             </span>
                           )}
-                        </div>
+                        </Flex>
                         <div className="flex items-center gap-1.5">
                           <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>
-                          {agent.status === 'idle' && !currentTask && agentTasks.length === 0 && (
-                            <span className="flex-shrink-0 flex items-center gap-0.5 text-xs text-success font-medium">
-                              <CheckCircle size={9} />Available
-                            </span>
-                          )}
                           {currentTask && (
-                            <span className="flex-shrink-0 flex items-center gap-0.5 text-xs text-warning">
+                            <span className="flex-shrink-0 flex items-center gap-0.5 text-[10px] text-warning">
                               <Zap size={9} /><span className="truncate max-w-20">{currentTask.title}</span>
                             </span>
                           )}
                           {!currentTask && agentTasks.length > 0 && (
-                            <span className="flex-shrink-0 flex items-center gap-0.5 text-xs text-mission-control-text-dim">
+                            <span className="flex-shrink-0 flex items-center gap-0.5 text-[10px] tabular-nums text-mission-control-text-dim">
                               <Clock size={9} />{agentTasks.length} queued
                             </span>
                           )}
                         </div>
                       </div>
-                    </div>
+                    </Flex>
 
-                    {/* Metrics — always full opacity, separated */}
-                    <div className="border-t border-mission-control-border/40 pt-3 mb-3">
-                      <AgentMetricsCard agentId={agent.id} agentName={agent.name} metrics={{ ...metrics, _role: AGENT_ROLES[agent.id] }} compact={true} />
-                    </div>
 
-                    {/* Per-agent token stat (last 7 days) */}
-                    {agentTokenStats[agent.id] && (
-                      <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-2 tabular-nums">
-                        <Zap size={9} className="text-warning shrink-0" />
-                        <span>
-                          {agentTokenStats[agent.id].tokens >= 1_000_000
-                            ? `${(agentTokenStats[agent.id].tokens / 1_000_000).toFixed(1)}M`
-                            : agentTokenStats[agent.id].tokens >= 1_000
-                            ? `${(agentTokenStats[agent.id].tokens / 1_000).toFixed(0)}K`
-                            : agentTokenStats[agent.id].tokens} tokens
-                        </span>
-                        <span className="text-mission-control-border">/</span>
-                        <span className="text-warning">${agentTokenStats[agent.id].cost.toFixed(4)}</span>
-                        <span className="text-mission-control-text-dim/60">7d</span>
-                      </div>
-                    )}
-
-                    {/* Last active timestamp */}
-                    {agent.lastActivity && (
-                      <div className="flex items-center gap-1 text-xs text-mission-control-text-dim mb-2">
-                        <Clock size={9} />
-                        <span>Last active: {(() => {
-                          const diffMs = Date.now() - agent.lastActivity!;
-                          const diffMin = Math.floor(diffMs / 60_000);
-                          const diffHr = Math.floor(diffMs / 3_600_000);
-                          if (diffMs < 60_000) return 'just now';
-                          if (diffMin < 60) return `${diffMin}m ago`;
-                          if (diffHr < 24) return `${diffHr}h ago`;
-                          return `${Math.floor(diffHr / 24)}d ago`;
-                        })()}</span>
-                      </div>
-                    )}
-
-                    {/* Footer: capability tags + tier badge */}
-                    <div className="flex items-center gap-1 flex-wrap">
-                      {agent.capabilities?.slice(0, 3).map((cap, i) => (
-                        <span key={i} className={`px-1.5 py-0.5 text-xs font-medium rounded max-w-[120px] truncate ${theme.bg} ${theme.text}`}>
-                          {cap}
-                        </span>
-                      ))}
-                      {(agent.capabilities?.length || 0) > 3 && (
-                        <span className="text-xs text-mission-control-text-dim">+{(agent.capabilities?.length || 0) - 3}</span>
-                      )}
-                      <div className="flex-1" />
-                      {/* Tier badge — right-aligned, editable on click */}
-                      {agent.trust_tier && (
-                        editingTrustTierAgent === agent.id ? (
-                          <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                            <select
-                              value={pendingTrustTier}
-                              onChange={e => setPendingTrustTier(Number(e.target.value))}
-                              className="unstyled text-xs px-1 py-0.5 rounded border border-mission-control-border bg-mission-control-surface appearance-none"
-                            >
-                              <option value={1}>Tier 1 (Restricted)</option>
-                              <option value={2}>Tier 2 (Worker)</option>
-                              <option value={3}>Tier 3 (Full)</option>
-                            </select>
-                            <button type="button" onClick={e => { e.stopPropagation(); handleTrustTierSave(agent.id, pendingTrustTier); }} className="p-0.5 text-success hover:bg-success-subtle rounded"><Check size={12} /></button>
-                            <button type="button" onClick={e => { e.stopPropagation(); setEditingTrustTierAgent(null); }} className="p-0.5 text-error hover:bg-error-subtle rounded"><AlertTriangle size={12} /></button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={e => { e.stopPropagation(); setPendingTrustTier(Number(agent.trust_tier) || 1); setEditingTrustTierAgent(agent.id); }}
-                            className={`inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded font-medium opacity-50 group-hover:opacity-100 transition-opacity ${
-                              agent.trust_tier === 'admin'      ? 'bg-review-subtle text-review' :
-                              agent.trust_tier === 'trusted'    ? 'bg-success-subtle text-success' :
-                              agent.trust_tier === 'worker'     ? 'bg-info-subtle text-info' :
-                              agent.trust_tier === 'restricted' ? 'bg-error-subtle text-error' :
-                              'bg-mission-control-border text-mission-control-text-dim'
-                            } hover:brightness-110`}
-                            title="Click to edit trust tier"
-                          >
-                            {agent.trust_tier === 'admin' ? 'Admin' : agent.trust_tier === 'trusted' ? 'Trusted' : agent.trust_tier === 'worker' ? 'Worker' : agent.trust_tier === 'restricted' ? 'Restricted' : `Tier ${agent.trust_tier}`}
-                            <Pencil size={8} className="opacity-0 group-hover:opacity-100" />
-                          </button>
-                        )
-                      )}
-                    </div>
-
-                    {/* Start/Stop + Soul link */}
-                    <div className={`flex items-center gap-1.5 mt-auto pt-2 border-t ${theme.border}`}>
-                      {agent.status === 'idle' && agentTasks.length > 0 && (
-                        <button type="button" onClick={(e) => { e.stopPropagation(); spawnAgentForTask(agentTasks[0].id); }}
-                          className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-success text-white rounded-lg hover:brightness-110 transition-colors">
-                          <Play size={11} /> Start
-                        </button>
-                      )}
-                      {agent.status === 'busy' && agent.sessionKey && (
-                        <button type="button" onClick={(e) => { e.stopPropagation(); updateAgentStatus(agent.id, 'idle'); }}
-                          className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors">
-                          <Square size={11} /> Stop
-                        </button>
-                      )}
-                      <div className="flex-1" />
-                    </div>
 
                   </div>
                 </div>
@@ -648,95 +539,183 @@ export default function AgentPanel() {
         {/* Sub-Agents */}
         {realSubagents.length > 0 && (
           <div className="mb-6">
-            <h2 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-widest mb-3">
+            <h2 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-3">
               Sub-Agents ({activeSubagents.length} active / {realSubagents.length} total)
             </h2>
-            <div className="space-y-2">
-              {realSubagents.map((session) => (
-                <div key={session.key}
-                  className={`rounded-lg border p-3 flex items-center gap-3 overflow-hidden ${
-                    session.isActive ? 'border-success-border bg-success-subtle' : 'border-mission-control-border bg-mission-control-surface'
-                  }`}>
-                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-mission-control-surface border border-mission-control-border flex items-center justify-center">
-                    <Bot size={16} className="text-info" />
-                  </div>
-                  <div className="flex-fill">
-                    <div className="icon-text min-w-0">
-                      <span className="font-medium session-name flex-shrink truncate">{session.displayName}</span>
-                      {session.label && (
-                        <span className="text-xs px-1.5 py-0.5 bg-info-subtle text-info border border-info-border rounded-lg no-shrink no-wrap">
-                          {session.label}
-                        </span>
-                      )}
-                      <span className={`w-2 h-2 rounded-full no-shrink ${session.isActive ? 'bg-success animate-pulse' : 'bg-mission-control-bg0'}`} />
-                      {session.isActive && <span className="text-xs text-success no-shrink no-wrap">Active</span>}
+            {realSubagents.length >= 50 ? (
+              <div style={{ height: Math.min(realSubagents.length * 68, 400) }}>
+                <VirtualList
+                  items={realSubagents}
+                  itemHeight={68}
+                  overscan={3}
+                  renderItem={(session) => (
+                    <div
+                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-mission-control-border/20 transition-colors cursor-pointer mb-2"
+                    >
+                      <AvatarWithFallback
+                        agentId={session.key}
+                        agentName={session.displayName}
+                        themeRing={getTheme(session.key).ring}
+                        themeBg={getTheme(session.key).bg}
+                        themeText={getTheme(session.key).text}
+                        themeColor={getTheme(session.key).color}
+                        className="w-8 h-8 rounded-lg"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-xs font-medium text-mission-control-text truncate" title={session.displayName}>{session.displayName}</span>
+                          {session.label && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 bg-mission-control-border/50 text-mission-control-text-dim whitespace-nowrap">
+                              {session.label}
+                            </span>
+                          )}
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${session.isActive ? 'bg-success agent-dot-pulse' : 'bg-mission-control-surface'}`} />
+                        </div>
+                        <div className="flex items-center gap-3 text-[10px] tabular-nums text-mission-control-text-dim overflow-hidden">
+                          <span className="flex-shrink-0">{session.model?.split('/').pop() || 'unknown'}</span>
+                          <span className="flex-shrink-0 max-w-[120px] truncate">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</span>
+                          <span className="truncate flex-1 min-w-0" title={session.key}>{session.key}</span>
+                        </div>
+                      </div>
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                        session.isActive ? 'bg-success/10 text-success' : 'bg-mission-control-border/50 text-mission-control-text-dim'
+                      }`}>
+                        {session.isActive ? 'Running' : 'Idle'}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-mission-control-text-dim overflow-hidden">
-                      <span className="no-shrink">{session.model?.split('/').pop() || 'unknown'}</span>
-                      <span className="no-shrink no-wrap tabular-nums">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</span>
-                      <span className="truncate flex-1 min-w-0" title={session.key}>{session.key}</span>
+                  )}
+                />
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {realSubagents.map((session) => (
+                  <div key={session.key}
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-mission-control-border/20 transition-colors cursor-pointer">
+                    <AvatarWithFallback
+                      agentId={session.key}
+                      agentName={session.displayName}
+                      themeRing={getTheme(session.key).ring}
+                      themeBg={getTheme(session.key).bg}
+                      themeText={getTheme(session.key).text}
+                      themeColor={getTheme(session.key).color}
+                      className="w-8 h-8 rounded-lg"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-xs font-medium text-mission-control-text truncate" title={session.displayName}>{session.displayName}</span>
+                        {session.label && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 bg-mission-control-border/50 text-mission-control-text-dim whitespace-nowrap">
+                            {session.label}
+                          </span>
+                        )}
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${session.isActive ? 'bg-success agent-dot-pulse' : 'bg-mission-control-surface'}`} />
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] tabular-nums text-mission-control-text-dim overflow-hidden">
+                        <span className="flex-shrink-0">{session.model?.split('/').pop() || 'unknown'}</span>
+                        <span className="flex-shrink-0 max-w-[120px] truncate">{((session.totalTokens || 0) / 1000).toFixed(1)}k tokens</span>
+                        <span className="truncate flex-1 min-w-0" title={session.key}>{session.key}</span>
+                      </div>
                     </div>
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                      session.isActive ? 'bg-success/10 text-success' : 'bg-mission-control-border/50 text-mission-control-text-dim'
+                    }`}>
+                      {session.isActive ? 'Running' : 'Idle'}
+                    </span>
                   </div>
-                  <span className={`px-2 py-1 text-xs font-medium uppercase tracking-wide rounded-lg ${
-                    session.isActive ? 'text-success border border-success-border' : 'text-mission-control-text-dim border border-mission-control-border'
-                  }`}>
-                    {session.isActive ? 'Running' : 'Idle'}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Workers */}
         {workerAgents.length > 0 && (
           <div>
-            <h2 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-widest mb-3">
+            <h2 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-3">
               Workers ({workerAgents.length})
             </h2>
-            <div className="space-y-2">
-              {workerAgents.map((agent) => (
-                <div key={agent.id} className="rounded-lg border border-mission-control-border p-3 flex items-center gap-3 overflow-hidden min-h-[56px] hover:bg-mission-control-surface/50 transition-colors">
-                  <AvatarWithFallback
-                    agentId={agent.id}
-                    agentName={agent.name}
-                    themeRing={getTheme(agent.id).ring}
-                    themeBg={getTheme(agent.id).bg}
-                    themeText={getTheme(agent.id).text}
-                    themeColor={getTheme(agent.id).color}
-                    className="w-8 h-8 rounded-lg"
-                  />
-                  <div className="flex-fill">
-                    <div className="icon-text min-w-0">
-                      <span className="font-medium agent-name flex-1 min-w-0 truncate">{agent.name}</span>
-                      {(agent.status === 'active' || agent.status === 'busy') && <span className={`w-2 h-2 rounded-full no-shrink ${statusConfig[agent.status].color}`} />}
+            {workerAgents.length >= 50 ? (
+              <div style={{ height: Math.min(workerAgents.length * 64, 400) }}>
+                <VirtualList
+                  items={workerAgents}
+                  itemHeight={64}
+                  overscan={3}
+                  renderItem={(agent) => (
+                    <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-mission-control-border/20 transition-colors cursor-pointer mb-2">
+                      <AvatarWithFallback
+                        agentId={agent.id}
+                        agentName={agent.name}
+                        themeRing={getTheme(agent.id).ring}
+                        themeBg={getTheme(agent.id).bg}
+                        themeText={getTheme(agent.id).text}
+                        themeColor={getTheme(agent.id).color}
+                        className="w-8 h-8 rounded-lg"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-xs font-medium text-mission-control-text truncate" title={agent.name}>{agent.name}</span>
+                          {(agent.status === 'active' || agent.status === 'busy') && <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusConfig[agent.status].color}`} />}
+                        </div>
+                        <p className="text-[10px] text-mission-control-text-dim truncate">{agent.description}</p>
+                      </div>
+                      {agent.status === 'disabled' ? (
+                        <Button type="button" variant="surface" size="1" onClick={() => handleAgentStart(agent.id)} title="Re-enable agent for dispatcher">
+                          <Play size={12} /> Enable
+                        </Button>
+                      ) : agent.status === 'busy' && !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (
+                        <Button type="button" variant="surface" color="red" size="1" onClick={() => handleAgentStop(agent.id, agent.name)} title="Disable agent — dispatcher will stop spawning it">
+                          <StopCircle size={12} /> Disable
+                        </Button>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-success/10 text-success">
+                          <CheckCircle size={10} /> Done
+                        </span>
+                      )}
                     </div>
-                    <p className="text-xs text-mission-control-text-dim truncate">{agent.description}</p>
-                  </div>
-                  {agent.status === 'disabled' ? (
-                    <button type="button" onClick={() => handleAgentStart(agent.id)}
-                      className="px-2 py-1 text-xs text-success border border-success-border rounded-lg hover:bg-success-subtle transition-colors"
-                      title="Re-enable agent for dispatcher">
-                      <Play size={12} className="inline mr-1" /> Enable
-                    </button>
-                  ) : agent.status === 'busy' && !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (
-                    <button type="button" onClick={() => handleAgentStop(agent.id, agent.name)}
-                      className="px-2 py-1 text-xs text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors"
-                      title="Disable agent — dispatcher will stop spawning it">
-                      <StopCircle size={12} className="inline mr-1" /> Disable
-                    </button>
-                  ) : (
-                    <span className="text-xs text-success">
-                      <CheckCircle size={14} className="inline mr-1" /> Done
-                    </span>
                   )}
-                </div>
-              ))}
-            </div>
+                />
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {workerAgents.map((agent) => (
+                  <div key={agent.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-mission-control-border/20 transition-colors cursor-pointer">
+                    <AvatarWithFallback
+                      agentId={agent.id}
+                      agentName={agent.name}
+                      themeRing={getTheme(agent.id).ring}
+                      themeBg={getTheme(agent.id).bg}
+                      themeText={getTheme(agent.id).text}
+                      themeColor={getTheme(agent.id).color}
+                      className="w-8 h-8 rounded-lg"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-xs font-medium text-mission-control-text truncate" title={agent.name}>{agent.name}</span>
+                        {(agent.status === 'active' || agent.status === 'busy') && <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusConfig[agent.status].color}`} />}
+                      </div>
+                      <p className="text-[10px] text-mission-control-text-dim truncate">{agent.description}</p>
+                    </div>
+                    {agent.status === 'disabled' ? (
+                      <Button type="button" variant="surface" size="1" onClick={() => handleAgentStart(agent.id)} title="Re-enable agent for dispatcher">
+                        <Play size={12} /> Enable
+                      </Button>
+                    ) : agent.status === 'busy' && !PROTECTED_AGENTS.includes(agent.id as typeof PROTECTED_AGENTS[number]) ? (
+                      <Button type="button" variant="surface" color="red" size="1" onClick={() => handleAgentStop(agent.id, agent.name)} title="Disable agent — dispatcher will stop spawning it">
+                        <StopCircle size={12} /> Disable
+                      </Button>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-success/10 text-success">
+                        <CheckCircle size={10} /> Done
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        </>)} {/* end active view */}
+        </div>)} {/* end active view */}
 
         {/* Modals */}
         {showCreateModal && <HRAgentCreationModal onClose={() => setShowCreateModal(false)} />}
@@ -758,7 +737,7 @@ export default function AgentPanel() {
           cancelLabel={confirmConfig.cancelLabel}
           type={confirmConfig.type}
         />
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

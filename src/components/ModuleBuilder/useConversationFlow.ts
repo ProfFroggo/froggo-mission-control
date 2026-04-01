@@ -2,8 +2,7 @@
 /**
  * useConversationFlow — LLM-powered conversational interview for Module Builder.
  *
- * Primary: sends each user answer to Chief agent via gateway.sendChatWithCallbacks()
- * (same proven pattern as XAgentChatPane) for a real conversational experience.
+ * Primary: streams each user answer to the Coder agent via /api/agents/coder/chat SSE.
  *
  * Fallback: local validation handles answers if the LLM is unavailable.
  */
@@ -12,7 +11,6 @@ import { useState, useCallback, useMemo, useRef } from 'react';
 import type { ConversationMessage, SectionId, InterviewQuestion, ModuleSpec } from './types';
 import { SECTION_ORDER, SECTION_LABELS } from './types';
 import { getApplicableQuestions } from './questionBank';
-import { gateway } from '../../lib/gateway';
 import type { UseModuleSpecReturn } from './useModuleSpec';
 
 const ANSWER_EXTRACT_RE = /\[\[ANSWER_READY:(.+?)\]\]/s;
@@ -177,6 +175,7 @@ export function useConversationFlow({ moduleSpec, initialState }: ConversationFl
   const [isStarted, setIsStarted] = useState(initialState?.isStarted || false);
   const [isFinished, setIsFinished] = useState(initialState?.isFinished || false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
 
   const [wireframe, setWireframe] = useState(initialState?.wireframe || '');
   const [liveTasks, setLiveTasks] = useState<LiveTask[]>(initialState?.liveTasks || []);
@@ -211,15 +210,17 @@ export function useConversationFlow({ moduleSpec, initialState }: ConversationFl
     [],
   );
 
-  // ─── LLM call via sendChatWithCallbacks (same pattern as XAgentChatPane) ──
+  // ─── LLM call via /api/agents/coder/chat SSE streaming ──────────────────
 
   const sendToLLM = useCallback(
-    (message: string, timeoutMs = 30000): Promise<string> => {
+    (message: string, timeoutMs = 30000, quiet = false): Promise<string> => {
       return new Promise((resolve, reject) => {
         let accumulated = '';
         let resolved = false;
+        const controller = new AbortController();
+
         const timer = setTimeout(() => {
-          if (!resolved) { resolved = true; reject(new Error('timeout')); }
+          if (!resolved) { resolved = true; controller.abort(); reject(new Error('timeout')); }
         }, timeoutMs);
 
         const finish = (result: string) => {
@@ -229,14 +230,48 @@ export function useConversationFlow({ moduleSpec, initialState }: ConversationFl
           if (!resolved) { resolved = true; clearTimeout(timer); reject(err); }
         };
 
-        gateway.sendChatWithCallbacks(message, sessionKeyRef.current, {
-          onDelta: (delta) => { accumulated += delta; },
-          onMessage: (content) => { accumulated = content; },
-          onEnd: () => finish(accumulated),
-          onError: (error) => fail(new Error(error)),
-        }).then(runId => {
-          if (!runId) fail(new Error('no runId returned'));
-        }).catch(fail);
+        (async () => {
+          try {
+            const res = await fetch('/api/agents/coder/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message, sessionKey: sessionKeyRef.current }),
+              signal: controller.signal,
+            });
+            if (!res.ok) { fail(new Error(`HTTP ${res.status}`)); return; }
+
+            const reader = res.body!.getReader();
+            const dec = new TextDecoder();
+            let buf = '';
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buf += dec.decode(value, { stream: true });
+              const lines = buf.split('\n');
+              buf = lines.pop() ?? '';
+              for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                const raw = line.slice(6);
+                if (raw === '[DONE]') { finish(accumulated); return; }
+                try {
+                  const chunk = JSON.parse(raw);
+                  if (chunk.type === 'text_delta' && typeof chunk.text === 'string') {
+                    accumulated += chunk.text;
+                    if (!quiet) setStreamingContent(accumulated);
+                  } else if (chunk.type === 'error') {
+                    fail(new Error(chunk.error || 'Agent error'));
+                    return;
+                  }
+                } catch { /* malformed SSE line */ }
+              }
+            }
+            finish(accumulated);
+          } catch (err) {
+            if ((err as Error).name === 'AbortError') return;
+            fail(err as Error);
+          }
+        })();
       });
     },
     [],
@@ -246,7 +281,7 @@ export function useConversationFlow({ moduleSpec, initialState }: ConversationFl
 
   const tryLLMQuiet = useCallback(
     async (message: string): Promise<string> => {
-      try { return await sendToLLM(message, 15000); } catch { return ''; }
+      try { return await sendToLLM(message, 15000, true); } catch { return ''; }
     },
     [sendToLLM],
   );
@@ -373,6 +408,7 @@ Output ONLY the HTML fragment, no [[ANSWER_READY]] tag, no markdown fences.`;
 
       addMessage('user', answer, currentSection);
       setIsStreaming(true);
+      setStreamingContent('');
 
       try {
         // Build prompt for LLM
@@ -380,7 +416,6 @@ Output ONLY the HTML fragment, no [[ANSWER_READY]] tag, no markdown fences.`;
         const prompt = buildQuestionPrompt(currentQuestion, currentSection, answer, isFirst);
         bootstrapSentRef.current = true;
 
-        // Send to LLM via sendChatWithCallbacks — 30s timeout
         const response = await sendToLLM(prompt, 30000);
 
         if (response.trim()) {
@@ -409,6 +444,7 @@ Output ONLY the HTML fragment, no [[ANSWER_READY]] tag, no markdown fences.`;
         if (local.accept) applyAnswer(local.value, currentQuestion, spec);
       } finally {
         setIsStreaming(false);
+        setStreamingContent('');
       }
     },
     [currentQuestion, currentSection, isFinished, isStreaming, spec, addMessage, sendToLLM, applyAnswer],
@@ -418,7 +454,7 @@ Output ONLY the HTML fragment, no [[ANSWER_READY]] tag, no markdown fences.`;
 
   const startInterview = useCallback(() => {
     // Fresh session key per interview — prevents context accumulation
-    const newKey = `agent:chief:mb-${Date.now()}`;
+    const newKey = `agent:coder:mb-${Date.now()}`;
     sessionKeyRef.current = newKey;
     bootstrapSentRef.current = false;
 
@@ -429,15 +465,7 @@ Output ONLY the HTML fragment, no [[ANSWER_READY]] tag, no markdown fences.`;
     setIsFinished(false);
     setWireframe('');
     setLiveTasks([]);
-
-    // Pre-warm the session on the gateway (fire-and-forget, same as XAgentChatPane)
-    if (gateway.connected) {
-      gateway.request('chat.send', {
-        message: BOOTSTRAP + '\n\nSession initialized. Waiting for the first user answer.',
-        sessionKey: newKey,
-        idempotencyKey: `warmup-mb-${Date.now()}`,
-      }).catch(() => { /* best-effort warmup */ });
-    }
+    setStreamingContent('');
 
     addMessage(
       'assistant',
@@ -493,6 +521,7 @@ Output ONLY the HTML fragment, no [[ANSWER_READY]] tag, no markdown fences.`;
     isStarted,
     isFinished,
     isStreaming,
+    streamingContent,
     wireframe,
     liveTasks,
     startInterview,

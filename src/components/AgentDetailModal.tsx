@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useRef } from 'react';
-import { X, Award, TrendingUp, Clock, CheckCircle, XCircle, FileText, Activity, Brain, RefreshCw, Wifi, WifiOff, MessageSquare, CalendarDays, Cpu, Edit, Tag, Power, BarChart2, Lightbulb, Check, AlertTriangle, Plus, Star, Wrench, Shield, ChevronDown, ChevronRight, Server, Trash2, UserMinus, PowerOff, Link, Upload, Send, Key } from 'lucide-react';
+import { Button, IconButton, Select, TextArea, TextField, Box, Flex } from '@radix-ui/themes';
+import { X, Award, TrendingUp, Clock, CheckCircle, CheckCircle2, Circle, XCircle, FileText, Activity, Brain, RefreshCw, Wifi, WifiOff, MessageSquare, CalendarDays, Cpu, Edit, Tag, Power, BarChart2, Lightbulb, Check, AlertTriangle, Plus, Star, Wrench, Shield, ChevronDown, ChevronRight, Server, Trash2, UserMinus, PowerOff, Link, Upload, Send } from 'lucide-react';
 import { useStore } from '../store/store';
 import AgentChatModal from './AgentChatModal';
 import AgentActivityTimeline from './AgentActivityTimeline';
@@ -425,8 +426,6 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
   const [rulesEditing, setRulesEditing] = useState(false);
   const [rulesDraft, setRulesDraft] = useState('');
   const [rulesSaving, setRulesSaving] = useState(false);
-
-  const inputBase = 'w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent';
 
   const handleClose = () => {
     setIsClosing(true);
@@ -1044,8 +1043,11 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
 
   return (
     <>
-    <div
-      className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 ${
+    <Flex
+      align="center"
+      justify="center"
+      p="4"
+      className={`fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 ${
         isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
       }`}
       onClick={handleBackdropClick}
@@ -1054,8 +1056,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
       onKeyDown={handleBackdropClick}
       aria-label="Close modal backdrop"
     >
-      <div
-        className={`glass-modal rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col ${
+      <Flex
+        direction="column"
+        className={`bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
         }`}
         onClick={handleInnerClick}
@@ -1063,9 +1066,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
         onKeyDown={handleInnerClick}
       >
         {/* Header */}
-        <div className="p-6 border-b border-mission-control-border flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="relative flex-shrink-0 w-14 h-14 rounded-2xl overflow-hidden bg-mission-control-bg">
+        <Flex align="center" justify="between" px="5" py="4" className="border-b border-mission-control-border flex-shrink-0">
+          <Flex align="center" gap="3">
+            <div className="relative flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-mission-control-bg border border-mission-control-border">
               <img
                 src={`/api/agents/${agent.id}/avatar`}
                 alt={agent.name}
@@ -1077,40 +1080,53 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   if (sibling) sibling.classList.remove('hidden');
                 }}
               />
-              <span className="hidden absolute inset-0 flex items-center justify-center text-4xl">{agent.avatar}</span>
+              <span className="hidden absolute inset-0 flex items-center justify-center text-2xl">{agent.avatar}</span>
               {/* Status dot */}
-              <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-mission-control-bg ${
-                agent.status === 'busy' || agent.status === 'active' ? 'bg-success animate-pulse' : 'bg-mission-control-text-dim/40'
+              <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-mission-control-surface flex-shrink-0 ${
+                agent.status === 'busy' || agent.status === 'active'
+                  ? 'bg-success agent-dot-pulse'
+                  : 'bg-mission-control-border'
               }`} />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-semibold text-mission-control-text">{agent.name}</h2>
+              <Flex align="center" gap="2" className="flex-wrap">
+                <h2 className="text-base font-semibold text-mission-control-text">{agent.name}</h2>
+                {/* Status badge */}
+                {(agent.status === 'active' || agent.status === 'busy') ? (
+                  <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-success/10 text-success border border-success/20">
+                    online
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-border/40 text-mission-control-text-dim">
+                    offline
+                  </span>
+                )}
                 {(agent as any).model && (
-                  <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded bg-mission-control-border text-mission-control-text-dim border border-mission-control-border/60">
+                  <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-mission-control-border text-mission-control-text-dim border border-mission-control-border/60">
                     <Cpu size={10} />
                     {(agent as any).model}
                   </span>
                 )}
-              </div>
+              </Flex>
 
               {/* Editable description */}
               {editingDesc ? (
                 <div className="mt-1.5 flex items-start gap-1.5">
-                  <textarea
+                  <TextArea
                     ref={descInputRef}
                     value={descDraft}
                     onChange={e => setDescDraft(e.target.value)}
                     rows={2}
-                    className="flex-1 text-sm px-2 py-1 rounded border border-mission-control-accent/60 bg-mission-control-bg text-mission-control-text resize-none focus:outline-none focus:border-mission-control-accent"
+                    variant="soft"
+                    className="flex-1 text-sm resize-none"
                     placeholder="Add a description for this agent…"
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveDesc(); } if (e.key === 'Escape') cancelEditDesc(); }}
                   />
                   <div className="flex flex-col gap-1 flex-shrink-0">
-                    <button type="button" onClick={saveDesc} disabled={descSaving} className="p-1 rounded text-success hover:bg-success-subtle transition-colors disabled:opacity-50" title="Save">
+                    <button type="button" onClick={saveDesc} disabled={descSaving} title="Save" className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40">
                       {descSaving ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
                     </button>
-                    <button type="button" onClick={cancelEditDesc} className="p-1 rounded text-error hover:bg-error-subtle transition-colors" title="Cancel">
+                    <button type="button" onClick={cancelEditDesc} title="Cancel" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                       <X size={13} />
                     </button>
                   </div>
@@ -1119,73 +1135,65 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                 <button
                   type="button"
                   onClick={startEditDesc}
-                  className="group flex items-center gap-1.5 mt-0.5 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors text-left"
                   title="Click to edit description"
+                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <span className={agent.description ? '' : 'italic opacity-60'}>
                     {agent.description || 'Add a description…'}
                   </span>
-                  <Edit size={12} className="opacity-0 group-hover:opacity-60 flex-shrink-0 transition-opacity" />
+                  <Edit size={12} className="flex-shrink-0" />
                 </button>
               )}
 
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={buildDetailsFromRealData}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
-              title="Refresh (⌘R)"
-            >
+          </Flex>
+          <Flex align="center" gap="2">
+            <button type="button" onClick={buildDetailsFromRealData} title="Refresh (⌘R)" className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             </button>
-            <button
-              onClick={handleClose}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
-              aria-label="Close modal"
-            >
+            <button type="button" onClick={handleClose} aria-label="Close modal" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <X size={16} />
             </button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Tabs */}
-        <div className="flex border-b border-mission-control-border px-6 overflow-x-auto flex-shrink-0 scrollbar-hide">
+        <div className="flex items-center gap-1 px-4 border-b border-mission-control-border flex-shrink-0 overflow-x-auto scrollbar-hide">
           {([
             { key: 'performance' as const, icon: TrendingUp, label: 'Performance' },
             { key: 'coaching' as const, icon: Star, label: 'Review' },
-            { key: 'skills' as const, icon: Award, label: 'Skills' },
             { key: 'tasks' as const, icon: Activity, label: `Tasks${details ? ` (${details.totalTasks})` : ''}` },
             { key: 'tools' as const, icon: Wrench, label: 'Tools' },
             { key: 'permissions' as const, icon: Shield, label: 'Permissions' },
             { key: 'rules' as const, icon: FileText, label: 'Rules' },
-            { key: 'soul' as const, icon: CalendarDays, label: 'Soul' },
+            { key: 'soul' as const, icon: CalendarDays, label: 'Personality' },
             { key: 'chat' as const, icon: MessageSquare, label: 'Chat' },
           ]).map((tab) => (
             <button
               key={tab.key}
+              type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-shrink-0 px-3 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+              className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
                 activeTab === tab.key
-                  ? 'border-mission-control-accent text-mission-control-accent'
+                  ? 'border-mission-control-accent text-mission-control-text'
                   : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
-              <tab.icon size={14} className="inline mr-1" />
+              <tab.icon size={14} />
               {tab.label}
             </button>
           ))}
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="flex items-center gap-2 text-mission-control-text-dim">
+            <Flex align="center" justify="center" className="h-64">
+              <Flex align="center" gap="2" className="text-mission-control-text-dim">
                 <RefreshCw size={16} className="animate-spin" />
                 Loading real data...
-              </div>
-            </div>
+              </Flex>
+            </Flex>
           ) : details ? (
             <>
               {/* ── Performance Tab ── */}
@@ -1196,11 +1204,11 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     const currentTask = details.recentTasks.find(t => t.status === 'in-progress');
                     if (!currentTask) return null;
                     return (
-                      <div className="rounded-lg border border-warning-border bg-warning-subtle p-4">
-                        <div className="flex items-center gap-2 mb-1">
+                      <div className="rounded-xl border border-warning/30 bg-warning/10 p-4">
+                        <Flex align="center" gap="2" className="mb-1">
                           <Activity size={14} className="text-warning flex-shrink-0" />
-                          <span className="text-xs font-semibold text-warning uppercase tracking-wider">Currently working on</span>
-                        </div>
+                          <span className="text-[10px] font-bold text-warning uppercase tracking-wider">Currently working on</span>
+                        </Flex>
                         <p className="text-sm font-medium text-mission-control-text">{currentTask.title}</p>
                         <div className="mt-2 h-1.5 bg-warning/20 rounded-full overflow-hidden">
                           <div className="h-full bg-warning rounded-full animate-pulse w-2/3" />
@@ -1209,71 +1217,49 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     );
                   })()}
 
-                  <div className="grid grid-cols-4 gap-4">
-                    <div className="bg-mission-control-bg rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp size={16} className="text-success" />
-                        <span className="text-sm text-mission-control-text-dim">Success Rate</span>
-                      </div>
-                      <div className="text-3xl font-bold text-success">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-mission-control-border/20 rounded-xl p-3">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Success Rate</div>
+                      <div className="text-xl font-bold tabular-nums text-mission-control-text">
                         {details.totalTasks > 0 ? `${Math.round(details.successRate * 100)}%` : '—'}
                       </div>
-                      <div className="text-xs text-mission-control-text-dim mt-1">
+                      <div className="text-[11px] text-mission-control-text-dim/70 mt-0.5 tabular-nums">
                         {details.successfulTasks} / {details.totalTasks} tasks
                       </div>
                     </div>
 
-                    <div className="bg-mission-control-bg rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Clock size={16} className="text-info" />
-                        <span className="text-sm text-mission-control-text-dim">Avg Time</span>
-                      </div>
-                      <div className="text-3xl font-bold text-info">
+                    <div className="bg-mission-control-border/20 rounded-xl p-3">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Avg Time</div>
+                      <div className="text-xl font-bold tabular-nums text-mission-control-text">
                         {details.avgTime}
                       </div>
-                      <div className="text-xs text-mission-control-text-dim mt-1">per task completion</div>
+                      <div className="text-[11px] text-mission-control-text-dim/70 mt-0.5">per completion</div>
                     </div>
 
-                    <div className="bg-mission-control-bg rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Activity size={16} className="text-amber-400" />
-                        <span className="text-sm text-mission-control-text-dim">In Progress</span>
-                      </div>
-                      <div className="text-3xl font-bold text-amber-400">
+                    <div className="bg-mission-control-border/20 rounded-xl p-3">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">In Progress</div>
+                      <div className="text-xl font-bold tabular-nums text-mission-control-text">
                         {details.inProgressTasks}
                       </div>
-                      <div className="text-xs text-mission-control-text-dim mt-1">active tasks</div>
-                    </div>
-
-                    <div className="bg-mission-control-bg rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Wifi size={16} className="text-review" />
-                        <span className="text-sm text-mission-control-text-dim">Sessions</span>
-                      </div>
-                      <div className="text-3xl font-bold text-review">
-                        {details.activeSessions.filter(s => s.isActive).length}
-                      </div>
-                      <div className="text-xs text-mission-control-text-dim mt-1">
-                        {details.activeSessions.length} total
-                      </div>
+                      <div className="text-[11px] text-mission-control-text-dim/70 mt-0.5">active tasks</div>
                     </div>
                   </div>
 
                   {/* Performance summary from /stats endpoint */}
-                  <div className="rounded-lg border border-mission-control-border p-4">
-                    <div className="flex items-center gap-2 mb-3">
+                  <div className="rounded-xl border border-mission-control-border p-4">
+                    <Flex align="center" gap="2" className="mb-3">
                       <BarChart2 size={15} className="text-info flex-shrink-0" />
                       <h3 className="text-sm font-semibold text-mission-control-text">Performance Summary</h3>
                       {statsLoading && <RefreshCw size={12} className="animate-spin text-mission-control-text-dim ml-auto" />}
-                    </div>
+                    </Flex>
                     {agentStats ? (
                       <div className="grid grid-cols-3 gap-4">
                         <div>
-                          <div className="text-2xl font-bold text-success tabular-nums">{agentStats.tasksCompleted}</div>
+                          <div className="text-xl font-bold tabular-nums font-mono text-mission-control-text">{agentStats.tasksCompleted}</div>
                           <div className="text-xs text-mission-control-text-dim mt-0.5">Tasks completed</div>
                         </div>
                         <div>
-                          <div className={`text-2xl font-bold tabular-nums ${agentStats.successRate !== null && agentStats.successRate >= 80 ? 'text-success' : agentStats.successRate !== null && agentStats.successRate >= 50 ? 'text-warning' : 'text-error'}`}>
+                          <div className={`text-xl font-bold tabular-nums font-mono text-mission-control-text`}>
                             {agentStats.successRate !== null ? `${agentStats.successRate}%` : '—'}
                           </div>
                           <div className="text-xs text-mission-control-text-dim mt-0.5">
@@ -1281,7 +1267,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                           </div>
                         </div>
                         <div>
-                          <div className="text-2xl font-bold text-info tabular-nums">
+                          <div className="text-xl font-bold tabular-nums font-mono text-mission-control-text">
                             {agentStats.avgDurationMs ? formatDuration(agentStats.avgDurationMs) : '—'}
                           </div>
                           <div className="text-xs text-mission-control-text-dim mt-0.5">Avg task duration</div>
@@ -1293,48 +1279,47 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   </div>
 
                   {/* Status manual override */}
-                  <div className="rounded-lg border border-mission-control-border p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
+                  <div className="rounded-xl border border-mission-control-border p-4">
+                    <Flex align="center" justify="between" className="mb-3">
+                      <Flex align="center" gap="2">
                         <Power size={15} className="text-warning flex-shrink-0" />
                         <h3 className="text-sm font-semibold text-mission-control-text">Force Status</h3>
-                      </div>
+                      </Flex>
                       <button
-                        type="button"
                         onClick={() => setShowStatusOverride(v => !v)}
-                        className="text-xs px-3 py-1.5 border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors text-mission-control-text-dim"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         {showStatusOverride ? 'Cancel' : 'Override'}
                       </button>
-                    </div>
+                    </Flex>
 
-                    <div className="flex items-center gap-2 mb-2">
+                    <Flex align="center" gap="2" className="mb-2">
                       <span className="text-xs text-mission-control-text-dim">Current:</span>
                       <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                        agent.status === 'active' || agent.status === 'busy' ? 'bg-success-subtle text-success' :
-                        agent.status === 'disabled' ? 'bg-error-subtle text-error' :
+                        agent.status === 'active' || agent.status === 'busy' ? 'bg-success/10 text-success' :
+                        agent.status === 'disabled' ? 'bg-error/10 text-error' :
                         'bg-mission-control-border text-mission-control-text-dim'
                       }`}>{agent.status}</span>
-                    </div>
+                    </Flex>
 
                     {showStatusOverride && (
                       <div className="space-y-3 pt-2 border-t border-mission-control-border">
-                        <div className="flex items-start gap-2 p-2 rounded-lg bg-warning-subtle border border-warning-border">
+                        <Flex align="start" gap="2" className="p-2 rounded-xl bg-warning/10 border border-warning/30">
                           <AlertTriangle size={13} className="text-warning flex-shrink-0 mt-0.5" />
                           <p className="text-xs text-warning">
                             Manual override. The agent&apos;s next task dispatch will reset this status automatically.
                           </p>
-                        </div>
+                        </Flex>
                         <div className="grid grid-cols-2 gap-2">
                           {AGENT_STATUSES.map(s => (
                             <button
                               key={s.value}
                               type="button"
                               onClick={() => setStatusOverride(s.value)}
-                              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all text-left ${
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors border ${
                                 statusOverride === s.value
-                                  ? 'border-mission-control-accent bg-mission-control-accent/10'
-                                  : 'border-mission-control-border hover:border-mission-control-accent/40'
+                                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40'
                               }`}
                             >
                               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
@@ -1342,39 +1327,41 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                 s.value === 'busy' ? 'bg-warning' :
                                 s.value === 'disabled' ? 'bg-error' : 'bg-mission-control-text-dim'
                               }`} />
-                              <span className={s.color}>{s.label}</span>
+                              <span>{s.label}</span>
                             </button>
                           ))}
                         </div>
-                        <button
-                          type="button"
+                        <Button
+                          variant="solid"
+                          color="yellow"
+                          size="2"
                           onClick={applyStatusOverride}
                           disabled={!statusOverride || statusSaving}
-                          className="w-full py-2 text-sm bg-warning text-white rounded-lg hover:brightness-110 transition-all disabled:opacity-40 font-medium"
+                          className="w-full"
                         >
-                          {statusSaving ? <RefreshCw size={14} className="inline animate-spin mr-1" /> : <Power size={14} className="inline mr-1" />}
+                          {statusSaving ? <RefreshCw size={14} className="animate-spin" /> : <Power size={14} />}
                           {statusSaving ? 'Applying…' : `Force ${statusOverride || 'status'}`}
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
 
                   {/* Task breakdown */}
-                  <div className="bg-mission-control-bg rounded-lg p-4">
-                    <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-4">Task Breakdown</h3>
+                  <div className="bg-mission-control-bg rounded-xl p-4">
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Task Breakdown</h3>
                     <div className="space-y-3">
                       {[
-                        { label: 'Completed', count: details.successfulTasks, color: 'bg-green-500', pct: details.totalTasks > 0 ? (details.successfulTasks / details.totalTasks) * 100 : 0 },
+                        { label: 'Completed', count: details.successfulTasks, color: 'bg-success', pct: details.totalTasks > 0 ? (details.successfulTasks / details.totalTasks) * 100 : 0 },
                         { label: 'In Progress', count: details.inProgressTasks, color: 'bg-warning', pct: details.totalTasks > 0 ? (details.inProgressTasks / details.totalTasks) * 100 : 0 },
-                        { label: 'Failed/Blocked', count: details.failedTasks, color: 'bg-red-500', pct: details.totalTasks > 0 ? (details.failedTasks / details.totalTasks) * 100 : 0 },
+                        { label: 'Failed/Blocked', count: details.failedTasks, color: 'bg-error', pct: details.totalTasks > 0 ? (details.failedTasks / details.totalTasks) * 100 : 0 },
                       ].map((item) => (
                         <div key={item.label}>
-                          <div className="flex items-center justify-between text-sm mb-1">
+                          <Flex align="center" justify="between" className="text-sm mb-1">
                             <span>{item.label}</span>
                             <span className="text-mission-control-text-dim">{item.count} ({Math.round(item.pct)}%)</span>
-                          </div>
+                          </Flex>
                           <div className="h-2 bg-mission-control-surface rounded-full overflow-hidden">
-                            <div className={`h-full ${item.color} transition-all duration-500`} style={{ width: `${item.pct}%` }} />
+                            <div className={`h-full ${item.color} transition-colors duration-500`} style={{ width: `${item.pct}%` }} />
                           </div>
                         </div>
                       ))}
@@ -1384,22 +1371,22 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   {/* Recent 5 tasks */}
                   {details.recentTasks.length > 0 && (
                     <div>
-                      <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-3">Recent Tasks</h3>
+                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Recent Tasks</h3>
                       <div className="space-y-2">
                         {details.recentTasks.slice(0, 5).map(task => (
-                          <div key={task.id} className="flex items-center justify-between bg-mission-control-bg rounded-lg px-4 py-2.5 gap-3">
+                          <Flex key={task.id} align="center" justify="between" gap="3" className="bg-mission-control-bg rounded-xl px-4 py-2.5">
                             <span className="text-sm text-mission-control-text flex-1 min-w-0 truncate">{task.title}</span>
                             <div className="flex items-center gap-2 flex-shrink-0">
-                              <span className={`text-[11px] px-1.5 py-0.5 rounded ${
-                                task.status === 'done' ? 'bg-success-subtle text-success' :
-                                task.status === 'in-progress' ? 'bg-info-subtle text-info' :
-                                task.status === 'failed' ? 'bg-error-subtle text-error' :
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                task.status === 'done' ? 'bg-success/10 text-success' :
+                                task.status === 'in-progress' ? 'bg-info/10 text-info' :
+                                task.status === 'failed' ? 'bg-error/10 text-error' :
                                 'bg-mission-control-border text-mission-control-text-dim'
                               }`}>
                                 {task.status}
                               </span>
                               {task.completedAt > 0 && (
-                                <span className="text-[11px] text-mission-control-text-dim">
+                                <span className="text-xs text-mission-control-text-dim">
                                   {new Date(task.completedAt).toLocaleDateString()}
                                 </span>
                               )}
@@ -1411,7 +1398,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                 <Clock size={13} className="text-mission-control-text-dim" />
                               )}
                             </div>
-                          </div>
+                          </Flex>
                         ))}
                       </div>
                     </div>
@@ -1423,11 +1410,11 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
               {activeTab === 'skills' && (
                 <div className="space-y-6">
                   {/* Editable capability tags */}
-                  <div className="rounded-lg border border-mission-control-border p-4">
-                    <div className="flex items-center gap-2 mb-3">
+                  <div className="rounded-xl border border-mission-control-border p-4">
+                    <Flex align="center" gap="2" className="mb-3">
                       <Tag size={15} className="text-info flex-shrink-0" />
                       <h3 className="text-sm font-semibold text-mission-control-text">Capabilities</h3>
-                    </div>
+                    </Flex>
 
                     {/* Tag pills */}
                     <div className="flex flex-wrap gap-2 mb-3 min-h-[32px]">
@@ -1435,14 +1422,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                         <span className="text-xs text-mission-control-text-dim italic">No capabilities defined</span>
                       )}
                       {capTags.map(tag => (
-                        <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-info-subtle text-info border border-info-border">
+                        <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-info/10 text-info border border-info/30">
                           {tag}
-                          <button
-                            type="button"
-                            onClick={() => removeCapTag(tag)}
-                            className="ml-0.5 hover:text-error transition-colors rounded-full"
-                            title={`Remove ${tag}`}
-                          >
+                          <button type="button" onClick={() => removeCapTag(tag)} title={`Remove ${tag}`} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                             <X size={10} />
                           </button>
                         </span>
@@ -1450,45 +1432,34 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     </div>
 
                     {/* Add input */}
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
+                    <Flex align="center" gap="2">
+                      <TextField.Root
                         value={capInput}
                         onChange={e => setCapInput(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCapTag(); } }}
                         placeholder="Add capability (press Enter)"
-                        className="flex-1 text-sm px-3 py-1.5 rounded-lg border border-mission-control-border bg-mission-control-bg text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent transition-colors"
+                        size="2"
+                        className="flex-1"
                       />
-                      <button
-                        type="button"
-                        onClick={addCapTag}
-                        disabled={!capInput.trim()}
-                        className="p-1.5 rounded-lg border border-mission-control-border hover:bg-mission-control-surface disabled:opacity-40 transition-colors"
-                        title="Add capability"
-                      >
+                      <button type="button" onClick={addCapTag} disabled={!capInput.trim()} title="Add capability" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                         <Plus size={14} />
                       </button>
                       {capDirty && (
-                        <button
-                          type="button"
-                          onClick={saveCaps}
-                          disabled={capSaving}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim disabled:opacity-50 transition-colors"
-                        >
+                        <Button variant="solid" size="2" onClick={saveCaps} disabled={capSaving}>
                           {capSaving ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />}
                           {capSaving ? 'Saving…' : 'Save'}
-                        </button>
+                        </Button>
                       )}
-                    </div>
+                    </Flex>
                   </div>
 
                   {/* Skill gap indicator */}
                   {skillGaps.length > 0 && (
-                    <div className="rounded-lg border border-info-border bg-info-subtle p-4">
-                      <div className="flex items-center gap-2 mb-2">
+                    <div className="rounded-xl border border-info/30 bg-info/10 p-4">
+                      <Flex align="center" gap="2" className="mb-2">
                         <Lightbulb size={15} className="text-info flex-shrink-0" />
                         <h3 className="text-sm font-semibold text-info">Consider adding</h3>
-                      </div>
+                      </Flex>
                       <p className="text-xs text-mission-control-text-dim mb-3">
                         These skills appear in {agent.name}&apos;s recent tasks but are not listed in capabilities:
                       </p>
@@ -1496,10 +1467,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                         {skillGaps.map(gap => (
                           <button
                             key={gap}
-                            type="button"
                             onClick={() => { if (!capTags.includes(gap)) { setCapTags(prev => [...prev, gap]); setCapDirty(true); } }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border border-info-border text-info hover:bg-info/10 transition-colors"
                             title={`Add "${gap}" to capabilities`}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                           >
                             <Plus size={10} />
                             {gap}
@@ -1510,64 +1480,57 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   )}
 
                   {/* Library skill management */}
-                  <div className="rounded-lg border border-mission-control-border p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
+                  <div className="rounded-xl border border-mission-control-border p-4">
+                    <Flex align="center" justify="between" className="mb-3">
+                      <Flex align="center" gap="2">
                         <Award size={15} className="text-warning flex-shrink-0" />
                         <h3 className="text-sm font-semibold text-mission-control-text">
                           Skill Library
                           <span className="ml-2 text-xs font-normal text-mission-control-accent">{activeSkills.length}/{allSkills.length} active</span>
                         </h3>
-                      </div>
+                      </Flex>
                       {addSkillMode === null && (
-                        <button
-                          type="button"
-                          className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-lg hover:bg-mission-control-accent/20 transition-colors"
-                          onClick={() => setAddSkillMode('url')}
-                        >
+                        <Button variant="soft" size="2" onClick={() => setAddSkillMode('url')}>
                           <Plus size={11} /> Add Skill
-                        </button>
+                        </Button>
                       )}
-                    </div>
+                    </Flex>
 
                     {/* Add skill form */}
                     {addSkillMode !== null && (
-                      <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5 mb-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-mission-control-text">New Skill</span>
-                          <button type="button" onClick={() => setAddSkillMode(null)} className="text-mission-control-text-dim hover:text-mission-control-text text-xs">Cancel</button>
-                        </div>
-                        <input
-                          className={`${inputBase} text-xs`}
+                      <div className="border border-mission-control-accent/30 rounded-xl p-3 space-y-2.5 bg-mission-control-accent/5 mb-3">
+                        <Flex align="center" justify="between">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">New Skill</span>
+                          <button type="button" onClick={() => setAddSkillMode(null)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">Cancel</button>
+                        </Flex>
+                        <TextField.Root
                           placeholder="Skill name"
                           value={addSkillName}
                           onChange={e => setAddSkillName(e.target.value)}
+                          size="1"
+                          className="w-full"
                         />
-                        <div className="flex gap-2">
-                          <button type="button" onClick={() => setAddSkillMode('url')}
-                            className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border transition-colors ${addSkillMode === 'url' ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}>
+                        <Flex gap="2">
+                          <button type="button" onClick={() => setAddSkillMode('url')} className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${addSkillMode === 'url' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}>
                             <Link size={10} /> From URL
                           </button>
-                          <button type="button" onClick={() => setAddSkillMode('text')}
-                            className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border transition-colors ${addSkillMode === 'text' ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'}`}>
+                          <button type="button" onClick={() => setAddSkillMode('text')} className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${addSkillMode === 'text' ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}>
                             <FileText size={10} /> Write / Paste
                           </button>
-                          <button type="button" onClick={() => { setAddSkillMode('text'); fileInputRef.current?.click(); }}
-                            className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text transition-colors">
+                          <button type="button" onClick={() => { setAddSkillMode('text'); fileInputRef.current?.click(); }} className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                             <Upload size={10} /> Upload .md
                           </button>
                           <input ref={fileInputRef} type="file" accept=".md,text/markdown,text/plain" className="hidden" onChange={handleFileUpload} />
-                        </div>
+                        </Flex>
                         {addSkillMode === 'url' && (
-                          <input className={`${inputBase} text-xs`} placeholder="https://example.com/skill.md" value={addSkillUrl} onChange={e => setAddSkillUrl(e.target.value)} />
+                          <TextField.Root placeholder="https://example.com/skill.md" value={addSkillUrl} onChange={e => setAddSkillUrl(e.target.value)} size="1" className="w-full font-mono" />
                         )}
                         {addSkillMode === 'text' && (
-                          <textarea className={`${inputBase} h-36 font-mono text-xs resize-none`} placeholder={'# Skill Name\n\nDescribe what this skill does...'} value={addSkillContent} onChange={e => setAddSkillContent(e.target.value)} />
+                          <TextArea variant="soft" className="h-36 font-mono text-xs resize-none w-full" placeholder={'# Skill Name\n\nDescribe what this skill does...'} value={addSkillContent} onChange={e => setAddSkillContent(e.target.value)} />
                         )}
-                        <button type="button" onClick={handleAddSkill} disabled={addSkillWorking}
-                          className="px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                        <Button variant="solid" size="2" onClick={handleAddSkill} disabled={addSkillWorking}>
                           {addSkillWorking ? 'Creating...' : 'Create Skill'}
-                        </button>
+                        </Button>
                       </div>
                     )}
 
@@ -1579,11 +1542,12 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                         {allSkills.map(skill => {
                           const on = activeSkills.includes(skill.slug);
                           return (
-                            <button key={skill.id} type="button" onClick={() => toggleSkill(skill.slug)}
-                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all ${on ? 'border-success/40 bg-success/5' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30'}`}>
-                              <div className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${on ? 'bg-success border-success' : 'border-mission-control-border'}`}>
-                                {on && <Check size={10} className="text-white" />}
-                              </div>
+                            <button type="button" key={skill.id} onClick={() => toggleSkill(skill.slug)}
+                              className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-colors ${on ? 'bg-success/10 border-success/30' : 'border-mission-control-border hover:border-mission-control-accent/30 hover:bg-mission-control-accent/5'}`}>
+                              {on
+                                ? <CheckCircle2 size={16} className="flex-shrink-0 text-success" />
+                                : <Circle size={16} className="flex-shrink-0 text-mission-control-border" />
+                              }
                               <span className="flex-1 text-sm text-mission-control-text">{skill.name}</span>
                               <span className="text-xs text-mission-control-text-dim font-mono">{skill.slug}</span>
                             </button>
@@ -1592,10 +1556,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                       </div>
                     )}
                     {skillsDirty && (
-                      <button type="button" onClick={saveSkills} disabled={saving}
-                        className="mt-3 px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                      <Button variant="solid" size="2" onClick={saveSkills} disabled={saving} className="mt-3">
                         {saving ? 'Saving...' : 'Save Skills'}
-                      </button>
+                      </Button>
                     )}
                   </div>
 
@@ -1607,22 +1570,22 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     {details.skills.length > 0 ? (
                       <div className="space-y-2">
                         {details.skills.map((skill) => (
-                          <div key={skill.name} className="bg-mission-control-bg rounded-lg p-4 hover:bg-mission-control-border/50 transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
+                          <div key={skill.name} className="bg-mission-control-bg rounded-xl p-4 hover:bg-mission-control-border/50 transition-colors">
+                            <Flex align="center" justify="between" className="mb-2">
+                              <Flex align="center" gap="2">
                                 <Award size={16} className="text-warning" />
                                 <span className="font-medium">{skill.name}</span>
-                              </div>
+                              </Flex>
                               <span className="text-xs text-mission-control-text-dim">{skill.lastUsed}</span>
-                            </div>
+                            </Flex>
                             <div className="mb-1">
-                              <div className="flex items-center justify-between text-xs text-mission-control-text-dim mb-1">
+                              <Flex align="center" justify="between" className="text-xs text-mission-control-text-dim mb-1">
                                 <span>Proficiency</span>
                                 <span>{Math.round(skill.proficiency * 100)}%</span>
-                              </div>
+                              </Flex>
                               <div className="h-2 bg-mission-control-surface rounded-full overflow-hidden">
                                 <div
-                                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"
+                                  className="h-full bg-gradient-to-r from-[var(--color-info)] to-[var(--color-review)] transition-colors duration-300"
                                   style={{ width: `${skill.proficiency * 100}%` }}
                                 />
                               </div>
@@ -1648,33 +1611,33 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   <div className="space-y-2">
                   {details.recentTasks.length > 0 ? (
                     <>
-                      <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-3">
+                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">
                         Tasks ({details.recentTasks.length})
                       </h3>
                       {details.recentTasks.map((task) => (
-                        <div key={task.id} className="bg-mission-control-bg rounded-lg p-3 hover:bg-mission-control-border/50 transition-colors">
-                          <div className="flex items-start justify-between mb-1">
+                        <div key={task.id} className="bg-mission-control-bg rounded-xl p-3 hover:bg-mission-control-border/50 transition-colors">
+                          <Flex align="start" justify="between" className="mb-1">
                             <div className="flex-1">
                               <div className="font-medium mb-1">{task.title}</div>
-                              <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+                              <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
                                 <span className={`px-2 py-0.5 rounded ${
-                                  task.status === 'done' ? 'bg-success-subtle text-success' :
-                                  task.status === 'in-progress' ? 'bg-info-subtle text-info' :
-                                  task.status === 'failed' ? 'bg-error-subtle text-error' :
-                                  task.status === 'human-review' ? 'bg-warning-subtle text-warning' :
-                                  'bg-mission-control-bg0/20 text-mission-control-text-dim'
+                                  task.status === 'done' ? 'bg-success/10 text-success' :
+                                  task.status === 'in-progress' ? 'bg-info/10 text-info' :
+                                  task.status === 'failed' ? 'bg-error/10 text-error' :
+                                  task.status === 'human-review' ? 'bg-warning/10 text-warning' :
+                                  'bg-mission-control-border/30 text-mission-control-text-dim'
                                 }`}>
                                   {task.status}
                                 </span>
                                 {task.project && (
-                                  <span className="px-2 py-0.5 bg-info-subtle text-info rounded">
+                                  <span className="px-2 py-0.5 bg-info/10 text-info rounded">
                                     {task.project}
                                   </span>
                                 )}
                                 {task.completedAt > 0 && (
                                   <span>{new Date(task.completedAt).toLocaleDateString()}</span>
                                 )}
-                              </div>
+                              </Flex>
                             </div>
                             {task.outcome === 'success' ? (
                               <CheckCircle size={16} className="text-success flex-shrink-0" />
@@ -1683,7 +1646,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                             ) : (
                               <Clock size={16} className="text-mission-control-text-dim flex-shrink-0" />
                             )}
-                          </div>
+                          </Flex>
                         </div>
                       ))}
                     </>
@@ -1698,17 +1661,17 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
 
                   {/* Sessions section */}
                   <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-3">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">
                     Sessions ({details.activeSessions.length})
                   </h3>
                   {details.activeSessions.length > 0 ? (
                     <div className="space-y-2">
                       {details.activeSessions.map((session) => (
-                        <div key={session.key} className={`bg-mission-control-bg rounded-lg p-4 border ${
-                          session.isActive ? 'border-success-border' : 'border-mission-control-border'
+                        <div key={session.key} className={`bg-mission-control-bg rounded-xl p-4 border ${
+                          session.isActive ? 'border-success/30' : 'border-mission-control-border'
                         }`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
+                          <Flex align="center" justify="between" className="mb-2">
+                            <Flex align="center" gap="2">
                               {session.isActive ? (
                                 <Wifi size={16} className="text-success" />
                               ) : (
@@ -1718,35 +1681,32 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                 {session.label || session.key.slice(0, 40)}
                               </span>
                               {session.isActive && (
-                                <span className="px-1.5 py-0.5 text-[10px] bg-success-subtle text-success rounded">Active</span>
+                                <span className="px-1.5 py-0.5 text-xs bg-success/10 text-success rounded">Active</span>
                               )}
-                            </div>
-                          </div>
+                            </Flex>
+                          </Flex>
                           <div className="grid grid-cols-3 gap-4 text-xs text-mission-control-text-dim">
                             <div>
-                              <span className="block text-mission-control-text-dim/60">Model</span>
+                              <span className="block text-mission-control-text-dim">Model</span>
                               <span>{session.model.split('/').pop() || 'unknown'}</span>
                             </div>
                             <div>
-                              <span className="block text-mission-control-text-dim/60">Tokens</span>
-                              <span>{(session.tokens / 1000).toFixed(1)}k</span>
+                              <span className="block text-mission-control-text-dim">Tokens</span>
+                              <span className="tabular-nums">{(session.tokens / 1000).toFixed(1)}k</span>
                             </div>
                             <div>
-                              <span className="block text-mission-control-text-dim/60">Last Active</span>
+                              <span className="block text-mission-control-text-dim">Last Active</span>
                               <span>{session.updatedAt > 0 ? new Date(session.updatedAt).toLocaleString() : '—'}</span>
                             </div>
                           </div>
                           <div className="mt-3 pt-3 border-t border-mission-control-border flex items-center justify-between">
-                            <div className="text-[11px] text-mission-control-text-dim/60 truncate flex-1" title={session.key}>
+                            <div className="text-xs text-mission-control-text-dim truncate flex-1" title={session.key}>
                               {session.key}
                             </div>
-                            <button
-                              onClick={() => setViewingSessionKey(session.key)}
-                              className="ml-2 px-3 py-1.5 text-xs bg-mission-control-accent/10 hover:bg-mission-control-accent/20 text-mission-control-accent rounded-lg flex items-center gap-1.5 transition-colors"
-                            >
+                            <Button variant="soft" size="2" onClick={() => setViewingSessionKey(session.key)} className="ml-2">
                               <MessageSquare size={12} />
                               View Chat
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -1764,23 +1724,25 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
               {/* ── Rules Tab ── */}
               {activeTab === 'rules' && (
                 <div className="space-y-6">
-                  <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-4 flex items-center gap-2">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
                     <FileText size={16} />
                     Agent Configuration
                   </h3>
 
                   {/* Model selection */}
-                  <div className="rounded-lg border border-mission-control-border p-4">
-                    <div className="flex items-center gap-2 mb-3">
+                  <div className="rounded-xl border border-mission-control-border p-4">
+                    <Flex align="center" gap="2" className="mb-3">
                       <Cpu size={15} className="text-info flex-shrink-0" />
                       <h4 className="text-sm font-semibold text-mission-control-text">Model</h4>
-                    </div>
+                    </Flex>
                     <p className="text-xs text-mission-control-text-dim mb-3">Select the Claude model tier for this agent.</p>
                     <div className="space-y-2">
                       {CLAUDE_MODELS.map(m => (
-                        <button key={m.id} type="button" onClick={() => { setModel(m.id); setModelDirty(true); }}
-                          className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg border text-left transition-all ${
-                            model === m.id ? 'border-mission-control-accent bg-mission-control-accent/10' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/50'
+                        <button type="button" key={m.id} onClick={() => { setModel(m.id); setModelDirty(true); }}
+                          className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-xl border text-left transition-colors ${
+                            model === m.id
+                              ? 'bg-mission-control-accent/10 border-mission-control-accent/30'
+                              : 'border-mission-control-border hover:bg-mission-control-border/40'
                           }`}>
                           <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${model === m.id ? 'border-mission-control-accent' : 'border-mission-control-border'}`}>
                             {model === m.id && <div className="w-2 h-2 rounded-full bg-mission-control-accent" />}
@@ -1793,22 +1755,21 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                       ))}
                     </div>
                     {modelDirty && (
-                      <button type="button" onClick={saveModel} disabled={saving}
-                        className="mt-3 px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                      <Button variant="solid" size="2" onClick={saveModel} disabled={saving} className="mt-3">
                         {saving ? 'Saving...' : 'Save Model'}
-                      </button>
+                      </Button>
                     )}
                   </div>
 
                   {/* Brain notes */}
                   {details.brainNotes.length > 0 && (
                     <div>
-                      <h4 className="text-xs font-semibold text-mission-control-text-dim uppercase mb-2 flex items-center gap-1">
+                      <h4 className="text-[10px] font-bold text-mission-control-text-dim uppercase mb-2 flex items-center gap-1">
                         <Brain size={14} /> Memory Files
                       </h4>
                       <div className="space-y-2">
                         {details.brainNotes.map((note, i) => (
-                          <div key={`${note}-${i}`} className="bg-mission-control-bg rounded-lg p-3 text-sm">
+                          <div key={`${note}-${i}`} className="bg-mission-control-bg rounded-xl p-3 text-sm">
                             <pre className="whitespace-pre-wrap font-mono text-xs">{note}</pre>
                           </div>
                         ))}
@@ -1818,36 +1779,37 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
 
                   {/* Editable AGENTS.md */}
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-xs font-semibold text-mission-control-text-dim uppercase">AGENTS.md</h4>
+                    <Flex align="center" justify="between" className="mb-2">
+                      <h4 className="text-[10px] font-bold text-mission-control-text-dim uppercase">AGENTS.md</h4>
                       {!rulesEditing && (
-                        <button type="button" onClick={() => { setRulesDraft(details.agentRules || ''); setRulesEditing(true); }}
-                          className="flex items-center gap-1 text-xs px-2.5 py-1 border border-mission-control-border rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
+                        <button type="button" onClick={() => { setRulesDraft(details.agentRules || ''); setRulesEditing(true); }} className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                           <Edit size={11} /> Edit
                         </button>
                       )}
-                    </div>
+                    </Flex>
                     {rulesEditing ? (
                       <div className="space-y-3">
-                        <textarea
-                          className={`${inputBase} h-72 font-mono resize-none`}
+                        <TextArea
+                          variant="soft"
+                          className="font-mono text-sm leading-relaxed resize-y min-h-[200px] w-full"
                           value={rulesDraft}
                           onChange={e => setRulesDraft(e.target.value)}
                           placeholder="No AGENT.md file found"
                         />
-                        <div className="flex items-center gap-2">
-                          <button type="button" onClick={saveRules} disabled={rulesSaving}
-                            className="px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                        <div className="text-[10px] text-mission-control-text-dim text-right -mt-1">
+                          {rulesDraft.length.toLocaleString()} chars
+                        </div>
+                        <Flex align="center" gap="2">
+                          <Button variant="solid" size="2" onClick={saveRules} disabled={rulesSaving}>
                             {rulesSaving ? 'Saving...' : 'Save Rules'}
-                          </button>
-                          <button type="button" onClick={() => setRulesEditing(false)}
-                            className="px-4 py-2 text-sm border border-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-surface transition-colors">
+                          </Button>
+                          <button type="button" onClick={() => setRulesEditing(false)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                             Cancel
                           </button>
-                        </div>
+                        </Flex>
                       </div>
                     ) : (
-                      <div className="bg-mission-control-bg rounded-lg p-4">
+                      <div className="bg-mission-control-bg rounded-xl p-4">
                         <pre className="text-sm whitespace-pre-wrap font-mono max-h-96 overflow-auto">
                           {details.agentRules || 'No AGENT.md file found'}
                         </pre>
@@ -1861,31 +1823,34 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
               {activeTab === 'soul' && (
                 <div className="space-y-3">
                   <div>
-                    <h3 className="text-sm font-semibold text-mission-control-text-dim uppercase mb-1 flex items-center gap-2">
+                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1 flex items-center gap-1.5">
                       <CalendarDays size={16} />
-                      Soul File Editor
+                      Personality
                     </h3>
                     <p className="text-xs text-mission-control-text-dim">
                       Defines {agent.name}&apos;s personality, responsibilities, and behavior rules.
                     </p>
                   </div>
                   {showRestartBanner && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-warning/10 border border-warning/30 rounded-lg text-warning text-xs">
+                    <Flex align="center" gap="2" className="px-3 py-2 bg-warning/10 border border-warning/30 rounded-xl text-warning text-xs">
                       <AlertTriangle size={12} />
                       Restart {agent.name} for changes to take effect.
-                      <button type="button" onClick={() => setShowRestartBanner(false)} className="ml-auto opacity-60 hover:opacity-100"><X size={12} /></button>
-                    </div>
+                      <button type="button" onClick={() => setShowRestartBanner(false)} className="ml-auto inline-flex items-center justify-center w-5 h-5 rounded-md text-warning/70 hover:text-warning hover:bg-warning/10 transition-colors"><X size={12} /></button>
+                    </Flex>
                   )}
-                  <textarea
-                    className={`${inputBase} h-72 font-mono resize-none`}
+                  <TextArea
+                    variant="soft"
+                    className="font-mono text-sm leading-relaxed resize-y min-h-[200px] w-full"
                     value={soul}
                     onChange={e => { setSoul(e.target.value); setSoulDirty(true); }}
                     placeholder="No SOUL.md found for this agent."
                   />
-                  <button type="button" onClick={saveSoul} disabled={!soulDirty || saving}
-                    className="px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                  <div className="text-[10px] text-mission-control-text-dim text-right -mt-1">
+                    {soul.length.toLocaleString()} chars
+                  </div>
+                  <Button variant="solid" size="2" onClick={saveSoul} disabled={!soulDirty || saving}>
                     {saving ? 'Saving...' : 'Save Soul'}
-                  </button>
+                  </Button>
                   {/* Also keep the full editor for advanced editing */}
                   <div className="border-t border-mission-control-border pt-4 mt-4">
                     <AgentSoulEditor agentId={agent.id} agentName={agent.name} />
@@ -1909,20 +1874,28 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                     const enabledCount = server.tools.filter(t => activeTools.includes(t)).length;
                     const isOpen = expandedGroups[`tools-${server.id}`] ?? false;
                     return (
-                      <div key={server.id} className="border border-mission-control-border rounded-lg overflow-hidden">
-                        <button type="button" onClick={() => setExpandedGroups(prev => ({ ...prev, [`tools-${server.id}`]: !isOpen }))}
-                          className="w-full flex items-center justify-between px-3 py-2 bg-mission-control-surface hover:bg-mission-control-surface/80 transition-colors text-left">
-                          <span className="flex items-center gap-2 text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
+                      <div key={server.id} className="border border-mission-control-border rounded-xl overflow-hidden">
+                        <button type="button" onClick={() => setExpandedGroups(prev => ({ ...prev, [`tools-${server.id}`]: !isOpen }))} className="w-full inline-flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-mission-control-bg transition-colors">
+                          <span className="flex items-center gap-2 text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
                             <Server size={11} /> {server.label}
                           </span>
                           <span className="flex items-center gap-2">
                             <span className={`text-xs ${allOn ? 'text-success' : someOn ? 'text-warning' : 'text-mission-control-text-dim'}`}>
                               {enabledCount}/{server.tools.length}
                             </span>
-                            <button type="button" onClick={(e) => { e.stopPropagation(); toggleServer(server.tools, !allOn); }}
-                              className={`text-xs px-2 py-0.5 rounded-lg transition-colors ${allOn ? 'bg-success/20 text-success' : 'bg-mission-control-surface text-mission-control-text-dim hover:text-mission-control-text'}`}>
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={(e) => { e.stopPropagation(); toggleServer(server.tools, !allOn); }}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleServer(server.tools, !allOn); } }}
+                              className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors cursor-pointer ${
+                                allOn
+                                  ? 'bg-success/10 text-success hover:bg-success/20'
+                                  : 'bg-mission-control-border/50 text-mission-control-text-dim hover:text-mission-control-text'
+                              }`}
+                            >
                               {allOn ? 'Disable all' : 'Enable all'}
-                            </button>
+                            </span>
                             {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                           </span>
                         </button>
@@ -1931,8 +1904,8 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                             {server.tools.map(tool => {
                               const on = activeTools.includes(tool);
                               return (
-                                <button key={tool} type="button" onClick={() => toggleTool(tool)}
-                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-mission-control-surface/50 transition-colors">
+                                <button type="button" key={tool} onClick={() => toggleTool(tool)}
+                                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors ${on ? 'bg-mission-control-accent/5' : 'hover:bg-mission-control-accent/5'}`}>
                                   <div className={`flex-shrink-0 w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${on ? 'bg-mission-control-accent border-mission-control-accent' : 'border-mission-control-border'}`}>
                                     {on && <Check size={9} className="text-white" />}
                                   </div>
@@ -1947,41 +1920,38 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   })}
                   </div>
                   {toolsDirty && (
-                    <button type="button" onClick={saveTools} disabled={saving}
-                      className="px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                    <Button variant="solid" size="2" onClick={saveTools} disabled={saving}>
                       {saving ? 'Saving...' : 'Save Tool Access'}
-                    </button>
+                    </Button>
                   )}
 
                   {/* Custom MCP Servers */}
                   <div className="border-t border-mission-control-border pt-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
+                    <Flex align="center" justify="between">
+                      <Flex align="center" gap="1">
                         <Server size={13} className="text-mission-control-text-dim" />
                         <span className="text-xs font-medium text-mission-control-text">Custom MCP Servers</span>
-                      </div>
+                      </Flex>
                       {!showAddMcp && (
-                        <button type="button" onClick={() => setShowAddMcp(true)}
-                          className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-lg hover:bg-mission-control-accent/20 transition-colors">
+                        <Button variant="soft" size="2" onClick={() => setShowAddMcp(true)}>
                           <Plus size={11} /> Add Server
-                        </button>
+                        </Button>
                       )}
-                    </div>
+                    </Flex>
                     {mcpServers.length > 0 && (
                       <div className="space-y-2">
                         {mcpServers.map(server => (
-                          <div key={server.id} className="flex items-center justify-between border border-mission-control-border rounded-lg px-3 py-2">
+                          <Flex key={server.id} align="center" justify="between" className="border border-mission-control-border rounded-xl px-3 py-2">
                             <div className="min-w-0">
                               <span className="text-xs font-medium text-mission-control-text">{server.name}</span>
                               <p className="text-xs text-mission-control-text-dim font-mono mt-0.5 truncate">
                                 {server.transport === 'stdio' ? `stdio: ${server.command} ${(server.args || []).join(' ')}` : `http: ${server.url}`}
                               </p>
                             </div>
-                            <button type="button" onClick={() => removeMcpServer(server.id)}
-                              className="flex-shrink-0 ml-3 text-mission-control-text-dim hover:text-error transition-colors">
+                            <button type="button" onClick={() => removeMcpServer(server.id)} className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0 ml-3">
                               <Trash2 size={13} />
                             </button>
-                          </div>
+                          </Flex>
                         ))}
                       </div>
                     )}
@@ -1989,37 +1959,37 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                       <p className="text-xs text-mission-control-text-dim">No custom MCP servers configured.</p>
                     )}
                     {showAddMcp && (
-                      <div className="border border-mission-control-accent/30 rounded-lg p-3 space-y-2.5 bg-mission-control-accent/5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-mission-control-text">New MCP Server</span>
-                          <button type="button" onClick={() => { setShowAddMcp(false); setNewMcp({ name: '', transport: 'stdio', command: 'npx', args: '', url: '', env: '' }); }} className="text-mission-control-text-dim hover:text-mission-control-text text-xs">Cancel</button>
-                        </div>
-                        <input className={`${inputBase} text-xs`} placeholder="Server name (e.g. Filesystem MCP)" value={newMcp.name} onChange={e => setNewMcp(m => ({ ...m, name: e.target.value }))} />
-                        <select className={`${inputBase} text-xs`} value={newMcp.transport} onChange={e => setNewMcp(m => ({ ...m, transport: e.target.value as 'stdio' | 'http' }))}>
-                          <option value="stdio">stdio -- local process</option>
-                          <option value="http">HTTP / SSE -- remote endpoint</option>
-                        </select>
+                      <div className="border border-mission-control-accent/30 rounded-xl p-3 space-y-2.5 bg-mission-control-accent/5">
+                        <Flex align="center" justify="between">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">New MCP Server</span>
+                          <button type="button" onClick={() => { setShowAddMcp(false); setNewMcp({ name: '', transport: 'stdio', command: 'npx', args: '', url: '', env: '' }); }} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">Cancel</button>
+                        </Flex>
+                        <TextField.Root placeholder="Server name (e.g. Filesystem MCP)" value={newMcp.name} onChange={e => setNewMcp(m => ({ ...m, name: e.target.value }))} size="1" className="w-full" />
+                        <Select.Root value={newMcp.transport} onValueChange={val => setNewMcp(m => ({ ...m, transport: val as 'stdio' | 'http' }))}>
+                          <Select.Trigger className="w-full" />
+                          <Select.Content>
+                            <Select.Item value="stdio">stdio -- local process</Select.Item>
+                            <Select.Item value="http">HTTP / SSE -- remote endpoint</Select.Item>
+                          </Select.Content>
+                        </Select.Root>
                         {newMcp.transport === 'stdio' ? (
                           <>
-                            <input className={`${inputBase} text-xs font-mono`} placeholder="Command (e.g. npx, node, python)" value={newMcp.command} onChange={e => setNewMcp(m => ({ ...m, command: e.target.value }))} />
-                            <input className={`${inputBase} text-xs font-mono`} placeholder="Arguments (e.g. -y @modelcontextprotocol/server-filesystem /path)" value={newMcp.args} onChange={e => setNewMcp(m => ({ ...m, args: e.target.value }))} />
+                            <TextField.Root placeholder="Command (e.g. npx, node, python)" value={newMcp.command} onChange={e => setNewMcp(m => ({ ...m, command: e.target.value }))} size="1" className="w-full font-mono" />
+                            <TextField.Root placeholder="Arguments (e.g. -y @modelcontextprotocol/server-filesystem /path)" value={newMcp.args} onChange={e => setNewMcp(m => ({ ...m, args: e.target.value }))} size="1" className="w-full font-mono" />
                           </>
                         ) : (
-                          <input className={`${inputBase} text-xs font-mono`} placeholder="URL (e.g. https://mcp.example.com)" value={newMcp.url} onChange={e => setNewMcp(m => ({ ...m, url: e.target.value }))} />
+                          <TextField.Root placeholder="URL (e.g. https://mcp.example.com)" value={newMcp.url} onChange={e => setNewMcp(m => ({ ...m, url: e.target.value }))} size="1" className="w-full font-mono" />
                         )}
-                        <textarea className={`${inputBase} text-xs font-mono resize-none`} placeholder={'Environment variables (optional):\nAPI_KEY=your-key\nBASE_URL=https://...'} rows={3} value={newMcp.env} onChange={e => setNewMcp(m => ({ ...m, env: e.target.value }))} />
-                        <button type="button" onClick={addMcpServer}
-                          disabled={!newMcp.name.trim() || (newMcp.transport === 'stdio' ? !newMcp.command.trim() : !newMcp.url.trim())}
-                          className="px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                        <TextArea variant="soft" className="text-xs font-mono resize-none w-full" placeholder={'Environment variables (optional):\nAPI_KEY=your-key\nBASE_URL=https://...'} rows={3} value={newMcp.env} onChange={e => setNewMcp(m => ({ ...m, env: e.target.value }))} />
+                        <Button variant="solid" size="2" onClick={addMcpServer} disabled={!newMcp.name.trim() || (newMcp.transport === 'stdio' ? !newMcp.command.trim() : !newMcp.url.trim())}>
                           Add Server
-                        </button>
+                        </Button>
                       </div>
                     )}
                     {mcpDirty && (
-                      <button type="button" onClick={saveMcp} disabled={saving}
-                        className="px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                      <Button variant="solid" size="2" onClick={saveMcp} disabled={saving}>
                         {saving ? 'Saving...' : 'Save MCP Servers'}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -2030,10 +2000,10 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                 <div className="space-y-4">
                   {/* Trust tier */}
                   <div>
-                    <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-2">Trust Tier</div>
-                    <div className="grid grid-cols-5 gap-1.5">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Trust Tier</div>
+                    <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
                       {TRUST_TIERS.map(tier => (
-                        <button key={tier.id} type="button"
+                        <button type="button" key={tier.id}
                           onClick={() => {
                             if (tier.id !== trustTier) setPrevTrustTier(trustTier);
                             setTrustTier(tier.id);
@@ -2048,15 +2018,19 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                             }
                             setPermDirty(true);
                           }}
-                          className={`flex flex-col items-center px-2 py-2 rounded-lg border text-center transition-all ${trustTier === tier.id ? 'border-mission-control-accent bg-mission-control-accent/10' : 'border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/40'}`}>
-                          <span className={`text-xs font-semibold ${tier.color}`}>{tier.label}</span>
+                          className={`flex-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                            trustTier === tier.id
+                              ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                              : 'text-mission-control-text-dim hover:text-mission-control-text'
+                          }`}>
+                          {tier.label}
                         </button>
                       ))}
                     </div>
-                    <div className="flex items-center justify-between mt-2 px-1">
+                    <Flex align="center" justify="between" className="mt-2 px-1">
                       <p className="text-xs text-mission-control-text-dim">{TRUST_TIERS.find(t => t.id === trustTier)?.desc}</p>
                       {presetApplied && <span className="text-xs text-mission-control-accent font-medium animate-pulse">Presets applied</span>}
-                    </div>
+                    </Flex>
                     {prevTrustTier && prevTrustTier !== trustTier && (() => {
                       const prevPreset = TIER_PRESETS[prevTrustTier] || {};
                       const newPreset = TIER_PRESETS[trustTier] || {};
@@ -2064,7 +2038,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                       const lost = Object.keys(prevPreset).filter(k => prevPreset[k] && !newPreset[k]);
                       if (gained.length === 0 && lost.length === 0) return null;
                       return (
-                        <div className="mt-2 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border text-xs space-y-1">
+                        <div className="mt-2 px-3 py-2 rounded-xl bg-mission-control-surface border border-mission-control-border text-xs space-y-1">
                           <div className="font-medium text-mission-control-text-dim">
                             Tier change: {TRUST_TIERS.find(t => t.id === prevTrustTier)?.label} → {TRUST_TIERS.find(t => t.id === trustTier)?.label}
                           </div>
@@ -2077,16 +2051,15 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
 
                   {/* Per-action overrides */}
                   <div>
-                    <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-2">Action Overrides</div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Action Overrides</div>
                     <div className="space-y-1.5">
                       {PERMISSION_GROUPS.map(group => {
                         const isOpen = expandedGroups[group.label] ?? false;
                         const overrideCount = group.perms.filter(p => permOverrides[p.id] !== undefined).length;
                         return (
-                          <div key={group.label} className="border border-mission-control-border rounded-lg overflow-hidden">
-                            <button type="button" onClick={() => setExpandedGroups(prev => ({ ...prev, [group.label]: !isOpen }))}
-                              className="w-full flex items-center justify-between px-3 py-2 bg-mission-control-surface hover:bg-mission-control-surface/80 transition-colors text-left">
-                              <span className="flex items-center gap-2 text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
+                          <div key={group.label} className="border border-mission-control-border rounded-xl overflow-hidden">
+                            <button type="button" onClick={() => setExpandedGroups(prev => ({ ...prev, [group.label]: !isOpen }))} className="w-full inline-flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-mission-control-bg transition-colors">
+                              <span className="flex items-center gap-2 text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
                                 <Shield size={11} /> {group.label}
                               </span>
                               <span className="flex items-center gap-2">
@@ -2100,7 +2073,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                   const overrideVal = permOverrides[perm.id];
                                   const hasOverride = overrideVal !== undefined;
                                   return (
-                                    <div key={perm.id} className="flex items-center justify-between px-3 py-2">
+                                    <Flex key={perm.id} align="center" justify="between" className="px-3 py-2">
                                       <div className="min-w-0 mr-2">
                                         <span className="text-xs text-mission-control-text">{perm.label}</span>
                                         <span className={`ml-1.5 text-xs ${TIER_COLORS[perm.tier]}`}>T{perm.tier}</span>
@@ -2108,14 +2081,18 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                                       <div className="flex items-center gap-1 flex-shrink-0">
                                         {hasOverride && (
                                           <button type="button" onClick={() => { setPermOverrides(prev => { const n = { ...prev }; delete n[perm.id]; return n; }); setPermDirty(true); }}
-                                            className="text-xs text-mission-control-text-dim hover:text-mission-control-text px-1.5 py-0.5 rounded-lg border border-mission-control-border transition-colors">Reset</button>
+                                            className="px-2 py-0.5 rounded text-xs text-mission-control-text-dim hover:text-mission-control-text border border-transparent hover:border-mission-control-border transition-colors">Reset</button>
                                         )}
-                                        <button type="button" onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: true })); setPermDirty(true); }}
-                                          className={`text-xs px-2 py-0.5 rounded-lg border transition-colors ${overrideVal === true ? 'bg-success/20 text-success border-success/40' : 'border-mission-control-border text-mission-control-text-dim hover:text-success hover:border-success/40'}`}>Allow</button>
-                                        <button type="button" onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: false })); setPermDirty(true); }}
-                                          className={`text-xs px-2 py-0.5 rounded-lg border transition-colors ${overrideVal === false ? 'bg-error/20 text-error border-error/40' : 'border-mission-control-border text-mission-control-text-dim hover:text-error hover:border-error/40'}`}>Deny</button>
+                                        <button type="button"
+                                          onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: true })); setPermDirty(true); }}
+                                          className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${overrideVal === true ? 'bg-success/10 border-success/30 text-success' : 'border-mission-control-border text-mission-control-text-dim hover:border-success/30 hover:text-success'}`}
+                                        >Allow</button>
+                                        <button type="button"
+                                          onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: false })); setPermDirty(true); }}
+                                          className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${overrideVal === false ? 'bg-error/10 border-error/30 text-error' : 'border-mission-control-border text-mission-control-text-dim hover:border-error/30 hover:text-error'}`}
+                                        >Deny</button>
                                       </div>
-                                    </div>
+                                    </Flex>
                                   );
                                 })}
                               </div>
@@ -2128,26 +2105,29 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
 
                   {/* Blocked commands */}
                   <div>
-                    <div className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">Blocked Commands</div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-1">Blocked Commands</div>
                     <p className="text-xs text-mission-control-text-dim mb-2">Agent-specific blocked tool patterns.</p>
-                    <div className="border border-mission-control-border rounded-lg overflow-hidden">
+                    <div className="border border-mission-control-border rounded-xl overflow-hidden">
                       <div className="p-2 bg-mission-control-surface flex gap-2">
-                        <input type="text" value={newDisallowed} onChange={e => setNewDisallowed(e.target.value)}
+                        <TextField.Root
+                          value={newDisallowed}
+                          onChange={e => setNewDisallowed(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && handleAddAgentDisallowed()}
                           placeholder="e.g. Bash(git push *)"
-                          className="flex-1 text-xs bg-mission-control-bg border border-mission-control-border rounded-lg px-2 py-1.5 focus:outline-none focus:border-mission-control-accent font-mono" />
-                        <button type="button" onClick={handleAddAgentDisallowed}
-                          className="flex items-center gap-1 text-xs px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-lg hover:bg-mission-control-accent/20 transition-colors">
+                          size="1"
+                          className="flex-1 font-mono"
+                        />
+                        <Button variant="soft" size="2" onClick={handleAddAgentDisallowed}>
                           <Plus size={10} /> Block
-                        </button>
+                        </Button>
                       </div>
                       {agentDisallowed.length > 0 && (
                         <div className="divide-y divide-mission-control-border border-t border-mission-control-border">
                           {agentDisallowed.map(tool => (
-                            <div key={tool} className="flex items-center justify-between px-3 py-1.5">
+                            <Flex key={tool} align="center" justify="between" className="px-3 py-1.5">
                               <code className="text-xs font-mono text-mission-control-text">{tool}</code>
-                              <button type="button" onClick={() => handleRemoveAgentDisallowed(tool)} className="p-0.5 text-mission-control-text-dim hover:text-error transition-colors"><X size={12} /></button>
-                            </div>
+                              <button type="button" onClick={() => handleRemoveAgentDisallowed(tool)} className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"><X size={12} /></button>
+                            </Flex>
                           ))}
                         </div>
                       )}
@@ -2155,10 +2135,9 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   </div>
 
                   {permDirty && (
-                    <button type="button" onClick={savePermissions} disabled={saving}
-                      className="px-4 py-2 text-sm bg-mission-control-accent text-white rounded-lg hover:brightness-110 disabled:opacity-40 transition-all">
+                    <Button variant="solid" size="2" onClick={savePermissions} disabled={saving}>
                       {saving ? 'Saving...' : 'Save Permissions'}
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -2171,7 +2150,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                       <p className="text-xs text-mission-control-text-dim text-center py-8">Start a conversation with {agent.name}</p>
                     )}
                     {chatMessages.map((m, i) => (
-                      <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <Flex key={i} justify={m.role === 'user' ? 'end' : 'start'}>
                         <div className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
                           m.role === 'user'
                             ? 'bg-mission-control-accent text-white rounded-br-sm'
@@ -2182,25 +2161,24 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                             : <span>{m.content}</span>
                           }
                         </div>
-                      </div>
+                      </Flex>
                     ))}
                     <div ref={chatEndRef} />
                   </div>
-                  <div className="flex gap-2 pt-2 border-t border-mission-control-border">
-                    <input
-                      type="text"
+                  <Flex gap="2" className="pt-2 border-t border-mission-control-border">
+                    <TextField.Root
                       value={chatInput}
                       onChange={e => setChatInput(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
                       placeholder={`Message ${agent.name}...`}
-                      className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                      size="2"
+                      className="flex-1"
                       disabled={chatSending}
                     />
-                    <button type="button" onClick={sendChatMessage} disabled={chatSending || !chatInput.trim()}
-                      className="p-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 disabled:opacity-40 transition-colors">
+                    <IconButton variant="solid" size="2" onClick={sendChatMessage} disabled={chatSending || !chatInput.trim()}>
                       <Send size={14} />
-                    </button>
-                  </div>
+                    </IconButton>
+                  </Flex>
                 </div>
               )}
 
@@ -2209,7 +2187,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
             <div className="text-center py-12 text-mission-control-text-dim">
               <XCircle size={32} className="mx-auto mb-2 opacity-50" />
               <p>Failed to load agent details</p>
-              <button type="button" onClick={buildDetailsFromRealData} className="mt-2 text-mission-control-accent hover:underline text-sm">
+              <button type="button" onClick={buildDetailsFromRealData} className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
                 Retry
               </button>
             </div>
@@ -2218,9 +2196,12 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
 
         {/* HR Actions footer — non-protected agents only */}
         {!isProtectedAgent(agentId) && (
-          <div className="flex items-center gap-2 px-6 py-3 border-t border-mission-control-border bg-mission-control-surface/50">
+          <div className="flex items-center gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
             {agentStatus === 'disabled' ? (
-              <button type="button" disabled={hrActionLoading}
+              <Button
+                variant="soft"
+                size="2"
+                disabled={hrActionLoading}
                 onClick={async () => {
                   setHrActionLoading(true);
                   try {
@@ -2231,24 +2212,22 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                   } catch { showToast('error', 'Failed to enable agent'); }
                   finally { setHrActionLoading(false); }
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-success border border-success-border rounded-lg hover:bg-success-subtle transition-colors disabled:opacity-40">
+              >
                 <Power size={14} /> Enable Agent
-              </button>
+              </Button>
             ) : (
-              <button type="button" disabled={hrActionLoading} onClick={() => setShowDisableConfirm(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-warning border border-warning-border rounded-lg hover:bg-warning-subtle transition-colors disabled:opacity-40">
+              <Button variant="soft" color="yellow" size="2" disabled={hrActionLoading} onClick={() => setShowDisableConfirm(true)}>
                 <PowerOff size={14} /> Disable Agent
-              </button>
+              </Button>
             )}
             <div className="flex-1" />
-            <button type="button" disabled={hrActionLoading} onClick={() => setShowFireConfirm(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors disabled:opacity-40">
+            <Button variant="solid" color="red" size="2" disabled={hrActionLoading} onClick={() => setShowFireConfirm(true)}>
               <UserMinus size={14} /> Fire Agent
-            </button>
+            </Button>
           </div>
         )}
-      </div>
-    </div>
+      </Flex>
+    </Flex>
 
     {/* Agent Chat Modal for viewing existing session */}
     {viewingSessionKey && (

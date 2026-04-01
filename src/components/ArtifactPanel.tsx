@@ -6,9 +6,11 @@ import {
   Code2,
   Image as ImageIcon,
   FileText,
+  FileCode2,
   Database,
   Network,
   Copy,
+  Check,
   Download,
   Trash2,
   History,
@@ -19,8 +21,9 @@ import {
   WifiOff,
   type LucideIcon,
 } from 'lucide-react';
+import { Button, TextField, Flex } from '@radix-ui/themes';
 import { useArtifactStore, type Artifact, type ArtifactType } from '../store/artifactStore';
-import MarkdownMessage from './MarkdownMessage';
+import MarkdownMessage, { CodeBlock } from './MarkdownMessage';
 
 interface ArtifactPanelProps {
   sessionId?: string;
@@ -37,17 +40,34 @@ const ARTIFACT_ICONS: Record<ArtifactType, LucideIcon> = {
 };
 
 const ARTIFACT_COLORS: Record<ArtifactType, string> = {
-  code: 'text-blue-500 bg-blue-500/10 border-blue-500/30',
-  image: 'text-green-500 bg-green-500/10 border-green-500/30',
-  file: 'text-purple-500 bg-purple-500/10 border-purple-500/30',
-  text: 'text-muted bg-muted-subtle border-muted-border',
-  diagram: 'text-orange-500 bg-orange-500/10 border-orange-500/30',
-  data: 'text-cyan-500 bg-cyan-500/10 border-cyan-500/30',
+  code: 'text-info bg-info/10 border-info/30',
+  image: 'text-success bg-success/10 border-success/30',
+  file: 'text-review bg-review-subtle border-review-border',
+  text: 'text-mission-control-text-dim bg-mission-control-border/30 border-mission-control-border',
+  diagram: 'text-danger bg-warning/10 border-warning/30',
+  data: 'text-info bg-info/10 border-info/30',
 };
 
 function isPreviewable(artifact: Artifact): boolean {
   const lang = artifact.metadata?.language?.toLowerCase();
   return lang === 'html' || lang === 'htm' || lang === 'svg';
+}
+
+/** True when the artifact content is a library file path (not actual file content) */
+function isFilePath(content: string): boolean {
+  return (
+    (content.startsWith('/') || content.startsWith('~')) &&
+    /\/mission-control\/library\//.test(content) &&
+    /\.(html|htm|svg|pdf|png|jpg|jpeg|webp|gif)$/i.test(content)
+  );
+}
+
+/** Returns the preview iframe src — either API serve URL (for file paths) or undefined (for srcDoc) */
+function getPreviewSrc(artifact: Artifact): string | undefined {
+  if (artifact.type === 'file' && isFilePath(artifact.content)) {
+    return `/api/library/serve?path=${encodeURIComponent(artifact.content)}`;
+  }
+  return undefined;
 }
 
 export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelProps) {
@@ -68,6 +88,8 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
   const [loadedPortUrl, setLoadedPortUrl] = useState<string>('');
   const [reloadKey, setReloadKey] = useState(0);
   const [portError, setPortError] = useState(false);
+  const [fileContent, setFileContent] = useState<string | null>(null);
+  const [fileContentLoading, setFileContentLoading] = useState(false);
 
   // Resize state — all stable refs, no useCallback needed
   const MIN_WIDTH = 280;
@@ -111,7 +133,8 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
   // Reset viewTab when selected artifact changes
   useEffect(() => {
     const artifact = artifacts.find(a => a.id === selectedArtifactId);
-    if (artifact && isPreviewable(artifact)) {
+    const canPreview = artifact && (isPreviewable(artifact) || (artifact.type === 'file' && isFilePath(artifact.content)));
+    if (canPreview) {
       setViewTab('preview');
     } else {
       setViewTab('code');
@@ -125,11 +148,41 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
     setPortError(false);
   }, [portUrl, loadedPortUrl]);
 
-  // Filter artifacts by session if provided, newest first
-  const displayArtifacts = (sessionId
-    ? artifacts.filter(a => a.sessionId === sessionId)
-    : getFilteredArtifacts()
-  ).slice().sort((a, b) => b.timestamp - a.timestamp);
+  // Derive the file path to fetch — stable dep for the effect below.
+  // Covers: file-type library paths + text-type markdown library paths.
+  const _fileArtifactPath = (() => {
+    const a = artifacts.find(a => a.id === selectedArtifactId);
+    if (!a) return undefined;
+    if (a.type === 'file' && a.content && isFilePath(a.content)) return a.content;
+    // Markdown library files land as text type; metadata.filePath holds the path
+    if (a.type === 'text' && typeof a.metadata?.filePath === 'string') return a.metadata.filePath as string;
+    return undefined;
+  })();
+
+  // Fetch actual file content when a library file-path artifact is selected
+  useEffect(() => {
+    if (!_fileArtifactPath) {
+      setFileContent(null);
+      setFileContentLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setFileContentLoading(true);
+    setFileContent(null);
+    fetch(`/api/library/serve?path=${encodeURIComponent(_fileArtifactPath)}`)
+      .then(res => res.text())
+      .then(text => { if (!cancelled) setFileContent(text); })
+      .catch(() => { if (!cancelled) setFileContent(null); })
+      .finally(() => { if (!cancelled) setFileContentLoading(false); });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [_fileArtifactPath]);
+
+  // Filter artifacts strictly by session — never show cross-session artifacts.
+  // If no sessionId, show empty list rather than falling through to all artifacts.
+  const displayArtifacts = sessionId
+    ? artifacts.filter(a => a.sessionId === sessionId).sort((a, b) => b.timestamp - a.timestamp)
+    : [];
 
   // Only show a selected artifact if it belongs to the current session's display list
   const selectedArtifact = displayArtifacts.find(a => a.id === selectedArtifactId);
@@ -143,7 +196,10 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
   };
 
   const handleDownload = (artifact: Artifact) => {
-    const blob = new Blob([artifact.content], { type: 'text/plain' });
+    const isLibraryBacked = (artifact.type === 'file' && isFilePath(artifact.content)) ||
+      (artifact.type === 'text' && typeof artifact.metadata?.filePath === 'string');
+    const content = (isLibraryBacked && fileContent) ? fileContent : artifact.content;
+    const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -184,28 +240,24 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       case 'code':
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
               <Icon size={14} />
               <span className="font-mono">{artifact.metadata?.language || 'code'}</span>
               {artifact.metadata?.filename && (
                 <span className="ml-auto text-mission-control-text-dim">{artifact.metadata.filename}</span>
               )}
-            </div>
-            <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4 overflow-x-auto">
-              <pre className="text-sm font-mono whitespace-pre-wrap break-words">
-                <code>{artifact.content}</code>
-              </pre>
-            </div>
+            </Flex>
+            <CodeBlock code={artifact.content} language={artifact.metadata?.language || 'text'} />
           </div>
         );
 
       case 'image':
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
               <Icon size={14} />
               <span>Image</span>
-            </div>
+            </Flex>
             <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
               <img
                 src={artifact.content}
@@ -219,10 +271,10 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       case 'diagram':
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
               <Icon size={14} />
               <span>Diagram (Mermaid)</span>
-            </div>
+            </Flex>
             <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
               <MarkdownMessage content={`\`\`\`mermaid\n${artifact.content}\n\`\`\``} />
             </div>
@@ -232,27 +284,102 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       case 'data':
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
               <Icon size={14} />
               <span>Data</span>
-            </div>
-            <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4 overflow-x-auto">
-              <pre className="text-sm font-mono whitespace-pre-wrap break-words">
-                <code>{artifact.content}</code>
-              </pre>
-            </div>
+            </Flex>
+            <CodeBlock code={artifact.content} language={artifact.metadata?.language || 'json'} />
           </div>
         );
 
-      case 'text':
-      case 'file':
+      case 'text': {
+        const isLibraryMd = typeof artifact.metadata?.filePath === 'string';
+        return (
+          <div className="space-y-2">
+            <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
+              <Icon size={14} />
+              <span>markdown</span>
+              {isLibraryMd && (
+                <span className="ml-auto truncate text-mission-control-text-dim max-w-[60%] font-mono" title={artifact.content}>
+                  {artifact.content.split('/').pop()}
+                </span>
+              )}
+            </Flex>
+            {isLibraryMd ? (
+              fileContentLoading ? (
+                <div className="flex items-center justify-center py-8 text-mission-control-text-dim text-sm gap-2">
+                  <RefreshCw size={14} className="animate-spin" />
+                  <span>Loading file…</span>
+                </div>
+              ) : fileContent !== null ? (
+                <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
+                  <MarkdownMessage content={fileContent} />
+                </div>
+              ) : (
+                <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
+                  <p className="text-sm font-mono text-mission-control-text-dim break-all">{artifact.content}</p>
+                </div>
+              )
+            ) : (
+              <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
+                <MarkdownMessage content={artifact.content} />
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      case 'file': {
+        // Library file-path artifacts: fetch and show actual file content
+        if (isFilePath(artifact.content)) {
+          const ext = artifact.content.split('.').pop()?.toLowerCase() ?? '';
+          const lang = artifact.metadata?.language || (ext === 'htm' ? 'html' : ext) || 'file';
+          return (
+            <div className="space-y-2">
+              <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
+                <Icon size={14} />
+                <span className="font-mono">{lang}</span>
+                <span
+                  className="ml-auto truncate text-mission-control-text-dim max-w-[50%] font-mono"
+                  title={artifact.content}
+                >
+                  {artifact.content.split('/').pop()}
+                </span>
+              </Flex>
+              {fileContentLoading ? (
+                <div className="flex items-center justify-center py-8 text-mission-control-text-dim text-sm gap-2">
+                  <RefreshCw size={14} className="animate-spin" />
+                  <span>Loading file…</span>
+                </div>
+              ) : fileContent !== null ? (
+                <CodeBlock code={fileContent} language={lang} />
+              ) : (
+                <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
+                  <p className="text-sm font-mono text-mission-control-text-dim break-all">{artifact.content}</p>
+                </div>
+              )}
+            </div>
+          );
+        }
+        // Inline file content
+        return (
+          <div className="space-y-2">
+            <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
+              <Icon size={14} />
+              <span className="font-mono">{artifact.metadata?.language || 'file'}</span>
+            </Flex>
+            <CodeBlock code={artifact.content} language={artifact.metadata?.language || 'html'} />
+          </div>
+        );
+      }
+
       default:
         return (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-mission-control-text-dim">
+            <Flex align="center" gap="2" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
               <Icon size={14} />
               <span>{artifact.type}</span>
-            </div>
+            </Flex>
             <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
               <MarkdownMessage content={artifact.content} />
             </div>
@@ -262,25 +389,14 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
   };
 
   if (isCollapsed) {
-    return (
-      <button
-        onClick={toggleCollapse}
-        className="fixed right-0 top-1/2 -translate-y-1/2 bg-mission-control-surface border-l border-y border-mission-control-border rounded-l-lg p-2 hover:bg-mission-control-bg transition-colors z-10"
-        title="Open Artifacts"
-      >
-        <ChevronLeft size={20} className="text-mission-control-text-dim" />
-        {displayArtifacts.length > 0 && (
-          <span className="absolute -top-1 -left-1 w-5 h-5 bg-mission-control-accent text-white text-xs rounded-full flex items-center justify-center">
-            {displayArtifacts.length}
-          </span>
-        )}
-      </button>
-    );
+    return null;
   }
 
   return (
-    <div
-      className="relative border-l border-mission-control-border bg-mission-control-surface flex flex-col h-full flex-shrink-0"
+    <Flex
+      direction="column"
+      height="100%"
+      className="relative border-l border-mission-control-border bg-mission-control-surface flex-shrink-0"
       style={{ width }}
     >
       {/* Resize handle */}
@@ -299,22 +415,24 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full bg-mission-control-border group-hover:bg-mission-control-accent/60 transition-colors" />
       </div>
       {/* Header */}
-      <div className="p-4 border-b border-mission-control-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0">
+        <Flex align="center" gap="2">
           <FileText size={18} className="text-mission-control-accent" />
-          <h3 className="font-semibold text-sm">Artifacts</h3>
+          <h3 className="text-sm font-semibold text-mission-control-text">Artifacts</h3>
           {displayArtifacts.length > 0 && (
             <span className="px-2 py-0.5 bg-mission-control-bg text-xs rounded-full text-mission-control-text-dim">
               {displayArtifacts.length}
             </span>
           )}
-        </div>
+        </Flex>
         <button
+          type="button"
           onClick={toggleCollapse}
-          className="p-1.5 rounded hover:bg-mission-control-border transition-colors"
           title="Collapse panel"
+          aria-label="Collapse panel"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
-          <ChevronRight size={18} className="text-mission-control-text-dim" />
+          <ChevronRight size={18} />
         </button>
       </div>
 
@@ -322,40 +440,73 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       {selectedArtifact ? (
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Artifact Header — single compact row */}
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-mission-control-border">
+          <Flex align="center" gap="2" className="px-3 py-2 border-b border-mission-control-border">
             <button
+              type="button"
               onClick={() => selectArtifact(null)}
-              className="p-1 rounded hover:bg-mission-control-border transition-colors flex-shrink-0"
+              className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors flex-shrink-0"
+              aria-label="Back"
             >
-              <ChevronLeft size={15} className="text-mission-control-text-dim" />
+              <ChevronLeft size={15} />
             </button>
             <span className="font-medium text-sm truncate flex-1 min-w-0">{selectedArtifact.title}</span>
-            <span className={`px-1.5 py-0.5 rounded text-xs border flex-shrink-0 ${ARTIFACT_COLORS[selectedArtifact.type]}`}>
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full border flex-shrink-0 ${ARTIFACT_COLORS[selectedArtifact.type]}`}>
               {selectedArtifact.type}
             </span>
-            <span className="text-xs text-mission-control-text-dim flex-shrink-0">v{selectedArtifact.currentVersion}</span>
+            <span className="text-xs text-mission-control-text-dim flex-shrink-0 tabular-nums">v{selectedArtifact.currentVersion}</span>
             <div className="flex items-center gap-1 flex-shrink-0">
-              <button onClick={() => handleCopy(selectedArtifact.content, selectedArtifact.id)} className={`p-1.5 rounded hover:bg-mission-control-border transition-colors flex items-center gap-1 text-xs ${copiedId === selectedArtifact.id ? 'text-success' : 'text-mission-control-text-dim hover:text-mission-control-text'}`} title="Copy">
-                <Copy size={13} />{copiedId === selectedArtifact.id && <span>Copied!</span>}
+              <button
+                type="button"
+                onClick={() => handleCopy(fileContent ?? selectedArtifact.content, selectedArtifact.id)}
+                title="Copy"
+                aria-label="Copy"
+                className={`inline-flex items-center gap-1 px-1.5 py-1 rounded border text-xs transition-colors ${
+                  copiedId === selectedArtifact.id
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-border'
+                }`}
+              >
+                {copiedId === selectedArtifact.id ? <Check size={13} /> : <Copy size={13} />}
+                {copiedId === selectedArtifact.id && <span className="text-xs">Copied!</span>}
               </button>
-              <button onClick={() => handleDownload(selectedArtifact)} className="p-1.5 rounded hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text" title="Download"><Download size={13} /></button>
               <button
+                type="button"
+                onClick={() => handleDownload(selectedArtifact)}
+                title="Download"
+                aria-label="Download"
+                className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+              >
+                <Download size={13} />
+              </button>
+              <button
+                type="button"
                 onClick={() => setShowVersionHistory(!showVersionHistory)}
-                className={`p-1.5 rounded transition-colors ${showVersionHistory ? 'text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border'}`}
                 title="Version history"
-              ><History size={13} /></button>
+                aria-label="Version history"
+                className={`inline-flex items-center justify-center w-6 h-6 rounded border transition-colors ${
+                  showVersionHistory
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-border'
+                }`}
+              >
+                <History size={13} />
+              </button>
               <button
+                type="button"
                 onClick={() => { if (confirm('Delete this artifact?')) { deleteArtifact(selectedArtifact.id); selectArtifact(null); } }}
-                className="p-1.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                 title="Delete"
-              ><Trash2 size={13} /></button>
+                aria-label="Delete"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+              >
+                <Trash2 size={13} />
+              </button>
             </div>
-          </div>
+          </Flex>
 
           {/* Version History */}
           {showVersionHistory && (
             <div className="p-4 border-b border-mission-control-border bg-mission-control-bg">
-              <h5 className="text-xs font-semibold mb-2">Version History</h5>
+              <h5 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Version History</h5>
               <div className="space-y-2 max-h-32 overflow-y-auto">
                 {selectedArtifact.versions.map((v) => (
                   <div
@@ -366,7 +517,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                         : 'bg-mission-control-bg'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
+                    <Flex align="center" justify="between">
                       <span className="font-medium">v{v.version}</span>
                       <span className="text-mission-control-text-dim">
                         {new Date(v.timestamp).toLocaleTimeString([], {
@@ -374,7 +525,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                           minute: '2-digit',
                         })}
                       </span>
-                    </div>
+                    </Flex>
                     {v.changeDescription && (
                       <p className="text-mission-control-text-dim mt-0.5">{v.changeDescription}</p>
                     )}
@@ -384,15 +535,16 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
             </div>
           )}
 
-          {/* Tab Bar — only for previewable artifacts */}
-          {isPreviewable(selectedArtifact) && (
-            <div className="flex items-center border-b border-mission-control-border bg-mission-control-surface px-4">
+          {/* Tab Bar — only for previewable artifacts (including library file paths) */}
+          {(isPreviewable(selectedArtifact) || (selectedArtifact.type === 'file' && isFilePath(selectedArtifact.content))) && (
+            <Flex align="center" className="border-b border-mission-control-border bg-mission-control-surface px-4">
               <div className="flex flex-1">
                 {(['preview', 'code', 'port'] as const).map(tab => {
                   const TabIcon = tab === 'preview' ? Monitor : tab === 'code' ? Code2 : Globe;
                   const label = tab === 'preview' ? 'Preview' : tab === 'code' ? 'Code' : 'Port';
                   return (
                     <button
+                      type="button"
                       key={tab}
                       onClick={() => setViewTab(tab)}
                       className={`flex items-center px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
@@ -400,6 +552,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                           ? 'border-mission-control-accent text-mission-control-accent'
                           : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
                       }`}
+                      style={{ background: 'none' }}
                     >
                       <TabIcon size={14} className="mr-1.5" />
                       {label}
@@ -407,64 +560,83 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                   );
                 })}
               </div>
-              <div className="flex items-center gap-1 ml-2">
+              <Flex align="center" gap="1" className="ml-2">
                 <button
+                  type="button"
                   onClick={() => setReloadKey(k => k + 1)}
-                  className="p-1.5 rounded hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
                   title="Reload preview"
+                  aria-label="Reload preview"
+                  className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <RefreshCw size={14} />
                 </button>
                 {viewTab === 'preview' && (
                   <button
+                    type="button"
                     onClick={() => {
                       const win = window.open('', '_blank');
                       if (win) { win.document.write(selectedArtifact.content); win.document.close(); }
                     }}
-                    className="p-1.5 rounded hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
                     title="Open in new window"
+                    aria-label="Open in new window"
+                    className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     <Expand size={14} />
                   </button>
                 )}
-              </div>
-            </div>
+              </Flex>
+            </Flex>
           )}
 
           {/* Artifact Content */}
-          {isPreviewable(selectedArtifact) && viewTab === 'preview' ? (
+          {(isPreviewable(selectedArtifact) || (selectedArtifact.type === 'file' && isFilePath(selectedArtifact.content))) && viewTab === 'preview' ? (
             <div className="flex-1 overflow-hidden" style={{ minHeight: '400px' }}>
-              <iframe
-                key={`preview-${selectedArtifact.id}-${reloadKey}`}
-                srcDoc={selectedArtifact.content}
-                sandbox="allow-scripts allow-forms allow-popups"
-                className="w-full h-full border-0 rounded-b-lg bg-white"
-                title={selectedArtifact.title}
-                style={{ minHeight: '400px' }}
-              />
+              {(() => {
+                const src = getPreviewSrc(selectedArtifact);
+                return src ? (
+                  <iframe
+                    key={`preview-${selectedArtifact.id}-${reloadKey}`}
+                    src={src}
+                    sandbox="allow-scripts allow-forms allow-popups"
+                    className="w-full h-full border-0 rounded-b-lg bg-mission-control-surface"
+                    title={selectedArtifact.title}
+                    style={{ minHeight: '400px' }}
+                  />
+                ) : (
+                  <iframe
+                    key={`preview-${selectedArtifact.id}-${reloadKey}`}
+                    srcDoc={selectedArtifact.content}
+                    sandbox="allow-scripts allow-forms allow-popups"
+                    className="w-full h-full border-0 rounded-b-lg bg-mission-control-surface"
+                    title={selectedArtifact.title}
+                    style={{ minHeight: '400px' }}
+                  />
+                );
+              })()}
             </div>
-          ) : isPreviewable(selectedArtifact) && viewTab === 'port' ? (
+          ) : (isPreviewable(selectedArtifact) || (selectedArtifact.type === 'file' && isFilePath(selectedArtifact.content))) && viewTab === 'port' ? (
             <div className="flex-1 flex flex-col overflow-hidden">
               <div className="p-4 border-b border-mission-control-border space-y-2">
                 <label className="block text-xs font-medium text-mission-control-text">
                   Local Dev Server URL
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
+                <Flex gap="2">
+                  <TextField.Root
                     value={portUrl}
                     onChange={e => setPortUrl(e.target.value)}
                     placeholder="http://localhost:3000"
-                    className="flex-1 px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:border-mission-control-accent"
+                    size="2"
+                    className="flex-1"
                     onKeyDown={e => { if (e.key === 'Enter') setLoadedPortUrl(portUrl); }}
                   />
-                  <button
+                  <Button
                     onClick={() => setLoadedPortUrl(portUrl)}
-                    className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                    size="2"
+                    variant="solid"
                   >
                     Load
-                  </button>
-                </div>
+                  </Button>
+                </Flex>
                 <p className="text-xs text-mission-control-text-dim">
                   Only works if a local dev server is running on that port
                 </p>
@@ -485,8 +657,9 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                       <p className="text-sm font-medium text-mission-control-text">Could not connect to localhost</p>
                       <p className="text-xs text-mission-control-text-dim">Make sure the dev server is running on that port</p>
                       <button
+                        type="button"
                         onClick={() => { setPortUrl(''); setLoadedPortUrl(''); setPortError(false); }}
-                        className="mt-1 px-3 py-1.5 bg-mission-control-bg border border-mission-control-border rounded-lg text-xs hover:bg-mission-control-border transition-colors"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         Try again
                       </button>
@@ -504,10 +677,10 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
       ) : (
         <div className="flex-1 overflow-y-auto">
           {displayArtifacts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center p-6 text-mission-control-text-dim">
-              <FileText size={48} className="mb-4 opacity-30" />
-              <p className="text-sm font-medium mb-2">No artifacts yet</p>
-              <p className="text-xs">
+            <div className="flex flex-col items-center justify-center h-full py-16 text-center gap-3">
+              <FileCode2 size={32} className="text-mission-control-text-dim opacity-50" />
+              <p className="text-sm font-medium text-mission-control-text">No artifact selected</p>
+              <p className="text-xs text-mission-control-text-dim max-w-xs">
                 {agentName
                   ? `Ask ${agentName} to generate code, images, or files — they'll appear here.`
                   : 'Artifacts like code, diagrams, and images will appear here as agents create them.'}
@@ -520,17 +693,19 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                 const colorClass = ARTIFACT_COLORS[artifact.type];
                 return (
                   <button
+                    type="button"
                     key={artifact.id}
                     onClick={() => selectArtifact(artifact.id)}
-                    className="w-full text-left p-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent/50 transition-colors"
+                    className="w-full text-left p-3 rounded-lg transition-colors"
+                    style={{ background: 'var(--mission-control-bg)', border: '1px solid var(--mission-control-border)' }}
                   >
-                    <div className="flex items-start gap-2">
+                    <Flex align="start" gap="2">
                       <div className={`p-2 rounded border ${colorClass} flex-shrink-0`}>
                         <Icon size={16} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h5 className="font-medium text-sm truncate">{artifact.title}</h5>
-                        <div className="flex items-center gap-2 mt-1">
+                        <Flex align="center" gap="2" className="mt-1">
                           <span className="text-xs text-mission-control-text-dim">
                             v{artifact.currentVersion}
                           </span>
@@ -540,14 +715,14 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                               minute: '2-digit',
                             })}
                           </span>
-                        </div>
+                        </Flex>
                         {artifact.metadata?.language && (
                           <span className="text-xs text-mission-control-text-dim font-mono">
                             {artifact.metadata.language}
                           </span>
                         )}
                       </div>
-                    </div>
+                    </Flex>
                   </button>
                 );
               })}
@@ -555,6 +730,6 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
           )}
         </div>
       )}
-    </div>
+    </Flex>
   );
 }

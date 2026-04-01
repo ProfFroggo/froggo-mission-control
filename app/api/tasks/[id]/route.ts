@@ -91,7 +91,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'description must be 5000 characters or fewer' }, { status: 400 });
     }
 
-    const VALID_STATUSES = ['todo', 'internal-review', 'in-progress', 'agent-review', 'human-review', 'done'];
+    const VALID_STATUSES = ['todo', 'internal-review', 'in-progress', 'review', 'human-review', 'done', 'failed', 'cancelled'];
     const VALID_PRIORITIES = ['p0', 'p1', 'p2', 'p3', ''];
     if (body.status !== undefined && !VALID_STATUSES.includes(body.status as string)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
@@ -104,6 +104,27 @@ export async function PATCH(
     const previousStatus = body.status
       ? (db.prepare('SELECT status FROM tasks WHERE id = ?').get(id) as { status: string } | undefined)?.status
       : undefined;
+
+    // Validate status transitions — prevent illegal jumps
+    if (body.status && previousStatus && body.status !== previousStatus) {
+      const VALID_TRANSITIONS: Record<string, string[]> = {
+        'todo':            ['internal-review', 'human-review', 'cancelled'],
+        'internal-review': ['in-progress', 'todo'],
+        'in-progress':     ['review', 'human-review', 'failed', 'cancelled'],
+        'review':          ['done', 'in-progress', 'human-review'],
+        'human-review':    ['in-progress', 'todo', 'review', 'done', 'cancelled'],
+        'done':            ['in-progress'],  // reopen
+        'failed':          ['todo', 'in-progress'],
+        'cancelled':       ['todo'],
+      };
+      const allowed = VALID_TRANSITIONS[previousStatus] ?? [];
+      if (!allowed.includes(body.status as string)) {
+        return NextResponse.json(
+          { error: `Invalid transition: ${previousStatus} → ${body.status}` },
+          { status: 400 }
+        );
+      }
+    }
 
     const setClauses: string[] = [];
     const values: unknown[] = [];
@@ -124,6 +145,24 @@ export async function PATCH(
 
     if (setClauses.length === 0) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
+
+    // Auto-clear pre-rejected state when the user fixes the blocking fields.
+    // Clara rejected because planningNotes/description/assignedTo was missing — once fixed, re-queue.
+    if (!('reviewStatus' in body) && !('status' in body)) {
+      const current = db.prepare('SELECT reviewStatus, planningNotes, description, assignedTo FROM tasks WHERE id = ?').get(id) as {
+        reviewStatus: string | null; planningNotes: string | null; description: string | null; assignedTo: string | null;
+      } | undefined;
+      if (current?.reviewStatus === 'pre-rejected') {
+        const fixingPlanningNotes = 'planningNotes' in body && body.planningNotes;
+        const fixingDescription = 'description' in body && body.description;
+        const fixingAssignee = 'assignedTo' in body && body.assignedTo;
+        if (fixingPlanningNotes || fixingDescription || fixingAssignee) {
+          // One of Clara's rejection reasons was just resolved — clear rejection state so auto-advance re-queues it
+          setClauses.push('reviewStatus = ?', 'reviewNotes = ?');
+          values.push(null, null);
+        }
+      }
     }
 
     // Auto-advance status based on reviewStatus.
@@ -336,32 +375,35 @@ export async function PATCH(
                 : rec;
               const nextId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
               const parentId = (updated.recurrenceParentId as string) || id;
-              const existingRecurrence = db.prepare(
-                'SELECT id FROM tasks WHERE recurrenceParentId = ? AND dueDate = ? AND status != ?'
-              ).get(parentId, nextDue, 'done');
-              if (!existingRecurrence) {
-                db.prepare(`
-                  INSERT INTO tasks (
-                    id, title, description, status, priority, project, project_id, assignedTo,
-                    reviewerId, planningNotes, dueDate, estimatedHours, tags, labels,
-                    blockedBy, blocks, progress, createdAt, updatedAt,
-                    recurrence, recurrenceParentId
-                  ) VALUES (
-                    ?, ?, ?, 'todo', ?, ?, ?, ?,
-                    ?, ?, ?, ?, '[]', '[]',
-                    '[]', '[]', 0, ?, ?,
-                    ?, ?
-                  )
-                `).run(
-                  nextId,
-                  updated.title, updated.description ?? null,
-                  updated.priority ?? 'p2', updated.project ?? null, updated.project_id ?? null, updated.assignedTo ?? null,
-                  updated.reviewerId ?? null, updated.planningNotes ?? null,
-                  nextDue, updated.estimatedHours ?? null,
-                  now, now,
-                  JSON.stringify(nextRec), parentId
-                );
-              }
+              // Atomic check-then-insert to prevent duplicate recurrence spawns
+              db.transaction(() => {
+                const existingRecurrence = db.prepare(
+                  'SELECT id FROM tasks WHERE recurrenceParentId = ? AND dueDate = ? AND status != ?'
+                ).get(parentId, nextDue, 'done');
+                if (!existingRecurrence) {
+                  db.prepare(`
+                    INSERT INTO tasks (
+                      id, title, description, status, priority, project, project_id, assignedTo,
+                      reviewerId, planningNotes, dueDate, estimatedHours, tags, labels,
+                      blockedBy, blocks, progress, createdAt, updatedAt,
+                      recurrence, recurrenceParentId
+                    ) VALUES (
+                      ?, ?, ?, 'todo', ?, ?, ?, ?,
+                      ?, ?, ?, ?, '[]', '[]',
+                      '[]', '[]', 0, ?, ?,
+                      ?, ?
+                    )
+                  `).run(
+                    nextId,
+                    updated.title, updated.description ?? null,
+                    updated.priority ?? 'p2', updated.project ?? null, updated.project_id ?? null, updated.assignedTo ?? null,
+                    updated.reviewerId ?? null, updated.planningNotes ?? null,
+                    nextDue, updated.estimatedHours ?? null,
+                    now, now,
+                    JSON.stringify(nextRec), parentId
+                  );
+                }
+              })();
             }
           }
         }

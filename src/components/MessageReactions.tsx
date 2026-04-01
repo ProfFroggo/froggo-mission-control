@@ -82,6 +82,7 @@ export default function MessageReactions({ messageId, isUser }: MessageReactions
       {reactions.map(r => (
         <button
           key={r.reaction}
+          type="button"
           onClick={() => toggleReaction(r.reaction)}
           title={`${r.label ?? r.reaction}: ${r.count}`}
           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-colors ${
@@ -95,13 +96,14 @@ export default function MessageReactions({ messageId, isUser }: MessageReactions
         </button>
       ))}
 
-      {/* Add reaction button — always shown */}
       {/* Add reaction button */}
       <div className="relative" ref={pickerRef}>
         <button
+          type="button"
           onClick={() => setShowPicker(v => !v)}
           title="Add reaction"
-          className="p-0.5 rounded-full text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors opacity-0 group-hover:opacity-100"
+          aria-label="Add reaction"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors opacity-0 group-hover:opacity-100"
         >
           <SmilePlus size={13} />
         </button>
@@ -117,8 +119,11 @@ export default function MessageReactions({ messageId, isUser }: MessageReactions
                 key={emoji}
                 onClick={() => toggleReaction(emoji)}
                 title={label}
-                className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm transition-colors hover:bg-mission-control-border ${
-                  myReactions.has(emoji) ? 'bg-mission-control-accent/20 ring-1 ring-mission-control-accent/40' : ''
+                aria-label={label}
+                className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${
+                  myReactions.has(emoji)
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
                 }`}
               >
                 {icon}

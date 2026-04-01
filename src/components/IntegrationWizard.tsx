@@ -15,6 +15,7 @@
 
 import { useEffect, useState } from 'react';
 import { CheckCircle, AlertCircle, ArrowLeft, ArrowRight, Plug } from 'lucide-react';
+import { Flex, TextField } from '@radix-ui/themes';
 import BaseModal, { BaseModalBody, BaseModalFooter } from './BaseModal';
 import { LoadingButton, Spinner } from './LoadingStates';
 
@@ -72,18 +73,32 @@ function credentialIndexForStep(step: number): number {
   return step - 1;
 }
 
-// ─── Progress Dots ───────────────────────────────────────────────────────────
+// ─── Step Indicator ──────────────────────────────────────────────────────────
 
-function ProgressDots({ total, current }: { total: number; current: number }) {
+function StepIndicator({ total, current }: { total: number; current: number }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-0 w-full">
       {Array.from({ length: total }).map((_, i) => (
-        <span
-          key={i}
-          className={`w-2 h-2 rounded-full transition-colors ${
-            i <= current ? 'bg-mission-control-accent' : 'bg-mission-control-border'
-          }`}
-        />
+        <div key={i} className="flex items-center flex-1 last:flex-none">
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold tabular-nums transition-colors flex-shrink-0 ${
+              i === current
+                ? 'bg-mission-control-accent text-white'
+                : i < current
+                  ? 'bg-success/15 text-success border border-success/30'
+                  : 'bg-mission-control-border/30 text-mission-control-text-dim border border-mission-control-border'
+            }`}
+          >
+            {i + 1}
+          </div>
+          {i < total - 1 && (
+            <div
+              className={`flex-1 h-px mx-1 transition-colors ${
+                i < current ? 'bg-success' : 'bg-mission-control-border'
+              }`}
+            />
+          )}
+        </div>
       ))}
     </div>
   );
@@ -111,7 +126,7 @@ function IntroStep({
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-3">
+      <Flex align="center" gap="3">
         <div className="w-10 h-10 rounded-lg bg-mission-control-accent/10 flex items-center justify-center flex-shrink-0">
           <Plug size={20} className="text-mission-control-accent" />
         </div>
@@ -125,21 +140,21 @@ function IntroStep({
               : `We'll collect ${credentials.length} credential${credentials.length !== 1 ? 's' : ''} and verify the connection.`}
           </p>
         </div>
-      </div>
+      </Flex>
 
       {credentials.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
             Required credentials
           </p>
           <ul className="space-y-2">
             {credentials.map((cred) => (
               <li
                 key={cred.id}
-                className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border"
+                className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-mission-control-surface border border-mission-control-border"
               >
                 <span className="text-sm text-mission-control-text">{cred.label}</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-mission-control-border text-mission-control-text-dim">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-mission-control-border/30 text-mission-control-text-dim">
                   {typeBadge(cred.type)}
                 </span>
               </li>
@@ -175,7 +190,7 @@ function CredentialStep({
           <p className="text-xs text-mission-control-accent mt-1">Required</p>
         )}
       </div>
-      <input
+      <TextField.Root
         type={inputType}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -188,7 +203,8 @@ function CredentialStep({
         }
         autoComplete="off"
         autoFocus
-        className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-4 py-2.5 text-mission-control-text placeholder:text-mission-control-text-dim focus:outline-none focus:border-mission-control-accent text-sm"
+        size="2"
+        className="w-full"
       />
     </div>
   );
@@ -225,16 +241,22 @@ function ReviewStep({
       {/* Credential summary */}
       {credentials.length > 0 && (
         <div className="space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
+            Credentials
+          </p>
           {credentials.map((cred) => (
-            <div
+            <Flex
               key={cred.id}
-              className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border"
+              align="center"
+              justify="between"
+              gap="3"
+              className="px-4 py-3 rounded-xl bg-mission-control-surface border border-mission-control-border"
             >
               <span className="text-sm text-mission-control-text">{cred.label}</span>
               <span className="text-xs font-mono text-mission-control-text-dim">
                 {values[cred.id] ? maskValue(values[cred.id]) : <em className="text-mission-control-text-dim not-italic">not set</em>}
               </span>
-            </div>
+            </Flex>
           ))}
         </div>
       )}
@@ -252,28 +274,28 @@ function ReviewStep({
 
         {/* Status area */}
         {testing && (
-          <div className="flex items-center gap-2 text-mission-control-text-dim text-sm">
+          <Flex align="center" gap="2" className="text-mission-control-text-dim text-sm">
             <Spinner size={14} />
             <span>Testing connection...</span>
-          </div>
+          </Flex>
         )}
 
         {!testing && testResult && (
           <div className="space-y-2">
             {testResult.success ? (
-              <div className="flex items-center gap-2 text-green-400 text-sm">
+              <Flex align="center" gap="2" className="text-success text-sm">
                 <CheckCircle size={16} />
                 <span>Connection successful!</span>
-              </div>
+              </Flex>
             ) : (
               <div className="space-y-2">
-                <div className="flex items-start gap-2 text-red-400 text-sm">
+                <Flex align="start" gap="2" className="text-error text-sm">
                   <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                   <span>{testResult.error || 'Connection failed'}</span>
-                </div>
+                </Flex>
                 {testResult.diagnosis && (
                   <div className="px-3 py-2.5 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm text-mission-control-text-dim">
-                    <p className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-1">
+                    <p className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">
                       Suggested fix
                     </p>
                     {testResult.diagnosis}
@@ -432,11 +454,11 @@ export default function IntegrationWizard({
       ariaLabel={`Integration wizard for ${moduleName}`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-mission-control-border">
-        <div>
+      <Flex align="center" justify="between" className="px-6 pt-6 pb-4 border-b border-mission-control-border">
+        <div className="flex-1 min-w-0 pr-4">
           <h2 className="text-lg font-semibold text-mission-control-text">{stepTitle()}</h2>
-          <div className="mt-2">
-            <ProgressDots total={totalSteps} current={currentStep} />
+          <div className="mt-3 w-full">
+            <StepIndicator total={totalSteps} current={currentStep} />
           </div>
         </div>
         <button
@@ -449,7 +471,7 @@ export default function IntegrationWizard({
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>
-      </div>
+      </Flex>
 
       {/* Body */}
       <BaseModalBody maxHeight="60vh">
@@ -486,11 +508,11 @@ export default function IntegrationWizard({
       {currentStep !== reviewStep && (
         <BaseModalFooter align="right">
           {currentStep === 0 ? (
-            <LoadingButton onClick={onCancel} variant="ghost">
+            <LoadingButton onClick={onCancel} variant="ghost" size="md">
               Cancel
             </LoadingButton>
           ) : (
-            <LoadingButton onClick={handleBack} variant="ghost" icon={<ArrowLeft size={14} />}>
+            <LoadingButton onClick={handleBack} variant="secondary" size="md" icon={<ArrowLeft size={14} />}>
               Back
             </LoadingButton>
           )}
@@ -498,6 +520,7 @@ export default function IntegrationWizard({
           <LoadingButton
             onClick={handleNext}
             variant="primary"
+            size="md"
             disabled={!canGoNext()}
             icon={<ArrowRight size={14} />}
           >
@@ -506,10 +529,10 @@ export default function IntegrationWizard({
         </BaseModalFooter>
       )}
 
-      {/* Footer for review step — only Cancel/Back visible (Finish inside body) */}
+      {/* Footer for review step — only Back visible (Finish inside body) */}
       {currentStep === reviewStep && (
         <BaseModalFooter align="right">
-          <LoadingButton onClick={handleBack} variant="ghost" icon={<ArrowLeft size={14} />}>
+          <LoadingButton onClick={handleBack} variant="secondary" size="md" icon={<ArrowLeft size={14} />}>
             Back
           </LoadingButton>
         </BaseModalFooter>

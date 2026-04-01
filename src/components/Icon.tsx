@@ -117,7 +117,7 @@ export function IconButton({
   const variantClasses = {
     default: 'bg-mission-control-surface border border-mission-control-border hover:bg-mission-control-border',
     ghost: 'hover:bg-mission-control-border',
-    danger: 'text-error hover:bg-error-subtle hover:border-error-border',
+    danger: 'text-error hover:bg-error/10 hover:border-error/30',
   };
 
   return (
@@ -131,7 +131,7 @@ export function IconButton({
         ${sizeClasses[size]}
         ${variantClasses[variant]}
         rounded-lg
-        transition-all duration-150
+        transition-colors duration-150
         active:scale-95
         disabled:opacity-50 disabled:cursor-not-allowed
         ${className}

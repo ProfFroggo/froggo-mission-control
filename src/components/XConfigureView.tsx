@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Bot, Zap, KeyRound } from 'lucide-react';
+import { Badge, Spinner, Flex } from '@radix-ui/themes';
+import TabNav, { type TabNavItem } from './TabNav';
 import XAgentContentQueue from './XAgentContentQueue';
 import XAutomationsTab from './XAutomationsTab';
 
 type ConfigSubTab = 'agent-mode' | 'automations' | 'credentials';
 
-const SUB_TABS: Array<{ id: ConfigSubTab; label: string; icon: React.ReactNode }> = [
-  { id: 'agent-mode', label: 'Agent Mode', icon: <Bot size={14} /> },
-  { id: 'automations', label: 'Automations', icon: <Zap size={14} /> },
-  { id: 'credentials', label: 'Credentials', icon: <KeyRound size={14} /> },
+const SUB_TABS: TabNavItem[] = [
+  { id: 'agent-mode', label: 'Agent Mode', icon: Bot },
+  { id: 'automations', label: 'Automations', icon: Zap },
+  { id: 'credentials', label: 'Credentials', icon: KeyRound },
 ];
 
 function CredentialsPanel() {
@@ -41,7 +43,7 @@ function CredentialsPanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-6 h-6 border-2 border-info border-t-transparent rounded-full animate-spin" />
+        <Spinner size="3" />
       </div>
     );
   }
@@ -60,16 +62,16 @@ function CredentialsPanel() {
       <h3 className="text-sm font-semibold text-mission-control-text mb-4">X/Twitter Credentials</h3>
       <div className="space-y-2">
         {Object.entries(keyLabels).map(([key, label]) => (
-          <div key={key} className="flex items-center justify-between px-4 py-3 rounded-xl border border-mission-control-border bg-mission-control-surface">
+          <Flex key={key} align="center" justify="between" className="px-4 py-3 rounded-xl border border-mission-control-border bg-mission-control-surface">
             <span className="text-sm text-mission-control-text">{label}</span>
-            <span className={`text-xs px-2 py-1 rounded-full ${
-              keys[key]
-                ? 'bg-success-subtle text-success'
-                : 'bg-error-subtle text-error'
-            }`}>
+            <Badge
+              color={keys[key] ? 'grass' : 'red'}
+              variant="soft"
+              radius="full"
+            >
               {keys[key] ? 'Configured' : 'Missing'}
-            </span>
-          </div>
+            </Badge>
+          </Flex>
         ))}
       </div>
       <p className="text-xs text-mission-control-text-dim mt-4">
@@ -83,23 +85,15 @@ export default function XConfigureView() {
   const [activeSubTab, setActiveSubTab] = useState<ConfigSubTab>('agent-mode');
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Sub-tab bar */}
-      <div className="flex items-center gap-1 px-4 py-2 border-b border-mission-control-border bg-mission-control-surface">
-        {SUB_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveSubTab(tab.id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              activeSubTab === tab.id
-                ? 'bg-info-subtle text-info font-medium'
-                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-alt'
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
+      <div className="bg-mission-control-surface">
+        <TabNav
+          tabs={SUB_TABS}
+          activeTab={activeSubTab}
+          onTabChange={(id) => setActiveSubTab(id as ConfigSubTab)}
+          paddingX="px-4"
+        />
       </div>
 
       {/* Sub-tab content */}
@@ -108,6 +102,6 @@ export default function XConfigureView() {
         {activeSubTab === 'automations' && <XAutomationsTab />}
         {activeSubTab === 'credentials' && <CredentialsPanel />}
       </div>
-    </div>
+    </Flex>
   );
 }

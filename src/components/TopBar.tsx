@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Flex } from '@radix-ui/themes';
 import { Inbox, Loader, Wifi, WifiOff, Activity, Bell } from 'lucide-react';
 import { gateway, ConnectionState } from '../lib/gateway';
 import { FocusModeIndicator, FocusModeSelector, useFocusMode } from './FocusMode';
 import { showToast } from './Toast';
 import PlatformHealthDashboard from './PlatformHealthDashboard';
 import NotificationCenter from './NotificationCenter';
-import { useEventBus } from '../lib/useEventBus';
+import { useEventBus, useSSEConnectionState } from '../lib/useEventBus';
 
 interface SystemStatus {
   watcherRunning: boolean;
@@ -146,44 +147,60 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
     setUnreadNotifCount(prev => prev + 1);
   }, []));
 
+  // Phase 88.4: SSE connection state indicator
+  const sseState = useSSEConnectionState();
+
   return (
     <>
-      <header 
-        className="drag-region fixed top-0 right-0 h-12 z-40 flex items-center justify-between px-4 bg-mission-control-surface/80 backdrop-blur-xl border-b border-mission-control-border/50 transition-all duration-200" 
+      <header
+        className="drag-region fixed top-0 right-0 h-14 z-40 flex items-center justify-between px-4 bg-mission-control-surface border-b border-mission-control-border transition-colors duration-200"
         style={{ left: `${sidebarWidth}px` }}
       >
         {/* Left: Focus mode */}
-        <div className="no-drag flex items-center gap-2">
+        <Flex align="center" gap="2" className="no-drag">
           {focusMode && (
             <FocusModeIndicator mode={focusMode} onClick={() => setFocusSelectorOpen(true)} />
           )}
-        </div>
+        </Flex>
 
         {/* Right: Connection status + Counters */}
-        <div className="no-drag flex items-center gap-3">
+        <Flex align="center" gap="3" className="no-drag">
+          {/* SSE Connection Indicator */}
+          {sseState !== 'connected' && (
+            <span
+              title={sseState === 'reconnecting' ? 'SSE reconnecting...' : 'SSE disconnected'}
+              className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                sseState === 'reconnecting'
+                  ? 'bg-warning animate-pulse'
+                  : 'bg-error'
+              }`}
+            />
+          )}
+
           {/* Notification Bell */}
           <button
             type="button"
             onClick={() => setNotifCenterOpen(prev => !prev)}
             title="Notifications"
             aria-label={`Notifications${unreadNotifCount > 0 ? ` (${unreadNotifCount} unread)` : ''}`}
-            className="relative inline-flex items-center justify-center p-2 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors min-h-[44px] min-w-[44px]"
+            className="relative w-8 h-8 rounded-lg flex items-center justify-center text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
           >
             <Bell size={16} aria-hidden="true" />
             {unreadNotifCount > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center text-[9px] font-bold bg-error text-white rounded-full leading-none tabular-nums">
+              <span className="absolute top-0.5 right-0.5 min-w-[14px] h-[14px] flex items-center justify-center text-[9px] font-bold bg-error text-white rounded-full leading-none tabular-nums px-0.5">
                 {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
               </span>
             )}
           </button>
 
-          {/* Platform Health Indicator */}
+          {/* Platform Health Indicator — WCAG 4.1.3: aria-expanded reflects toggle state; aria-label uses human-readable status */}
           <button
             type="button"
             onClick={() => setHealthDashboardOpen(true)}
             title={`Platform: ${platformStatus === 'ok' ? 'Healthy' : platformStatus === 'degraded' ? 'Degraded' : 'Error'}`}
-            aria-label={`Platform health: ${platformStatus}`}
-            className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full transition-colors hover:bg-mission-control-border min-h-[44px] min-w-[44px]"
+            aria-expanded={healthDashboardOpen}
+            aria-label={`Platform health: ${platformStatus === 'ok' ? 'Healthy' : platformStatus === 'degraded' ? 'Degraded' : 'Error'}`}
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors hover:bg-mission-control-border/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
           >
             <span
               className={`w-2 h-2 rounded-full flex-shrink-0 ${
@@ -206,16 +223,22 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
               aria-hidden="true"
             />
           </button>
-          {/* Connection Status Indicator */}
+          {/* Connection Status Indicator — WCAG 2.1 SC 4.1.3 fix: aria-live region + aria-label for accessible name */}
           {connectionState !== 'connected' && (
-            <span 
-              className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full ${
-                connectionState === 'disconnected' 
-                  ? 'bg-error-subtle text-error' 
-                  : 'bg-warning-subtle text-warning'
+            <span
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              aria-label={connectionState === 'disconnected'
+                ? `Connection: Disconnected. Reconnecting, attempt ${reconnectAttempts}.`
+                : `Connection: Connecting to gateway, attempt ${reconnectAttempts}.`}
+              className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                connectionState === 'disconnected'
+                  ? 'bg-error/10 text-error'
+                  : 'bg-warning/10 text-warning'
               }`}
-              title={connectionState === 'disconnected' 
-                ? `Disconnected. Reconnecting... (${reconnectAttempts})` 
+              title={connectionState === 'disconnected'
+                ? `Disconnected. Reconnecting... (${reconnectAttempts})`
                 : `Connecting to gateway... (${reconnectAttempts})`}
             >
               {connectionState === 'disconnected' ? (
@@ -223,38 +246,48 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
               ) : (
                 <Wifi size={12} className="animate-pulse" aria-hidden="true" />
               )}
-              <span>
+              <span aria-hidden="true">
                 {connectionState === 'disconnected' ? 'Offline' : 'Connecting'}
                 {reconnectAttempts > 0 && ` (${reconnectAttempts})`}
+              </span>
+              <span className="sr-only">
+                {connectionState === 'disconnected'
+                  ? `Disconnected. Reconnecting, attempt ${reconnectAttempts}.`
+                  : `Connecting to gateway, attempt ${reconnectAttempts}.`}
               </span>
             </span>
           )}
 
-          {/* Offline Queue Indicator */}
+          {/* Offline Queue Indicator — WCAG 2.1 SC 4.1.3 fix: aria-live region + aria-label for accessible name */}
           {offlineQueueSize > 0 && (
-            <span 
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-info px-2 py-1 rounded-full bg-info-subtle"
+            <span
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              aria-label={`${offlineQueueSize} actions queued for sync`}
+              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-info/10 text-info"
               title={`${offlineQueueSize} actions queued for sync`}
             >
               <Loader size={12} className="animate-spin" aria-hidden="true" />
-              <span className="tabular-nums">{offlineQueueSize}</span>
+              <span className="tabular-nums" aria-hidden="true">{offlineQueueSize}</span>
+              <span className="sr-only">{offlineQueueSize} actions queued for sync</span>
             </span>
           )}
 
           {status.pendingInbox > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-warning" title={`${status.pendingInbox} pending inbox items`}>
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-warning/10 text-warning" title={`${status.pendingInbox} pending inbox items`}>
               <Inbox size={12} aria-hidden="true" />
               <span className="tabular-nums">{status.pendingInbox}</span>
             </span>
           )}
 
           {status.inProgressTasks > 0 && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-info" title={`${status.inProgressTasks} tasks in progress`}>
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-info/10 text-info" title={`${status.inProgressTasks} tasks in progress`}>
               <Loader size={12} className="animate-spin" aria-hidden="true" />
               <span className="tabular-nums">{status.inProgressTasks}</span>
             </span>
           )}
-        </div>
+        </Flex>
       </header>
 
       {/* Focus Mode Selector */}

@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Check, X, Zap, Info, ChevronDown, Save, TestTube } from 'lucide-react';
+import { Button, TextField, Select, TextArea, Switch, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import {
   RuleConditionType,
@@ -41,7 +42,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
-  
+
   const [rule, setRule] = useState<Partial<FolderRule>>({
     id: `rule-${Date.now()}`,
     folderId,
@@ -53,7 +54,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
-  
+
   const [testData, setTestData] = useState<Partial<ConversationData>>({
     sender: 'test@example.com',
     senderName: 'Test User',
@@ -63,7 +64,7 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
     isUrgent: false,
     hasAttachment: false,
   });
-  
+
   const [testResult, setTestResult] = useState<boolean | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
 
@@ -198,17 +199,17 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
+      <Flex align="center" justify="center" className="p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-mission-control-accent border-t-transparent" />
-      </div>
+      </Flex>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-mission-control-surface">
+    <Flex direction="column" height="100%" className="bg-mission-control-surface">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
+        <Flex align="center" gap="3">
           <div className="p-2 bg-mission-control-accent/20 rounded-lg">
             <Zap size={20} className="text-mission-control-accent" />
           </div>
@@ -216,49 +217,53 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
             <h2 className="text-lg font-semibold">Smart Folder Rules</h2>
             <p className="text-sm text-mission-control-text-dim">{folderName}</p>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
+        </Flex>
+        <Flex align="center" gap="2">
           <button
+            type="button"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
             onClick={testRule}
             disabled={testing || !rule.conditions || rule.conditions.length === 0}
-            className="flex items-center gap-2 px-3 py-1.5 bg-info-subtle text-info hover:bg-info-subtle rounded-lg transition-colors text-sm disabled:opacity-50"
           >
             <TestTube size={14} />
             Test Rule
           </button>
-          <button
+          <Button
+            size="2"
+            variant="solid"
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-accent hover:bg-mission-control-accent-hover text-white rounded-lg transition-colors text-sm"
           >
             <Save size={14} />
             {saving ? 'Saving...' : 'Save'}
-          </button>
+          </Button>
           {onClose && (
             <button
+              type="button"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               onClick={onClose}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+              aria-label="Close"
             >
               <X size={16} />
             </button>
           )}
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Rule Info */}
         <div className="card p-4">
-          <div className="flex items-start gap-3 mb-4">
+          <Flex align="start" gap="3" className="mb-4">
             <Info size={16} className="text-mission-control-accent mt-0.5" />
             <div className="flex-1">
               <h3 className="font-semibold mb-1">How Smart Folders Work</h3>
               <p className="text-sm text-mission-control-text-dim">
-                Define conditions to automatically assign conversations to this folder. 
+                Define conditions to automatically assign conversations to this folder.
                 Conversations matching your rules will be added automatically.
               </p>
             </div>
-          </div>
+          </Flex>
 
           {/* Rule Description */}
           {rule.conditions && rule.conditions.length > 0 && (
@@ -271,16 +276,17 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
 
         {/* Rule Configuration */}
         <div className="card p-4 space-y-4">
-          <div className="flex items-center justify-between">
+          <Flex align="center" justify="between">
             <h3 className="font-semibold">Rule Configuration</h3>
             <button
+              type="button"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               onClick={() => setShowTemplates(!showTemplates)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-border hover:bg-mission-control-border/80 rounded-lg text-sm transition-colors"
             >
               <ChevronDown size={14} className={`transition-transform ${showTemplates ? 'rotate-180' : ''}`} />
               Templates
             </button>
-          </div>
+          </Flex>
 
           {/* Templates Dropdown */}
           {showTemplates && (
@@ -289,8 +295,9 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
               {RULE_TEMPLATES.map((template, idx) => (
                 <button
                   key={idx}
+                  type="button"
+                  className="inline-flex flex-col items-start w-full px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   onClick={() => applyTemplate(template)}
-                  className="w-full text-left p-2 hover:bg-mission-control-surface rounded transition-colors"
                 >
                   <div className="text-sm font-medium">{template.name}</div>
                   <div className="text-xs text-mission-control-text-dim mt-1">
@@ -305,25 +312,24 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="rule-name" className="block text-sm font-medium mb-2">Rule Name</label>
-              <input
+              <TextField.Root
                 id="rule-name"
-                type="text"
                 value={rule.name || ''}
                 onChange={(e) => setRule({ ...rule, name: e.target.value })}
-                className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
                 placeholder="e.g., High Priority Messages"
+                size="2"
               />
             </div>
             <div>
               <label htmlFor="rule-priority" className="block text-sm font-medium mb-2">Priority</label>
-              <input
+              <TextField.Root
                 id="rule-priority"
                 type="number"
-                value={rule.priority || 50}
+                value={String(rule.priority ?? 50)}
                 onChange={(e) => setRule({ ...rule, priority: parseInt(e.target.value) })}
-                min={0}
-                max={100}
-                className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                min="0"
+                max="100"
+                size="2"
               />
               <p className="text-xs text-mission-control-text-dim mt-1">Higher priority rules run first (0-100)</p>
             </div>
@@ -332,23 +338,25 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
           {/* Operator */}
           <div>
             <span className="block text-sm font-medium mb-2">Match Conditions</span>
-            <div className="flex gap-3">
+            <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
               <button
+                type="button"
                 onClick={() => setRule({ ...rule, operator: 'AND' })}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex flex-1 items-center justify-center px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                   rule.operator === 'AND'
-                    ? 'bg-mission-control-accent text-white'
-                    : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 AND (All conditions)
               </button>
               <button
+                type="button"
                 onClick={() => setRule({ ...rule, operator: 'OR' })}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex flex-1 items-center justify-center px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                   rule.operator === 'OR'
-                    ? 'bg-mission-control-accent text-white'
-                    : 'bg-mission-control-border text-mission-control-text-dim hover:bg-mission-control-border/80'
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent'
+                    : 'text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 OR (Any condition)
@@ -357,38 +365,32 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
           </div>
 
           {/* Enabled Toggle */}
-          <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+          <Flex align="center" justify="between" className="p-3 bg-mission-control-bg rounded-lg">
             <div>
               <div className="text-sm font-medium">Rule Enabled</div>
               <div className="text-xs text-mission-control-text-dim">Activate auto-assignment for this folder</div>
             </div>
-            <button
-              onClick={() => setRule({ ...rule, enabled: !rule.enabled })}
-              className={`relative w-12 h-6 rounded-full transition-colors ${
-                rule.enabled ? 'bg-mission-control-accent' : 'bg-mission-control-border'
-              }`}
-            >
-              <div
-                className={`absolute top-1 w-4 h-4 bg-mission-control-text rounded-full transition-transform ${
-                  rule.enabled ? 'translate-x-7' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
+            <Switch
+              size="2"
+              checked={rule.enabled ?? true}
+              onCheckedChange={(checked) => setRule({ ...rule, enabled: checked })}
+            />
+          </Flex>
         </div>
 
         {/* Conditions */}
         <div className="card p-4">
-          <div className="flex items-center justify-between mb-4">
+          <Flex align="center" justify="between" className="mb-4">
             <h3 className="font-semibold">Conditions</h3>
-            <button
+            <Button
+              size="2"
+              variant="solid"
               onClick={addCondition}
-              className="flex items-center gap-2 px-3 py-1.5 bg-mission-control-accent hover:bg-mission-control-accent-hover text-white rounded-lg text-sm transition-colors"
             >
               <Plus size={14} />
               Add Condition
-            </button>
-          </div>
+            </Button>
+          </Flex>
 
           {rule.conditions && rule.conditions.length > 0 ? (
             <div className="space-y-3">
@@ -396,54 +398,55 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
                 const config = getConditionConfig(condition.type);
                 return (
                   <div key={idx} className="p-3 bg-mission-control-bg rounded-lg border border-mission-control-border">
-                    <div className="flex items-start gap-3">
+                    <Flex align="start" gap="3">
                       {/* Condition Type */}
                       <div className="flex-1">
-                        <select
+                        <Select.Root
                           value={condition.type}
-                          onChange={(e) => updateCondition(idx, { type: e.target.value as RuleConditionType })}
-                          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:border-mission-control-accent"
+                          onValueChange={(value) => updateCondition(idx, { type: value as RuleConditionType })}
+                          size="2"
                         >
-                          {CONDITION_TYPES.map((type) => (
-                            <option key={type.value} value={type.value}>
-                              {type.label}
-                            </option>
-                          ))}
-                        </select>
+                          <Select.Trigger className="w-full mb-2" />
+                          <Select.Content>
+                            {CONDITION_TYPES.map((type) => (
+                              <Select.Item key={type.value} value={type.value}>
+                                {type.label}
+                              </Select.Item>
+                            ))}
+                          </Select.Content>
+                        </Select.Root>
 
                         {/* Condition Value */}
                         {config.valueType === 'text' && (
-                          <input
-                            type="text"
+                          <TextField.Root
                             value={String(condition.value || '')}
                             onChange={(e) => updateCondition(idx, { value: e.target.value })}
                             placeholder={config.description}
-                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                            size="2"
                           />
                         )}
                         {config.valueType === 'number' && (
-                          <input
+                          <TextField.Root
                             type="number"
-                            value={Number(condition.value || 0)}
+                            value={String(Number(condition.value || 0))}
                             onChange={(e) => updateCondition(idx, { value: parseFloat(e.target.value) })}
                             placeholder={config.description}
-                            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
+                            size="2"
                           />
                         )}
                         {config.valueType === 'boolean' && (
-                          <div className="flex items-center gap-2 text-sm text-mission-control-text-dim">
+                          <Flex align="center" gap="2" className="text-sm text-mission-control-text-dim">
                             <Check size={16} className="text-mission-control-accent" />
                             {config.description}
-                          </div>
+                          </Flex>
                         )}
 
                         {/* Negate Toggle */}
                         <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                          <input
-                            type="checkbox"
+                          <Switch
+                            size="1"
                             checked={condition.negate || false}
-                            onChange={(e) => updateCondition(idx, { negate: e.target.checked })}
-                            className="w-4 h-4 rounded border-mission-control-border text-mission-control-accent focus:ring-mission-control-accent"
+                            onCheckedChange={(checked) => updateCondition(idx, { negate: checked })}
                           />
                           <span className="text-xs text-mission-control-text-dim">NOT (negate condition)</span>
                         </label>
@@ -451,13 +454,15 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
 
                       {/* Remove Button */}
                       <button
+                        type="button"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         onClick={() => removeCondition(idx)}
-                        className="p-2 hover:bg-error-subtle text-error rounded-lg transition-colors"
                         title="Remove condition"
+                        aria-label="Remove condition"
                       >
                         <Trash2 size={16} />
                       </button>
-                    </div>
+                    </Flex>
                   </div>
                 );
               })}
@@ -475,41 +480,39 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
           <h3 className="font-semibold mb-4">Test Rule</h3>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <input
-                type="text"
+              <TextField.Root
                 value={testData.sender || ''}
                 onChange={(e) => setTestData({ ...testData, sender: e.target.value })}
                 placeholder="Sender (email/phone)"
-                className="bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm"
+                size="2"
               />
-              <input
-                type="text"
+              <TextField.Root
                 value={testData.senderName || ''}
                 onChange={(e) => setTestData({ ...testData, senderName: e.target.value })}
                 placeholder="Sender name"
-                className="bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm"
+                size="2"
               />
-              <input
-                type="text"
+              <TextField.Root
                 value={testData.platform || ''}
                 onChange={(e) => setTestData({ ...testData, platform: e.target.value })}
                 placeholder="Platform (whatsapp, telegram, etc)"
-                className="bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm"
+                size="2"
               />
-              <input
+              <TextField.Root
                 type="number"
-                value={testData.priorityScore || 50}
+                value={String(testData.priorityScore ?? 50)}
                 onChange={(e) => setTestData({ ...testData, priorityScore: parseInt(e.target.value) })}
                 placeholder="Priority score"
-                className="bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm"
+                size="2"
               />
             </div>
-            <textarea
+            <TextArea
               value={testData.content || ''}
               onChange={(e) => setTestData({ ...testData, content: e.target.value })}
               placeholder="Message content..."
               rows={3}
-              className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm resize-none"
+              size="2"
+              style={{ resize: 'none' }}
             />
 
             {/* Test Result */}
@@ -517,14 +520,14 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
               <div
                 className={`p-3 rounded-lg border ${
                   testResult
-                    ? 'bg-success-subtle border-success-border text-success'
-                    : 'bg-warning-subtle border-warning-border text-warning'
+                    ? 'bg-success/10 border-success/30 text-success'
+                    : 'bg-warning/10 border-warning/30 text-warning'
                 }`}
               >
-                <div className="flex items-center gap-2 text-sm font-medium">
+                <Flex align="center" gap="2" className="text-sm font-medium">
                   {testResult ? <Check size={16} /> : <X size={16} />}
                   {testResult ? 'This conversation would match this rule' : 'This conversation would NOT match this rule'}
-                </div>
+                </Flex>
               </div>
             )}
           </div>
@@ -532,14 +535,15 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
 
         {/* Danger Zone */}
         {rule.id && (
-          <div className="card p-4 border-error-border">
+          <div className="card p-4 border-error/30">
             <h3 className="font-semibold text-error mb-2">Danger Zone</h3>
             <p className="text-sm text-mission-control-text-dim mb-3">
               Deleting this rule will make the folder manual-only. Existing assignments will remain.
             </p>
             <button
+              type="button"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               onClick={handleDelete}
-              className="flex items-center gap-2 px-3 py-2 bg-error-subtle hover:bg-error-subtle text-error rounded-lg text-sm transition-colors"
             >
               <Trash2 size={14} />
               Delete Rule
@@ -547,6 +551,6 @@ export default function SmartFolderRuleEditor({ folderId, folderName, onClose, o
           </div>
         )}
       </div>
-    </div>
+    </Flex>
   );
 }

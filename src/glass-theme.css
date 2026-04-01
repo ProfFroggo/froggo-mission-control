@@ -1,0 +1,209 @@
+/**
+ * GLASS MORPHISM THEME LAYER
+ *
+ * Clean, minimal glass surfaces — inspired by Radix UI's precision aesthetic.
+ * No ambient glow blobs. No noise textures. No gaming effects.
+ * "Sexy" comes from spacing, typography, and precise color steps.
+ */
+
+/* ============================================================
+   BODY BACKGROUND — Pure dark, no gradients
+   ============================================================ */
+
+body {
+  background-color: var(--color-background, #0e0e10);
+}
+
+/* App canvas — subtle radial accent halo at very top, rest solid dark */
+.app-canvas {
+  background:
+    radial-gradient(ellipse 80% 30% at 50% -5%,
+      color-mix(in srgb, var(--mission-control-accent) 5%, transparent) 0%,
+      transparent 100%),
+    var(--mission-control-bg);
+}
+
+/* ============================================================
+   SCROLLBARS — Thin, minimal
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-a5);
+  border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-a7);
+}
+
+
+/* ============================================================
+   MODAL / DIALOG GLASS SURFACES
+   ============================================================ */
+
+[role="dialog"],
+.modal-content,
+[data-radix-dialog-content] {
+  background: var(--color-panel-solid) !important;
+  border: 1px solid var(--gray-a5) !important;
+  box-shadow: 0 24px 64px var(--black-a9) !important;
+}
+
+/* ============================================================
+   DROPDOWN / POPOVER GLASS SURFACES
+   ============================================================ */
+
+[data-radix-dropdown-menu-content],
+[data-radix-select-content],
+[data-radix-popover-content],
+[data-radix-tooltip-content] {
+  background: var(--color-panel-solid);
+  border: 1px solid var(--gray-a4);
+  box-shadow: 0 8px 32px var(--black-a7);
+}
+
+/* ============================================================
+   PANEL GLASS TREATMENT — Sidebar and key panels
+   ============================================================ */
+
+.sidebar-glass {
+  background: var(--color-background) !important;
+  border-right: 1px solid var(--gray-a3) !important;
+  box-shadow: none !important;
+}
+
+.panel-header-glass {
+  background: var(--color-background);
+  border-bottom: 1px solid var(--gray-a3);
+}
+
+
+/* ============================================================
+   ACCENT GLOW — Minimal, purposeful only
+   ============================================================ */
+
+.accent-glow {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mission-control-accent) 30%, transparent);
+}
+
+.accent-glow-sm {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mission-control-accent) 20%, transparent);
+}
+
+/* Status dot — just a clean ring, no bloom */
+.status-online {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-success) 40%, transparent);
+}
+
+/* ============================================================
+   FROSTED SURFACE UTILITY CLASSES
+   ============================================================ */
+
+.glass-surface {
+  background: var(--gray-a2);
+  border: 1px solid var(--gray-a4);
+}
+
+.glass-surface-light {
+  background: var(--gray-a1);
+  border: 1px solid var(--gray-a3);
+}
+
+.glass-inset {
+  background: var(--black-a4);
+  border: 1px solid var(--gray-a3);
+  border-radius: 8px;
+}
+
+/* ============================================================
+   LIGHT MODE GLASS OVERRIDES
+   ============================================================ */
+
+/* glass-surface, glass-surface-light, sidebar-glass, body all use Radix vars — no light overrides needed */
+
+/* ============================================================
+   ACTIVE / SELECTED STATES — Clean, no bloom
+   ============================================================ */
+
+.sidebar-glass [aria-current="page"],
+.sidebar-glass [data-active="true"],
+.sidebar-glass .active-nav-item {
+  background: var(--accent-a3) !important;
+  border-color: var(--accent-a5) !important;
+  color: var(--accent-11) !important;
+}
+
+/* ============================================================
+   BUTTONS — Clean accent, no bloom
+   ============================================================ */
+
+/* ============================================================
+   KANBAN / TASK CARDS
+   ============================================================ */
+
+[class*="rounded"][class*="border"][class*="bg-mission-control-surface"] {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* ============================================================
+   COMPONENT PATTERN OVERRIDES
+   ============================================================ */
+
+.card-base {
+  background: var(--mission-control-surface);
+  border-color: var(--mission-control-border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.card-base:hover {
+  border-color: var(--gray-a6);
+  box-shadow: 0 2px 8px var(--black-a4);
+}
+
+/* ============================================================
+   INPUT / FORM GLASS TREATMENT
+   Exclude Radix-managed inputs (they use data-radix-* attributes
+   and handle their own theming via the Theme component).
+   ============================================================ */
+
+input[type="text"]:not([data-radix-collection-item]):not(.rt-TextFieldInput),
+input[type="email"]:not(.rt-TextFieldInput),
+input[type="password"]:not(.rt-TextFieldInput),
+input[type="search"]:not(.rt-TextFieldInput),
+input[type="number"]:not(.rt-TextFieldInput),
+textarea:not(.rt-TextAreaInput),
+select:not(.rt-SelectTrigger) {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+input:not(.rt-TextFieldInput):focus,
+textarea:not(.rt-TextAreaInput):focus,
+select:not(.rt-SelectTrigger):focus {
+  border-color: var(--mission-control-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mission-control-accent) 10%, transparent);
+  background: rgba(255, 255, 255, 0.06);
+  outline: none;
+}
+
+:root.light input[type="text"]:not(.rt-TextFieldInput),
+:root.light input[type="email"]:not(.rt-TextFieldInput),
+:root.light input[type="password"]:not(.rt-TextFieldInput),
+:root.light input[type="search"]:not(.rt-TextFieldInput),
+:root.light input[type="number"]:not(.rt-TextFieldInput),
+:root.light textarea:not(.rt-TextAreaInput),
+:root.light select:not(.rt-SelectTrigger) {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}

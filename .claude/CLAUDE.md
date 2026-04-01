@@ -19,6 +19,7 @@
 - External actions (tweets, emails, deploys) → `approval_create` MCP tool first
 - P0/P1 tasks → Clara review before done
 - ENV values → import from `src/lib/env.ts`, never `process.env` directly
+- **Build verification**: use `npm run build:verify` (outputs to `.next-verify/`). **Never** run `npm run build` or `next build` — it wipes `.next/` which is owned by the running dev server and crashes the app for all users.
 
 ## UI Rules
 - **No emojis in UI** — always use Lucide icons instead. Emojis are never used as UI elements, icons, or decorations.

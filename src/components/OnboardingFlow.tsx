@@ -7,8 +7,8 @@ import {
   Check,
   Zap,
   Rocket,
-  ChevronDown,
 } from 'lucide-react';
+import { Button, Flex, Select, TextField } from '@radix-ui/themes';
 import AgentAvatar from './AgentAvatar';
 
 // ─────────────────────────────────────────────
@@ -50,23 +50,49 @@ const FALLBACK_AGENTS: AgentDef[] = [
 const AGENT_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#6366f1', '#14b8a6', '#e11d48', '#8b5cf6', '#eab308'];
 
 // ─────────────────────────────────────────────
-// Step dots progress indicator
+// Step progress indicator
 // ─────────────────────────────────────────────
 function StepDots({ total, current }: { total: number; current: number }) {
   return (
-    <div className="flex items-center gap-1.5" role="progressbar" aria-valuenow={current + 1} aria-valuemax={total}>
-      {Array.from({ length: total }).map((_, i) => (
-        <span
-          key={i}
-          className={`block h-1.5 rounded-full transition-all duration-300 ${
-            i === current
-              ? 'w-6 bg-mission-control-accent'
-              : i < current
-              ? 'w-1.5 bg-mission-control-accent/50'
-              : 'w-1.5 bg-mission-control-border'
-          }`}
-        />
-      ))}
+    <div
+      className="flex items-center"
+      role="progressbar"
+      aria-valuenow={current + 1}
+      aria-valuemax={total}
+      aria-label={`Step ${current + 1} of ${total}`}
+    >
+      {Array.from({ length: total }).map((_, i) => {
+        const isComplete = i < current;
+        const isActive = i === current;
+        return (
+          <div key={i} className="flex items-center">
+            <div
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors duration-200 flex-shrink-0 ${
+                isActive
+                  ? 'bg-mission-control-accent text-white'
+                  : isComplete
+                  ? 'bg-mission-control-accent/20 text-mission-control-accent'
+                  : 'bg-mission-control-border/60 text-mission-control-text-dim'
+              }`}
+            >
+              {isComplete ? (
+                <Check size={10} />
+              ) : (
+                i + 1
+              )}
+            </div>
+            {i < total - 1 && (
+              <div className="w-6 h-px mx-0.5 flex-shrink-0">
+                <div
+                  className={`h-full transition-colors duration-300 ${
+                    i < current ? 'bg-mission-control-accent/50' : 'bg-mission-control-border'
+                  }`}
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -81,15 +107,15 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
       <div
         className="relative -mx-6 -mt-2 h-36 rounded-t-xl overflow-hidden flex items-center justify-center"
         style={{
-          background: 'linear-gradient(135deg, var(--mission-control-accent) 0%, #3b82f6 50%, #a855f7 100%)',
+          background: 'linear-gradient(135deg, var(--mission-control-accent) 0%, var(--color-info) 50%, var(--color-review) 100%)',
           backgroundSize: '200% 200%',
           animation: 'ob-gradient-shift 6s ease infinite',
         }}
       >
         <div className="text-center z-10 px-4">
-          <div className="flex items-center justify-center mb-1">
+          <Flex align="center" justify="center" className="mb-1">
             <Rocket size={22} className="text-white/90" />
-          </div>
+          </Flex>
           <h1 className="text-2xl font-bold text-white tracking-tight">Mission Control</h1>
           <p className="text-white/75 text-sm mt-1">Your AI-powered operations platform</p>
         </div>
@@ -102,25 +128,24 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
           { Icon: Check, label: 'Track tasks, projects, and automations in one place' },
           { Icon: Rocket, label: 'Ship faster with intelligent workflows' },
         ].map(({ Icon, label }) => (
-          <div
+          <Flex
             key={label}
-            className="flex items-center gap-3 p-3 rounded-lg bg-mission-control-bg border border-mission-control-border"
+            align="center"
+            gap="3"
+            className="p-3 rounded-lg bg-mission-control-bg border border-mission-control-border"
           >
             <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-mission-control-accent/10 flex items-center justify-center">
               <Icon size={15} className="text-mission-control-accent" />
             </div>
             <span className="text-sm text-mission-control-text">{label}</span>
-          </div>
+          </Flex>
         ))}
       </div>
 
-      <button
-        onClick={onNext}
-        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
-      >
+      <Button onClick={onNext} variant="solid" color="violet" size="3" className="w-full">
         Get started
         <ArrowRight size={16} />
-      </button>
+      </Button>
     </div>
   );
 }
@@ -157,13 +182,14 @@ function StepPlatformSetup({
           <label htmlFor="ob-platform-name" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
             Platform name
           </label>
-          <input
+          <TextField.Root
             id="ob-platform-name"
+            size="2"
+            className="w-full"
             type="text"
             value={data.platformName}
-            onChange={e => onChange({ ...data, platformName: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...data, platformName: e.target.value })}
             placeholder="e.g. Acme Corp Command Center"
-            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent"
           />
         </div>
 
@@ -171,22 +197,19 @@ function StepPlatformSetup({
           <label htmlFor="ob-industry" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
             Industry / use case
           </label>
-          <div className="relative">
-            <select
-              id="ob-industry"
-              value={data.industry}
-              onChange={e => onChange({ ...data, industry: e.target.value })}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-            >
-              <option value="">Select one</option>
-              <option value="agency">Agency</option>
-              <option value="startup">Startup</option>
-              <option value="enterprise">Enterprise</option>
-              <option value="solo">Solo Creator</option>
-              <option value="other">Other</option>
-            </select>
-            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none" />
-          </div>
+          <Select.Root
+            value={data.industry || ''}
+            onValueChange={(v) => onChange({ ...data, industry: v })}
+          >
+            <Select.Trigger id="ob-industry" className="w-full" placeholder="Select one" />
+            <Select.Content>
+              <Select.Item value="agency">Agency</Select.Item>
+              <Select.Item value="startup">Startup</Select.Item>
+              <Select.Item value="enterprise">Enterprise</Select.Item>
+              <Select.Item value="solo">Solo Creator</Select.Item>
+              <Select.Item value="other">Other</Select.Item>
+            </Select.Content>
+          </Select.Root>
         </div>
 
         <div>
@@ -204,10 +227,8 @@ function StepPlatformSetup({
                 key={opt.value}
                 type="button"
                 onClick={() => onChange({ ...data, teamSize: opt.value })}
-                className={`px-2 py-2 text-xs font-medium rounded-lg border transition-colors ${
-                  data.teamSize === opt.value
-                    ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                    : 'border-mission-control-border bg-mission-control-bg text-mission-control-text-dim hover:border-mission-control-accent/40 hover:text-mission-control-text'
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                  data.teamSize === opt.value ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                 }`}
               >
                 {opt.label}
@@ -217,22 +238,16 @@ function StepPlatformSetup({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 px-3 py-2.5 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-        >
+      <Flex align="center" gap="3">
+        <button type="button" onClick={onBack} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
           <ArrowLeft size={14} />
           Back
         </button>
-        <button
-          onClick={onNext}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
-        >
+        <Button onClick={onNext} variant="solid" color="violet" size="2" className="flex-1">
           Continue
           <ArrowRight size={16} />
-        </button>
-      </div>
+        </Button>
+      </Flex>
     </div>
   );
 }
@@ -289,7 +304,7 @@ function StepMeetAgents({
               key={agent.id}
               type="button"
               onClick={() => onToggle(agent.id)}
-              className={`w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-all duration-150 ${
+              className={`w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-colors duration-150 ${
                 isSelected
                   ? 'border-mission-control-accent bg-mission-control-accent/5'
                   : 'border-mission-control-border bg-mission-control-bg hover:border-mission-control-accent/40'
@@ -320,23 +335,22 @@ function StepMeetAgents({
         })}
       </div>
 
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 px-3 py-2.5 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-        >
+      <Flex align="center" gap="3">
+        <button type="button" onClick={onBack} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
           <ArrowLeft size={14} />
           Back
         </button>
-        <button
+        <Button
           onClick={onNext}
           disabled={selected.size === 0 || creating}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          variant="solid"
+                   size="2"
+          className="flex-1"
         >
           {creating ? 'Adding agents...' : `Add ${selected.size} agent${selected.size !== 1 ? 's' : ''} & continue`}
           {!creating && <ArrowRight size={16} />}
-        </button>
-      </div>
+        </Button>
+      </Flex>
     </div>
   );
 }
@@ -388,79 +402,77 @@ function StepFirstTask({
       <div className="space-y-3.5">
         <div>
           <label htmlFor="ob-task-title" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
-            Task title <span className="text-red-500">*</span>
+            Task title <span className="text-error">*</span>
           </label>
-          <input
+          <TextField.Root
             id="ob-task-title"
+            size="2"
+            className="w-full"
             type="text"
             value={data.title}
-            onChange={e => { onChange({ ...data, title: e.target.value }); setError(''); }}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { onChange({ ...data, title: e.target.value }); setError(''); }}
             placeholder="e.g. Draft a product announcement"
-            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent"
             disabled={taskCreated}
           />
-          {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+          {error && <p className="mt-1 text-xs text-error">{error}</p>}
         </div>
 
         <div>
           <label htmlFor="ob-priority" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
             Priority
           </label>
-          <div className="relative">
-            <select
-              id="ob-priority"
-              value={data.priority}
-              onChange={e => onChange({ ...data, priority: e.target.value as 'low' | 'medium' | 'high' })}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-              disabled={taskCreated}
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-mission-control-text-dim pointer-events-none" />
-          </div>
+          <Select.Root
+            value={data.priority}
+            onValueChange={(v) => onChange({ ...data, priority: v as 'low' | 'medium' | 'high' })}
+            disabled={taskCreated}
+          >
+            <Select.Trigger id="ob-priority" className="w-full" />
+            <Select.Content>
+              <Select.Item value="low">Low</Select.Item>
+              <Select.Item value="medium">Medium</Select.Item>
+              <Select.Item value="high">High</Select.Item>
+            </Select.Content>
+          </Select.Root>
         </div>
 
         <div>
           <label htmlFor="ob-due-date" className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
             Due date <span className="text-mission-control-text-dim font-normal">(optional)</span>
           </label>
-          <input
+          <TextField.Root
             id="ob-due-date"
+            size="2"
+            className="w-full"
             type="date"
             value={data.dueDate}
-            onChange={e => onChange({ ...data, dueDate: e.target.value })}
-            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text focus:outline-none focus:border-mission-control-accent"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...data, dueDate: e.target.value })}
             disabled={taskCreated}
           />
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 px-3 py-2.5 text-sm text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-          disabled={loading}
-        >
+      <Flex align="center" gap="3">
+        <button type="button" onClick={onBack} disabled={loading} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-50">
           <ArrowLeft size={14} />
           Back
         </button>
-        <button
+        <Button
           onClick={handleSubmit}
           disabled={loading || taskCreated}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          variant="solid"
+                   size="2"
+          className="flex-1"
         >
           {loading ? 'Creating...' : taskCreated ? 'Task created' : 'Create task & continue'}
           {!loading && !taskCreated && <ArrowRight size={16} />}
           {taskCreated && <Check size={16} />}
-        </button>
-      </div>
+        </Button>
+      </Flex>
 
       <div className="text-center">
         <button
           onClick={onSkip}
-          className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors underline-offset-2 hover:underline"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           Skip for now
         </button>
@@ -496,7 +508,7 @@ function StepReady({
       {/* Hero */}
       <div
         className="relative -mx-6 -mt-2 h-28 rounded-t-xl overflow-hidden flex items-center justify-center"
-        style={{ background: 'linear-gradient(135deg, var(--mission-control-accent) 0%, #3b82f6 100%)' }}
+        style={{ background: 'linear-gradient(135deg, var(--mission-control-accent) 0%, var(--color-info) 100%)' }}
       >
         <div className="text-center z-10 px-4">
           <Rocket size={28} className="text-white mx-auto mb-1" />
@@ -512,7 +524,7 @@ function StepReady({
 
       <div className="space-y-2 px-1">
         {items.map(item => (
-          <div key={item.label} className="flex items-center gap-3">
+          <Flex key={item.label} align="center" gap="3">
             <div
               className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
                 item.done ? 'bg-mission-control-accent' : 'bg-mission-control-border'
@@ -523,18 +535,14 @@ function StepReady({
             <span className={`text-sm ${item.done ? 'text-mission-control-text' : 'text-mission-control-text-dim line-through'}`}>
               {item.label}
             </span>
-          </div>
+          </Flex>
         ))}
       </div>
 
-      <button
-        onClick={onLaunch}
-        disabled={loading}
-        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-      >
+      <Button onClick={onLaunch} disabled={loading} variant="solid" color="violet" size="3" className="w-full">
         {loading ? 'Saving...' : 'Launch Mission Control'}
         {!loading && <Rocket size={16} />}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -760,16 +768,12 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 pt-5 pb-0">
+          <Flex align="center" justify="between" className="px-6 pt-5 pb-0">
             <StepDots total={TOTAL_STEPS} current={step} />
-            <button
-              onClick={handleSkipAll}
-              className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors p-1.5 rounded-lg hover:bg-mission-control-border"
-              aria-label="Skip onboarding"
-            >
+            <button type="button" onClick={handleSkipAll} aria-label="Skip onboarding" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               <X size={14} />
             </button>
-          </div>
+          </Flex>
 
           {/* Step content */}
           <div
@@ -941,7 +945,7 @@ export function QuickTips({ onDone }: QuickTipsProps) {
 
   return (
     <div className="fixed inset-0 z-50 pointer-events-none" role="dialog" aria-modal="true" aria-label="Quick tips">
-      <div className="absolute inset-0 bg-black/50 pointer-events-auto" onClick={handleSkip} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto" onClick={handleSkip} />
 
       {rect && (
         <div
@@ -956,45 +960,35 @@ export function QuickTips({ onDone }: QuickTipsProps) {
       )}
 
       <div
-        className="absolute w-80 bg-mission-control-surface border border-mission-control-border rounded-lg shadow-2xl pointer-events-auto"
+        className="absolute w-80 bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl pointer-events-auto"
         style={{ top: pos.top, left: pos.left }}
       >
         <div className="p-4 space-y-3">
-          <div className="flex items-start justify-between gap-2">
+          <Flex align="start" justify="between" gap="2">
             <div>
-              <p className="text-xs text-mission-control-accent font-medium uppercase tracking-wide">
+              <p className="text-[10px] text-mission-control-accent font-bold uppercase tracking-wide">
                 Tip {tipIndex + 1} of {TIPS.length}
               </p>
               <h3 className="text-sm font-semibold text-mission-control-text mt-0.5">{tip.title}</h3>
               <p className="text-xs text-mission-control-text-dim mt-1 leading-relaxed">{tip.content}</p>
             </div>
-            <button
-              onClick={handleSkip}
-              className="flex-shrink-0 p-1 rounded text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-              aria-label="Close tips"
-            >
+            <button type="button" onClick={handleSkip} aria-label="Close tips" className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0">
               <X size={14} />
             </button>
-          </div>
+          </Flex>
 
           <div className="h-0.5 bg-mission-control-border rounded-full overflow-hidden">
             <div
-              className="h-full bg-mission-control-accent transition-all duration-300"
+              className="h-full bg-mission-control-accent transition-[width] duration-300"
               style={{ width: `${((tipIndex + 1) / TIPS.length) * 100}%` }}
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <button
-              onClick={handleSkip}
-              className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
-            >
+          <Flex align="center" justify="between">
+            <button type="button" onClick={handleSkip} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
               Skip tips
             </button>
-            <button
-              onClick={handleNext}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
-            >
+            <Button onClick={handleNext} variant="solid" color="violet" size="1">
               {isLast ? (
                 <>
                   <Check size={12} />
@@ -1006,8 +1000,8 @@ export function QuickTips({ onDone }: QuickTipsProps) {
                   <ArrowRight size={12} />
                 </>
               )}
-            </button>
-          </div>
+            </Button>
+          </Flex>
         </div>
       </div>
     </div>

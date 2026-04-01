@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Heart, Repeat2, MessageCircle, Clock, HelpCircle, Ban, CheckCircle, StickyNote, RefreshCw, Inbox } from 'lucide-react';
+import { Button, IconButton, Spinner, TextArea, TextField, Flex } from '@radix-ui/themes';
 import { inboxApi, approvalApi } from '../lib/api';
 
 interface Mention {
@@ -166,12 +167,12 @@ export const XMentionsView: React.FC = () => {
         className="border-b border-mission-control-border p-4 hover:bg-mission-control-surface transition-colors"
       >
         {/* Header */}
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex items-center gap-2">
+        <Flex align="start" justify="between" className="mb-2">
+          <Flex align="center" gap="2">
             <div className="font-medium text-mission-control-text">@{mention.author_username}</div>
             <div className="text-sm text-mission-control-text-dim">{mention.author_name}</div>
-          </div>
-          <div className="flex items-center gap-2">
+          </Flex>
+          <Flex align="center" gap="2">
             <div className="text-xs text-mission-control-text-dim">
               {new Date(mention.created_at).toLocaleDateString('en-US', {
                 month: 'short',
@@ -180,14 +181,14 @@ export const XMentionsView: React.FC = () => {
                 minute: '2-digit',
               })}
             </div>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Tweet text */}
         <div className="text-sm text-mission-control-text mb-3 whitespace-pre-wrap">{mention.text}</div>
 
         {/* Metrics */}
-        <div className="flex items-center gap-4 text-xs text-mission-control-text-dim mb-3">
+        <Flex align="center" gap="4" className="text-xs text-mission-control-text-dim mb-3">
           {metrics.like_count !== undefined && (
             <div><Heart size={12} className="inline" /> {metrics.like_count}</div>
           )}
@@ -205,42 +206,45 @@ export const XMentionsView: React.FC = () => {
           >
             View on X →
           </a>
-        </div>
+        </Flex>
 
         {/* Status badges */}
-        <div className="flex items-center gap-2 mb-3">
+        <Flex align="center" gap="2" className="mb-3">
           <button
+            type="button"
             onClick={() => updateStatus(mention.id, 'pending')}
-            className={`px-2 py-1 text-xs rounded ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
               mention.reply_status === 'pending'
-                ? 'bg-warning-subtle text-warning border border-warning'
-                : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-surface/80'
+                ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
-            <Clock size={12} className="inline" /> Pending
+            <Clock size={12} /> Pending
           </button>
           <button
+            type="button"
             onClick={() => updateStatus(mention.id, 'considering')}
-            className={`px-2 py-1 text-xs rounded ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
               mention.reply_status === 'considering'
-                ? 'bg-info-subtle text-info border border-info'
-                : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-surface/80'
+                ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
-            <HelpCircle size={12} className="inline" /> Considering
+            <HelpCircle size={12} /> Considering
           </button>
           <button
+            type="button"
             onClick={() => updateStatus(mention.id, 'ignored')}
-            className={`px-2 py-1 text-xs rounded ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
               mention.reply_status === 'ignored'
-                ? 'bg-mission-control-surface text-mission-control-text border border-mission-control-border'
-                : 'bg-mission-control-surface text-mission-control-text-dim hover:bg-mission-control-surface/80'
+                ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
-            <Ban size={12} className="inline" /> Ignored
+            <Ban size={12} /> Ignored
           </button>
           {mention.reply_status === 'replied' && (
-            <div className="px-2 py-1 text-xs rounded bg-success-subtle text-success border border-success">
+            <div className="px-2 py-1 text-xs rounded bg-success/10 text-success border border-success">
               <CheckCircle size={12} className="inline" /> Replied
               {mention.replied_at && (
                 <span className="ml-1 text-mission-control-text-dim">
@@ -252,26 +256,29 @@ export const XMentionsView: React.FC = () => {
               )}
             </div>
           )}
-        </div>
+        </Flex>
 
         {/* Notes */}
         <div className="mb-3">
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={notes[mention.id] || ''}
-              onChange={(e) => setNotes({ ...notes, [mention.id]: e.target.value })}
-              placeholder="Add notes..."
-              className="flex-1 px-2 py-1 text-sm border border-mission-control-border rounded bg-mission-control-bg text-mission-control-text"
-            />
-            <button
+          <Flex align="center" gap="2">
+            <div className="flex-1">
+              <TextField.Root
+                value={notes[mention.id] || ''}
+                onChange={(e) => setNotes({ ...notes, [mention.id]: e.target.value })}
+                placeholder="Add notes..."
+                size="1"
+              />
+            </div>
+            <Button
               onClick={() => saveNotes(mention.id, notes[mention.id] || '')}
               disabled={!notes[mention.id]?.trim()}
-              className="px-3 py-1 text-sm bg-mission-control-surface text-mission-control-text rounded hover:bg-mission-control-surface/80 disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="soft"
+              color="gray"
+              size="1"
             >
               Save Note
-            </button>
-          </div>
+            </Button>
+          </Flex>
           {metadata.notes && (
             <div className="mt-1 text-xs text-mission-control-text-dim bg-mission-control-surface p-2 rounded">
               <StickyNote size={12} className="inline" /> {metadata.notes}
@@ -284,45 +291,51 @@ export const XMentionsView: React.FC = () => {
           <div>
             {isSelected ? (
               <div className="space-y-2">
-                <textarea
+                <TextArea
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                   placeholder="Write your reply..."
-                  className="w-full px-3 py-2 text-sm border border-mission-control-border rounded resize-none bg-mission-control-bg text-mission-control-text"
                   rows={3}
                   maxLength={280}
+                  resize="vertical"
                 />
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-mission-control-text-dim">
+                <Flex align="center" justify="between">
+                  <div className="text-xs tabular-nums text-mission-control-text-dim">
                     {replyText.length}/280 characters
                   </div>
-                  <div className="flex gap-2">
-                    <button
+                  <Flex gap="2">
+                    <Button
                       onClick={() => {
                         setSelectedMention(null);
                         setReplyText('');
                       }}
-                      className="px-3 py-1 text-sm border border-mission-control-border rounded hover:bg-mission-control-surface"
+                      variant="outline"
+                      color="gray"
+                      size="1"
                     >
                       Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => handleReply(mention.id, mention.tweet_id)}
                       disabled={!replyText.trim()}
-                      className="px-3 py-1 text-sm bg-info text-white rounded hover:bg-info/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                      variant="solid"
+                      color="blue"
+                      size="1"
                     >
                       Send Reply
-                    </button>
-                  </div>
-                </div>
+                    </Button>
+                  </Flex>
+                </Flex>
               </div>
             ) : (
-              <button
+              <Button
                 onClick={() => setSelectedMention(mention.id)}
-                className="px-3 py-1 text-sm border border-info text-info rounded hover:bg-info-subtle"
+                variant="outline"
+                color="blue"
+                size="1"
               >
-                <MessageCircle size={14} className="inline" /> Reply
-              </button>
+                <MessageCircle size={14} /> Reply
+              </Button>
             )}
           </div>
         )}
@@ -333,54 +346,57 @@ export const XMentionsView: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-mission-control-text-dim">Loading mentions...</div>
+        <Spinner size="3" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
         <div className="text-lg font-semibold text-mission-control-text">X Mentions</div>
-        <button
+        <Button
           onClick={fetchNewMentions}
           disabled={fetching}
-          className="px-4 py-2 bg-info text-white rounded hover:bg-info/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          variant="solid"
+          color="blue"
+          size="2"
         >
           {fetching ? (
             <>
-              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+              <Spinner size="1" />
               Fetching...
             </>
           ) : (
-            <><RefreshCw size={16} className="inline" /> Fetch New</>
+            <><RefreshCw size={16} /> Fetch New</>
           )}
-        </button>
-      </div>
+        </Button>
+      </Flex>
 
       {/* Filter tabs */}
-      <div className="flex gap-2 p-4 border-b border-mission-control-border bg-mission-control-surface">
+      <Flex gap="2" className="p-4 border-b border-mission-control-border bg-mission-control-surface">
         {(['all', 'pending', 'considering', 'ignored', 'replied'] as const).map((status) => {
-          const count = status === 'all' 
-            ? mentions.length 
+          const count = status === 'all'
+            ? mentions.length
             : mentions.filter(m => m.reply_status === status).length;
-          
+
           return (
             <button
               key={status}
+              type="button"
               onClick={() => setFilter(status)}
-              className={`px-3 py-1 text-sm rounded transition-colors ${
+              className={`flex items-center gap-0.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
                 filter === status
-                  ? 'bg-info text-white'
-                  : 'bg-mission-control-bg text-mission-control-text hover:bg-mission-control-surface border border-mission-control-border'
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               {status.charAt(0).toUpperCase() + status.slice(1)} ({count})
             </button>
           );
         })}
-      </div>
+      </Flex>
 
       {/* Mentions list */}
       <div className="flex-1 overflow-y-auto">
@@ -396,6 +412,6 @@ export const XMentionsView: React.FC = () => {
           mentions.map(renderMention)
         )}
       </div>
-    </div>
+    </Flex>
   );
 };

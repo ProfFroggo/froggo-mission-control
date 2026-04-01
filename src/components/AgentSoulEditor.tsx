@@ -4,6 +4,7 @@ import {
   Save, RefreshCw, FileText, Send, Info, Tag, X, Plus,
   Brain, MessageSquare, Star, ToggleLeft, ToggleRight,
 } from 'lucide-react';
+import { Button, TextField, TextArea, Switch, Box, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { agentApi } from '../lib/api';
 
@@ -245,21 +246,21 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-mission-control-text-dim py-8 justify-center">
+      <Flex align="center" gap="2" justify="center" className="text-mission-control-text-dim py-8">
         <RefreshCw size={16} className="animate-spin" />
         <span className="text-sm">Loading soul file...</span>
-      </div>
+      </Flex>
     );
   }
 
   return (
-    <div className="space-y-5">
+    <Box className="space-y-5">
       {/* Character Traits Panel */}
       <div className="rounded-lg border border-mission-control-border bg-mission-control-surface p-4">
-        <div className="flex items-center gap-2 mb-3">
+        <Flex align="center" gap="2" className="mb-3">
           <Tag size={14} className="text-mission-control-accent" />
           <span className="text-sm font-semibold text-mission-control-text">Character Traits</span>
-        </div>
+        </Flex>
         <div className="flex flex-wrap gap-1.5 mb-3 min-h-[28px]">
           {traits.map(trait => (
             <span
@@ -269,8 +270,8 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
               {trait}
               <button
                 type="button"
+                className="inline-flex items-center justify-center w-4 h-4 rounded text-mission-control-text-dim hover:text-mission-control-text transition-colors"
                 onClick={() => removeTrait(trait)}
-                className="ml-0.5 hover:text-error transition-colors"
                 aria-label={`Remove trait ${trait}`}
               >
                 <X size={10} />
@@ -286,55 +287,57 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
             <button
               key={suggestion}
               type="button"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               onClick={() => addTrait(suggestion)}
-              className="px-2 py-0.5 text-[11px] rounded-full border border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent hover:text-mission-control-accent transition-colors"
             >
               + {suggestion}
             </button>
           ))}
         </div>
-        <div className="flex gap-2">
-          <input
-            type="text"
+        <Flex gap="2">
+          <TextField.Root
             value={newTrait}
             onChange={e => setNewTrait(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTrait(newTrait); } }}
             placeholder="Add custom trait..."
             maxLength={30}
-            className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-mission-control-border bg-mission-control-bg text-mission-control-text placeholder-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent/60"
+            size="1"
+            className="flex-1"
           />
           <button
             type="button"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
             onClick={() => addTrait(newTrait)}
             disabled={!newTrait.trim() || traits.length >= 10}
-            className="p-1.5 rounded-lg border border-mission-control-border hover:bg-mission-control-border text-mission-control-text-dim transition-colors disabled:opacity-40"
             aria-label="Add trait"
           >
             <Plus size={13} />
           </button>
-        </div>
+        </Flex>
       </div>
 
       {/* Tone Presets */}
       <div className="rounded-lg border border-mission-control-border bg-mission-control-surface p-4">
-        <div className="flex items-center gap-2 mb-3">
+        <Flex align="center" gap="2" className="mb-3">
           <MessageSquare size={14} className="text-mission-control-accent" />
           <span className="text-sm font-semibold text-mission-control-text">Tone Preset</span>
-        </div>
+        </Flex>
         <div className="grid grid-cols-2 gap-2">
           {TONE_PRESETS.map(preset => (
             <button
               key={preset.id}
               type="button"
               onClick={() => setTonePreset(preset.id)}
-              className={`text-left px-3 py-2.5 rounded-lg border transition-all ${
+              className={`flex items-start gap-1.5 px-3 py-2.5 rounded-md text-xs font-medium border transition-colors text-left ${
                 tonePreset === preset.id
-                  ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                  : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-accent/40 hover:text-mission-control-text'
+                  ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
-              <div className="text-xs font-semibold">{preset.label}</div>
-              <div className="text-[11px] opacity-70 mt-0.5">{preset.description}</div>
+              <div>
+                <div className="font-semibold">{preset.label}</div>
+                <div className="opacity-70 mt-0.5">{preset.description}</div>
+              </div>
             </button>
           ))}
         </div>
@@ -342,21 +345,16 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
 
       {/* Memory Scope */}
       <div className="rounded-lg border border-mission-control-border bg-mission-control-surface p-4">
-        <div className="flex items-center gap-2 mb-3">
+        <Flex align="center" gap="2" className="mb-3">
           <Brain size={14} className="text-mission-control-accent" />
           <span className="text-sm font-semibold text-mission-control-text">Memory Scope</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setMemoryScope(memoryScope === 'persistent' ? 'session' : 'persistent')}
-            className="flex items-center gap-2 text-sm text-mission-control-text transition-colors"
-          >
-            {memoryScope === 'persistent'
-              ? <ToggleRight size={22} className="text-mission-control-accent" />
-              : <ToggleLeft size={22} className="text-mission-control-text-dim" />
-            }
-          </button>
+        </Flex>
+        <Flex align="center" gap="3">
+          <Switch
+            size="2"
+            checked={memoryScope === 'persistent'}
+            onCheckedChange={(checked) => setMemoryScope(checked ? 'persistent' : 'session')}
+          />
           <div>
             <div className="text-sm font-medium text-mission-control-text">
               {memoryScope === 'persistent' ? 'Persistent memory' : 'Session only'}
@@ -367,42 +365,45 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
                 : 'Memory cleared after each session ends'}
             </div>
           </div>
-        </div>
+        </Flex>
       </div>
 
       {/* Save Personality Button */}
       {isPersonalityDirty && (
-        <div className="flex justify-end">
-          <button
+        <Flex justify="end">
+          <Button
             type="button"
+            size="2"
+            variant="solid"
             onClick={handleSavePersonality}
             disabled={savingPersonality}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
           >
             {savingPersonality ? <RefreshCw size={13} className="animate-spin" /> : <Save size={13} />}
             {savingPersonality ? 'Saving...' : 'Save personality'}
-          </button>
-        </div>
+          </Button>
+        </Flex>
       )}
 
       {/* Skill Endorsements */}
       {skills.length > 0 && (
         <div className="rounded-lg border border-mission-control-border bg-mission-control-surface p-4">
-          <div className="flex items-center gap-2 mb-3">
+          <Flex align="center" gap="2" className="mb-3">
             <Star size={14} className="text-mission-control-accent" />
             <span className="text-sm font-semibold text-mission-control-text">Skill Endorsements</span>
-          </div>
+          </Flex>
           <div className="flex flex-wrap gap-2">
             {skills.map((skill, i) => (
-              <div
+              <Flex
                 key={i}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-mission-control-border bg-mission-control-bg text-xs text-mission-control-text"
+                align="center"
+                gap="2"
+                className="px-2.5 py-1.5 rounded-lg border border-mission-control-border bg-mission-control-bg text-xs text-mission-control-text"
               >
                 <span>{skill}</span>
-                <span className="px-1 py-0.5 rounded bg-mission-control-accent/10 text-mission-control-accent text-[10px] font-semibold tabular-nums">
+                <span className="px-1 py-0.5 rounded bg-mission-control-accent/10 text-mission-control-accent text-xs font-semibold tabular-nums">
                   {(i * 3 + 5) % 12 + 1}
                 </span>
-              </div>
+              </Flex>
             ))}
           </div>
         </div>
@@ -410,13 +411,13 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
 
       {/* Recent Interactions */}
       <div className="rounded-lg border border-mission-control-border bg-mission-control-surface p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" className="mb-3">
+          <Flex align="center" gap="2">
             <MessageSquare size={14} className="text-mission-control-accent" />
             <span className="text-sm font-semibold text-mission-control-text">Recent Interactions</span>
-          </div>
+          </Flex>
           {messagesLoading && <RefreshCw size={12} className="animate-spin text-mission-control-text-dim" />}
-        </div>
+        </Flex>
         {recentMessages.length === 0 ? (
           <p className="text-xs text-mission-control-text-dim italic">No recent messages from this agent</p>
         ) : (
@@ -424,7 +425,7 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
             {recentMessages.map(msg => (
               <div key={msg.id} className="rounded-lg bg-mission-control-bg border border-mission-control-border px-3 py-2">
                 <p className="text-xs text-mission-control-text leading-relaxed line-clamp-2">{msg.content}</p>
-                <p className="text-[10px] text-mission-control-text-dim mt-1">
+                <p className="text-xs text-mission-control-text-dim mt-1">
                   {new Date(msg.timestamp).toLocaleString()}
                 </p>
               </div>
@@ -435,36 +436,44 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
 
       {/* Soul File Editor */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-sm font-medium text-mission-control-text">
-            <FileText size={15} />
-            <span>~/mission-control/agents/{agentId}/SOUL.md</span>
-          </div>
-          <div className="flex items-center gap-2">
+        {/* Section header */}
+        <Flex align="center" justify="between" gap="2">
+          <Flex align="center" gap="2">
+            <FileText size={14} className="text-mission-control-text-dim flex-shrink-0" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
+              SOUL.md
+            </span>
+            <span className="text-[11px] text-mission-control-text-dim/70 font-mono truncate hidden sm:block">
+              ~/mission-control/agents/{agentId}/SOUL.md
+            </span>
+          </Flex>
+          <Flex align="center" gap="1">
             <button
               type="button"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               onClick={() => setShowHint(!showHint)}
-              className="p-1.5 rounded-lg hover:bg-mission-control-border text-mission-control-text-dim transition-colors"
               title="Show format hints"
+              aria-label="Show format hints"
             >
               <Info size={14} />
             </button>
             <button
               type="button"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
               onClick={loadSoul}
               disabled={loading}
-              className="p-1.5 rounded-lg hover:bg-mission-control-border text-mission-control-text-dim transition-colors"
               title="Reload from disk"
+              aria-label="Reload from disk"
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             </button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {showHint && (
-          <div className="rounded-lg bg-info-subtle border border-info-border p-3">
-            <p className="text-xs font-semibold text-info mb-2">Expected format</p>
-            <pre className="text-[11px] text-mission-control-text-dim whitespace-pre-wrap font-mono leading-relaxed">
+          <div className="rounded-lg bg-info/10 border border-info/30 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-info mb-2">Expected format</p>
+            <pre className="text-xs text-mission-control-text-dim/70 whitespace-pre-wrap font-mono leading-relaxed">
               {SOUL_HINT}
             </pre>
           </div>
@@ -473,40 +482,54 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
         <textarea
           value={content}
           onChange={e => handleChange(e.target.value)}
-          rows={18}
           spellCheck={false}
-          className="w-full rounded-lg border border-mission-control-border bg-mission-control-bg px-3 py-3 text-sm font-mono text-mission-control-text placeholder-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent/60 resize-y leading-relaxed"
+          className="w-full font-mono text-sm bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-3 text-mission-control-text placeholder:text-mission-control-text-dim/50 resize-y focus:outline-none focus:border-[var(--mission-control-accent)] min-h-[300px]"
+          style={{ minHeight: '300px' }}
           placeholder="No soul file yet. Write one to give this agent its identity, skills, and operating principles."
         />
 
-        <div className="flex items-center justify-between gap-2">
-          <span className={`text-xs ${charCount > MAX_CHARS * 0.9 ? 'text-warning' : 'text-mission-control-text-dim'}`}>
+        {/* Sticky footer row */}
+        <Flex align="center" justify="between" gap="2" className="sticky bottom-0 bg-transparent pt-1 pb-0">
+          <span className={`text-[11px] tabular-nums ${charCount > MAX_CHARS * 0.9 ? 'text-warning' : 'text-mission-control-text-dim/70'}`}>
             {charCount.toLocaleString()} / {(MAX_CHARS / 1024).toFixed(0)}KB
-            {isDirty && <span className="ml-2 text-mission-control-accent">Unsaved changes</span>}
+            {isDirty && <span className="ml-2 text-[var(--mission-control-accent)]">Unsaved</span>}
           </span>
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <button
               type="button"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50"
               onClick={handleTestDispatch}
               disabled={dispatching}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-mission-control-border rounded-lg hover:bg-mission-control-border text-mission-control-text-dim transition-colors disabled:opacity-50"
               title="Dispatch a test task to this agent to verify its soul file is working"
             >
               {dispatching ? <RefreshCw size={13} className="animate-spin" /> : <Send size={13} />}
               Test dispatch
             </button>
-            <button
+            {isDirty && (
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                onClick={() => { setContent(originalContent); setCharCount(originalContent.length); }}
+                disabled={saving}
+                title="Discard changes"
+              >
+                <X size={13} />
+                Discard
+              </button>
+            )}
+            <Button
               type="button"
+              size="2"
+              variant="solid"
               onClick={handleSave}
               disabled={saving || !isDirty}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
             >
               {saving ? <RefreshCw size={13} className="animate-spin" /> : <Save size={13} />}
-              {saving ? 'Saving...' : 'Save soul file'}
-            </button>
-          </div>
-        </div>
+              {saving ? 'Saving...' : 'Save soul'}
+            </Button>
+          </Flex>
+        </Flex>
       </div>
-    </div>
+    </Box>
   );
 }

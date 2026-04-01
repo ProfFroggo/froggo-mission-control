@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
-import { FileAudio, Loader2, Download, Trash2, Upload, Sparkles } from 'lucide-react';
-import { GeminiTranscriptionService } from '../lib/multiAgentVoice';
+import { Button, Spinner, Flex } from '@radix-ui/themes';
+import { FileAudio, Download, Trash2, Upload, Sparkles } from 'lucide-react';
 
 interface TranscriptionResult {
   id: string;
@@ -17,7 +17,7 @@ interface TranscriptionResult {
 
 export default function MeetingTranscriptionPanel() {
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [summarizingIds, setSummarizingIds] = useState<Set<string>>(new Set());
   const [results, setResults] = useState<TranscriptionResult[]>(() => {
     try {
       const saved = localStorage.getItem('mission-control-meeting-transcriptions');
@@ -25,17 +25,8 @@ export default function MeetingTranscriptionPanel() {
     } catch { return []; }
   });
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const getService = useCallback(async () => {
-    const { settingsApi } = await import('../lib/api');
-    const result = await settingsApi.get('gemini_api_key');
-    const apiKey = result?.value;
-    if (!apiKey) {
-      throw new Error('Gemini API key not set. Configure it in Settings > API Keys.');
-    }
-    return new GeminiTranscriptionService(apiKey);
-  }, []);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,8 +36,16 @@ export default function MeetingTranscriptionPanel() {
     setIsTranscribing(true);
 
     try {
-      const service = await getService();
-      const transcript = await service.transcribeAudio(file, file.type || 'audio/webm');
+      // Transcribe via server-side proxy (API key never leaves server)
+      const formData = new FormData();
+      formData.append('audio', file);
+      formData.append('mimeType', file.type || 'audio/webm');
+      const res = await fetch('/api/gemini/transcribe', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({ error: 'Transcription failed' }));
+        throw new Error(errBody.error || `Server error: ${res.status}`);
+      }
+      const { transcript } = await res.json();
 
       const result: TranscriptionResult = {
         id: crypto.randomUUID(),
@@ -66,18 +65,29 @@ export default function MeetingTranscriptionPanel() {
       setIsTranscribing(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
-  }, [getService]);
+  }, []);
 
   const summarize = useCallback(async (resultId: string) => {
     const result = results.find(r => r.id === resultId);
     if (!result) return;
 
-    setIsSummarizing(true);
-    setError('');
+    // Clear any previous error for this result before starting
+    setErrors(prev => { const next = { ...prev }; delete next[resultId]; return next; });
+    // Mark this result as in-flight
+    setSummarizingIds(prev => new Set(prev).add(resultId));
 
     try {
-      const service = await getService();
-      const summary = await service.summarizeMeeting(result.transcript);
+      // Summarize via server-side proxy (API key never leaves server)
+      const res = await fetch('/api/gemini/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript: result.transcript }),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({ error: 'Summarization failed' }));
+        throw new Error(errBody.error || `Server error: ${res.status}`);
+      }
+      const summary = await res.json();
 
       setResults(prev => {
         const updated = prev.map(r => r.id === resultId ? { ...r, summary } : r);
@@ -85,11 +95,12 @@ export default function MeetingTranscriptionPanel() {
         return updated;
       });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Summarization failed');
+      const message = err instanceof Error ? err.message : 'Summarization failed';
+      setErrors(prev => ({ ...prev, [resultId]: message }));
     } finally {
-      setIsSummarizing(false);
+      setSummarizingIds(prev => { const next = new Set(prev); next.delete(resultId); return next; });
     }
-  }, [results, getService]);
+  }, [results]);
 
   const deleteResult = useCallback((id: string) => {
     setResults(prev => {
@@ -122,14 +133,14 @@ export default function MeetingTranscriptionPanel() {
   }, []);
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg text-white">
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg text-mission-control-text">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border">
         <div className="flex items-center space-x-3">
-          <FileAudio className="w-5 h-5 text-emerald-400" />
-          <h2 className="text-lg font-semibold">🐸 Meeting Transcription</h2>
+          <FileAudio className="w-5 h-5 text-[--accent-11]" />
+          <h2 className="text-lg font-semibold">Meeting Transcription</h2>
         </div>
         <span className="text-xs text-mission-control-text-dim">Powered by Gemini AI</span>
-      </div>
+      </Flex>
 
       {/* Upload */}
       <div className="p-4 border-b border-mission-control-border">
@@ -140,24 +151,27 @@ export default function MeetingTranscriptionPanel() {
           onChange={handleFileUpload}
           className="hidden"
         />
-        <button
+        <Button
           onClick={() => fileInputRef.current?.click()}
           disabled={isTranscribing}
-          className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+          variant="solid"
+          color="grass"
+          size="3"
+          className="w-full"
         >
           {isTranscribing ? (
-            <><Loader2 className="w-5 h-5 animate-spin" /><span>Transcribing...</span></>
+            <><Spinner /><span>Transcribing...</span></>
           ) : (
             <><Upload className="w-5 h-5" /><span>Upload Audio for Transcription</span></>
           )}
-        </button>
+        </Button>
         <p className="text-xs text-mission-control-text-dim mt-2 text-center">
           Supports MP3, WAV, WebM, M4A, OGG, and video files
         </p>
       </div>
 
       {error && (
-        <div className="mx-4 mt-2 p-3 bg-error-subtle text-error rounded-lg text-sm">{error}</div>
+        <div className="mx-4 mt-2 p-3 bg-error/10 text-error rounded-lg text-sm">{error}</div>
       )}
 
       {/* Results */}
@@ -170,45 +184,50 @@ export default function MeetingTranscriptionPanel() {
           </div>
         ) : (
           results.map(result => (
-            <div key={result.id} className="bg-mission-control-surface rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
+            <div key={result.id} className="bg-mission-control-surface border border-mission-control-border rounded-xl p-4 space-y-3">
+              <Flex align="center" justify="between">
                 <div>
                   <div className="font-medium">{result.filename}</div>
-                  <div className="text-xs text-mission-control-text-dim">{new Date(result.timestamp).toLocaleString()}</div>
+                  <div className="text-xs text-mission-control-text-dim/70 tabular-nums mt-0.5">{new Date(result.timestamp).toLocaleString()}</div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-1">
                   {!result.summary && (
                     <button
+                      type="button"
                       onClick={() => summarize(result.id)}
-                      disabled={isSummarizing}
-                      className="p-2 hover:bg-mission-control-border rounded transition-colors text-emerald-400"
+                      disabled={summarizingIds.has(result.id)}
                       title="AI Summarize"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors disabled:opacity-50"
                     >
-                      {isSummarizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                      {summarizingIds.has(result.id) ? <Spinner /> : <Sparkles className="w-4 h-4" />}
                     </button>
                   )}
-                  <button onClick={() => downloadTranscript(result)} className="p-2 hover:bg-mission-control-border rounded transition-colors" title="Download">
+                  <button type="button" onClick={() => downloadTranscript(result)} title="Download" className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                     <Download className="w-4 h-4" />
                   </button>
-                  <button onClick={() => deleteResult(result.id)} className="p-2 hover:bg-mission-control-border rounded transition-colors text-error" title="Delete">
+                  <button type="button" onClick={() => deleteResult(result.id)} title="Delete" className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-error/70 hover:text-error hover:bg-mission-control-border/40 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
-              </div>
+              </Flex>
 
-              <div className="text-sm text-mission-control-text max-h-40 overflow-y-auto whitespace-pre-wrap bg-mission-control-bg rounded p-3">
+              <div className="text-sm text-mission-control-text/70 max-h-40 overflow-y-auto whitespace-pre-wrap bg-mission-control-bg border border-mission-control-border/50 rounded-lg p-3">
                 {result.transcript}
               </div>
 
+              {errors[result.id] && (
+                <div className="p-2 bg-error/10 text-error rounded text-xs">{errors[result.id]}</div>
+              )}
+
               {result.summary && (
                 <div className="space-y-2 border-t border-mission-control-border pt-3">
-                  <div className="text-sm font-medium text-emerald-400">✨ AI Summary</div>
+                  <div className="text-sm font-medium text-[--accent-11]">AI Summary</div>
                   <p className="text-sm text-mission-control-text">{result.summary.summary}</p>
                   {result.summary.actionItems.length > 0 && (
                     <div>
                       <div className="text-xs font-medium text-warning mb-1">Action Items</div>
                       <ul className="text-xs text-mission-control-text-dim space-y-1">
-                        {result.summary.actionItems.map((item, i) => <li key={i}>• {item}</li>)}
+                        {result.summary.actionItems.map((item, i) => <li key={i}>- {item}</li>)}
                       </ul>
                     </div>
                   )}
@@ -216,7 +235,7 @@ export default function MeetingTranscriptionPanel() {
                     <div>
                       <div className="text-xs font-medium text-info mb-1">Key Decisions</div>
                       <ul className="text-xs text-mission-control-text-dim space-y-1">
-                        {result.summary.keyDecisions.map((d, i) => <li key={i}>• {d}</li>)}
+                        {result.summary.keyDecisions.map((d, i) => <li key={i}>- {d}</li>)}
                       </ul>
                     </div>
                   )}
@@ -226,6 +245,6 @@ export default function MeetingTranscriptionPanel() {
           ))
         )}
       </div>
-    </div>
+    </Flex>
   );
 }

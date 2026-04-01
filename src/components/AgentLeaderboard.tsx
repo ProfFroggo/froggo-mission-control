@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, TrendingDown, Minus, Trophy, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Select, Box, Flex } from '@radix-ui/themes';
 import { useStore } from '../store/store';
 import { getAgentTheme } from '../utils/agentThemes';
 
@@ -31,16 +32,11 @@ const SORT_OPTIONS: Array<{ key: SortKey; label: string }> = [
   { key: 'costEfficiency', label: 'Cost Efficiency' },
 ];
 
-const RANK_STYLES: Record<number, string> = {
-  1: 'bg-yellow-500/10 border-yellow-500/30',
-  2: 'bg-mission-control-text-dim/10 border-mission-control-text-dim/30',
-  3: 'bg-amber-600/10 border-amber-600/30',
-};
-
-const RANK_LABEL_STYLES: Record<number, string> = {
-  1: 'text-yellow-500',
-  2: 'text-mission-control-text-dim',
-  3: 'text-amber-600',
+// Rank badge configs: #1 gold, #2 silver, #3 bronze
+const RANK_BADGE: Record<number, { icon: string; text: string; bg: string; border: string }> = {
+  1: { icon: '', text: 'text-[#FFB800]', bg: 'bg-[#FFB800]/15', border: 'border-[#FFB800]/40' },
+  2: { icon: '', text: 'text-[#9CA3AF]', bg: 'bg-[#9CA3AF]/15', border: 'border-[#9CA3AF]/30' },
+  3: { icon: '', text: 'text-[#CD7F32]', bg: 'bg-[#CD7F32]/15', border: 'border-[#CD7F32]/30' },
 };
 
 function formatDuration(ms: number): string {
@@ -53,19 +49,18 @@ function formatDuration(ms: number): string {
 function TrendIcon({ trend }: { trend: AgentScore['trend'] }) {
   if (trend === 'improving') return <TrendingUp  size={14} className="text-success flex-shrink-0" />;
   if (trend === 'declining') return <TrendingDown size={14} className="text-error flex-shrink-0" />;
-  return <Minus size={14} className="text-warning flex-shrink-0" />;
+  return <Minus size={14} className="text-mission-control-text-dim flex-shrink-0" />;
 }
 
 function ScoreBar({ score }: { score: number }) {
   const color = score >= 75 ? 'bg-success' : score >= 45 ? 'bg-warning' : 'bg-error';
+  const textColor = score >= 75 ? 'text-success' : score >= 45 ? 'text-warning' : 'text-error';
   return (
     <div className="flex items-center gap-2 min-w-[120px]">
       <div className="flex-1 h-1.5 bg-mission-control-border rounded-full overflow-hidden">
-        <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${score}%` }} />
+        <div className={`h-full ${color} rounded-full transition-colors duration-500`} style={{ width: `${score}%` }} />
       </div>
-      <span className={`text-xs font-bold tabular-nums w-8 text-right ${
-        score >= 75 ? 'text-success' : score >= 45 ? 'text-warning' : 'text-error'
-      }`}>{score}</span>
+      <span className={`text-xs font-bold tabular-nums w-8 text-right ${textColor}`}>{score}</span>
     </div>
   );
 }
@@ -139,7 +134,7 @@ export default function AgentLeaderboard() {
           scored.push({
             agentId:     agent.id,
             agentName:   agent.name,
-            avatar:      agent.avatar ?? '🤖',
+            avatar:      agent.avatar ?? '',
             role:        (agent as any).role ?? '',
             description: agent.description ?? '',
             score:       d.score ?? 0,
@@ -156,7 +151,7 @@ export default function AgentLeaderboard() {
           scored.push({
             agentId:     agent.id,
             agentName:   agent.name,
-            avatar:      agent.avatar ?? '🤖',
+            avatar:      agent.avatar ?? '',
             role:        (agent as any).role ?? '',
             description: agent.description ?? '',
             score:       0,
@@ -187,29 +182,30 @@ export default function AgentLeaderboard() {
         if (!a.metrics.avgDurationMs) return 1;
         if (!b.metrics.avgDurationMs) return -1;
         return a.metrics.avgDurationMs - b.metrics.avgDurationMs;
-      case 'costEfficiency':
+      case 'costEfficiency': {
         // Lower cost per task = better
         const costA = a.metrics.tasksCompleted > 0 ? a.metrics.totalCostUsd / a.metrics.tasksCompleted : Infinity;
         const costB = b.metrics.tasksCompleted > 0 ? b.metrics.totalCostUsd / b.metrics.tasksCompleted : Infinity;
         return costA - costB;
+      }
       default: return b.score - a.score;
     }
   });
 
   return (
-    <div className="space-y-4">
+    <Box className="space-y-4">
       {/* Header controls */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        {/* Period */}
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
+      <Flex align="center" justify="between" gap="3" className="flex-wrap">
+        {/* Period segment control */}
+        <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
           {(['7d', '30d', '90d'] as Period[]).map(p => (
             <button
               key={p}
               type="button"
               onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                 period === p
-                  ? 'bg-mission-control-accent text-white'
+                  ? 'bg-mission-control-accent/10 text-mission-control-accent'
                   : 'text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
@@ -218,68 +214,67 @@ export default function AgentLeaderboard() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           {/* Sort */}
-          <select
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as SortKey)}
-            className="text-xs px-2 py-1.5 rounded-lg border border-mission-control-border bg-mission-control-surface text-mission-control-text focus:outline-none focus:border-mission-control-accent"
-            aria-label="Sort leaderboard by"
-          >
-            {SORT_OPTIONS.map(o => (
-              <option key={o.key} value={o.key}>{o.label}</option>
-            ))}
-          </select>
+          <Select.Root value={sortBy} onValueChange={(val) => setSortBy(val as SortKey)} size="1">
+            <Select.Trigger aria-label="Sort leaderboard by" />
+            <Select.Content>
+              {SORT_OPTIONS.map(o => (
+                <Select.Item key={o.key} value={o.key}>{o.label}</Select.Item>
+              ))}
+            </Select.Content>
+          </Select.Root>
 
           <button
             type="button"
             onClick={() => fetchLeaderboard(period)}
             disabled={loading}
-            className="icon-btn border border-mission-control-border disabled:opacity-50"
             title="Refresh leaderboard"
             aria-label="Refresh leaderboard"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Error */}
       {error && (
-        <div className="rounded-lg border border-error-border bg-error-subtle p-3 text-sm text-error flex items-center gap-2">
+        <Flex align="center" gap="2" p="3" className="rounded-lg border border-error-border bg-error-subtle text-sm text-error">
           <AlertTriangle size={14} className="flex-shrink-0" />
           {error}
-        </div>
+        </Flex>
       )}
 
       {/* Loading skeleton */}
       {loading && rows.length === 0 && (
-        <div className="space-y-2 animate-pulse">
+        <div className="space-y-1 animate-pulse">
           {[0, 1, 2, 3, 4].map(i => (
-            <div key={i} className="h-16 rounded-lg bg-mission-control-border" />
+            <div key={i} className="h-12 rounded-lg bg-mission-control-border/40" />
           ))}
         </div>
       )}
 
-      {/* Leaderboard rows */}
+      {/* Leaderboard rows — flat list style */}
       {sorted.length > 0 && (
-        <div className="space-y-2">
+        <div className="rounded-xl border border-mission-control-border overflow-hidden">
           {sorted.map((row, idx) => {
             const rank = idx + 1;
-            const rankStyle = RANK_STYLES[rank] ?? 'border-mission-control-border';
-            const rankLabelStyle = RANK_LABEL_STYLES[rank] ?? 'text-mission-control-text-dim';
+            const badge = RANK_BADGE[rank];
 
             return (
               <div
                 key={row.agentId}
-                className={`rounded-lg border p-3 flex items-center gap-3 transition-colors hover:bg-mission-control-surface/60 ${rankStyle}`}
+                className="flex items-center gap-3 px-4 py-2.5 border-b border-mission-control-border/40 last:border-0 hover:bg-mission-control-border/20 transition-colors"
               >
                 {/* Rank */}
-                <div className={`w-8 flex-shrink-0 flex items-center justify-center font-bold text-sm tabular-nums ${rankLabelStyle}`}>
-                  {rank <= 3 ? (
-                    <Trophy size={16} className={rankLabelStyle} />
+                <div className="w-7 flex-shrink-0 flex items-center justify-center">
+                  {badge ? (
+                    <div className={`w-6 h-6 rounded-md flex items-center justify-center border ${badge.bg} ${badge.border}`}>
+                      <Trophy size={12} className={badge.text} />
+                    </div>
                   ) : (
-                    <span>{rank}</span>
+                    <span className="text-[11px] font-bold tabular-nums text-mission-control-text-dim w-6 text-center">{rank}</span>
                   )}
                 </div>
 
@@ -289,7 +284,7 @@ export default function AgentLeaderboard() {
                 {/* Name + role */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-medium text-sm text-mission-control-text truncate">{row.agentName}</span>
+                    <span className="text-sm font-medium text-mission-control-text truncate">{row.agentName}</span>
                     {row.role && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-mission-control-border text-mission-control-text-dim flex-shrink-0">
                         {row.role}
@@ -308,35 +303,35 @@ export default function AgentLeaderboard() {
                 <TrendIcon trend={row.trend} />
 
                 {/* Key metric (changes with sortBy) */}
-                <div className="flex-shrink-0 text-right min-w-[56px]">
+                <div className="flex-shrink-0 text-right min-w-[60px]">
                   {sortBy === 'successRate' ? (
                     <>
-                      <div className="text-sm font-bold tabular-nums text-warning">{row.metrics.successRate}%</div>
-                      <div className="text-[10px] text-mission-control-text-dim">success</div>
+                      <div className="text-sm font-mono font-bold tabular-nums text-success">{row.metrics.successRate}%</div>
+                      <div className="text-[10px] text-mission-control-text-dim/70">success</div>
                     </>
                   ) : sortBy === 'tasksCompleted' ? (
                     <>
-                      <div className="text-sm font-bold tabular-nums text-success">{row.metrics.tasksCompleted}</div>
-                      <div className="text-[10px] text-mission-control-text-dim">tasks</div>
+                      <div className="text-sm font-mono font-bold tabular-nums text-info">{row.metrics.tasksCompleted}</div>
+                      <div className="text-[10px] text-mission-control-text-dim/70">tasks</div>
                     </>
                   ) : sortBy === 'avgSpeed' ? (
                     <>
-                      <div className="text-sm font-bold tabular-nums text-info">{formatDuration(row.metrics.avgDurationMs)}</div>
-                      <div className="text-[10px] text-mission-control-text-dim">avg</div>
+                      <div className="text-sm font-mono font-bold tabular-nums text-warning">{formatDuration(row.metrics.avgDurationMs)}</div>
+                      <div className="text-[10px] text-mission-control-text-dim/70">avg</div>
                     </>
                   ) : sortBy === 'costEfficiency' ? (
                     <>
-                      <div className="text-sm font-bold tabular-nums text-review">
+                      <div className="text-sm font-mono font-bold tabular-nums text-review">
                         ${row.metrics.tasksCompleted > 0
                           ? (row.metrics.totalCostUsd / row.metrics.tasksCompleted).toFixed(3)
                           : '—'}
                       </div>
-                      <div className="text-[10px] text-mission-control-text-dim">/task</div>
+                      <div className="text-[10px] text-mission-control-text-dim/70">/task</div>
                     </>
                   ) : (
                     <>
-                      <div className="text-sm font-bold tabular-nums text-success">{row.metrics.tasksCompleted}</div>
-                      <div className="text-[10px] text-mission-control-text-dim">tasks</div>
+                      <div className="text-sm font-mono font-bold tabular-nums text-success">{row.metrics.tasksCompleted}</div>
+                      <div className="text-[10px] text-mission-control-text-dim/70">tasks</div>
                     </>
                   )}
                 </div>
@@ -347,10 +342,10 @@ export default function AgentLeaderboard() {
       )}
 
       {!loading && sorted.length === 0 && (
-        <div className="py-12 text-center text-sm text-mission-control-text-dim">
+        <Flex align="center" justify="center" py="9" className="text-sm text-mission-control-text-dim">
           No agent data available yet.
-        </div>
+        </Flex>
       )}
-    </div>
+    </Box>
   );
 }

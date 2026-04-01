@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Keyboard, X, Search } from 'lucide-react';
+import { TextField, Box, Flex, Grid, Text } from '@radix-ui/themes';
 
 interface KeyboardShortcutsProps {
   isOpen: boolean;
@@ -162,105 +163,116 @@ export default function KeyboardShortcuts({ isOpen, onClose }: KeyboardShortcuts
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+    <Flex
+      align="center"
+      justify="center"
+      p="4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
       onClick={onClose}
       role="button"
       tabIndex={0}
       aria-label="Close keyboard shortcuts"
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); }}}
     >
-      <div
-        className="glass-modal rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
+      <Flex
+        direction="column"
+        className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         role="presentation"
         onKeyDown={(e) => { e.stopPropagation(); }}
       >
         {/* Header */}
-        <div className="p-6 border-b border-mission-control-border">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-mission-control-accent/20 rounded-lg">
-                <Keyboard size={24} className="text-mission-control-accent" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold">Keyboard Shortcuts</h2>
-                <p className="text-sm text-mission-control-text-dim">Navigate faster with these shortcuts</p>
-              </div>
-            </div>
+        <div className="border-b border-mission-control-border flex-shrink-0">
+          <div className="flex items-center justify-between px-6 py-4">
+            <Flex align="center" gap="3">
+              <Box p="2" className="bg-mission-control-accent/20 rounded-lg">
+                <Keyboard size={20} className="text-mission-control-accent" />
+              </Box>
+              <Box>
+                <h2 className="text-base font-semibold">Keyboard Shortcuts</h2>
+                <Text size="2" className="text-mission-control-text-dim">Navigate faster with these shortcuts</Text>
+              </Box>
+            </Flex>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
+              aria-label="Close"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
-              <X size={20} />
+              <X size={16} />
             </button>
           </div>
 
           {/* Search */}
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-            <input
-              type="text"
+          <div className="px-6 pb-4">
+            <TextField.Root
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search shortcuts..."
-              className="w-full pl-10 pr-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent"
-            />
+              className="w-full"
+            >
+              <TextField.Slot>
+                <Search size={16} />
+              </TextField.Slot>
+            </TextField.Root>
           </div>
         </div>
 
         {/* Shortcuts */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {filteredShortcuts.length > 0 ? (
-            <div className="grid grid-cols-2 gap-6">
+            <Grid columns="2" gap="5">
               {filteredShortcuts.map((section) => (
-                <div key={section.category} className="space-y-3">
-                  <h3 className="text-sm font-medium text-mission-control-text-dim uppercase tracking-wide sticky top-0 bg-mission-control-surface pb-2">
+                <Box key={section.category} className="space-y-3">
+                  <Text size="1" weight="bold" className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim sticky top-0 bg-mission-control-surface pb-1.5 pt-1" as="div">
                     {section.category}
-                  </h3>
-                  <div className="space-y-2">
+                  </Text>
+                  <Box>
                     {section.items.map((shortcut, idx) => (
-                      <div
+                      <Flex
                         key={idx}
-                        className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-mission-control-bg/50 transition-colors"
+                        align="center"
+                        justify="between"
+                        className={`py-2 border-b border-mission-control-border/40 last:border-0 px-2 rounded-md ${
+                          idx % 2 === 0 ? '' : 'bg-mission-control-border/5'
+                        }`}
                       >
-                        <span className="text-sm">{shortcut.action}</span>
-                        <div className="flex items-center gap-1">
+                        <Text size="2" className="text-sm text-mission-control-text">{shortcut.action}</Text>
+                        <Flex align="center" gap="1" className="flex-shrink-0 ml-3">
                           {shortcut.keys.map((key, keyIdx) => (
                             <kbd
                               key={keyIdx}
-                              className="px-2 py-1 text-xs bg-mission-control-bg border border-mission-control-border rounded-md font-mono shadow-sm"
+                              className="text-[11px] font-mono px-1.5 py-0.5 rounded border border-mission-control-border bg-mission-control-border/60 text-mission-control-text"
                             >
                               {key}
                             </kbd>
                           ))}
-                        </div>
-                      </div>
+                        </Flex>
+                      </Flex>
                     ))}
-                  </div>
-                </div>
+                  </Box>
+                </Box>
               ))}
-            </div>
+            </Grid>
           ) : (
-            <div className="text-center py-12 text-mission-control-text-dim">
-              <Keyboard size={48} className="mx-auto mb-3 opacity-30" />
-              <p className="text-sm">No shortcuts found for &quot;{searchQuery}&quot;</p>
-              <p className="text-xs mt-1">Try a different search term</p>
-            </div>
+            <Flex direction="column" align="center" justify="center" py="9" gap="2">
+              <div className="w-12 h-12 rounded-xl bg-mission-control-border/30 flex items-center justify-center mb-1">
+                <Keyboard size={24} className="text-mission-control-text-dim opacity-50" />
+              </div>
+              <Text size="2" className="text-mission-control-text/70">No shortcuts found for &quot;{searchQuery}&quot;</Text>
+              <Text size="1" className="text-mission-control-text-dim">Try a different search term</Text>
+            </Flex>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-mission-control-border bg-mission-control-bg">
-          <div className="flex items-center justify-between text-sm text-mission-control-text-dim">
-            <div className="flex items-center gap-4">
-              <span>Press <kbd className="px-1.5 py-0.5 bg-mission-control-border rounded text-xs">Esc</kbd> to close</span>
-              <span className="text-xs">• {filteredShortcuts.reduce((sum, s) => sum + s.items.length, 0)} shortcuts</span>
-            </div>
-            <span className="text-xs">⌘ = Cmd (macOS) / Ctrl (Windows/Linux)</span>
-          </div>
+        <div className="flex items-center justify-between px-6 py-4 border-t border-mission-control-border bg-mission-control-surface/80 flex-shrink-0">
+          <Flex align="center" gap="4">
+            <Text size="2" className="text-mission-control-text-dim">Press <kbd className="text-[11px] font-mono px-1.5 py-0.5 rounded border border-mission-control-border bg-mission-control-border/60 text-mission-control-text">Esc</kbd> to close</Text>
+            <Text size="1" className="text-mission-control-text-dim">• {filteredShortcuts.reduce((sum, s) => sum + s.items.length, 0)} shortcuts</Text>
+          </Flex>
+          <Text size="1" className="text-mission-control-text-dim">⌘ = Cmd (macOS) / Ctrl (Windows/Linux)</Text>
         </div>
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 }

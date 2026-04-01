@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import ConversationPanel from './ConversationPanel';
 import SpecPreviewPanel from './SpecPreviewPanel';
 import { useModuleSpec } from './useModuleSpec';
@@ -134,11 +135,12 @@ function ModuleBuilderInner({ saved, onBack }: { saved: SavedModule; onBack: () 
   return (
     <div className="flex flex-col h-full">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center gap-3">
+      <Flex align="center" justify="between" className="px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" gap="3">
           <button
+            type="button"
             onClick={() => { doSave(); onBack(); }}
-            className="flex items-center gap-1.5 px-2 py-1.5 text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <ArrowLeft size={14} /> My Modules
           </button>
@@ -146,12 +148,12 @@ function ModuleBuilderInner({ saved, onBack }: { saved: SavedModule; onBack: () 
           <h1 className="text-lg font-semibold text-mission-control-text truncate">
             {spec.name || 'Untitled Module'}
           </h1>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Split layout */}
       <div className="flex-1 flex overflow-hidden">
-        <div className="w-1/2 min-w-0">
+        <div className="w-1/2 min-w-0 border-r border-mission-control-border">
           <ConversationPanel
             messages={flow.messages}
             sectionProgress={sectionProgress}
@@ -223,7 +225,11 @@ export default function ModuleBuilderView({ moduleId, onBack }: ModuleBuilderVie
     return (
       <div className="flex flex-col items-center justify-center h-full text-mission-control-text-dim gap-3">
         <p>Failed to load module: {error}</p>
-        <button onClick={onBack} className="text-mission-control-accent hover:underline text-sm">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+        >
           Back to list
         </button>
       </div>

@@ -1,4 +1,6 @@
 import { useState, useEffect, ReactNode } from 'react';
+import { Button, Box, Flex, Text, Heading } from '@radix-ui/themes';
+import { AlertCircle } from 'lucide-react';
 
 interface PathCheckResult {
   path: string;
@@ -17,83 +19,87 @@ interface Props {
 }
 
 /**
- * DependencyGate — wraps the entire app and validates critical dependencies
- * on every launch (not just first-run).
+ * DependencyGate — validates critical dependencies on every launch (not just first-run).
  *
- * Queries startup:getState from the main process (populated during boot-time
- * verifyPaths() run). If any critical path is missing, shows a setup-required
- * screen instead of the main app.
+ * Non-blocking: children render immediately. The health check runs in the background
+ * and only shows a dismissible error banner if critical deps are missing.
+ * This eliminates the "Starting up..." blocking screen that was gating LCP by 8+ seconds.
  *
- * Fails open: if the IPC call fails for any reason, renders children normally
+ * Fails open: if the health check fails for any reason, renders children normally
  * to avoid creating new failure modes.
  */
 export function DependencyGate({ children }: Props) {
-  const [state, setState] = useState<StartupState | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [criticalMissing, setCriticalMissing] = useState<PathCheckResult[]>([]);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
+    // Fire health check in the background — do NOT block rendering on this.
+    // The /api/health endpoint initialises background crons and checks paths.
     fetch('/api/health')
       .then(async (res) => {
-        if (res.ok) {
-          const data = await res.json();
-          setState(data?.startup ?? null);
+        if (!res.ok) return;
+        const data = await res.json();
+        const state: StartupState | null = data?.startup ?? null;
+        if (state) {
+          const missing = state.pathResults.filter(r => r.critical && !r.exists);
+          if (missing.length > 0) setCriticalMissing(missing);
         }
-        setLoading(false);
       })
       .catch(() => {
-        // If health check fails, proceed anyway (fail-open)
-        setLoading(false);
+        // fail-open: health check failed, proceed normally
       });
   }, []);
 
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-mission-control-bg">
-        <div className="text-mission-control-text-dim text-sm">Starting up...</div>
-      </div>
-    );
-  }
-
-  // If we couldn't get state, proceed (fail-open)
-  if (!state) return <>{children}</>;
-
-  // Check for critical path failures
-  const criticalMissing = state.pathResults.filter(r => r.critical && !r.exists);
-
-  if (criticalMissing.length > 0) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-mission-control-bg p-8">
-        <div className="max-w-md w-full text-center space-y-4">
-          <div className="text-4xl">🐸</div>
-          <h1 className="text-xl font-bold text-mission-control-text">Setup Required</h1>
-          <p className="text-mission-control-text-dim text-sm">
-            Mission Control cannot start because required files are missing:
-          </p>
-          <div className="text-left space-y-2 bg-mission-control-surface border border-mission-control-border p-4 rounded-lg">
-            {criticalMissing.map(r => (
-              <div key={r.path} className="space-y-1">
-                <p className="text-sm text-red-400 font-medium">{r.label}</p>
-                <p className="text-xs text-mission-control-text-dim font-mono break-all">{r.path}</p>
-              </div>
-            ))}
-          </div>
-          <div className="text-left text-xs text-mission-control-text-dim space-y-1 bg-mission-control-bg border border-mission-control-border p-4 rounded-lg">
-            <p className="font-medium text-mission-control-text mb-2">To fix this:</p>
-            <p className="font-mono">1. Ensure ~/mission-control/data/mission-control.db exists</p>
-            <p className="font-mono">2. Run the Mission Control setup script or restore from backup</p>
-            <p className="font-mono">3. Restart the app</p>
-          </div>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors text-sm"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // All critical deps OK — render app
-  return <>{children}</>;
+  // Always render children immediately — health check is non-blocking.
+  // Show critical setup error as a dismissible full-screen overlay only when needed.
+  return (
+    <>
+      {children}
+      {criticalMissing.length > 0 && !dismissed && (
+        <Flex align="center" justify="center" p="6" className="fixed inset-0 z-50 bg-mission-control-bg">
+          <Flex direction="column" align="center" gap="4" style={{ maxWidth: '28rem', width: '100%' }}>
+            <AlertCircle size={48} className="text-mission-control-accent" />
+            <Heading size="5" as="h1" className="text-mission-control-text">Setup Required</Heading>
+            <Text size="2" className="text-mission-control-text-dim" align="center">
+              Mission Control cannot start because required files are missing:
+            </Text>
+            <Box p="4" className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg">
+              <Flex direction="column" gap="2">
+                {criticalMissing.map(r => (
+                  <Flex key={r.path} direction="column" gap="1">
+                    <Text size="2" weight="medium" className="text-error">{r.label}</Text>
+                    <Text size="1" className="text-mission-control-text-dim font-mono break-all">{r.path}</Text>
+                  </Flex>
+                ))}
+              </Flex>
+            </Box>
+            <Box p="4" className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg">
+              <Flex direction="column" gap="1">
+                <Text size="1" weight="medium" className="text-mission-control-text" mb="2">To fix this:</Text>
+                <Text size="1" className="text-mission-control-text-dim font-mono">1. Ensure ~/mission-control/data/mission-control.db exists</Text>
+                <Text size="1" className="text-mission-control-text-dim font-mono">2. Run the Mission Control setup script or restore from backup</Text>
+                <Text size="1" className="text-mission-control-text-dim font-mono">3. Restart the app</Text>
+              </Flex>
+            </Box>
+            <Flex gap="2" justify="center">
+              <Button
+                onClick={() => window.location.reload()}
+                size="2"
+                variant="solid"
+              >
+                Retry
+              </Button>
+              <button
+                type="button"
+                onClick={() => setDismissed(true)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+              >
+                Continue anyway
+              </button>
+            </Flex>
+          </Flex>
+        </Flex>
+      )}
+    </>
+  );
 }

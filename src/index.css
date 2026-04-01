@@ -1,4 +1,7 @@
-/* Import accessibility styles FIRST */
+/* Radix UI Themes 3 — must load first to inject CSS custom properties */
+@import '@radix-ui/themes/styles.css';
+
+/* Import accessibility styles */
 @import './accessibility.css';
 
 /* Import react-grid-layout styles */
@@ -10,6 +13,9 @@
 
 /* Import design system tokens */
 @import './design-tokens.css';
+
+/* Import glass theme layer (scrollbars, modal/dropdown surfaces, card base styles) */
+@import './glass-theme.css';
 
 /* Import component patterns */
 @import './component-patterns.css';
@@ -28,6 +34,9 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
 
 body {
   margin: 0;
@@ -39,6 +48,19 @@ body {
   color: var(--mission-control-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Translucent surface system ─────────────────────────────────────────────
+   Forces bg-mission-control-surface / card to honour Radix
+   panelBackground="translucent". Without this, the Tailwind utility resolves
+   to --color-panel-solid (opaque), ignoring what Radix sets on --color-panel.
+   backdrop-filter provides the frosted-glass depth effect.
+   ──────────────────────────────────────────────────────────────────────────── */
+.bg-mission-control-surface,
+.bg-mission-control-card {
+  background-color: color-mix(in srgb, var(--mission-control-bg, #0a0a0a) 85%, transparent) !important;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
 }
 
 /* Custom scrollbar */
@@ -109,12 +131,6 @@ body {
   border: 1px solid color-mix(in srgb, var(--mission-control-border) 50%, transparent);
 }
 
-.glass-card {
-  background: color-mix(in srgb, var(--mission-control-surface) 70%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in srgb, var(--mission-control-border) 50%, transparent);
-}
 
 /* Dark theme modal */
 :root:not(.light) .glass-modal {
@@ -190,7 +206,7 @@ body {
 }
 
 .modal-content-enter {
-  animation: modal-content-in 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modal-content-in 200ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 .modal-content-exit {
@@ -221,26 +237,26 @@ body {
   
   .card {
     @apply bg-mission-control-surface border border-mission-control-border rounded-xl;
-    @apply shadow-card transition-all duration-200;
-    @apply p-4; /* Standard card padding */
+    @apply shadow-card p-4; /* Standard card padding */
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
-  
+
   .card:hover {
     @apply shadow-card-hover;
   }
-  
+
   .card-interactive {
     @apply bg-mission-control-surface border border-mission-control-border rounded-xl;
-    @apply shadow-card transition-all duration-200;
-    @apply hover:shadow-card-hover hover:-translate-y-0.5;
+    @apply shadow-card hover:shadow-card-hover hover:-translate-y-0.5;
     @apply cursor-pointer;
     @apply p-4; /* Standard card padding */
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
   }
-  
+
   .card-sm {
     @apply bg-mission-control-surface border border-mission-control-border rounded-lg;
-    @apply shadow-card transition-all duration-200;
-    @apply p-3; /* Small card padding */
+    @apply shadow-card p-3; /* Small card padding */
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
   
   .card-lg {
@@ -274,59 +290,6 @@ body {
     background: color-mix(in srgb, var(--mission-control-accent) 20%, transparent);
   }
   
-  /* ============================================
-     BUTTON SYSTEM - Consistent sizing & spacing
-     ============================================ */
-  
-  /* Base button with standard padding */
-  .btn {
-    @apply inline-flex items-center justify-center;
-    @apply gap-2 px-4 py-2; /* Standard spacing: gap-2, padding 16px/8px */
-    @apply transition-all duration-150;
-    @apply active:scale-95;
-    @apply rounded-lg;
-    @apply font-medium;
-  }
-
-  .btn-sm {
-    @apply inline-flex items-center justify-center;
-    @apply gap-1.5 px-3 py-1.5; /* Compact spacing */
-    @apply transition-all duration-150;
-    @apply active:scale-95;
-    @apply rounded-lg;
-    @apply text-sm font-medium;
-  }
-
-  .btn-lg {
-    @apply inline-flex items-center justify-center;
-    @apply gap-3 px-6 py-3; /* Generous spacing */
-    @apply transition-all duration-150;
-    @apply active:scale-95;
-    @apply rounded-lg;
-    @apply text-base font-medium;
-  }
-
-  .btn-primary {
-    @apply bg-mission-control-accent text-white rounded-lg;
-    @apply hover:bg-mission-control-accent-dim hover:shadow-glow;
-    @apply active:scale-95 transition-all duration-150;
-    @apply px-4 py-2 gap-2; /* Standard button spacing */
-  }
-
-  .btn-secondary {
-    @apply bg-mission-control-border text-mission-control-text rounded-lg;
-    @apply hover:brightness-125;
-    @apply active:scale-95 transition-all duration-150;
-    @apply px-4 py-2 gap-2; /* Standard button spacing */
-  }
-
-  .btn-ghost {
-    @apply bg-transparent text-mission-control-text-dim rounded-lg;
-    @apply hover:bg-mission-control-surface hover:text-mission-control-text;
-    @apply active:scale-95 transition-all duration-150;
-    @apply px-4 py-2 gap-2;
-  }
-
   /* Semantic badge variants — status/severity */
   .badge-success {
     @apply bg-success-subtle text-success border border-success-border;
@@ -439,19 +402,19 @@ body {
   /* Icon Buttons - Consistent sizing and centering */
   .icon-btn {
     @apply inline-flex items-center justify-center p-2 rounded-lg;
-    @apply transition-all duration-150 hover:bg-mission-control-border;
+    @apply transition-colors duration-150 hover:bg-mission-control-border;
     @apply active:scale-95;
   }
   
   .icon-btn-sm {
     @apply inline-flex items-center justify-center p-1.5 rounded-lg;
-    @apply transition-all duration-150 hover:bg-mission-control-border;
+    @apply transition-colors duration-150 hover:bg-mission-control-border;
     @apply active:scale-95;
   }
   
   .icon-btn-lg {
     @apply inline-flex items-center justify-center p-3 rounded-lg;
-    @apply transition-all duration-150 hover:bg-mission-control-border;
+    @apply transition-colors duration-150 hover:bg-mission-control-border;
     @apply active:scale-95;
   }
   
@@ -624,10 +587,83 @@ mark {
   }
 }
 
+.typing-dot-1 { animation: typing-bounce 1.2s ease-in-out infinite; }
+.typing-dot-2 { animation: typing-bounce 1.2s ease-in-out 0.15s infinite; }
+.typing-dot-3 { animation: typing-bounce 1.2s ease-in-out 0.3s infinite; }
+
+/* ============================================
+   MICRO-INTERACTION & PAGE TRANSITION CLASSES
+   ============================================ */
+
+/* Fade in with subtle upward drift — panels, cards, modal contents */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 0.15s ease-out both; }
+
+/* Slide in from the right — detail panels, drawers */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in-right { animation: slideInRight 0.15s ease-out both; }
+
+/* Scale-in with spring — modals, popovers */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Card hover lift — explicit named class, use alongside card classes */
+.card-hover {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+.card-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.15);
+}
+
+/* Smooth number color transition for stat changes */
+.tabular-animate {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  transition: color 0.2s ease;
+}
+
+/* Button press feedback — quick scale down on active */
+.btn-press:active { transform: scale(0.97); }
+
+/* Agent status pulse — opacity + box-shadow ring expansion */
+@keyframes agentPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; }
+  50%       { opacity: 0.8; box-shadow: 0 0 0 3px transparent; }
+}
+/* .agent-dot-pulse is defined in component-patterns.css — override with richer version */
+.agent-dot-pulse {
+  animation: agentPulse 2s ease-in-out infinite;
+}
+
+/* Skeleton shimmer using CSS custom properties — theme-aware */
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position:  200% 0; }
+}
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--mission-control-border) 25%,
+    color-mix(in srgb, var(--mission-control-border) 60%, transparent) 50%,
+    var(--mission-control-border) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
 /* react-grid-layout dark mode overrides */
 .react-grid-item.react-grid-placeholder {
-  background: rgba(34, 197, 94, 0.1) !important;
-  border: 2px dashed rgba(34, 197, 94, 0.4) !important;
+  background: color-mix(in srgb, var(--mission-control-accent) 10%, transparent) !important;
+  border: 2px dashed color-mix(in srgb, var(--mission-control-accent) 40%, transparent) !important;
   border-radius: 1rem;
   opacity: 0.8;
 }

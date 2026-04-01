@@ -1,0 +1,69 @@
+import { useCallback, useEffect } from 'react'
+import { useShallow } from 'zustand/react/shallow'
+import { PANEL_WIDTH } from '@/stores/constants'
+import { usePanelStore } from '@/stores/panel'
+
+/** Inset gap between the viewport edge and the content window */
+const CONTENT_WINDOW_GAP = 8
+
+/**
+ * Custom hook to handle panel resize functionality.
+ * Manages mouse events for resizing and enforces min/max width constraints.
+ * Maximum width is capped at 40% of the viewport width for optimal layout.
+ *
+ * @returns Resize state and handlers
+ */
+export function usePanelResize() {
+  const { setPanelWidth, isResizing, setIsResizing } = usePanelStore(
+    useShallow((s) => ({
+      setPanelWidth: s.setPanelWidth,
+      isResizing: s.isResizing,
+      setIsResizing: s.setIsResizing,
+    }))
+  )
+
+  /**
+   * Handles mouse down on resize handle
+   */
+  const handleMouseDown = useCallback(() => {
+    setIsResizing(true)
+  }, [setIsResizing])
+
+  /**
+   * Setup resize event listeners and body styles when resizing
+   * Cleanup is handled automatically by the effect's return function
+   */
+  useEffect(() => {
+    if (!isResizing) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = window.innerWidth - CONTENT_WINDOW_GAP - e.clientX
+      const maxWidth = window.innerWidth * PANEL_WIDTH.MAX_PERCENTAGE
+
+      if (newWidth >= PANEL_WIDTH.MIN && newWidth <= maxWidth) {
+        setPanelWidth(newWidth)
+      }
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    document.body.style.cursor = 'ew-resize'
+    document.body.style.userSelect = 'none'
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+  }, [isResizing, setPanelWidth, setIsResizing])
+
+  return {
+    isResizing,
+    handleMouseDown,
+  }
+}

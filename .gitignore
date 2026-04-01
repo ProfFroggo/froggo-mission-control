@@ -33,7 +33,7 @@ resources/models/
 memory/
 !app/api/memory/
 !app/api/agents/
-.planning/
+# .planning/ — tracked for GSD project plans
 
 # Machine-specific MCP config (use .mcp.json.example as template)
 .mcp.json
@@ -42,3 +42,10 @@ memory/
 .claude/settings.json
 sbom.json
 .claude/worktrees/
+.next-verify/
+.next-coder-lcp/
+.next-lcp-payload-fix/
+.next-sm-verify2/
+.next-state-machine-verify/
+*.cpuprofile
+*.report.html

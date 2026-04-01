@@ -5,6 +5,7 @@
 
 import { useState, useEffect, InputHTMLAttributes, TextareaHTMLAttributes } from 'react';
 import { AlertCircle, Check } from 'lucide-react';
+import { Flex, TextField, TextArea, Select } from '@radix-ui/themes';
 import { validate, ValidationRule, ValidationResult } from '../utils/validation';
 
 interface BaseValidatedInputProps {
@@ -67,30 +68,21 @@ export function ValidatedInput({
       )}
 
       <div className="relative">
-        <input
-          {...inputProps}
+        <TextField.Root
+          {...(inputProps as any)}
           value={value}
           onChange={handleChange}
           onBlur={handleBlur}
-          className={`
-            w-full px-3 py-2 bg-mission-control-bg border rounded-lg text-mission-control-text placeholder-mission-control-text-dim
-            focus:outline-none focus:ring-2 transition-all
-            ${hasError 
-              ? 'border-red-500 focus:ring-error/50' 
-              : isValid && showValidation
-                ? 'border-green-500 focus:ring-success/50'
-                : 'border-mission-control-border focus:ring-mission-control-accent'
-            }
-            ${className}
-          `}
-        />
-
-        {showValidation && touched && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            {hasError && <AlertCircle size={16} className="text-error" />}
-            {isValid && <Check size={16} className="text-success" />}
-          </div>
-        )}
+          color={hasError ? 'red' : isValid && showValidation ? 'green' : undefined}
+          className={className}
+        >
+          {showValidation && touched && (
+            <TextField.Slot side="right">
+              {hasError && <AlertCircle size={16} className="text-error" />}
+              {isValid && <Check size={16} className="text-success" />}
+            </TextField.Slot>
+          )}
+        </TextField.Root>
       </div>
 
       {helpText && !hasError && (
@@ -98,10 +90,10 @@ export function ValidatedInput({
       )}
 
       {hasError && validationResult.error && (
-        <div className="flex items-center gap-1 text-xs text-error">
+        <Flex align="center" gap="1" className="text-xs text-error">
           <AlertCircle size={14} />
           <span>{validationResult.error}</span>
-        </div>
+        </Flex>
       )}
     </div>
   );
@@ -154,7 +146,7 @@ export function ValidatedTextarea({
   return (
     <div className="space-y-1">
       {label && (
-        <div className="flex items-center justify-between">
+        <Flex align="center" justify="between">
           <label className="block text-sm font-medium text-mission-control-text">
             {label}
             {rules.some(r => r.type === 'required') && (
@@ -166,24 +158,17 @@ export function ValidatedTextarea({
               {charCount} / {maxLength}
             </span>
           )}
-        </div>
+        </Flex>
       )}
 
-      <textarea
-        {...textareaProps}
+      <TextArea
+        {...(textareaProps as any)}
         value={value}
         onChange={handleChange}
         onBlur={handleBlur}
         maxLength={maxLength}
-        className={`
-          w-full px-3 py-2 bg-mission-control-bg border rounded-lg text-mission-control-text placeholder-mission-control-text-dim
-          focus:outline-none focus:ring-2 transition-all resize-vertical
-          ${hasError 
-            ? 'border-red-500 focus:ring-error/50' 
-            : 'border-mission-control-border focus:ring-mission-control-accent'
-          }
-          ${className}
-        `}
+        color={hasError ? 'red' : undefined}
+        className={className}
       />
 
       {helpText && !hasError && (
@@ -191,10 +176,10 @@ export function ValidatedTextarea({
       )}
 
       {hasError && validationResult.error && (
-        <div className="flex items-center gap-1 text-xs text-error">
+        <Flex align="center" gap="1" className="text-xs text-error">
           <AlertCircle size={14} />
           <span>{validationResult.error}</span>
-        </div>
+        </Flex>
       )}
     </div>
   );
@@ -228,14 +213,10 @@ export function ValidatedSelect({
     }
   }, [value, touched, rules, onValidation]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newValue = e.target.value;
+  const handleValueChange = (newValue: string) => {
     setValue(newValue);
-    onChange?.(newValue, validationResult.valid);
-  };
-
-  const handleBlur = () => {
     setTouched(true);
+    onChange?.(newValue, validationResult.valid);
   };
 
   const hasError = touched && !validationResult.valid;
@@ -251,37 +232,26 @@ export function ValidatedSelect({
         </label>
       )}
 
-      <select
-        {...selectProps}
-        value={value}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        className={`
-          w-full px-3 py-2 bg-mission-control-surface border rounded-lg text-mission-control-text
-          focus:outline-none transition-all cursor-pointer
-          ${hasError
-            ? 'border-red-500 focus:border-error'
-            : 'border-mission-control-border focus:border-mission-control-accent'
-          }
-          ${className}
-        `}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <Select.Root value={value} onValueChange={handleValueChange}>
+        <Select.Trigger className={`w-full ${className}`} color={hasError ? 'red' : undefined} />
+        <Select.Content>
+          {options.map((option) => (
+            <Select.Item key={option.value} value={option.value}>
+              {option.label}
+            </Select.Item>
+          ))}
+        </Select.Content>
+      </Select.Root>
 
       {helpText && !hasError && (
         <p className="text-xs text-mission-control-text-dim">{helpText}</p>
       )}
 
       {hasError && validationResult.error && (
-        <div className="flex items-center gap-1 text-xs text-error">
+        <Flex align="center" gap="1" className="text-xs text-error">
           <AlertCircle size={14} />
           <span>{validationResult.error}</span>
-        </div>
+        </Flex>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, AlertTriangle, Lightbulb, Bell, Target, BarChart3, X, Loader2, RefreshCw, Zap } from 'lucide-react';
+import { Button, Flex, Box } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { financeApi } from '../lib/api';
 
@@ -112,11 +113,11 @@ export default function FinanceInsightsPanel() {
   const getSeverityStyles = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'bg-error-subtle border-error-border text-error';
+        return 'bg-error/10 border-error/30 text-error';
       case 'warning':
-        return 'bg-warning-subtle border-warning-border text-warning';
+        return 'bg-warning/10 border-warning/30 text-warning';
       default:
-        return 'bg-info-subtle border-info-border text-info';
+        return 'bg-info/10 border-info/30 text-info';
     }
   };
 
@@ -140,23 +141,24 @@ export default function FinanceInsightsPanel() {
 
   if (loading && insights.length === 0) {
     return (
-      <div className="flex items-center justify-center py-8">
+      <Flex align="center" justify="center" className="py-8">
         <Loader2 className="w-6 h-6 animate-spin text-mission-control-text-dim" />
         <span className="ml-2 text-mission-control-text-dim">Loading AI insights...</span>
-      </div>
+      </Flex>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-error-subtle border border-error-border rounded-lg p-4">
-        <div className="flex items-center gap-2 text-error">
+      <div className="bg-error/10 border border-error/30 rounded-lg p-4">
+        <Flex align="center" gap="2" className="text-error">
           <AlertTriangle className="w-5 h-5" />
           <span>Failed to load insights: {error}</span>
-        </div>
+        </Flex>
         <button
+          type="button"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors mt-2"
           onClick={loadInsights}
-          className="mt-2 text-sm text-error hover:text-error"
         >
           Retry
         </button>
@@ -175,49 +177,52 @@ export default function FinanceInsightsPanel() {
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+    <Box className="space-y-3">
+      <Flex align="center" justify="between" className="mb-4">
+        <h3 className="text-lg font-semibold text-mission-control-text flex items-center gap-2">
           <Lightbulb className="w-5 h-5 text-warning" />
           AI Insights
-          <span className="px-2 py-0.5 text-xs bg-warning-subtle text-warning rounded-full">
+          <span className="px-2 py-0.5 text-xs bg-warning/10 text-warning rounded-full">
             {insights.length}
           </span>
           {insights.filter((i) => i.type === 'anomaly').length > 0 && (
-            <span className="px-2 py-0.5 text-xs bg-error-subtle text-error rounded-full flex items-center gap-1">
+            <span className="px-2 py-0.5 text-xs bg-error/10 text-error rounded-full flex items-center gap-1">
               <AlertTriangle className="w-3 h-3" />
               {insights.filter((i) => i.type === 'anomaly').length} anomal{insights.filter((i) => i.type === 'anomaly').length === 1 ? 'y' : 'ies'}
             </span>
           )}
         </h3>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={generateInsights}
+        <Flex align="center" gap="2">
+          <Button
+            size="2"
+            variant="soft"
+            color="yellow"
             disabled={detectingAnomalies || analyzing}
-            className="px-3 py-1.5 bg-warning/20 hover:bg-warning/30 disabled:opacity-50 disabled:cursor-not-allowed text-warning rounded-lg flex items-center gap-2 transition-colors text-sm border border-warning/30"
+            onClick={generateInsights}
             title="Run SQL-based anomaly detection on spending patterns"
           >
             <Zap className={`w-4 h-4 ${detectingAnomalies ? 'animate-pulse' : ''}`} />
             {detectingAnomalies ? 'Detecting...' : 'Detect Anomalies'}
-          </button>
-          <button
-            onClick={triggerAnalysis}
+          </Button>
+          <Button
+            size="2"
+            variant="solid"
             disabled={analyzing || detectingAnomalies}
-            className="px-3 py-1.5 bg-mission-control-accent hover:bg-mission-control-accent/90 disabled:bg-mission-control-bg-alt disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg flex items-center gap-2 transition-colors text-sm"
+            onClick={triggerAnalysis}
             title="Run AI analysis on recent transactions"
           >
             <RefreshCw className={`w-4 h-4 ${analyzing ? 'animate-spin' : ''}`} />
             {analyzing ? 'Analyzing...' : 'Run Analysis'}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Flex>
+      </Flex>
 
       {insights.map((insight) => (
         <div
           key={insight.id}
           className={`rounded-lg border p-4 ${getSeverityStyles(insight.severity)}`}
         >
-          <div className="flex items-start justify-between gap-3">
+          <Flex align="start" justify="between" gap="3">
             <div className="flex items-start gap-3 flex-1">
               <div className="mt-0.5">
                 {getInsightIcon(insight.type)}
@@ -233,15 +238,16 @@ export default function FinanceInsightsPanel() {
               </div>
             </div>
             <button
+              type="button"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               onClick={() => dismissInsight(insight.id)}
-              className="p-1 hover:bg-mission-control-bg-alt rounded transition-colors flex-shrink-0"
               title="Dismiss insight"
             >
-              <X className="w-4 h-4 text-mission-control-text-dim" />
+              <X className="w-4 h-4" />
             </button>
-          </div>
+          </Flex>
         </div>
       ))}
-    </div>
+    </Box>
   );
 }

@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { zustandSafeStorage } from '../utils/safeStorage';
 import { gateway } from '../lib/gateway';
 import { notifyNewApproval } from '../lib/notifications';
 import { matchTaskToAgent } from '../lib/agents';
@@ -229,6 +230,9 @@ interface Store {
   tasks: Task[];
   taskCounts: { totalDone: number; totalArchived: number };
   loadTasksFromDB: () => Promise<void>;
+  /** Merge fields into local store state only — does NOT persist to the database.
+   *  Use for hydrating deferred fields (e.g. planningNotes loaded lazily on task open). */
+  patchTaskLocal: (id: string, updates: Partial<Task>) => void;
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   moveTask: (id: string, status: TaskStatus) => void;
@@ -517,11 +521,19 @@ export const useStore = create<Store>()(
         g.__taskLoadInFlight = true;
         try {
           get().setLoading('tasks', true);
-          const result = await taskApi.getAll();
+          // ?include=subtasks eliminates the N+1 subtask waterfall (was 20+ sequential HTTP rounds
+          // for ~200 tasks in batches of 10, adding ~8 s to LCP). One request, two DB queries.
+          // ?summary=1 excludes planningNotes and subtask descriptions from the bulk response
+          // (~396 KB saved → ~311 KB payload) so the dashboard paints faster. TaskDetailPanel
+          // lazy-hydrates planningNotes via patchTaskLocal when a task is first opened.
+          // Initial load: fetch the 100 most recently updated tasks (paginated).
+          // Remaining tasks are loaded in a background follow-up to avoid blocking LCP.
+          const result = await taskApi.getAll({ include: 'subtasks', summary: '1', limit: '100' });
           // API returns a plain array; support both plain array and legacy wrapped format
           const taskArray: any[] = Array.isArray(result) ? result : (result?.tasks ?? []);
-          // Convert to store format — DB uses camelCase column names
-          const tasksWithoutSubtasks = taskArray.map((t: any) => ({
+          // Convert to store format — DB uses camelCase column names.
+          // Subtasks are already embedded by the API when include=subtasks is set.
+          const tasksWithSubtasks: Task[] = taskArray.map((t: any) => ({
             id: t.id,
             title: t.title,
             description: t.description || '',
@@ -538,30 +550,10 @@ export const useStore = create<Store>()(
             lastAgentUpdate: t.lastAgentUpdate || undefined,
             createdAt: t.createdAt || Date.now(),
             updatedAt: t.updatedAt || Date.now(),
-            subtasks: [] as Subtask[],
+            subtasks: Array.isArray(t.subtasks) ? t.subtasks as Subtask[] : [],
             recurrence: t.recurrence ?? null,
             recurrenceParentId: t.recurrenceParentId ?? null,
           }));
-
-          // Load subtasks in parallel with batching (10 at a time)
-          const BATCH_SIZE = 10;
-          const tasksWithSubtasks: Task[] = [];
-
-          for (let i = 0; i < tasksWithoutSubtasks.length; i += BATCH_SIZE) {
-            const batch = tasksWithoutSubtasks.slice(i, i + BATCH_SIZE);
-            const batchResults = await Promise.all(
-              batch.map(async (task) => {
-                try {
-                  const subtaskResult = await taskApi.getSubtasks(task.id);
-                  // API returns plain array
-                  const subtasks = Array.isArray(subtaskResult) ? subtaskResult : (subtaskResult?.subtasks ?? []);
-                  return { ...task, subtasks: subtasks as Subtask[] };
-                } catch { /* ignore error */ }
-                return task;
-              })
-            );
-            tasksWithSubtasks.push(...batchResults as Task[]);
-          }
 
           set({
             tasks: tasksWithSubtasks,
@@ -570,12 +562,78 @@ export const useStore = create<Store>()(
               totalArchived: taskArray.filter((t: any) => t.status === 'cancelled').length,
             }
           });
+
+          // Background: load remaining tasks if the initial page was capped.
+          // Uses requestIdleCallback (or setTimeout fallback) so it doesn't compete
+          // with the main render cycle and LCP paint.
+          if (taskArray.length >= 100) {
+            const loadRemaining = async () => {
+              try {
+                const remaining = await taskApi.getAll({
+                  include: 'subtasks',
+                  summary: '1',
+                  limit: '500',
+                  offset: '100',
+                });
+                const remainingArray: any[] = Array.isArray(remaining) ? remaining : (remaining?.tasks ?? []);
+                if (remainingArray.length > 0) {
+                  const moreTasks: Task[] = remainingArray.map((t: any) => ({
+                    id: t.id,
+                    title: t.title,
+                    description: t.description || '',
+                    status: t.status as TaskStatus,
+                    priority: t.priority as TaskPriority | undefined,
+                    project: t.project || 'General',
+                    project_id: t.project_id || undefined,
+                    assignedTo: t.assignedTo === 'main' ? 'mission-control' : (t.assignedTo || undefined),
+                    reviewerId: t.reviewerId || undefined,
+                    reviewStatus: t.reviewStatus || undefined,
+                    planningNotes: t.planningNotes || undefined,
+                    dueDate: t.dueDate ? Number(t.dueDate) : undefined,
+                    scheduledAt: t.scheduledAt ? Number(t.scheduledAt) : undefined,
+                    lastAgentUpdate: t.lastAgentUpdate || undefined,
+                    createdAt: t.createdAt || Date.now(),
+                    updatedAt: t.updatedAt || Date.now(),
+                    subtasks: Array.isArray(t.subtasks) ? t.subtasks as Subtask[] : [],
+                    recurrence: t.recurrence ?? null,
+                    recurrenceParentId: t.recurrenceParentId ?? null,
+                  }));
+                  set((s: Store) => {
+                    const existingIds = new Set(s.tasks.map(t => t.id));
+                    const newTasks = moreTasks.filter(t => !existingIds.has(t.id));
+                    const allTasks = [...s.tasks, ...newTasks];
+                    return {
+                      tasks: allTasks,
+                      taskCounts: {
+                        totalDone: allTasks.filter(t => t.status === 'done').length,
+                        totalArchived: allTasks.filter(t => t.status === 'cancelled').length,
+                      }
+                    };
+                  });
+                }
+              } catch (err) {
+                storeLogger.warn('Background task load failed (non-critical):', err);
+              }
+            };
+            if (typeof requestIdleCallback === 'function') {
+              requestIdleCallback(() => { loadRemaining(); });
+            } else {
+              setTimeout(loadRemaining, 2000);
+            }
+          }
         } catch (error) {
           console.error('Failed to load tasks from DB:', error);
         } finally {
           get().setLoading('tasks', false);
           setTimeout(() => { (globalThis as any).__taskLoadInFlight = false; }, 3000);
         }
+      },
+      patchTaskLocal: (id: string, updates: Partial<Task>) => {
+        // Local-only state merge — does NOT persist to the database.
+        // Used to hydrate deferred fields (e.g. planningNotes) after lazy-fetch in TaskDetailPanel.
+        set((s: Store) => ({
+          tasks: s.tasks.map((t: Task) => t.id === id ? { ...t, ...updates } : t)
+        }));
       },
       addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
         const newTask: Task = {
@@ -1098,7 +1156,7 @@ Start now.`;
 
       activities: [],
       addActivity: (a: Omit<Activity, 'id'>) => set((s: Store) => ({
-        activities: [{ ...a, id: `act-${Date.now()}` }, ...s.activities].slice(0, 100)
+        activities: [{ ...a, id: `act-${Date.now()}` }, ...s.activities].slice(0, 500)
       })),
       clearActivities: () => set({ activities: [] }),
 
@@ -1264,6 +1322,7 @@ Start now.`;
     }),
     {
       name: 'mission-control-dashboard',
+      storage: zustandSafeStorage as any,
       partialize: (s) => ({
         // activities excluded — loaded from API on mount, too large for localStorage
         // Persist X drafts only (non-posted; posted are removed by markXDraftPosted)

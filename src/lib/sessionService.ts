@@ -10,7 +10,7 @@ import { join } from 'path';
 import { getDb } from './database';
 import { ENV } from './env';
 import { randomUUID } from 'crypto';
-import { TIER_TOOLS, loadDisallowedTools } from './taskDispatcher';
+import { TIER_TOOLS, loadDisallowedTools, loadAgentApiKeyEnv } from './taskDispatcher';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -48,7 +48,7 @@ const BUDGET_HISTORY = 8000;
 const BUDGET_SOUL = 3000;
 const BUDGET_MEMORY = 2000;
 const BUDGET_SHARED_MEMORY = 500;
-const BUDGET_KNOWLEDGE = 1500;
+const BUDGET_KNOWLEDGE = 25000;
 const BUDGET_SURFACE = 2000;
 const COMPACTION_THRESHOLD = 25;     // compact when > 25 messages
 const COMPACTION_RECENT_KEEP = 8;    // keep last 8 messages verbatim
@@ -479,16 +479,14 @@ export async function extractAndSaveMemory(sessionKey: string, agentId: string):
   try {
     const db = getDb();
 
-    // Check cooldown: skip if extracted less than 5 minutes ago
-    const session = db.prepare(
-      'SELECT lastMemoryExtractAt FROM sessions WHERE key = ?'
-    ).get(sessionKey) as { lastMemoryExtractAt?: number | null } | undefined;
+    // Atomic cooldown: claim the extraction slot or bail if another already claimed it
+    const now = Date.now();
+    const claimed = db.prepare(
+      `UPDATE sessions SET lastMemoryExtractAt = ? WHERE key = ? AND (lastMemoryExtractAt IS NULL OR lastMemoryExtractAt < ?)`
+    ).run(now, sessionKey, now - MEMORY_EXTRACT_COOLDOWN_MS);
 
-    if (session?.lastMemoryExtractAt) {
-      const elapsed = Date.now() - session.lastMemoryExtractAt;
-      if (elapsed < MEMORY_EXTRACT_COOLDOWN_MS) {
-        return; // too soon
-      }
+    if (claimed.changes === 0) {
+      return; // another extraction already in progress or cooldown not elapsed
     }
 
     // Load last 10 messages
@@ -687,7 +685,7 @@ export function getSessionStats(sessionKey: string): SessionStats | null {
       'SELECT key, agentId, createdAt, lastActivity, messageCount, compact_summary, last_compact_at FROM sessions WHERE key = ?'
     ).get(sessionKey) as SessionRecord | undefined;
 
-    if (!session) return null;
+    if (!session || !session.agentId) return null;
 
     // Count memory files
     const memoryRoot = join(homedir(), 'mission-control', 'memory');
@@ -989,6 +987,66 @@ function buildMemoryProtocol(meta: MemoryMetadata): string {
   return parts.join('\n');
 }
 
+// ── GSD project context ────────────────────────────────────────────────────
+
+const GSD_AGENT_GUIDE = `## Working with GSD Planning Files
+
+This project was planned using the GSD (Get Shit Done) methodology. Three planning files define your work:
+
+- **GSD-PROJECT.md** — Project description, core value, active requirements, constraints. Read this first each session.
+- **GSD-REQUIREMENTS.md** — Scoped v1 requirements with REQ-IDs. Reference when implementing features.
+- **GSD-ROADMAP.md** — Phase-based execution plan. Your primary navigation tool.
+
+### Your Workflow
+1. **Session start**: Call \`context_files_get\` to read the GSD planning files for this project
+2. **Find current phase**: In GSD-ROADMAP.md, locate the next unchecked phase: \`- [ ] Phase N: Name\`
+3. **Read success criteria**: Each phase has explicit, observable success criteria — only mark done when truly met
+4. **Work the phase**: Implement according to the phase goal and requirements
+5. **Update as you go**: Mark completed tasks: \`- [x] task description\`
+6. **Complete a phase**: Mark it done in ROADMAP.md: \`- [x] Phase N: Name\`
+7. **Discover new requirements**: Add them to GSD-REQUIREMENTS.md under Active, or Out of Scope with reason
+
+### Key Principles
+- **One phase at a time** — complete current phase before starting the next
+- **Observable outcomes** — success criteria must be verifiably true, not just "done"
+- **Keep files current** — planning docs reflect reality, not aspirations
+- **Core Value first** — PROJECT.md defines the one thing that must work; use it for trade-off decisions
+- **Decimal phases** — if urgent work arises mid-phase, add Phase N.1 between phases`;
+
+/**
+ * Load GSD planning context for a project — returns guide + planning file content
+ * if the project has GSD context files (GSD-PROJECT.md, GSD-REQUIREMENTS.md, GSD-ROADMAP.md).
+ */
+export function loadProjectGsdContext(projectId: string): string {
+  try {
+    const db = getDb();
+    const gsdFiles = db.prepare(
+      `SELECT originalName, processedContent FROM context_files
+       WHERE entityType = 'project' AND entityId = ? AND originalName LIKE 'GSD-%'
+       ORDER BY createdAt ASC`
+    ).all(projectId) as Array<{ originalName: string; processedContent: string | null }>;
+
+    if (gsdFiles.length === 0) return '';
+
+    const parts = [
+      '--- GSD PLANNING CONTEXT ---',
+      GSD_AGENT_GUIDE,
+      '',
+      '### Current Planning Files',
+    ];
+
+    for (const f of gsdFiles) {
+      if (f.processedContent) {
+        parts.push(`\n#### ${f.originalName}`, f.processedContent.slice(0, 2500));
+      }
+    }
+
+    return parts.join('\n');
+  } catch {
+    return '';
+  }
+}
+
 // ── Surface-specific context loaders ──────────────────────────────────────
 
 /**
@@ -1031,6 +1089,12 @@ export function loadTaskContext(taskId: string, agentId: string): string {
       }
     } else if (task.project) {
       parts.push(`**Project**: ${task.project}`);
+    }
+
+    // GSD planning context — inject if this project has GSD planning files
+    if (task.project_id) {
+      const gsdContext = loadProjectGsdContext(task.project_id);
+      if (gsdContext) parts.push('', gsdContext);
     }
 
     parts.push(`**Due**: ${task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No deadline'}`);
@@ -1382,6 +1446,7 @@ export function invokeAgent(
 
   // Clean env vars that interfere with Claude CLI
   const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env;
+  const apiKeyEnv = loadAgentApiKeyEnv(config.agentId);
   void CLAUDECODE; void CLAUDE_CODE_ENTRYPOINT; void CLAUDE_CODE_SESSION_ID;
 
   // Load agent's tool permissions based on trust tier
@@ -1415,7 +1480,7 @@ export function invokeAgent(
     {
       input: userPrompt,
       encoding: 'utf-8',
-      env: cleanEnv as NodeJS.ProcessEnv,
+      env: { ...cleanEnv, ...apiKeyEnv } as NodeJS.ProcessEnv,
       timeout: 45_000,
     }
   );

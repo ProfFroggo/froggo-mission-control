@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus } from 'lucide-react';
+import { Button, Flex } from '@radix-ui/themes';
 import ConversationPanel from './ConversationPanel';
 import SpecPreviewPanel from './SpecPreviewPanel';
 import ModuleBuildProgress from './ModuleBuildProgress';
@@ -168,25 +169,22 @@ export default function ModuleBuilderPage() {
     <div className="flex flex-col h-full">
       {/* Resume draft banner */}
       {resumeDraft && (
-        <div className="flex items-center gap-3 px-5 py-2.5 bg-mission-control-surface border-b border-mission-control-accent/40 text-sm">
+        <Flex align="center" gap="3" className="px-5 py-2.5 bg-mission-control-surface border-b border-mission-control-accent/40 text-sm">
           <span className="text-mission-control-text-dim">Unfinished module: <strong className="text-mission-control-text">{resumeDraft.name}</strong></span>
-          <button onClick={handleResumeDraft} className="px-2.5 py-1 rounded bg-mission-control-accent text-white text-xs font-medium">Resume</button>
-          <button onClick={handleDismissResume} className="px-2.5 py-1 rounded border border-mission-control-border text-mission-control-text-dim text-xs">Start New</button>
-        </div>
+          <Button size="1" variant="solid" onClick={handleResumeDraft}>Resume</Button>
+          <Button size="1" variant="surface" color="gray" onClick={handleDismissResume}>Start New</Button>
+        </Flex>
       )}
 
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
+      <Flex align="center" justify="between" className="px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
         <h1 className="text-lg font-semibold text-mission-control-text">Module Builder</h1>
-        <div className="flex gap-2">
-          <button
-            onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-mission-control-border hover:bg-mission-control-bg text-mission-control-text rounded-lg transition-colors"
-          >
+        <Flex gap="2">
+          <Button size="2" variant="surface" color="gray" onClick={handleReset}>
             <Plus size={14} /> New Module
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Flex>
+      </Flex>
 
       {/* Split layout */}
       <div className="flex-1 flex overflow-hidden">
@@ -199,6 +197,7 @@ export default function ModuleBuilderPage() {
             isStarted={flow.isStarted}
             isFinished={flow.isFinished}
             isStreaming={flow.isStreaming}
+            streamingContent={flow.streamingContent}
             onSend={flow.submitAnswer}
             onStart={flow.startInterview}
             onJumpToSection={flow.jumpToSection}
@@ -208,8 +207,8 @@ export default function ModuleBuilderPage() {
           {tasksCreated && moduleId ? (
             <div className="flex flex-col h-full overflow-y-auto p-5 gap-4">
               {/* Post-build success state */}
-              <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3">
-                <p className="text-sm font-medium text-green-400">Build queued — {createdTaskIds.length} tasks created</p>
+              <div className="rounded-lg border border-success/30 bg-success/10 px-4 py-3">
+                <p className="text-sm font-medium text-success">Build queued — {createdTaskIds.length} tasks created</p>
                 <p className="text-xs text-mission-control-text-dim mt-0.5">{spec.name}</p>
               </div>
               <ModuleBuildProgress moduleId={moduleId} />

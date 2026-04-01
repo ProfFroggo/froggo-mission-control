@@ -17,6 +17,49 @@ export type GatewayListener = (...args: any[]) => void;
 
 const NOOP = () => {};
 
+// ── Error classification ──────────────────────────────────────────────────────
+function classifyError(err: unknown): string {
+  if (err instanceof Error) {
+    const msg = err.message;
+    if (msg.includes('timeout') || msg.includes('ETIMEDOUT'))
+      return 'Connection timed out — the agent may be busy';
+    if (msg.includes('429'))
+      return 'Rate limited — please wait a moment';
+    if (msg.includes('503') || msg.includes('502'))
+      return 'Agent service temporarily unavailable';
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('network'))
+      return 'Network connection lost';
+    return err.message;
+  }
+  if (typeof err === 'string') return err;
+  return 'An unexpected error occurred';
+}
+
+// ── Retry wrapper for non-streaming requests ──────────────────────────────────
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 2): Promise<Response> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      // Don't retry client errors (4xx) — they won't change on retry
+      if (response.ok || (response.status >= 400 && response.status < 500)) {
+        return response;
+      }
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      return response;
+    } catch (err) {
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
 class Gateway {
   get connected() { return true; }
 
@@ -61,9 +104,11 @@ class Gateway {
 
   async getAgentIdentity(_sessionKey?: string) { return {}; }
 
-  async getChatHistory(limit = 50) {
+  async getChatHistory(limit = 50, sessionKey?: string) {
     try {
-      const res = await fetch(`/api/messages?limit=${limit}`);
+      if (!sessionKey) return { messages: [] as any[] };
+      const params = new URLSearchParams({ limit: String(limit), sessionKey });
+      const res = await fetch(`/api/messages?${params}`);
       if (!res.ok) return { messages: [] as any[] };
       return res.json();
     } catch { return { messages: [] as any[] }; }
@@ -73,7 +118,7 @@ class Gateway {
 
   async sendChat(message: string) {
     try {
-      const res = await fetch('/api/agents/mission-control/run', {
+      const res = await fetchWithRetry('/api/agents/mission-control/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message }),
@@ -109,7 +154,12 @@ class Gateway {
       });
 
       if (!res.ok || !res.body) {
-        callbacks.onError?.(`Agent run failed: ${res.status}`, {});
+        const statusMsg =
+          res.status === 429 ? 'Rate limited — please wait a moment' :
+          res.status === 503 || res.status === 502 ? 'Agent service temporarily unavailable' :
+          res.status === 408 ? 'Connection timed out — the agent may be busy' :
+          `Agent run failed (${res.status})`;
+        callbacks.onError?.(statusMsg, {});
         return undefined;
       }
 
@@ -134,6 +184,7 @@ class Gateway {
               callbacks.onDelta?.(delta, parsed);
             }
           } catch {
+            // Non-JSON chunk — treat as raw text delta if non-empty
             if (data) {
               fullContent += data;
               callbacks.onDelta?.(data, {});
@@ -145,7 +196,7 @@ class Gateway {
       callbacks.onMessage?.(fullContent, {});
       callbacks.onEnd?.({});
     } catch (err) {
-      callbacks.onError?.(`${err}`, {});
+      callbacks.onError?.(classifyError(err), {});
     }
     return undefined;
   }

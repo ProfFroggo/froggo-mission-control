@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Bell, X, Clock } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 
 interface SnoozeReminder {
   session_id: string;
@@ -105,22 +106,24 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
     <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm">
       {reminders.map((reminder) => (
         <button
+          type="button"
           key={reminder.session_id}
-          className="w-full bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 shadow-lg animate-slide-in cursor-pointer text-left"
+          className="w-full bg-warning border-2 border-warning rounded-lg p-4 shadow-lg animate-slide-in cursor-pointer text-left"
           onClick={() => handleReminderClick(reminder.session_id)}
           onKeyDown={(e) => { if (e.key === 'Enter') handleReminderClick(reminder.session_id); }}
         >
-          <div className="flex items-start gap-3">
+          <Flex align="start" gap="3">
             <div className="flex-shrink-0">
               <Bell className="w-5 h-5 text-warning animate-ring" />
             </div>
             
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between mb-1">
+              <Flex align="center" justify="between" className="mb-1">
                 <h4 className="font-semibold text-warning text-sm">
                   Snoozed Conversation
                 </h4>
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     dismissReminder(reminder.session_id);
@@ -129,20 +132,20 @@ export const SnoozeNotifications: React.FC<SnoozeNotificationsProps> = ({
                 >
                   <X className="w-4 h-4" />
                 </button>
-              </div>
+              </Flex>
               
               <p className="text-sm text-warning mb-2">
                 {reminder.snooze_reason || 'This conversation needs your attention'}
               </p>
               
-              <div className="flex items-center gap-2 text-xs text-warning">
+              <Flex align="center" gap="2" className="text-xs text-warning">
                 <Clock className="w-3 h-3" />
                 <span>
                   Session: {formatSessionId(reminder.session_id)}
                 </span>
-              </div>
+              </Flex>
             </div>
-          </div>
+          </Flex>
           
           <div className="mt-3 text-xs text-warning text-center">
             Click to view conversation

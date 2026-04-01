@@ -43,20 +43,33 @@ export async function GET(req: NextRequest) {
 
     const campaigns = (db.prepare(q).all(...params) as Record<string, unknown>[]).map(parseCampaign);
 
-    // Enrich with members
-    const memberStmt = db.prepare(`
-      SELECT cm.*, a.name AS agentName, a.avatar AS agentEmoji
-      FROM campaign_members cm
-      LEFT JOIN agents a ON a.id = cm.agentId
-      WHERE cm.campaignId = ?
-      ORDER BY cm.addedAt ASC
-    `);
+    // Batch-fetch all members for returned campaigns (avoids N+1)
+    const campaignIds = campaigns.map(c => c.id as string);
+    let allMembers: Record<string, unknown>[] = [];
+    if (campaignIds.length > 0) {
+      const placeholders = campaignIds.map(() => '?').join(',');
+      allMembers = db.prepare(`
+        SELECT cm.*, a.name AS agentName, a.avatar AS agentEmoji
+        FROM campaign_members cm
+        LEFT JOIN agents a ON a.id = cm.agentId
+        WHERE cm.campaignId IN (${placeholders})
+        ORDER BY cm.addedAt ASC
+      `).all(...campaignIds) as Record<string, unknown>[];
+    }
+    const membersByCampaign = new Map<string, Record<string, unknown>[]>();
+    for (const m of allMembers) {
+      const cid = m.campaignId as string;
+      if (!membersByCampaign.has(cid)) membersByCampaign.set(cid, []);
+      membersByCampaign.get(cid)!.push(m);
+    }
     const enriched = campaigns.map(c => ({
       ...c,
-      members: memberStmt.all(c.id as string),
+      members: membersByCampaign.get(c.id as string) || [],
     }));
 
-    return NextResponse.json({ success: true, campaigns: enriched });
+    return NextResponse.json({ success: true, campaigns: enriched }, {
+      headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
+    });
   } catch (error) {
     console.error('GET /api/campaigns error:', error);
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });

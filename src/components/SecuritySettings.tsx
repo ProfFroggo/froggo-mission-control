@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Shield, Key, Lock, AlertTriangle, CheckCircle, XCircle, Play, RefreshCw, Filter, Eye, EyeOff, Trash2, Plus, Ban } from 'lucide-react';
+import { Shield, Key, AlertTriangle, CheckCircle, RefreshCw, Filter, Eye, EyeOff, Trash2, Plus, Ban, X, Copy } from 'lucide-react';
+import { Button, Flex, Badge, Select, TextField } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { settingsApi } from '../lib/api';
 
@@ -161,26 +162,26 @@ export default function SecuritySettings() {
   const runSecurityAudit = async () => {
     setIsAuditing(true);
     setAuditProgress('Initializing security audit...');
-    
+
     try {
       // Simulate audit steps
       setAuditProgress('Scanning configuration files...');
       await new Promise(resolve => setTimeout(resolve, 800));
-      
+
       setAuditProgress('Checking API keys and credentials...');
       await new Promise(resolve => setTimeout(resolve, 800));
-      
+
       setAuditProgress('Analyzing logs for vulnerabilities...');
       await new Promise(resolve => setTimeout(resolve, 800));
-      
+
       setAuditProgress('Checking file permissions...');
       await new Promise(resolve => setTimeout(resolve, 800));
-      
+
       setAuditProgress('Generating AI recommendations...');
-      
+
       // Call backend to run AI-powered audit
       const result = await settingsApi.set('security.runAudit', { timestamp: Date.now() });
-      
+
       if (!result?.error) {
         showToast('success', 'Security Audit Complete', 'Audit timestamp recorded');
         loadAuditLogs(); // Refresh logs
@@ -273,19 +274,26 @@ export default function SecuritySettings() {
   };
 
   // Filter logs by severity
-  const filteredLogs = severityFilter === 'all' 
-    ? auditLogs 
+  const filteredLogs = severityFilter === 'all'
+    ? auditLogs
     : auditLogs.filter(log => log.severity === severityFilter);
 
   // Severity badge color
-  const getSeverityColor = (severity: string) => {
+  const getSeverityBadgeColor = (severity: string): 'red' | 'amber' | 'blue' | 'gray' => {
     switch (severity) {
-      case 'critical': return 'bg-error-subtle text-error border-error-border';
-      case 'high': return 'bg-warning-subtle text-warning border-warning-border';
-      case 'medium': return 'bg-warning-subtle text-warning border-warning-border';
-      case 'low': return 'bg-info-subtle text-info border-info-border';
-      case 'info': return 'bg-mission-control-bg0/20 text-mission-control-text-dim border-mission-control-border/30';
-      default: return 'bg-mission-control-bg0/20 text-mission-control-text-dim border-mission-control-border/30';
+      case 'critical':
+      case 'high': return 'red';
+      case 'medium': return 'amber';
+      case 'low': return 'blue';
+      default: return 'gray';
+    }
+  };
+
+  const getStatusBadgeColor = (status: string): 'grass' | 'blue' | 'gray' => {
+    switch (status) {
+      case 'resolved': return 'grass';
+      case 'acknowledged': return 'blue';
+      default: return 'gray';
     }
   };
 
@@ -294,15 +302,18 @@ export default function SecuritySettings() {
       {/* Security Alerts */}
       {alerts.length > 0 && (
         <section>
-          <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
-            <AlertTriangle size={16} className="text-warning" />
-            Active Security Alerts
-          </h2>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Active Security Alerts</p>
           <div className="space-y-2">
             {alerts.map((alert) => (
               <div
                 key={alert.id}
-                className={`p-4 rounded-lg border flex items-start gap-3 ${getSeverityColor(alert.severity)}`}
+                className={`p-4 rounded-lg border flex items-start gap-3 ${
+                  alert.severity === 'critical' || alert.severity === 'high'
+                    ? 'bg-error/10 border-error/30'
+                    : alert.severity === 'medium'
+                    ? 'bg-warning/10 border-warning/30'
+                    : 'bg-info/10 border-info/30'
+                }`}
               >
                 <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -312,11 +323,13 @@ export default function SecuritySettings() {
                   </div>
                 </div>
                 <button
+                  type="button"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   onClick={() => dismissAlert(alert.id)}
-                  className="p-1 hover:bg-mission-control-text/10 rounded transition-colors"
                   title="Dismiss"
+                  aria-label="Dismiss alert"
                 >
-                  <XCircle size={16} />
+                  <CheckCircle size={16} />
                 </button>
               </div>
             ))}
@@ -326,19 +339,18 @@ export default function SecuritySettings() {
 
       {/* AI Security Audit */}
       <section>
-        <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
-          <Shield size={16} />
-          AI Security Audit
-        </h2>
-        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border p-4">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">AI Security Audit</p>
+        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border p-4">
           <p className="text-sm text-mission-control-text-dim mb-4">
             Run a comprehensive AI-powered security audit to scan configuration files, credentials, logs, and permissions for vulnerabilities.
           </p>
-          
-          <button
+
+          <Button
+            variant="solid"
+            color="grass"
+            size="2"
             onClick={runSecurityAudit}
             disabled={isAuditing}
-            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isAuditing ? (
               <>
@@ -347,18 +359,18 @@ export default function SecuritySettings() {
               </>
             ) : (
               <>
-                <Play size={16} />
+                <Shield size={16} />
                 Run Security Audit
               </>
             )}
-          </button>
+          </Button>
 
           {auditProgress && (
             <div className="mt-4 p-3 bg-mission-control-bg rounded-lg border border-mission-control-border">
-              <div className="flex items-center gap-2 text-sm">
+              <Flex align="center" gap="2" className="text-sm">
                 <RefreshCw size={14} className="animate-spin text-mission-control-accent" />
                 <span className="text-mission-control-text-dim">{auditProgress}</span>
-              </div>
+              </Flex>
             </div>
           )}
         </div>
@@ -366,59 +378,77 @@ export default function SecuritySettings() {
 
       {/* API Keys Management */}
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium flex items-center gap-2">
-            <Key size={16} />
-            API Keys
-          </h2>
-          <button
+        <Flex align="center" justify="between" className="mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">API Keys</p>
+          <Button
+            variant="soft"
+            color="gray"
+            size="2"
             onClick={() => setAddKeyModal(true)}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
           >
             <Plus size={14} />
             Add Key
-          </button>
-        </div>
-        
-        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border divide-y divide-mission-control-border">
+          </Button>
+        </Flex>
+
+        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border divide-y divide-mission-control-border/50">
           {apiKeys.length === 0 ? (
             <div className="p-8 text-center text-mission-control-text-dim">
-              <Key size={32} className="mx-auto mb-2 opacity-50" />
+              <Key size={32} className="mx-auto mb-2 opacity-30" />
               <p className="text-sm">No API keys stored</p>
+              <p className="text-xs mt-1 opacity-70">Add keys to use with agents and automations</p>
             </div>
           ) : (
             apiKeys.map((key) => (
-              <div key={key.id} className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium">{key.name}</div>
-                    <div className="text-xs text-mission-control-text-dim mt-1">{key.service}</div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <code className="px-2 py-1 bg-mission-control-bg rounded text-xs font-mono">
-                        {showKeyValues[key.id] ? key.key : '••••••••••••••••'}
-                      </code>
-                      <button
-                        onClick={() => setShowKeyValues(prev => ({ ...prev, [key.id]: !prev[key.id] }))}
-                        className="p-1 hover:bg-mission-control-border rounded transition-colors"
-                        title={showKeyValues[key.id] ? 'Hide' : 'Show'}
-                      >
-                        {showKeyValues[key.id] ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
+              <div key={key.id} className="flex items-center justify-between px-4 py-3">
+                <div className="flex-1 min-w-0 pr-4">
+                  <div className="text-sm font-medium text-mission-control-text">{key.name}</div>
+                  <div className="text-xs text-mission-control-text-dim mt-0.5">{key.service}</div>
+                  <Flex align="center" gap="1.5" className="mt-2">
+                    <code className="px-2 py-0.5 bg-mission-control-bg border border-mission-control-border/60 rounded text-xs font-mono text-mission-control-text-dim tracking-wider">
+                      {showKeyValues[key.id]
+                        ? key.key
+                        : key.key.slice(0, 6) + '••••••••••••' + key.key.slice(-4)}
+                    </code>
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
+                      onClick={() => setShowKeyValues(prev => ({ ...prev, [key.id]: !prev[key.id] }))}
+                      title={showKeyValues[key.id] ? 'Hide' : 'Reveal'}
+                      aria-label={showKeyValues[key.id] ? 'Hide key value' : 'Reveal key value'}
+                    >
+                      {showKeyValues[key.id] ? <EyeOff size={12} /> : <Eye size={12} />}
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
+                      onClick={() => {
+                        navigator.clipboard.writeText(key.key).then(
+                          () => showToast('success', 'Copied', 'Key copied to clipboard'),
+                          () => showToast('error', 'Copy failed', 'Could not access clipboard')
+                        );
+                      }}
+                      title="Copy key"
+                      aria-label="Copy key to clipboard"
+                    >
+                      <Copy size={12} />
+                    </button>
+                  </Flex>
+                  {key.lastUsed && (
+                    <div className="text-xs text-mission-control-text-dim mt-1.5">
+                      Last used: {new Date(key.lastUsed).toLocaleString()}
                     </div>
-                    {key.lastUsed && (
-                      <div className="text-xs text-mission-control-text-dim mt-2">
-                        Last used: {new Date(key.lastUsed).toLocaleString()}
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleDeleteKey(key.id)}
-                    className="p-2 hover:bg-error-subtle text-error rounded-lg transition-colors"
-                    title="Delete key"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  )}
                 </div>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-error hover:bg-error/5 transition-colors"
+                  onClick={() => handleDeleteKey(key.id)}
+                  title="Delete key"
+                  aria-label="Delete API key"
+                >
+                  <Trash2 size={15} />
+                </button>
               </div>
             ))
           )}
@@ -427,55 +457,58 @@ export default function SecuritySettings() {
 
       {/* Blocked Commands */}
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium flex items-center gap-2">
-            <Ban size={16} />
-            Blocked Commands
-          </h2>
-          <button
+        <Flex align="center" justify="between" className="mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Blocked Commands</p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="2"
             onClick={handleRestoreDefaults}
-            className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
           >
             Restore defaults
-          </button>
-        </div>
-        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border overflow-hidden">
-          <div className="p-3 border-b border-mission-control-border bg-mission-control-bg0/30">
+          </Button>
+        </Flex>
+        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
+          <div className="p-3 border-b border-mission-control-border bg-mission-control-bg/50">
             <p className="text-xs text-mission-control-text-dim mb-2">
               These patterns are blocked for all agents via <code className="font-mono bg-mission-control-bg px-1 rounded">--disallowedTools</code>. Supports Claude tool patterns like <code className="font-mono bg-mission-control-bg px-1 rounded">Bash(rm -rf *)</code>.
             </p>
-            <div className="flex gap-2">
-              <input
-                type="text"
+            <Flex gap="2">
+              <TextField.Root
+                size="2"
+                className="flex-1 font-mono text-xs"
                 value={newDisallowed}
-                onChange={e => setNewDisallowed(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAddDisallowed()}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewDisallowed(e.target.value)}
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && handleAddDisallowed()}
                 placeholder="e.g. Bash(npm publish *)"
-                className="flex-1 text-xs bg-mission-control-bg border border-mission-control-border rounded px-3 py-1.5 focus:outline-none focus:border-mission-control-accent font-mono"
               />
-              <button
+              <Button
+                variant="solid"
+                color="grass"
+                size="2"
                 onClick={handleAddDisallowed}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-mission-control-accent text-white rounded hover:bg-mission-control-accent-dim transition-colors"
               >
                 <Plus size={12} /> Block
-              </button>
-            </div>
+              </Button>
+            </Flex>
           </div>
           <div className="divide-y divide-mission-control-border max-h-64 overflow-y-auto">
             {disallowedTools.length === 0 ? (
               <div className="p-6 text-center text-mission-control-text-dim text-sm">No commands blocked</div>
             ) : (
               disallowedTools.map(tool => (
-                <div key={tool} className="flex items-center justify-between px-3 py-2">
+                <Flex key={tool} align="center" justify="between" className="px-3 py-2">
                   <code className="text-xs font-mono text-mission-control-text">{tool}</code>
                   <button
+                    type="button"
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                     onClick={() => handleRemoveDisallowed(tool)}
-                    className="p-1 hover:bg-error/10 text-mission-control-text-dim hover:text-error rounded transition-colors"
                     title="Unblock"
+                    aria-label={`Unblock ${tool}`}
                   >
-                    <XCircle size={14} />
+                    <Ban size={14} />
                   </button>
-                </div>
+                </Flex>
               ))
             )}
           </div>
@@ -484,63 +517,53 @@ export default function SecuritySettings() {
 
       {/* Audit Log Viewer */}
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium flex items-center gap-2">
-            <Lock size={16} />
-            Audit Log
-          </h2>
-          <div className="flex items-center gap-2">
+        <Flex align="center" justify="between" className="mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">Audit Log</p>
+          <Flex align="center" gap="2">
             <Filter size={14} className="text-mission-control-text-dim" />
-            <select
-              value={severityFilter}
-              onChange={(e) => setSeverityFilter(e.target.value)}
-              className="text-sm bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-1.5 focus:outline-none focus:border-mission-control-accent"
-            >
-              <option value="all">All Severities</option>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-              <option value="info">Info</option>
-            </select>
-          </div>
-        </div>
+            <Select.Root value={severityFilter} onValueChange={setSeverityFilter}>
+              <Select.Trigger />
+              <Select.Content>
+                <Select.Item value="all">All Severities</Select.Item>
+                <Select.Item value="critical">Critical</Select.Item>
+                <Select.Item value="high">High</Select.Item>
+                <Select.Item value="medium">Medium</Select.Item>
+                <Select.Item value="low">Low</Select.Item>
+                <Select.Item value="info">Info</Select.Item>
+              </Select.Content>
+            </Select.Root>
+          </Flex>
+        </Flex>
 
-        <div className="bg-mission-control-surface rounded-lg border border-mission-control-border divide-y divide-mission-control-border max-h-96 overflow-y-auto">
+        <div className="bg-mission-control-surface rounded-xl border border-mission-control-border divide-y divide-mission-control-border/50 max-h-96 overflow-y-auto">
           {filteredLogs.length === 0 ? (
             <div className="p-8 text-center text-mission-control-text-dim">
               <CheckCircle size={32} className="mx-auto mb-2 opacity-50" />
               <p className="text-sm">
-                {severityFilter === 'all' 
-                  ? 'No audit findings. Run a security audit to get started.' 
+                {severityFilter === 'all'
+                  ? 'No audit findings. Run a security audit to get started.'
                   : `No ${severityFilter} severity findings`}
               </p>
             </div>
           ) : (
             filteredLogs.map((log) => (
               <div key={log.id} className="p-4">
-                <div className="flex items-start gap-3">
+                <Flex align="start" gap="3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`text-xs px-2 py-0.5 rounded border font-medium ${getSeverityColor(log.severity)}`}>
+                    <Flex align="center" gap="2" className="mb-2">
+                      <Badge color={getSeverityBadgeColor(log.severity)} variant="soft">
                         {log.severity.toUpperCase()}
-                      </span>
+                      </Badge>
                       <span className="text-xs text-mission-control-text-dim">{log.category}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded ${
-                        log.status === 'resolved' 
-                          ? 'bg-success-subtle text-success' 
-                          : log.status === 'acknowledged'
-                          ? 'bg-info-subtle text-info'
-                          : 'bg-mission-control-bg0/20 text-mission-control-text-dim'
-                      }`}>
+                      <Badge color={getStatusBadgeColor(log.status)} variant="soft">
                         {log.status}
-                      </span>
-                    </div>
+                      </Badge>
+                    </Flex>
                     <div className="font-medium mb-1">{log.finding}</div>
                     <div className="text-sm text-mission-control-text-dim mb-2">{log.details}</div>
                     {log.recommendation && (
                       <div className="text-sm bg-mission-control-bg border-l-2 border-mission-control-accent pl-3 py-2 mt-2">
-                        <div className="text-xs text-mission-control-text-dim mb-1">💡 Recommendation</div>
+                        <div className="text-xs text-mission-control-text-dim mb-1">Recommendation</div>
                         {log.recommendation}
                       </div>
                     )}
@@ -549,22 +572,26 @@ export default function SecuritySettings() {
                     </div>
                   </div>
                   {log.status === 'open' && (
-                    <div className="flex gap-1">
-                      <button
+                    <Flex gap="1">
+                      <Button
+                        variant="soft"
+                        color="gray"
+                        size="2"
                         onClick={() => updateAuditStatus(log.id, 'acknowledged')}
-                        className="px-2 py-1 text-xs bg-info-subtle text-info rounded hover:bg-info-subtle transition-colors"
                       >
                         Acknowledge
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="soft"
+                        color="grass"
+                        size="2"
                         onClick={() => updateAuditStatus(log.id, 'resolved')}
-                        className="px-2 py-1 text-xs bg-success-subtle text-success rounded hover:bg-success-subtle transition-colors"
                       >
                         Resolve
-                      </button>
-                    </div>
+                      </Button>
+                    </Flex>
                   )}
-                </div>
+                </Flex>
               </div>
             ))
           )}
@@ -573,75 +600,91 @@ export default function SecuritySettings() {
 
       {/* Add Key Modal */}
       {addKeyModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-              <Plus size={16} />
-              Add Credential
-            </h3>
-            <div className="space-y-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl max-w-md w-full flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+              <h3 className="text-base font-semibold">Add Credential</h3>
+              <button
+                type="button"
+                onClick={() => { setAddKeyModal(false); setNewKey({ name: '', service: '', key: '' }); }}
+                aria-label="Close"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
               <div>
-                <label className="block text-sm text-mission-control-text-dim mb-1">Preset</label>
-                <select
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent text-sm"
-                  onChange={e => {
-                    const preset = API_PRESETS.find(p => p.service === e.target.value);
-                    if (preset) setNewKey(k => ({ ...k, service: preset.service, name: preset.service ? preset.label : k.name }));
+                <label className="text-xs font-medium text-mission-control-text-dim mb-1 block">Preset</label>
+                <Select.Root
+                  onValueChange={(val) => {
+                    const service = val === '_custom' ? '' : val;
+                    const preset = API_PRESETS.find(p => (p.service || '_custom') === val);
+                    if (preset) setNewKey(k => ({ ...k, service, name: service ? preset.label : k.name }));
                   }}
                 >
-                  {API_PRESETS.map(p => (
-                    <option key={p.label} value={p.service}>{p.label}</option>
-                  ))}
-                </select>
+                  <Select.Trigger className="w-full" />
+                  <Select.Content>
+                    {API_PRESETS.map(p => (
+                      <Select.Item key={p.label} value={p.service || '_custom'}>{p.label}</Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Root>
               </div>
               <div>
-                <label htmlFor="api-key-name" className="block text-sm text-mission-control-text-dim mb-1">Label</label>
-                <input
+                <label htmlFor="api-key-name" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Label</label>
+                <TextField.Root
                   id="api-key-name"
-                  type="text"
+                  size="2"
+                  className="w-full"
                   value={newKey.name}
-                  onChange={(e) => setNewKey(k => ({ ...k, name: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewKey(k => ({ ...k, name: e.target.value }))}
                   placeholder="e.g., OpenAI Production"
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent text-sm"
                 />
               </div>
               <div>
-                <label htmlFor="api-key-service" className="block text-sm text-mission-control-text-dim mb-1">Service</label>
-                <input
+                <label htmlFor="api-key-service" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Service</label>
+                <TextField.Root
                   id="api-key-service"
-                  type="text"
+                  size="2"
+                  className="w-full"
                   value={newKey.service}
-                  onChange={(e) => setNewKey(k => ({ ...k, service: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewKey(k => ({ ...k, service: e.target.value }))}
                   placeholder="e.g., OpenAI"
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent text-sm"
                 />
               </div>
               <div>
-                <label htmlFor="api-key-value" className="block text-sm text-mission-control-text-dim mb-1">Key / Token / Secret</label>
-                <input
+                <label htmlFor="api-key-value" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Key / Token / Secret</label>
+                <TextField.Root
                   id="api-key-value"
+                  size="2"
+                  className="w-full font-mono"
                   type="password"
                   autoComplete="off"
                   value={newKey.key}
-                  onChange={(e) => setNewKey(k => ({ ...k, key: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewKey(k => ({ ...k, key: e.target.value }))}
                   placeholder={API_PRESETS.find(p => p.service === newKey.service)?.placeholder ?? 'Paste your key here'}
-                  className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent font-mono text-sm"
                 />
               </div>
             </div>
-            <div className="flex gap-2 mt-6">
-              <button
-                onClick={handleAddKey}
-                className="flex-1 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors text-sm"
-              >
-                Add Credential
-              </button>
-              <button
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="2"
                 onClick={() => { setAddKeyModal(false); setNewKey({ name: '', service: '', key: '' }); }}
-                className="px-4 py-2 bg-mission-control-border text-mission-control-text-dim rounded-lg hover:bg-mission-control-border/80 transition-colors text-sm"
               >
                 Cancel
-              </button>
+              </Button>
+              <Button
+                variant="solid"
+                size="2"
+                onClick={handleAddKey}
+              >
+                Add Credential
+              </Button>
             </div>
           </div>
         </div>

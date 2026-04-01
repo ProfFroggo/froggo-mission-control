@@ -86,8 +86,9 @@ export default function AgentSelector({ selectedAgent, onSelect }: AgentSelector
   return (
     <div ref={ref} className="relative">
       <button
+        type="button"
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-mission-control-bg/50 transition-all ${open ? 'bg-mission-control-bg/50' : ''}`}
+        className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-mission-control-bg/50 transition-colors ${open ? 'bg-mission-control-bg/50' : ''}`}
       >
         <AgentAvatar agentId={selectedAgent.id} size="lg" ring />
         <div className="text-left">
@@ -110,6 +111,7 @@ export default function AgentSelector({ selectedAgent, onSelect }: AgentSelector
               const agentTheme = getAgentTheme(agent.id);
               return (
                 <button
+                  type="button"
                   key={agent.id}
                   onClick={() => { onSelect(agent); setOpen(false); }}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-mission-control-border/40 transition-colors ${

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, RefreshCw, CheckCircle, AlertTriangle, Shield, Key, Clock, ExternalLink, Mail, Calendar, HardDrive, Users, ListTodo, BarChart2, Lock, type LucideIcon } from 'lucide-react';
+import { Button, Flex } from '@radix-ui/themes';
 import { ConnectedAccount, DataType } from '../types/accounts';
 
 interface Props {
@@ -102,54 +103,59 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
   };
 
   return (
-    <div 
-      className={`fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 ${
+    <Flex
+      align="center"
+      justify="center"
+      p="4"
+      className={`fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 ${
         isClosing ? 'modal-backdrop-exit' : 'modal-backdrop-enter'
-      }`} 
+      }`}
       onClick={handleBackdropClick}
       role="button"
       tabIndex={0}
       onKeyDown={handleBackdropClick}
       aria-label="Close modal backdrop"
     >
-      <div 
-        className={`glass-modal rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col ${
+      <div
+        className={`bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col ${
           isClosing ? 'modal-content-exit' : 'modal-content-enter'
-        }`} 
+        }`}
         onClick={handleInnerClick}
         role="presentation"
         onKeyDown={handleInnerClick}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-mission-control-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <div>
-            <h2 className="text-xl font-semibold">{account.email}</h2>
-            <div className="flex items-center gap-2 mt-1">
+            <h2 className="text-base font-semibold text-mission-control-text">{account.email}</h2>
+            <Flex align="center" gap="2" className="mt-0.5">
               <span className="text-sm text-mission-control-text-dim capitalize">{account.provider}</span>
               <span className="text-mission-control-text-dim">•</span>
               <span className={`text-sm ${getStatusColor()}`}>
-                {account.status === 'connected' ? 'Connected' : 
+                {account.status === 'connected' ? 'Connected' :
                  account.status === 'error' ? 'Error' :
                  account.status === 'needs-reauth' ? 'Needs Reauth' : 'Checking'}
               </span>
-            </div>
+            </Flex>
           </div>
           <button
+            type="button"
             onClick={handleClose}
-            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
             aria-label="Close modal"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
           >
             <X size={16} />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 px-6 pt-4 border-b border-mission-control-border">
+        <Flex gap="1" className="px-6 border-b border-mission-control-border">
           {(['overview', 'permissions', 'security'] as const).map((tab) => (
             <button
               key={tab}
+              type="button"
               onClick={() => setActiveTab(tab)}
-              className={`flex items-center gap-1.5 px-4 py-2 border-b-2 transition-colors capitalize ${
+              className={`flex items-center gap-2 px-4 py-3 border-b-2 -mb-px text-sm font-medium capitalize transition-colors ${
                 activeTab === tab
                   ? 'border-mission-control-accent text-mission-control-accent'
                   : 'border-transparent text-mission-control-text-dim hover:text-mission-control-text'
@@ -161,82 +167,83 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               {tab}
             </button>
           ))}
-        </div>
+        </Flex>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Rate Limits */}
               <section>
-                <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Rate Limits & Usage</h3>
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Rate Limits & Usage</h3>
                 <div className="space-y-2 text-sm">
                   {account.dataTypes.includes('email' as any) && (
-                    <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                    <Flex align="center" justify="between" className="p-3 bg-mission-control-surface border border-mission-control-border rounded-xl">
                       <span className="text-mission-control-text-dim">Email Sending</span>
-                      <span className="font-medium">
+                      <span className="font-medium tabular-nums">
                         {account.metadata?.emailQuota || '500'} / day
                         <span className="text-xs text-mission-control-text-dim ml-2">
                           ({account.metadata?.emailUsed || 0} used)
                         </span>
                       </span>
-                    </div>
+                    </Flex>
                   )}
                   {account.dataTypes.includes('calendar' as any) && (
-                    <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                    <Flex align="center" justify="between" className="p-3 bg-mission-control-surface border border-mission-control-border rounded-xl">
                       <span className="text-mission-control-text-dim">Calendar Events</span>
-                      <span className="font-medium">
+                      <span className="font-medium tabular-nums">
                         {account.metadata?.calendarQuota || '10,000'} / day
                         <span className="text-xs text-mission-control-text-dim ml-2">
                           ({account.metadata?.calendarUsed || 0} used)
                         </span>
                       </span>
-                    </div>
+                    </Flex>
                   )}
                   {account.dataTypes.includes('drive' as any) && (
-                    <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                    <Flex align="center" justify="between" className="p-3 bg-mission-control-surface border border-mission-control-border rounded-xl">
                       <span className="text-mission-control-text-dim">Drive Storage</span>
-                      <span className="font-medium">
+                      <span className="font-medium tabular-nums">
                         {account.metadata?.driveUsed || '2.5'} GB / {account.metadata?.driveQuota || '15'} GB
                       </span>
-                    </div>
+                    </Flex>
                   )}
-                  {(!account.dataTypes.includes('email' as any) && 
-                    !account.dataTypes.includes('calendar' as any) && 
+                  {(!account.dataTypes.includes('email' as any) &&
+                    !account.dataTypes.includes('calendar' as any) &&
                     !account.dataTypes.includes('drive' as any)) && (
                     <div className="text-center py-4 text-mission-control-text-dim text-sm">
                       No rate limits applicable for this account
                     </div>
                   )}
                 </div>
-                <div className="mt-3 p-3 bg-mission-control-bg rounded-lg text-xs text-mission-control-text-dim">
+                <div className="mt-3 p-3 bg-mission-control-surface border border-mission-control-border rounded-xl text-xs text-mission-control-text-dim">
                   Rate limits are provider-specific and reset daily. Mission Control tracks usage to avoid hitting limits.
                 </div>
               </section>
 
               {/* Data Types */}
               <section>
-                <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Connected Services</h3>
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Connected Services</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {account.dataTypes.map((type) => {
                     const DtIcon = DATA_TYPE_ICONS[type] ?? ListTodo;
                     return (
-                    <div
+                    <Flex
                       key={type}
-                      className="flex items-center gap-3 p-3 bg-mission-control-bg rounded-lg border border-mission-control-border"
+                      align="center" gap="3"
+                      className="p-3 bg-mission-control-surface rounded-xl border border-mission-control-border"
                     >
-                      <DtIcon size={20} className="text-mission-control-text-dim flex-shrink-0" />
+                      <DtIcon size={18} className="text-success flex-shrink-0" />
                       <div className="flex-1">
                         <div className="font-medium capitalize">{type}</div>
                         <div className="text-xs text-mission-control-text-dim">
-                          {account.metadata?.[`${type}sCount`] ? 
-                            `${account.metadata[`${type}sCount`]} items` : 
+                          {account.metadata?.[`${type}sCount`] ?
+                            `${account.metadata[`${type}sCount`]} items` :
                             'Active'}
                         </div>
                       </div>
-                      <CheckCircle size={16} className="text-success" />
-                    </div>
+                      <CheckCircle size={14} className="text-success flex-shrink-0" />
+                    </Flex>
                     );
                   })}
                 </div>
@@ -244,58 +251,58 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
 
               {/* Connection Status */}
               <section>
-                <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Connection Details</h3>
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Connection Details</h3>
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                  <Flex align="center" justify="between" className="p-3 bg-mission-control-surface border border-mission-control-border rounded-xl">
                     <span className="text-mission-control-text-dim">Status</span>
                     <span className={`font-medium flex items-center gap-1.5 ${getStatusColor()}`}>
                       {account.status === 'connected' ? <><CheckCircle size={14} /> Connected</> :
                        account.status === 'error' ? <><X size={14} /> Error</> :
                        account.status === 'needs-reauth' ? <><AlertTriangle size={14} /> Needs Reauth</> : <><RefreshCw size={14} /> Checking</>}
                     </span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                  </Flex>
+                  <Flex align="center" justify="between" className="p-3 bg-mission-control-surface border border-mission-control-border rounded-xl">
                     <span className="text-mission-control-text-dim">Auth Type</span>
                     <span className="font-medium capitalize">{account.authType}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                  </Flex>
+                  <Flex align="center" justify="between" className="p-3 bg-mission-control-surface border border-mission-control-border rounded-xl">
                     <span className="text-mission-control-text-dim">Last Checked</span>
                     <span className="font-medium">
                       {account.lastChecked ? formatDate(account.lastChecked) : 'Never'}
                     </span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                  </Flex>
+                  <Flex align="center" justify="between" className="p-3 bg-mission-control-surface border border-mission-control-border rounded-xl">
                     <span className="text-mission-control-text-dim">Added</span>
                     <span className="font-medium">{formatDate(account.createdAt)}</span>
-                  </div>
+                  </Flex>
                 </div>
               </section>
 
               {/* Error Message */}
               {account.status === 'error' && account.errorMessage && (
-                <div className="p-4 bg-error-subtle border border-error-border rounded-lg">
-                  <div className="flex items-start gap-2">
+                <div className="p-4 bg-error/10 border border-error/30 rounded-lg">
+                  <Flex align="start" gap="2">
                     <AlertTriangle size={16} className="text-error mt-0.5" />
                     <div>
                       <div className="font-medium text-error mb-1">Connection Error</div>
                       <div className="text-sm text-error">{account.errorMessage}</div>
                     </div>
-                  </div>
+                  </Flex>
                 </div>
               )}
 
               {/* Metadata */}
               {account.metadata && Object.keys(account.metadata).length > 0 && (
                 <section>
-                  <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Additional Info</h3>
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Additional Info</h3>
                   <div className="space-y-2 text-sm">
                     {Object.entries(account.metadata).map(([key, value]) => (
-                      <div key={key} className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
+                      <Flex key={key} align="center" justify="between" className="p-3 bg-mission-control-bg rounded-lg">
                         <span className="text-mission-control-text-dim capitalize">
                           {key.replace(/([A-Z])/g, ' $1').trim()}
                         </span>
                         <span className="font-medium">{String(value)}</span>
-                      </div>
+                      </Flex>
                     ))}
                   </div>
                 </section>
@@ -306,42 +313,42 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
           {/* Permissions Tab */}
           {activeTab === 'permissions' && (
             <div className="space-y-6">
-              <div className="p-4 bg-info-subtle border border-info-border rounded-lg">
-                <div className="flex items-start gap-2">
+              <div className="p-4 bg-info/10 border border-info/30 rounded-lg">
+                <Flex align="start" gap="2">
                   <Shield size={16} className="text-info mt-0.5" />
                   <div className="flex-1">
                     <div className="font-medium text-info mb-1">Permissions Explained</div>
                     <div className="text-sm text-info">
-                      These permissions allow Mission Control to access your data securely. 
+                      These permissions allow Mission Control to access your data securely.
                       You can revoke access at any time.
                     </div>
                   </div>
-                </div>
+                </Flex>
               </div>
 
               <section>
-                <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Granted Permissions</h3>
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Granted Permissions</h3>
                 <div className="space-y-3">
                   {account.scopes.map((scope, idx) => {
                     const ScopeIcon = DATA_TYPE_ICONS[scope.type] ?? ListTodo;
                     return (
                     <div
                       key={idx}
-                      className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border"
+                      className="p-4 bg-mission-control-surface rounded-xl border border-mission-control-border"
                     >
-                      <div className="flex items-start gap-3">
+                      <Flex align="start" gap="3">
                         <ScopeIcon size={20} className="text-mission-control-text-dim flex-shrink-0 mt-0.5" />
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                          <Flex align="center" gap="2" className="mb-1">
                             <span className="font-medium capitalize">{scope.type}</span>
                             <span className="text-xs px-2 py-0.5 bg-mission-control-surface rounded">
                               {PERMISSION_LABELS[scope.permission]}
                             </span>
-                          </div>
+                          </Flex>
                           <p className="text-sm text-mission-control-text-dim">{scope.description}</p>
                         </div>
                         <CheckCircle size={16} className="text-success mt-0.5" />
-                      </div>
+                      </Flex>
                     </div>
                     );
                   })}
@@ -349,7 +356,7 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               </section>
 
               {/* Why We Need These */}
-              <section className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
+              <section className="p-4 bg-mission-control-surface rounded-xl border border-mission-control-border">
                 <h4 className="font-medium mb-2">Why does Mission Control need these permissions?</h4>
                 <ul className="space-y-2 text-sm text-mission-control-text-dim">
                   {account.dataTypes.includes('email' as DataType) && (
@@ -391,39 +398,39 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
           {activeTab === 'security' && (
             <div className="space-y-6">
               <section>
-                <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Security Status</h3>
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Security Status</h3>
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
-                    <div className="flex items-center gap-2">
+                  <Flex align="center" justify="between" className="p-3 bg-mission-control-surface border border-mission-control-border rounded-xl">
+                    <Flex align="center" gap="2">
                       <Key size={16} className="text-mission-control-text-dim" />
                       <span className="text-mission-control-text-dim">Token Storage</span>
-                    </div>
+                    </Flex>
                     <span className="font-medium text-success flex items-center gap-1">
                       <CheckCircle size={14} /> Encrypted
                     </span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
-                    <div className="flex items-center gap-2">
+                  </Flex>
+                  <Flex align="center" justify="between" className="p-3 bg-mission-control-surface border border-mission-control-border rounded-xl">
+                    <Flex align="center" gap="2">
                       <Shield size={16} className="text-mission-control-text-dim" />
                       <span className="text-mission-control-text-dim">OAuth Protocol</span>
-                    </div>
+                    </Flex>
                     <span className="font-medium text-success flex items-center gap-1">
                       <CheckCircle size={14} /> Secure
                     </span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-mission-control-bg rounded-lg">
-                    <div className="flex items-center gap-2">
+                  </Flex>
+                  <Flex align="center" justify="between" className="p-3 bg-mission-control-surface border border-mission-control-border rounded-xl">
+                    <Flex align="center" gap="2">
                       <Clock size={16} className="text-mission-control-text-dim" />
                       <span className="text-mission-control-text-dim">Token Refresh</span>
-                    </div>
+                    </Flex>
                     <span className="font-medium text-success flex items-center gap-1">
                       <CheckCircle size={14} /> Automatic
                     </span>
-                  </div>
+                  </Flex>
                 </div>
               </section>
 
-              <section className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
+              <section className="p-4 bg-mission-control-surface rounded-xl border border-mission-control-border">
                 <h4 className="font-medium mb-2">How Mission Control keeps your data safe</h4>
                 <ul className="space-y-2 text-sm text-mission-control-text-dim">
                   <li className="flex items-start gap-2">
@@ -450,8 +457,8 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               </section>
 
               <section>
-                <h3 className="text-sm font-medium text-mission-control-text-dim mb-3">Provider Security</h3>
-                <div className="p-4 bg-mission-control-bg rounded-lg border border-mission-control-border">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Provider Security</h3>
+                <div className="p-4 bg-mission-control-surface rounded-xl border border-mission-control-border">
                   <p className="text-sm text-mission-control-text-dim mb-3">
                     Review and manage app permissions directly in your {account.provider} account:
                   </p>
@@ -468,40 +475,45 @@ export default function AccountDetailModal({ account, onClose, onRefresh, onRemo
               </section>
 
               {/* Danger Zone */}
-              <section className="p-4 bg-error-subtle border border-error-border rounded-lg">
+              <section className="p-4 bg-error/10 border border-error/30 rounded-lg">
                 <h4 className="font-medium text-error mb-2">Danger Zone</h4>
                 <p className="text-sm text-error mb-3">
                   Removing this account will revoke Mission Control&apos;s access and delete all stored credentials.
                   This action cannot be undone.
                 </p>
-                <button
+                <Button
                   onClick={onRemove}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+                  variant="solid"
+                  color="red"
+                  size="2"
                 >
                   Remove Account
-                </button>
+                </Button>
               </section>
             </div>
           )}
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-mission-control-border">
-          <button
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
+          <Button
+            type="button"
+            variant="soft"
+            size="2"
             onClick={onRefresh}
-            className="px-4 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors flex items-center gap-2"
           >
             <RefreshCw size={16} />
             Test Connection
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleClose}
-            className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+            variant="solid"
+            size="2"
           >
             Done
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

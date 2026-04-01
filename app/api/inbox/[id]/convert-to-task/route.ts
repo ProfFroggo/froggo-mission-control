@@ -19,20 +19,22 @@ export async function POST(
     const now = Date.now();
     const taskId = `task-${now}-${Math.random().toString(36).slice(2, 8)}`;
 
-    db.prepare(`
-      INSERT INTO tasks (
-        id, title, description, status, priority,
-        tags, labels, blockedBy, blocks, progress,
-        createdAt, updatedAt
-      ) VALUES (
-        ?, ?, ?, 'todo', 'p2',
-        '[]', '[]', '[]', '[]', 0,
-        ?, ?
-      )
-    `).run(taskId, inboxItem.title as string, inboxItem.content as string, now, now);
+    // Atomic: create task + mark inbox item as converted
+    db.transaction(() => {
+      db.prepare(`
+        INSERT INTO tasks (
+          id, title, description, status, priority,
+          tags, labels, blockedBy, blocks, progress,
+          createdAt, updatedAt
+        ) VALUES (
+          ?, ?, ?, 'todo', 'p2',
+          '[]', '[]', '[]', '[]', 0,
+          ?, ?
+        )
+      `).run(taskId, inboxItem.title as string, inboxItem.content as string, now, now);
 
-    // Mark inbox item as converted
-    db.prepare("UPDATE inbox SET status = 'converted' WHERE id = ?").run(id);
+      db.prepare("UPDATE inbox SET status = 'converted' WHERE id = ?").run(id);
+    })();
 
     return NextResponse.json({ taskId });
   } catch (error) {

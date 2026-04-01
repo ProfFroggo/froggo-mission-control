@@ -31,7 +31,6 @@ import {
   FolderKanban,
   AlertTriangle,
   XCircle,
-  Loader2,
   Filter,
   Star,
   Activity,
@@ -41,6 +40,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react';
+import { Button, Flex, IconButton, Spinner as RadixSpinner, TextArea, TextField } from '@radix-ui/themes';
 import { useStore } from '../store/store';
 
 const MODULE_ICONS: Record<string, LucideIcon> = {
@@ -67,6 +67,7 @@ const MODULE_ICONS: Record<string, LucideIcon> = {
 };
 
 import { catalogApi } from '../lib/api';
+import TabNav from './TabNav';
 import type { CatalogModule } from '../types/catalog';
 import { Spinner } from './LoadingStates';
 import ModuleInstallModal from './ModuleInstallModal';
@@ -81,10 +82,10 @@ import ModuleDependencyGraph from './ModuleDependencyGraph';
 
 const CATEGORY_COLORS: Record<string, string> = {
   core:           'text-review border-review-border bg-review-subtle',
-  productivity:   'text-info border-info-border bg-info-subtle',
-  communications: 'text-success border-success-border bg-success-subtle',
+  productivity:   'text-info border-info/30 bg-info/10',
+  communications: 'text-success border-success/30 bg-success/10',
   social:         'text-violet-400 border-violet-400/30 bg-violet-400/10',
-  finance:        'text-amber-400 border-amber-400/30 bg-amber-400/10',
+  finance:        'text-warning border-warning/30 bg-warning/10',
   system:         'text-mission-control-text-dim border-mission-control-border bg-mission-control-surface',
   agent:          'text-cyan-400 border-cyan-400/30 bg-cyan-400/10',
 };
@@ -190,7 +191,7 @@ function StarRating({ rating, max = 5, size = 12 }: { rating: number; max?: numb
         <Star
           key={i}
           size={size}
-          className={i < Math.round(rating) ? 'text-amber-400 fill-amber-400' : 'text-mission-control-border'}
+          className={i < Math.round(rating) ? 'text-warning fill-current' : 'text-mission-control-border'}
         />
       ))}
     </span>
@@ -211,12 +212,12 @@ function InteractiveStarRating({ value, onChange }: { value: number; onChange: (
             onMouseEnter={() => setHover(v)}
             onMouseLeave={() => setHover(0)}
             onClick={() => onChange(v)}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-warning hover:bg-mission-control-surface transition-colors"
             aria-label={`Rate ${v} star${v > 1 ? 's' : ''}`}
-            className="focus:outline-none"
           >
             <Star
               size={20}
-              className={filled ? 'text-amber-400 fill-amber-400' : 'text-mission-control-border hover:text-amber-300 transition-colors'}
+              className={filled ? 'text-warning fill-current' : 'text-mission-control-border hover:text-warning transition-colors'}
             />
           </button>
         );
@@ -230,7 +231,7 @@ function InteractiveStarRating({ value, onChange }: { value: number; onChange: (
 function HealthDot({ status }: { status: ModuleHealthStatus }) {
   const cls =
     status === 'healthy' ? 'bg-success' :
-    status === 'warning' ? 'bg-amber-400' :
+    status === 'warning' ? 'bg-warning' :
     'bg-error';
   return (
     <span
@@ -270,17 +271,17 @@ function ReviewModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-lg border border-mission-control-border bg-mission-control-bg p-6 shadow-xl"
+        className="w-full max-w-md rounded-2xl border border-mission-control-border bg-mission-control-surface p-6 shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-5">
+        <Flex align="center" justify="between" mb="5">
           <h3 className="font-semibold text-base">Write a Review</h3>
-          <button type="button" onClick={onClose} className="icon-btn">
+          <button type="button" onClick={onClose} aria-label="Close" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
             <X size={16} />
           </button>
-        </div>
+        </Flex>
 
         <p className="text-sm text-mission-control-text-dim mb-4">
           Reviewing: <span className="text-mission-control-text font-medium">{module.name}</span>
@@ -289,20 +290,20 @@ function ReviewModal({
         {/* Existing reviews summary */}
         {existingReviews && existingReviews.reviewCount > 0 && (
           <div className="mb-4 p-3 rounded-lg bg-mission-control-surface border border-mission-control-border text-sm">
-            <div className="flex items-center gap-2 mb-2">
+            <Flex align="center" gap="2" mb="2">
               <StarRating rating={existingReviews.averageRating ?? 0} size={14} />
               <span className="font-medium">{existingReviews.averageRating?.toFixed(1)}</span>
               <span className="text-mission-control-text-dim">
                 ({existingReviews.reviewCount} review{existingReviews.reviewCount !== 1 ? 's' : ''})
               </span>
-            </div>
+            </Flex>
             <div className="space-y-1.5 max-h-28 overflow-y-auto">
               {existingReviews.reviews.slice(0, 3).map(r => (
                 <div key={r.id} className="text-xs text-mission-control-text-dim border-t border-mission-control-border pt-1.5">
-                  <div className="flex items-center gap-1.5 mb-0.5">
+                  <Flex align="center" gap="2" mb="1">
                     <StarRating rating={r.rating} size={10} />
                     <span className="opacity-60">{formatRelativeTime(r.createdAt)}</span>
-                  </div>
+                  </Flex>
                   {r.review && <p className="line-clamp-2">{r.review}</p>}
                 </div>
               ))}
@@ -322,32 +323,30 @@ function ReviewModal({
             <label className="block text-xs font-medium text-mission-control-text-dim mb-1.5">
               Review (optional)
             </label>
-            <textarea
+            <TextArea
+              variant="soft"
               value={reviewText}
               onChange={e => setReviewText(e.target.value)}
               rows={3}
               placeholder="Share your experience with this module…"
-              className="w-full px-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent resize-none"
+              className="w-full resize-none"
             />
           </div>
 
-          <div className="flex gap-2 justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
-            >
+          <Flex gap="2" justify="end">
+            <Button type="button" onClick={onClose} variant="soft" color="gray" size="2">
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={rating === 0 || submitting}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
+              variant="solid"
+              size="2"
             >
-              {submitting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
+              {submitting ? <RadixSpinner size="1" /> : <CheckCircle2 size={13} />}
               Submit Review
-            </button>
-          </div>
+            </Button>
+          </Flex>
         </form>
       </div>
     </div>
@@ -396,7 +395,7 @@ function ConfigurePanel({
   function renderField(key: string, value: unknown) {
     if (typeof value === 'boolean') {
       return (
-        <div key={key} className="flex items-center justify-between py-2 border-b border-mission-control-border last:border-0">
+        <Flex align="center" justify="between" key={key} className="py-2 border-b border-mission-control-border last:border-0">
           <label className="text-sm font-medium">{key}</label>
           <button
             type="button"
@@ -408,37 +407,39 @@ function ConfigurePanel({
             aria-checked={value}
           >
             <span
-              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-mission-control-surface transition-transform ${
                 value ? 'translate-x-4' : 'translate-x-1'
               }`}
             />
           </button>
-        </div>
+        </Flex>
       );
     }
     if (typeof value === 'number') {
       return (
-        <div key={key} className="flex items-center justify-between py-2 border-b border-mission-control-border last:border-0">
+        <Flex align="center" justify="between" key={key} className="py-2 border-b border-mission-control-border last:border-0">
           <label className="text-sm font-medium">{key}</label>
-          <input
+          <TextField.Root
+            size="1"
+            className="w-24"
             type="number"
             value={String(value)}
-            onChange={e => setValue(key, Number(e.target.value))}
-            className="w-24 px-2 py-1 text-sm text-right bg-mission-control-surface border border-mission-control-border rounded focus:outline-none focus:border-mission-control-accent"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setValue(key, Number(e.target.value))}
           />
-        </div>
+        </Flex>
       );
     }
     if (Array.isArray(value)) {
       return (
         <div key={key} className="py-2 border-b border-mission-control-border last:border-0">
           <label className="text-sm font-medium block mb-1">{key}</label>
-          <input
+          <TextField.Root
+            size="1"
+            className="w-full"
             type="text"
             value={(value as unknown[]).join(', ')}
-            onChange={e => setValue(key, e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setValue(key, e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
             placeholder="comma-separated values"
-            className="w-full px-2 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded focus:outline-none focus:border-mission-control-accent"
           />
         </div>
       );
@@ -447,29 +448,30 @@ function ConfigurePanel({
     return (
       <div key={key} className="py-2 border-b border-mission-control-border last:border-0">
         <label className="text-sm font-medium block mb-1">{key}</label>
-        <input
+        <TextField.Root
+          size="1"
+          className="w-full"
           type="text"
           value={String(value ?? '')}
-          onChange={e => setValue(key, e.target.value)}
-          className="w-full px-2 py-1.5 text-sm bg-mission-control-surface border border-mission-control-border rounded focus:outline-none focus:border-mission-control-accent"
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setValue(key, e.target.value)}
         />
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-end p-0 sm:p-4 bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-end p-0 sm:p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full sm:w-96 max-h-screen sm:max-h-[80vh] rounded-t-xl sm:rounded-lg border border-mission-control-border bg-mission-control-bg shadow-xl flex flex-col overflow-hidden"
+        className="w-full sm:w-96 max-h-screen sm:max-h-[80vh] rounded-t-2xl sm:rounded-2xl border border-mission-control-border bg-mission-control-surface shadow-2xl flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-mission-control-border flex-shrink-0">
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Settings size={16} className="text-mission-control-text-dim" />
             <h3 className="font-semibold text-sm">Configure {module.name}</h3>
-          </div>
-          <button type="button" onClick={onClose} className="icon-btn">
+          </Flex>
+          <button type="button" onClick={onClose} aria-label="Close" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
             <X size={15} />
           </button>
         </div>
@@ -493,26 +495,18 @@ function ConfigurePanel({
             <button
               type="button"
               onClick={resetToDefaults}
-              className="text-xs text-mission-control-text-dim hover:text-mission-control-text transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               Reset to defaults
             </button>
             <div className="flex-1" />
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-1.5 text-xs border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
-            >
+            <Button type="button" onClick={onClose} variant="soft" color="gray" size="1">
               Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors disabled:opacity-50"
-            >
-              {saving ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
+            </Button>
+            <Button type="submit" disabled={saving} variant="solid" size="1">
+              {saving ? <RadixSpinner size="1" /> : <CheckCircle2 size={11} />}
               Save Configuration
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -542,31 +536,35 @@ function FeaturedCarousel({
 
   return (
     <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-mission-control-text-dim">
+      <Flex align="center" justify="between" mb="3">
+        <h3 className="text-[10px] font-bold uppercase tracking-wide text-mission-control-text-dim">
           Featured Modules
         </h3>
-        <div className="flex items-center gap-1">
-          <button
+        <Flex align="center" gap="1">
+          <IconButton
             type="button"
             disabled={offset === 0}
             onClick={() => setOffset(o => Math.max(0, o - 1))}
-            className="icon-btn border border-mission-control-border disabled:opacity-30"
+            variant="soft"
+            color="gray"
+            size="1"
             aria-label="Previous featured modules"
           >
             <ChevronLeft size={14} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             type="button"
             disabled={offset >= maxOffset}
             onClick={() => setOffset(o => Math.min(maxOffset, o + 1))}
-            className="icon-btn border border-mission-control-border disabled:opacity-30"
+            variant="soft"
+            color="gray"
+            size="1"
             aria-label="Next featured modules"
           >
             <ChevronRight size={14} />
-          </button>
-        </div>
-      </div>
+          </IconButton>
+        </Flex>
+      </Flex>
 
       <div style={{ overflow: 'hidden' }}>
         <div
@@ -585,7 +583,7 @@ function FeaturedCarousel({
                 className="rounded-lg border-2 border-mission-control-border p-4 flex flex-col gap-2 bg-mission-control-surface flex-shrink-0 hover:border-mission-control-accent/40 transition-colors"
               >
                 {/* Icon + badges */}
-                <div className="flex items-start justify-between">
+                <Flex align="start" justify="between">
                   <div className="w-10 h-10 rounded-lg bg-mission-control-bg flex items-center justify-center border border-mission-control-border text-mission-control-text-dim">
                     <Icon size={18} />
                   </div>
@@ -594,7 +592,7 @@ function FeaturedCarousel({
                       New
                     </span>
                   )}
-                </div>
+                </Flex>
 
                 {/* Name + description */}
                 <div>
@@ -604,33 +602,35 @@ function FeaturedCarousel({
 
                 {/* Rating */}
                 {reviewData && reviewData.reviewCount > 0 ? (
-                  <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim">
+                  <Flex align="center" gap="2" className="text-xs text-mission-control-text-dim">
                     <StarRating rating={reviewData.averageRating ?? 0} size={11} />
                     <span>{reviewData.averageRating?.toFixed(1)}</span>
                     <span>({reviewData.reviewCount})</span>
-                  </div>
+                  </Flex>
                 ) : (
-                  <div className="flex items-center gap-1 text-xs text-mission-control-text-dim">
+                  <Flex align="center" gap="1" className="text-xs text-mission-control-text-dim">
                     <Star size={11} className="text-mission-control-border" />
                     <span>No reviews yet</span>
-                  </div>
+                  </Flex>
                 )}
 
                 {/* CTA */}
                 {mod.installed ? (
-                  <div className="flex items-center gap-1 text-xs text-success mt-auto">
+                  <Flex align="center" gap="1" className="text-xs text-success mt-auto">
                     <CheckCircle2 size={12} />
                     Installed
-                  </div>
+                  </Flex>
                 ) : (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => onInstall(mod)}
-                    className="mt-auto w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+                    variant="solid"
+                    size="1"
+                    className="mt-auto w-full"
                   >
                     <Download size={11} />
                     Install
-                  </button>
+                  </Button>
                 )}
               </div>
             );
@@ -810,13 +810,9 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
     return (
       <div className="p-6 text-center">
         <p className="text-error mb-3">{error}</p>
-        <button
-          type="button"
-          onClick={() => load()}
-          className="px-4 py-2 text-sm border border-mission-control-border rounded-lg hover:bg-mission-control-surface transition-colors"
-        >
+        <Button type="button" onClick={() => load()} variant="soft" color="gray" size="2">
           Retry
-        </button>
+        </Button>
       </div>
     );
   }
@@ -854,7 +850,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
             <span className="text-success">{healthSummary.healthy}</span>
             {' '}healthy
             {healthSummary.warning > 0 && (
-              <span>, <span className="text-amber-400">{healthSummary.warning}</span> warning{healthSummary.warning > 1 ? 's' : ''}</span>
+              <span>, <span className="text-warning">{healthSummary.warning}</span> warning{healthSummary.warning > 1 ? 's' : ''}</span>
             )}
             {healthSummary.error > 0 && (
               <span>, <span className="text-error">{healthSummary.error}</span> error{healthSummary.error > 1 ? 's' : ''}</span>
@@ -864,16 +860,17 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
 
         <div className="flex-1" />
 
-        <button
+        <IconButton
           type="button"
           onClick={() => load(false)}
           disabled={refreshing}
-          className="icon-btn border border-mission-control-border disabled:opacity-50"
-          title="Refresh catalog"
+          variant="soft"
+          color="gray"
+          size="1"
           aria-label="Refresh catalog"
         >
           <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-        </button>
+        </IconButton>
       </div>
 
       {/* Dependency graph (collapsible) */}
@@ -884,34 +881,33 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
       )}
 
       {/* Search + installed/available toggle */}
-      <div className="flex items-center gap-2 mb-3">
+      <Flex align="center" gap="2" mb="3">
         <div className="relative flex-1">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-          <input
+          <TextField.Root
+            size="2"
+            className="w-full"
             type="text"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
             placeholder="Search modules…"
-            className="w-full pl-8 pr-3 py-2 text-sm bg-mission-control-surface border border-mission-control-border rounded-lg focus:outline-none focus:border-mission-control-accent"
-          />
+          >
+            <TextField.Slot>
+              <Search size={14} className="text-mission-control-text-dim" />
+            </TextField.Slot>
+          </TextField.Root>
         </div>
-        <div className="flex border border-mission-control-border rounded-lg overflow-hidden text-xs">
-          {(['all', 'installed', 'available'] as const).map(f => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFilter(f)}
-              className={`px-3 py-2 capitalize transition-colors ${
-                filter === f
-                  ? 'bg-mission-control-accent text-white'
-                  : 'hover:bg-mission-control-surface'
-              }`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-      </div>
+        <TabNav
+          tabs={[
+            { id: 'all',       label: 'All'       },
+            { id: 'installed', label: 'Installed' },
+            { id: 'available', label: 'Available' },
+          ]}
+          activeTab={filter}
+          onTabChange={(id) => setFilter(id as 'all' | 'installed' | 'available')}
+          paddingX="px-0"
+          border={false}
+        />
+      </Flex>
 
       {/* Category filter pills */}
       <div className="flex items-center gap-1.5 mb-5 flex-wrap">
@@ -921,10 +917,8 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
             key={cat}
             type="button"
             onClick={() => setCategoryFilter(cat)}
-            className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-              categoryFilter === cat
-                ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-text-dim'
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+              categoryFilter === cat ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
             }`}
           >
             {cat}
@@ -960,14 +954,14 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
             return (
               <div
                 key={module.id}
-                className={`rounded-lg border-2 p-4 transition-all duration-200 flex flex-col ${
+                className={`rounded-xl bg-mission-control-surface border p-4 transition-colors duration-200 flex flex-col hover:-translate-y-0.5 hover:shadow-lg cursor-pointer ${
                   module.installed
-                    ? 'border-success-border bg-success-subtle/20'
-                    : 'border-mission-control-border hover:border-mission-control-accent/40'
+                    ? 'border-success/30'
+                    : 'border-mission-control-border hover:border-mission-control-accent/30'
                 }`}
               >
                 {/* Header */}
-                <div className="flex items-start gap-3 mb-3">
+                <Flex align="start" gap="3" mb="3">
                   <div className="relative flex-shrink-0">
                     <div className="w-11 h-11 rounded-lg bg-mission-control-bg flex items-center justify-center border border-mission-control-border text-mission-control-text-dim">
                       {(() => { const Icon = MODULE_ICONS[module.id] ?? Package; return <Icon size={20} />; })()}
@@ -981,7 +975,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                      <span className="font-semibold text-sm leading-tight">{module.name}</span>
+                      <span className="font-semibold text-sm leading-tight text-mission-control-text">{module.name}</span>
                       {/* Core badge */}
                       {module.core && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium text-review border border-review-border bg-review-subtle">
@@ -1003,12 +997,12 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                     </p>
                     {/* Star rating */}
                     {reviewData && reviewData.reviewCount > 0 && (
-                      <div className="flex items-center gap-1 mt-1">
+                      <Flex align="center" gap="1" mt="1">
                         <StarRating rating={reviewData.averageRating ?? 0} size={11} />
                         <span className="text-[11px] text-mission-control-text-dim">
                           {reviewData.averageRating?.toFixed(1)} ({reviewData.reviewCount})
                         </span>
-                      </div>
+                      </Flex>
                     )}
                   </div>
 
@@ -1018,10 +1012,9 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                     {module.installed && !module.core && (
                       <button
                         type="button"
-                        title={`Configure ${module.name}`}
                         aria-label={`Configure ${module.name}`}
                         onClick={() => setConfigTarget(module)}
-                        className="flex-shrink-0 p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <Settings size={14} />
                       </button>
@@ -1030,16 +1023,15 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                     {module.installed && !module.core && (
                       <button
                         type="button"
-                        title={`Open settings for ${module.name}`}
                         aria-label={`Open settings for ${module.name}`}
                         onClick={() => navigateToModuleSettings(module.id)}
-                        className="flex-shrink-0 p-1.5 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <Activity size={14} />
                       </button>
                     )}
                   </div>
-                </div>
+                </Flex>
 
                 {/* Category badge + agent badge */}
                 <div className="flex flex-wrap gap-1.5 mb-3">
@@ -1060,7 +1052,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                     {module.requiredApis.map(api => (
                       <span
                         key={`api-${api}`}
-                        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border border-amber-400/30 bg-amber-400/10 text-amber-400"
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border border-warning/30 bg-warning/10 text-warning"
                         title="API key required"
                       >
                         <Key size={9} />
@@ -1084,8 +1076,8 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                           key={`agent-${agentId}`}
                           className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border ${
                             installed
-                              ? 'border-success-border bg-success-subtle text-success'
-                              : 'border-amber-400/30 bg-amber-400/10 text-amber-400'
+                              ? 'border-success/30 bg-success/10 text-success'
+                              : 'border-warning/30 bg-warning/10 text-warning'
                           }`}
                           title={installed ? `Agent ${agentId} installed` : `Requires agent: ${agentId}`}
                         >
@@ -1100,27 +1092,27 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
 
                 {/* Dependencies warnings (not-installed modules) */}
                 {!module.installed && missingDeps.length > 0 && (
-                  <div className="flex items-center gap-1 text-[11px] text-warning mb-2">
+                  <Flex align="center" gap="1" mb="2" className="text-[11px] text-warning">
                     <AlertTriangle size={10} className="flex-shrink-0" />
                     <span>Missing agents: {missingDeps.join(', ')}</span>
-                  </div>
+                  </Flex>
                 )}
 
                 {/* Spacer pushes action to bottom */}
                 <div className="flex-1" />
 
                 {/* Action area */}
-                <div className="pt-2 border-t border-mission-control-border">
+                <div className="pt-2 border-t border-mission-control-border/40">
                   {module.core ? (
-                    <div className="flex items-center gap-1.5 text-xs text-review">
+                    <Flex align="center" gap="2" className="text-xs text-review">
                       <Shield size={12} className="flex-shrink-0" />
                       <span>Core module — always active</span>
-                    </div>
+                    </Flex>
                   ) : module.installed ? (
-                    <div className="flex items-center gap-2">
+                    <Flex align="center" gap="2">
                       {phase === 'installing' ? (
                         <div className="flex items-center gap-1.5 text-xs text-info flex-1">
-                          <Loader2 size={12} className="animate-spin flex-shrink-0" />
+                          <RadixSpinner size="1" />
                           <span>Installing…</span>
                         </div>
                       ) : (
@@ -1130,16 +1122,17 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                         </div>
                       )}
                       {/* Write a review */}
-                      <button
+                      <Button
                         type="button"
                         onClick={() => setReviewTarget(module)}
-                        className="flex items-center gap-1 px-2 py-1 text-[11px] text-amber-400 border border-amber-400/30 rounded hover:bg-amber-400/10 transition-colors"
-                        title="Write a review"
+                        variant="soft"
+                        color="amber"
+                        size="1"
                       >
                         <Star size={10} />
                         Review
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
                         disabled={uninstalling === module.id}
                         onClick={() => {
@@ -1164,30 +1157,34 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
                             }
                           });
                         }}
-                        className="flex items-center gap-1 px-2 py-1 text-[11px] text-error border border-error-border rounded hover:bg-error-subtle transition-colors disabled:opacity-50"
+                        variant="soft"
+                        color="red"
+                        size="1"
                       >
                         <Trash2 size={10} /> Uninstall
-                      </button>
-                    </div>
+                      </Button>
+                    </Flex>
                   ) : phase === 'installing' ? (
-                    <div className="flex items-center gap-1.5 text-xs text-info">
-                      <Loader2 size={12} className="animate-spin flex-shrink-0" />
+                    <Flex align="center" gap="2" className="text-xs text-info">
+                      <RadixSpinner size="1" />
                       <span>Installing…</span>
-                    </div>
+                    </Flex>
                   ) : phase === 'error' ? (
-                    <div className="flex items-center gap-1.5 text-xs text-error">
+                    <Flex align="center" gap="2" className="text-xs text-error">
                       <XCircle size={12} className="flex-shrink-0" />
                       <span className="line-clamp-1">{installErr ?? 'Installation failed'}</span>
-                    </div>
+                    </Flex>
                   ) : (
-                    <button
+                    <Button
                       type="button"
                       onClick={() => handleInstallClick(module)}
-                      className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent-dim transition-colors"
+                      variant="solid"
+                      size="1"
+                      className="w-full"
                     >
                       <Download size={12} />
                       Install Module
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -1259,7 +1256,7 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
       {/* Recent activity log */}
       {activityLog.length > 0 && (
         <div className="mt-8 border-t border-mission-control-border pt-5">
-          <h3 className="text-xs font-semibold text-mission-control-text-dim uppercase tracking-wide mb-3">
+          <h3 className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wide mb-3">
             Recent Activity
           </h3>
           <div className="space-y-1.5">

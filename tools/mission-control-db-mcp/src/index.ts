@@ -9,6 +9,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import http from 'http';
+import { evaluateTransition, type TaskStatus } from './stateMachine';
 
 // ── DB singleton ──────────────────────────────────────────────────────────────
 // One connection for the lifetime of the MCP process. WAL mode set once.
@@ -169,7 +170,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'task_create',
-      description: 'Create a new task. MANDATORY RULES — task will be REJECTED if violated: (1) planningNotes is REQUIRED — must contain the full plan, approach, steps, and context (min 20 chars); (2) reviewer is always Clara — do not override; (3) after creating, immediately add at least 2 subtasks via subtask_create before starting work. description must be 1-2 sentences max. Put all detail in planningNotes. Structure planningNotes like this: "## Approach\n{how you will do it}\n\n## Acceptance Criteria\n- {specific checkable criterion 1}\n- {criterion 2}"',
+      description: 'Create a new task. ⚠️ MANDATORY RULES — Clara will REJECT the task if violated: (1) planningNotes is REQUIRED — must contain brainstorming, full approach, steps, and context structured as "## Brainstorming & Planning\\n{thinking, options considered, approach chosen}\\n\\n## Steps\\n1. {step}\\n\\n## Acceptance Criteria\\n- {criterion}"; (2) IMMEDIATELY after task_create, call subtask_create at least once — every task MUST have 1+ subtasks or it will be rejected; (3) reviewer is always Clara — do not override. description must be 1-2 sentences max. All detail goes in planningNotes.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -179,21 +180,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           priority: { type: 'string', description: 'Priority: p0, p1, p2, p3, p4 (default p2)' },
           project: { type: 'string', description: 'Project name' },
           parentTaskId: { type: 'string', description: 'Parent task ID (for sub-tasks)' },
-          planningNotes: { type: 'string', description: 'Full plan, approach, steps, context, and any relevant file paths or instructions. Structure as: "## Approach\n{steps}\n\n## Acceptance Criteria\n- {criterion 1}\n- {criterion 2}". This is where all detailed planning goes.' },
+          planningNotes: { type: 'string', description: 'REQUIRED. Brainstorming, full plan, approach, steps, context, and any relevant file paths or instructions. Structure as: "## Brainstorming & Planning\\n{thinking}\\n\\n## Steps\\n1. {step}\\n\\n## Acceptance Criteria\\n- {criterion}". This is where ALL detailed planning goes — never leave this empty.' },
           reviewerId: { type: 'string', description: 'Agent ID to review this task (default: clara)' },
           status: { type: 'string', description: 'Initial status (default: todo)' },
         },
-        required: ['title'],
+        required: ['title', 'planningNotes'],
       },
     },
     {
       name: 'task_update',
-      description: 'Update a task status or fields',
+      description: 'Update a task\'s status, planning notes, or assignee. Key rules: (1) Never set status="internal-review" — the system sets it automatically when you assign a task. (2) Never set status="done" — only Clara can approve done via review. (3) Use task_add_activity to log progress notes, not this tool. (4) Use status="review" when your work is complete and ready for Clara to verify. (5) Use status="human-review" for external-action approvals or genuine blockers.',
       inputSchema: {
         type: 'object',
         properties: {
           id: { type: 'string', description: 'Task ID' },
           status: { type: 'string', description: 'New status: todo | in-progress | review | human-review | done. Do NOT set internal-review — the system manages Pre-review automatically.' },
+          description: { type: 'string', description: '1-2 sentence summary of what this task is. Use this to fix a "Needs description" pre-rejection from Clara.' },
           progress: { type: 'number', description: 'Progress 0-100' },
           lastAgentUpdate: { type: 'string', description: 'One-line update message visible to the team' },
           planningNotes: { type: 'string', description: 'Full plan details (replaces existing planningNotes)' },
@@ -253,7 +255,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'approval_check',
-      description: 'Check status of pending approvals',
+      description: 'Check status of one or all pending approvals. Pass id to poll a specific approval; omit id to list all pending. Poll this after approval_create to detect human decisions. Returns approved/rejected status and any notes left by the reviewer.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -263,7 +265,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'inbox_list',
-      description: 'List inbox items',
+      description: 'List inbox notifications for the current agent — task assignments, review requests, approval results, and human messages. Use unreadOnly=true at session start to catch up on what happened while you were offline. Inbox items are marked read after retrieval.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -274,7 +276,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'agent_status',
-      description: 'Get or update agent status',
+      description: 'Read the current status of any agent by ID. Omit status to read-only (returns current status, currentTask, lastSeen). To update your own status, prefer agent_status_set which also broadcasts to the dashboard. This tool is primarily for reading another agent\'s availability before sending them a chat or delegating work.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -312,7 +314,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'chat_rooms_list',
-      description: 'List all available chat rooms',
+      description: 'List all available chat rooms with their IDs and recent activity. Use before chat_post to confirm the correct roomId. Fixed rooms: "mission-control" (human operator), "general" (team), "code-review", "planning", "incidents". Per-agent 1-1 rooms are created automatically using the agent\'s ID as roomId.',
       inputSchema: { type: 'object', properties: {} },
     },
     {
@@ -331,7 +333,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'subtask_update',
-      description: 'Mark a subtask complete or update it',
+      description: 'Mark a subtask complete or update its title. Use the subtask ID returned by subtask_create (format: sub-{timestamp}-{random}). Call this immediately after finishing each subtask — it updates the parent task\'s progress counter. Always complete subtasks in sequence before moving the parent task to review.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -344,7 +346,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'schedule_create',
-      description: 'Schedule a future job for an agent. Use kind=once for one-shot tasks, kind=interval for repeating, kind=cron for time-based.',
+      description: 'Schedule a future job. Creates a TASK in the pipeline (default) so it goes through Clara review. Use mode="message" only for lightweight pings that don\'t need task tracking.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -354,16 +356,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           atMs: { type: 'number', description: 'Unix ms timestamp to run (kind=once)' },
           everyMs: { type: 'number', description: 'Repeat every N milliseconds (kind=interval)' },
           expr: { type: 'string', description: '5-field cron expression (kind=cron), e.g. "0 9 * * 1-5"' },
-          sessionTarget: { type: 'string', description: 'Agent ID, or "isolated" for anonymous run' },
-          message: { type: 'string', description: 'Message/prompt to send to the agent' },
+          sessionTarget: { type: 'string', description: 'Agent ID to assign the task to' },
+          message: { type: 'string', description: 'Task planning notes / instructions for the agent' },
           model: { type: 'string', description: 'Claude model to use (default: claude-haiku-4-5-20251001)' },
+          mode: { type: 'string', description: '"task" (default) creates a pipeline task. "message" sends a DM instead (use sparingly).' },
+          taskTitle: { type: 'string', description: 'Task title (supports {date} placeholder). Defaults to job name.' },
+          taskPriority: { type: 'string', description: 'Task priority: p0, p1, p2, p3 (default: p2)' },
+          taskTags: { type: 'array', items: { type: 'string' }, description: 'Tags for the task (default: ["scheduled", "cron"])' },
+          taskSubtasks: { type: 'array', items: { type: 'string' }, description: 'Subtask titles to create with the task' },
+          projectId: { type: 'string', description: 'Project ID to associate the task with' },
         },
         required: ['name', 'kind', 'message'],
       },
     },
     {
       name: 'schedule_list',
-      description: 'List scheduled jobs',
+      description: 'List all scheduled jobs created by schedule_create. Filter enabled=true for active jobs only. Returns each job\'s name, kind (once/interval/cron), next run time, sessionTarget (agent), and last execution result. Use to audit what automation is running and to find job IDs before cancelling.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -426,7 +434,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'image_generate',
-      description: 'Generate an image using Gemini AI and save it to the library. Returns markdown you can embed in chat, plus a removeBackgroundPath field ready for immediate use with image_remove_background. To remove the background after generating: image_remove_background({ inputPath: result.removeBackgroundPath, agentId: yourId })',
+      description: 'Generate an image using Gemini AI and save it to the library. Supports image-to-image: pass referenceImagePath with an existing library image to guide generation (ALWAYS do this for characters, logos, or brand assets — text prompts alone cannot replicate specific designs). Returns markdown you can embed in chat. IMPORTANT: after calling this tool, include the returned markdown field verbatim in your chat response so the image renders inline.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -434,6 +442,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           agentId: { type: 'string', description: 'Your agent ID' },
           filename: { type: 'string', description: 'Optional short filename (letters/numbers/hyphens, no extension)' },
           projectId: { type: 'string', description: 'Project ID — if provided, image saves to project folder instead of general library' },
+          referenceImagePath: { type: 'string', description: 'Absolute filesystem path to a reference image (e.g. /Users/kevin.macarthur/mission-control/library/brand-assets/Character/DEREK_Character/Derek_Track_Wave.png). Pass this when generating variants of an existing character, logo, or brand asset — Gemini uses the visual reference for far more accurate results than text alone.' },
+          referenceImageUrl: { type: 'string', description: 'Library URL of a reference image (e.g. /api/library?action=raw&id=...). Alternative to referenceImagePath when you have the library URL instead of the filesystem path.' },
         },
         required: ['prompt', 'agentId'],
       },
@@ -496,6 +506,35 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           tags: { type: 'array', items: { type: 'string' }, description: 'Keywords for discovery' },
         },
         required: ['title', 'content', 'category'],
+      },
+    },
+
+    {
+      name: 'context_files_get',
+      description: 'Get context files and notes attached to a project or campaign. Returns processed markdown content from uploaded files (docs, images, briefs, etc.) that the human attached as context for AI agents working on this entity.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          entityType: { type: 'string', description: 'project or campaign' },
+          entityId: { type: 'string', description: 'The project or campaign ID' },
+        },
+        required: ['entityType', 'entityId'],
+      },
+    },
+
+    {
+      name: 'knowledge_update',
+      description: 'Update an existing knowledge base article by ID. Use to correct, expand, or replace the content of an article you found via knowledge_search. Increments the version number and records the updatedAt timestamp.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Article ID from knowledge_search or knowledge_write' },
+          title: { type: 'string', description: 'Updated title (omit to keep existing)' },
+          content: { type: 'string', description: 'Full replacement markdown content' },
+          category: { type: 'string', description: 'brand | guidelines | reference | onboarding | technical | tone' },
+          tags: { type: 'array', items: { type: 'string' }, description: 'Replacement tag list (omit to keep existing)' },
+        },
+        required: ['id', 'content'],
       },
     },
 
@@ -601,11 +640,73 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['mention_id', 'reply_text'],
       },
     },
+
+    // ── Notes Tools ─────────────────────────────────────────────────────────
+    {
+      name: 'notes_list',
+      description: 'List recent human notes/thoughts. Call this at the START of every task to check for relevant instructions or context from the last 24 hours. Pass since (Unix ms) to filter by recency. Notes are short thoughts, reminders, and directives from the human operator.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          since: { type: 'number', description: 'Only return notes created after this Unix ms timestamp. Tip: for last 24h use Date.now() - 86400000' },
+          limit: { type: 'number', description: 'Max notes to return (default 50)' },
+        },
+      },
+    },
+    {
+      name: 'notes_create',
+      description: 'Create a note on behalf of the human. Only use when the human explicitly asks you to save a note or reminder.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          content: { type: 'string', description: 'Note text' },
+        },
+        required: ['content'],
+      },
+    },
+    {
+      name: 'scratchpad_list',
+      description: 'List files in the shared scratchpad directory. The scratchpad is a shared working area for agents to leave files, notes, and intermediate outputs that other agents can pick up.',
+      inputSchema: { type: 'object', properties: {} },
+    },
+    {
+      name: 'scratchpad_read',
+      description: 'Read a file from the shared scratchpad.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          filename: { type: 'string', description: 'Filename to read (no path separators allowed)' },
+        },
+        required: ['filename'],
+      },
+    },
+    {
+      name: 'scratchpad_write',
+      description: 'Write a file to the shared scratchpad. Max 10KB per file. Use this to leave outputs, notes, or intermediate results for other agents.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          filename: { type: 'string', description: 'Filename to write (no path separators allowed)' },
+          content: { type: 'string', description: 'File content (max 10KB)' },
+        },
+        required: ['filename', 'content'],
+      },
+    },
   ],
 }));
 
 // ── Tool handlers ─────────────────────────────────────────────────────────────
 
+/**
+ * Main MCP tool dispatcher. Routes incoming tool calls to their implementations.
+ *
+ * All handlers share a single SQLite connection (WAL mode). Side-effects that
+ * require the Next.js app (dashboard updates, dispatch events) are fired via
+ * firePost / firePatch / awaitPatch to localhost:3000.
+ *
+ * Error handling: unrecognised tool names fall through to the default case which
+ * throws, causing the MCP SDK to return a structured error to the caller.
+ */
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const db = getDb(); // singleton — never closed here
   const { name, arguments: args } = request.params;
@@ -614,6 +715,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
 
       // ── task_get ────────────────────────────────────────────────────────────
+      /**
+       * Full task hydration: joins subtasks (ordered), last 5 activity entries,
+       * attachments, assigned agent name, and a workContext summary string.
+       * Extracts acceptance criteria from planningNotes "## Acceptance Criteria" section.
+       * Surfaces planningNotes and incompleteSubtasks at the top of the response so
+       * the agent sees them before any other fields.
+       */
       case 'task_get': {
         const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(args?.id) as Record<string, any> | undefined;
         if (!task) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Task not found', recovery: 'Use task_list to see your assigned tasks. Verify you have the correct task ID.' }) }] };
@@ -680,6 +788,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── task_list ───────────────────────────────────────────────────────────
+      /**
+       * Returns tasks with filters for status, assignee, and project. Max 50 per call.
+       * Each row includes a planningNotesSummary (first 100 chars) and subtask counts
+       * so callers can decide which tasks need task_get for full details.
+       * assignedToMe=true is a convenience shortcut for assignedTo=<your agentId>.
+       */
       case 'task_list': {
         const rawLimit = Number(args?.limit) || 20;
         const limit = Math.min(rawLimit, 50);
@@ -729,6 +843,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── task_create ─────────────────────────────────────────────────────────
+      /**
+       * Creates a task and immediately fires a dispatch POST to the Next.js app.
+       * Hard rules enforced here (not in the schema): planningNotes must be ≥ 20 chars,
+       * reviewerId always defaults to "clara". Status starts as "todo" unless overridden.
+       * Side-effect: firePost('/api/tasks/dispatch', { taskId }) triggers auto-dispatch.
+       */
       case 'task_create': {
         // HARD RULES — enforced at creation:
         // 1. planningNotes is REQUIRED — must contain the full plan/approach
@@ -772,6 +892,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── task_update ─────────────────────────────────────────────────────────
+      /**
+       * Updates task fields and runs the state machine transition guard.
+       * Status changes are validated by evaluateTransition() — invalid moves are rejected.
+       * When status moves to "internal-review", fires firePatch() which triggers Clara's
+       * pre-review gate on the Next.js side. When planningNotes changes with a reviewer
+       * assigned, auto-queues for re-review.
+       */
       case 'task_update': {
         const now = Date.now();
         const taskId = args?.id as string;
@@ -782,69 +909,56 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         if (!current) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Task not found', recovery: 'Use task_list to see your assigned tasks. Verify you have the correct task ID.' }) }] };
 
-        // Agents cannot set internal-review — the system manages Pre-review automatically
-        if (args?.status === 'internal-review') {
-          return { content: [{ type: 'text', text: JSON.stringify({
-            error: 'WORKFLOW_VIOLATION: agents cannot set status to internal-review. The Pre-review column is managed by the system — it is set automatically when a task is assigned to an agent. Clara then reviews and dispatches.',
-            hint: 'If you finished work, set status="review". If blocked, set status="human-review".',
-            recovery: 'Set status="review" with a summary of completed work in lastAgentUpdate. Clara will verify and approve.',
-          })}]};
-        }
-
-        // HARD RULE: todo → in-progress is blocked — tasks must pass Clara's Pre-review gate first
-        if (args?.status === 'in-progress' && current.status === 'todo') {
-          return { content: [{ type: 'text', text: JSON.stringify({
-            error: 'WORKFLOW_VIOLATION: cannot move directly from todo to in-progress. Tasks must pass Clara\'s Pre-review gate first. The system sets internal-review automatically when an agent is assigned — Clara will approve and dispatch the agent.',
-            recovery: 'Check task status with task_get first. Ensure planningNotes and subtasks are set, then wait for Clara\'s pre-review approval before proceeding.',
-          }) }] };
-        }
-
-        // HARD RULE: only Clara can mark a task done — agents must move to review first
-        if (args?.status === 'done' && !['review'].includes(current.status)) {
-          // Allow system/clara to advance (reviewStatus=approved auto-advance is handled below)
-          const callerIsClara = args?.reviewStatus === 'approved'; // Clara sets both together
-          if (!callerIsClara) {
-            return { content: [{ type: 'text', text: JSON.stringify({
-              error: 'WORKFLOW_VIOLATION: agents cannot mark tasks done directly. Move to status="review" first — Clara will approve and advance to done.',
-              hint: 'Set status="review" with lastAgentUpdate describing what was completed. Clara reviews and moves to done.',
-              recovery: 'Set status="review" with lastAgentUpdate summarising what was built and where outputs are. Clara will approve and close the task.',
-            }) }] };
-          }
-        }
-
-        // SOFT GUARD: warn if moving to review with incomplete subtasks
-        if (args?.status === 'review') {
-          const incomplete = (db.prepare(
-            'SELECT COUNT(*) as c FROM subtasks WHERE taskId = ? AND completed = 0'
-          ).get(taskId) as { c: number }).c;
-          const total = (db.prepare(
-            'SELECT COUNT(*) as c FROM subtasks WHERE taskId = ?'
-          ).get(taskId) as { c: number }).c;
-          if (total > 0 && incomplete > 0) {
-            return { content: [{ type: 'text', text: JSON.stringify({
-              error: `INCOMPLETE_WORK: ${incomplete} of ${total} subtasks are not yet completed. Complete all subtasks before submitting for review, or mark irrelevant ones complete with a note.`,
-              incomplete,
-              total,
-              recovery: `Use task_get to see the incompleteSubtasks list with their IDs, then call subtask_update({ id: "<subtask-id>", completed: true }) for each one before retrying.`,
-            }) }] };
-          }
-        }
-
-        const sets = ['updatedAt = ?'];
-        const vals: any[] = [now];
-
+        // ── Compute effective new status (auto-advance applies reviewStatus changes) ─
+        // Must happen BEFORE the state machine check so guards run on the final status.
         let newStatus = args?.status as string | undefined;
         let newReviewStatus = args?.reviewStatus as string | undefined;
 
-        // Auto-advance status based on reviewStatus.
-        // Fires when reviewStatus is being set AND the task is (or is moving to) 'review'.
+        // Auto-advance: when reviewStatus is being set AND the effective status is 'review',
+        // advance to 'done' (approved) or return to 'in-progress' (rejected/needs-changes).
         const effectiveStatus = newStatus ?? current.status;
         if (newReviewStatus !== undefined && effectiveStatus === 'review') {
           if (newReviewStatus === 'approved') newStatus = 'done';
           else if (newReviewStatus === 'rejected' || newReviewStatus === 'needs-changes') newStatus = 'in-progress';
         }
 
+        // ── State machine guard ─────────────────────────────────────────────────
+        // Validates every status change (including auto-advanced ones) through the
+        // formal pipeline state machine. Absent from TRANSITIONS = blocked (whitelist).
+        // Invalid transitions return a structured InvalidTransition error with
+        // reason, hint, and recovery. guardsPassed is captured for the audit trail.
+        let smGuardsPassed: string[] = [];
+        if (newStatus !== undefined && newStatus !== current.status) {
+          // Fetch subtask counts for the allSubtasksComplete guard (single cheap query)
+          const subtaskCounts = db.prepare(
+            'SELECT COUNT(*) as total, SUM(CASE WHEN completed = 0 THEN 1 ELSE 0 END) as incomplete FROM subtasks WHERE taskId = ?'
+          ).get(taskId) as { total: number; incomplete: number | null } | undefined;
+
+          const smResult = evaluateTransition({
+            from: current.status as TaskStatus,
+            to: newStatus as TaskStatus,
+            args: {
+              reviewStatus: newReviewStatus,
+              agentId: args?.agentId as string | undefined,
+            },
+            task: {
+              incompleteSubtaskCount: subtaskCounts?.incomplete ?? 0,
+              totalSubtaskCount: subtaskCounts?.total ?? 0,
+            },
+          });
+
+          if (!smResult.allowed) {
+            return { content: [{ type: 'text', text: JSON.stringify(smResult) }] };
+          }
+
+          smGuardsPassed = smResult.guardsPassed;
+        }
+
+        const sets = ['updatedAt = ?'];
+        const vals: any[] = [now];
+
         if (newStatus !== undefined)               { sets.push('status = ?');          vals.push(newStatus); }
+        if (args?.description !== undefined)        { sets.push('description = ?');      vals.push(args.description); }
         if (args?.progress !== undefined)           { const progress = Math.max(0, Math.min(100, Number(args.progress))); sets.push('progress = ?'); vals.push(progress); }
         if (args?.lastAgentUpdate)                  { sets.push('lastAgentUpdate = ?');  vals.push(args.lastAgentUpdate); }
         if (args?.planningNotes !== undefined)      { sets.push('planningNotes = ?');    vals.push(args.planningNotes); }
@@ -852,6 +966,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (args?.reviewerId !== undefined)         { sets.push('reviewerId = ?');       vals.push(args.reviewerId); }
         if (newReviewStatus !== undefined)          { sets.push('reviewStatus = ?');     vals.push(newReviewStatus); }
         if (args?.reviewNotes !== undefined)        { sets.push('reviewNotes = ?');      vals.push(args.reviewNotes); }
+
+        // Auto-clear pre-rejected state when agent fixes the blocking fields.
+        // Clara rejected because description/planningNotes/assignedTo was missing — once
+        // any of these is fixed, clear the rejection so auto-advance re-queues for review.
+        if (!args?.reviewStatus && !args?.status && current.reviewStatus === 'pre-rejected') {
+          if (args?.description !== undefined || args?.planningNotes !== undefined || args?.assignedTo !== undefined) {
+            sets.push('reviewStatus = ?', 'reviewNotes = ?');
+            vals.push(null, null);
+          }
+        }
 
         // Set completedAt when task reaches done
         if (newStatus === 'done')                   { sets.push('completedAt = ?');      vals.push(now); }
@@ -867,16 +991,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // Clara review is triggered by the 3-minute cron sweep in claraReviewCron.ts.
         // No immediate HTTP dispatch here — the cron is the single trigger.
 
-        // Auto-log activity — only for meaningful changes, not noise
+        // ── Structured audit trail ─────────────────────────────────────────────
         const statusChanged = newStatus !== undefined && newStatus !== current.status;
         const reviewChanged = newReviewStatus !== undefined;
-        const activityMsg = args?.lastAgentUpdate ||
-          (statusChanged ? `Status → ${newStatus}` : null) ||
-          (reviewChanged ? `Review: ${newReviewStatus}` : null);
-
-        if (activityMsg) {
+        if (statusChanged) {
           db.prepare('INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)').run(
-            taskId, null, statusChanged ? 'status_change' : 'update', activityMsg, now
+            taskId, args?.agentId || null, 'status_transition',
+            JSON.stringify({ from: current.status, to: newStatus, guardsPassed: smGuardsPassed }), now
+          );
+        }
+        const updateMsg = args?.lastAgentUpdate ||
+          (!statusChanged && reviewChanged ? `Review: ${newReviewStatus}` : null);
+        if (updateMsg) {
+          db.prepare('INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)').run(
+            taskId, args?.agentId || null, statusChanged ? 'status_change' : 'update', updateMsg, now
           );
         }
 
@@ -884,6 +1012,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── task_add_activity ───────────────────────────────────────────────────
+      /**
+       * Appends an immutable audit entry to task_activity. The last 5 entries
+       * are surfaced in task_get as recentActivity and workContext summary.
+       * Minimum call frequency: once per subtask completed. Use action="started",
+       * "completed", "file_created", "decision", or "blocked" to make logs scannable.
+       */
       case 'task_add_activity': {
         db.prepare('INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)').run(
           args?.taskId, args?.agentId || null, args?.action || 'update', args?.message, Date.now()
@@ -892,6 +1026,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── task_add_attachment ─────────────────────────────────────────────────
+      /**
+       * Attaches a file reference to a task and auto-logs a "file_created" activity.
+       * Idempotent: duplicate (taskId, filePath) pairs are silently skipped.
+       * fileName defaults to the basename of filePath when omitted.
+       */
       case 'task_add_attachment': {
         const now = Date.now();
         const fileName = args?.fileName || (args?.filePath as string)?.split('/').pop() || String(args?.filePath);
@@ -915,6 +1054,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── approval_create ─────────────────────────────────────────────────────
+      /**
+       * Creates an approval request in the approvals table and fires a POST to
+       * /api/approvals/notify so the Next.js app can surface it in the UI.
+       * Returns the approval ID — poll with approval_check(id) to detect decisions.
+       * Always move task to status="human-review" before calling this so the
+       * pipeline reflects the blocked state.
+       */
       case 'approval_create': {
         const id = `approval-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const now = Date.now();
@@ -927,6 +1073,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── approval_check ──────────────────────────────────────────────────────
+      /**
+       * Reads one approval by ID, or all pending approvals (no id given).
+       * Metadata field is parsed from JSON string to object before returning.
+       * Poll this after approval_create to detect human decisions.
+       */
       case 'approval_check': {
         const parseMetadata = (row: any) => {
           if (!row) return row;
@@ -943,6 +1094,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── inbox_list ──────────────────────────────────────────────────────────
+      /**
+       * Returns inbox rows ordered newest-first. Supports unreadOnly filter.
+       * Note: does NOT auto-mark items as read — the UI/Next.js layer handles that.
+       */
       case 'inbox_list': {
         const limit = (args?.limit as number) || 20;
         let query = 'SELECT * FROM inbox WHERE 1=1';
@@ -955,6 +1110,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── agent_status ────────────────────────────────────────────────────────
+      /**
+       * Dual-mode: read (no status arg) returns id/name/status/model/lastActivity.
+       * Write mode (status provided) updates agents table only — does NOT push to
+       * the dashboard websocket. Use agent_status_set for full broadcast.
+       */
       case 'agent_status': {
         if (args?.status) {
           db.prepare('UPDATE agents SET status = ?, lastActivity = ? WHERE id = ?').run(args.status, Date.now(), args?.agentId);
@@ -965,6 +1125,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── chat_post ───────────────────────────────────────────────────────────
+      /**
+       * Inserts a message into chat_room_messages. Validates content is non-empty
+       * and ≤ 20,000 chars. If roomId matches an agent ID, adds a delivery hint in
+       * the response confirming the agent's name. Does NOT send push notifications —
+       * the Next.js app polls /api/chat for new messages.
+       */
       case 'chat_post': {
         const content = String(args?.content ?? '').trim();
         if (!content) return { content: [{ type: 'text', text: JSON.stringify({ error: 'content is required', recovery: 'Provide a non-empty content string to the chat_post call.' }) }], isError: true };
@@ -988,6 +1154,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── chat_read ───────────────────────────────────────────────────────────
+      /**
+       * Returns the last N messages in chronological order (oldest first) using a
+       * DESC+subquery pattern. Use `since` (Unix ms) to fetch only new messages
+       * since last read — efficient for polling loops.
+       */
       case 'chat_read': {
         const limit = (args?.limit as number) || 20;
         // Use ASC directly instead of DESC + reverse
@@ -1002,12 +1173,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── chat_rooms_list ─────────────────────────────────────────────────────
+      /** Returns all rows from chat_rooms ordered alphabetically by name. */
       case 'chat_rooms_list': {
         const rooms = db.prepare('SELECT * FROM chat_rooms ORDER BY name').all();
         return { content: [{ type: 'text', text: JSON.stringify(rooms) }] };
       }
 
       // ── subtask_create ──────────────────────────────────────────────────────
+      /**
+       * Appends a subtask to the parent task's ordered checklist. Subtasks are
+       * positioned by insertion order. Returns the new subtask ID (format:
+       * sub-{timestamp}-{random}) — save this ID to call subtask_update later.
+       * Requirement: every task must have ≥ 2 subtasks before Clara approves it.
+       */
       case 'subtask_create': {
         const id = `sub-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const now = Date.now();
@@ -1018,6 +1196,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── subtask_update ──────────────────────────────────────────────────────
+      /**
+       * Updates completed flag and/or title. Setting completed=true also stamps
+       * completedAt with the current timestamp. Returns error if no fields provided.
+       */
       case 'subtask_update': {
         const now = Date.now();
         const sets: string[] = [];
@@ -1035,6 +1217,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── schedule_create ─────────────────────────────────────────────────────
+      /**
+       * Writes a new job entry to ~/mission-control/data/schedule.json.
+       * The cron daemon (tools/cron-mcp) reads this file on each tick.
+       * kind=once fires at atMs; kind=interval repeats every everyMs ms;
+       * kind=cron uses a 5-field cron expression (expr).
+       */
       case 'schedule_create': {
         const schedulePath = path.join(process.env.HOME || '/tmp', 'mission-control', 'data', 'schedule.json');
         let jobs: any[] = [];
@@ -1049,7 +1237,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (args?.kind === 'once')     schedule.atMs    = args?.atMs || Date.now() + 60_000;
         if (args?.kind === 'interval') schedule.everyMs = args?.everyMs || 3_600_000;
         if (args?.kind === 'cron')     schedule.expr    = args?.expr;
-        const job = {
+        const mode = args?.mode || 'task';
+        const job: any = {
           id,
           name: args?.name,
           description: args?.description || null,
@@ -1065,13 +1254,31 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           state: {},
           createdAt: Date.now(),
         };
+        // Default: create a task in the pipeline (goes through Clara review).
+        // Only skip taskTemplate if mode="message" is explicitly set.
+        if (mode !== 'message') {
+          job.taskTemplate = {
+            title: args?.taskTitle || args?.name || 'Scheduled Task',
+            description: args?.description || null,
+            planningNotes: args?.message,
+            assignTo: args?.sessionTarget || null,
+            priority: args?.taskPriority || 'p2',
+            tags: args?.taskTags || ['scheduled', 'cron'],
+            subtasks: (Array.isArray(args?.taskSubtasks) ? args.taskSubtasks : []).map((s: string) => ({ title: s })),
+            project_id: args?.projectId || null,
+          };
+        }
         jobs.push(job);
         fs.mkdirSync(path.dirname(schedulePath), { recursive: true });
         fs.writeFileSync(schedulePath, JSON.stringify(jobs, null, 2));
-        return { content: [{ type: 'text', text: JSON.stringify({ success: true, id, job }) }] };
+        return { content: [{ type: 'text', text: JSON.stringify({ success: true, id, mode, job }) }] };
       }
 
       // ── schedule_list ───────────────────────────────────────────────────────
+      /**
+       * Reads schedule.json and returns all jobs, optionally filtered by enabled status.
+       * Returns an empty array if the file doesn't exist yet.
+       */
       case 'schedule_list': {
         const schedulePath = path.join(process.env.HOME || '/tmp', 'mission-control', 'data', 'schedule.json');
         let jobs: any[] = [];
@@ -1108,6 +1315,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify(res) }] };
       }
 
+      /**
+       * Proxies GET /api/projects/{projectId}/phases. Returns ordered phase list
+       * with status, assignedTo, and description for each phase.
+       */
       case 'project_phase_list': {
         const projectId = String(args?.projectId ?? '');
         if (!projectId) return { content: [{ type: 'text', text: JSON.stringify({ error: 'projectId is required' }) }], isError: true };
@@ -1116,6 +1327,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── project_phase_create ────────────────────────────────────────────────
+      /**
+       * Proxies POST /api/projects/{projectId}/phases with title, description,
+       * and optional assignedTo. Phases default to status "planned".
+       */
       case 'project_phase_create': {
         const projectId = String(args?.projectId ?? '');
         if (!projectId) return { content: [{ type: 'text', text: JSON.stringify({ error: 'projectId is required' }) }], isError: true };
@@ -1128,6 +1343,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── project_phase_update ────────────────────────────────────────────────
+      /**
+       * Proxies PATCH /api/projects/{projectId}/phases?phaseId={phaseId}.
+       * Valid status values: planned | in-progress | complete.
+       */
       case 'project_phase_update': {
         const projectId = String(args?.projectId ?? '');
         const phaseId = String(args?.phaseId ?? '');
@@ -1141,6 +1360,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── image_generate ──────────────────────────────────────────────────────
+      /**
+       * Proxies to POST /api/images/generate on the Next.js app which calls Gemini.
+       * Returns { markdown, filePath, removeBackgroundPath }. Pass removeBackgroundPath
+       * directly to image_remove_background.inputPath for immediate background removal.
+       * Images are saved to ~/mission-control/library/design/images/ (or project subfolder).
+       */
       case 'image_generate': {
         const prompt = String(args?.prompt ?? '').trim();
         if (!prompt) return { content: [{ type: 'text', text: JSON.stringify({ error: 'prompt is required' }) }], isError: true };
@@ -1150,6 +1375,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           agentId: args?.agentId ?? 'unknown',
           filename: args?.filename ?? '',
           projectId: args?.projectId ?? undefined,
+          ...(args?.referenceImagePath ? { referenceImagePath: args.referenceImagePath } : {}),
+          ...(args?.referenceImageUrl  ? { referenceImageUrl:  args.referenceImageUrl  } : {}),
         });
 
         const result = await new Promise<string>((resolve) => {
@@ -1222,6 +1449,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── image_remove_background ─────────────────────────────────────────────
+      /**
+       * Proxies to POST /api/remove-background on the Next.js app which runs rembg.
+       * Default model: birefnet-hd (best edge quality). Faster alternative: birefnet-general.
+       * Output PNG is saved alongside the source file with "-nobg" suffix.
+       * Returns { markdown, outputPath } for inline display and chaining.
+       */
       case 'image_remove_background': {
         const inputPath = String(args?.inputPath ?? '').trim();
         if (!inputPath) return { content: [{ type: 'text', text: JSON.stringify({ error: 'inputPath is required', recovery: 'Use the removeBackgroundPath field from the image_generate response. Example: image_remove_background({ inputPath: result.removeBackgroundPath, agentId: yourId })' }) }], isError: true };
@@ -1288,6 +1521,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── project_context ─────────────────────────────────────────────────────
+      /**
+       * Single project mode (projectId given): returns full project row plus
+       * assigned agents, open task count by status, and active phases.
+       * List mode (no projectId): returns all active projects with key metrics.
+       * Call this at the start of every work session before touching any task.
+       */
       case 'project_context': {
         const projectId = args?.projectId as string | undefined;
         if (projectId) {
@@ -1303,16 +1542,40 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             'SELECT id, title, dueDate, completed, completedAt FROM project_milestones WHERE projectId = ? ORDER BY createdAt ASC'
           ).all(projectId) as any[];
           const openTaskCount = (db.prepare(
-            "SELECT COUNT(*) as c FROM tasks WHERE project_id = ? AND status NOT IN ('done')"
-          ).get(projectId) as { c: number }).c;
+            "SELECT COUNT(*) as c FROM tasks WHERE project = ? AND status NOT IN ('done')"
+          ).get(project.name) as { c: number }).c;
           const doneTaskCount = (db.prepare(
-            "SELECT COUNT(*) as c FROM tasks WHERE project_id = ? AND status = 'done'"
-          ).get(projectId) as { c: number }).c;
+            "SELECT COUNT(*) as c FROM tasks WHERE project = ? AND status = 'done'"
+          ).get(project.name) as { c: number }).c;
+
+          // Detect GSD planning files
+          let gsdPlanning: Record<string, any> | null = null;
+          try {
+            const gsdFiles = db.prepare(
+              `SELECT originalName, processedContent FROM context_files
+               WHERE entityType = 'project' AND entityId = ? AND originalName LIKE 'GSD-%'
+               ORDER BY createdAt ASC`
+            ).all(projectId) as Array<{ originalName: string; processedContent: string | null }>;
+            if (gsdFiles.length > 0) {
+              gsdPlanning = {
+                active: true,
+                files: gsdFiles.map(f => f.originalName),
+                guide: 'Use context_files_get({entityType:"project",entityId:"' + projectId + '"}) to read the GSD planning files. Follow GSD methodology: call context_files_get → read GSD-ROADMAP.md → find next unchecked phase → work → mark done.',
+                planningFiles: gsdFiles.reduce((acc, f) => {
+                  if (f.processedContent) acc[f.originalName] = f.processedContent.slice(0, 2000);
+                  return acc;
+                }, {} as Record<string, string>),
+              };
+            }
+          } catch { /* non-critical */ }
+
           return { content: [{ type: 'text', text: JSON.stringify({
             id: project.id, name: project.name, description: project.description,
             goal: project.goal, status: project.status, color: project.color,
+            contextNotes: project.contextNotes ?? null,
             createdAt: project.createdAt, updatedAt: project.updatedAt,
             members, milestones, openTasks: openTaskCount, doneTasks: doneTaskCount,
+            ...(gsdPlanning ? { gsdPlanning } : {}),
           }, null, 2) }] };
         } else {
           // All active projects — summary list
@@ -1321,8 +1584,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ).all() as any[];
           const result = projects.map((p) => {
             const openTasks = (db.prepare(
-              "SELECT COUNT(*) as c FROM tasks WHERE project_id = ? AND status NOT IN ('done')"
-            ).get(p.id) as { c: number }).c;
+              "SELECT COUNT(*) as c FROM tasks WHERE project = ? AND status NOT IN ('done')"
+            ).get(p.name) as { c: number }).c;
             const memberCount = (db.prepare(
               'SELECT COUNT(*) as c FROM project_members WHERE projectId = ?'
             ).get(p.id) as { c: number }).c;
@@ -1333,6 +1596,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── agent_status_set ─────────────────────────────────────────────────────
+      /**
+       * Updates the agent row AND calls awaitPatch('/api/agents/{id}') to broadcast
+       * the change to the Next.js dashboard websocket (SSE push).
+       * Call with status=busy when starting a task; status=idle when done.
+       * currentTask (optional) shows in the team dashboard as the agent's focus.
+       */
       case 'agent_status_set': {
         const agentId = args?.agentId as string;
         const status = args?.status as string;
@@ -1351,6 +1620,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── campaign_context ─────────────────────────────────────────────────────
+      /**
+       * Queries the campaigns table and returns campaigns with channels, goals,
+       * status, budget, and KPIs. Filter by status (e.g. "active") to narrow results.
+       * Returns a friendly message when no campaigns table or data exists yet.
+       */
       case 'campaign_context': {
         const statusFilter = args?.status as string | undefined;
         let query = `SELECT id, name, description, type, goal, status, channels, budget, budgetSpent,
@@ -1379,46 +1653,87 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             WHERE cm.campaignId = ?
           `).all(c.id) as any[];
           const openTasks = (db.prepare(
-            "SELECT COUNT(*) as cnt FROM tasks WHERE project_id = ? AND status NOT IN ('done')"
-          ).get(c.id) as { cnt: number }).cnt;
+            "SELECT COUNT(*) as cnt FROM tasks WHERE project = ? AND status NOT IN ('done')"
+          ).get(c.name) as { cnt: number }).cnt;
           return { ...c, channels, kpis, members, openTasks };
         });
         return { content: [{ type: 'text', text: JSON.stringify({ campaigns: result, hint: result.length === 0 ? 'No campaigns found. Create one via the Campaigns section in the dashboard.' : `Found ${result.length} campaign(s).` }, null, 2) }] };
       }
 
       // ── knowledge_search ────────────────────────────────────────────────────
+      /**
+       * Full-text search over the knowledge_base table using SQLite FTS5.
+       * FTS5 special characters are sanitized before the MATCH query.
+       * Optional category filter narrows to: brand | guidelines | reference |
+       * onboarding | assets | tone | technical. Returns articles with full content.
+       */
       case 'knowledge_search': {
         const query = String(args?.query ?? '').trim();
         if (!query) return { content: [{ type: 'text', text: JSON.stringify({ error: 'query required' }) }], isError: true };
 
-        let articles: Record<string, unknown>[] = [];
-        try {
-          // Try FTS first
-          articles = db.prepare(`
-            SELECT kb.id, kb.title, kb.category, kb.tags, kb.content, kb.scope
-            FROM knowledge_base kb
-            JOIN knowledge_base_fts fts ON fts.rowid = kb.rowid
-            WHERE knowledge_base_fts MATCH ?
-            ORDER BY rank LIMIT 5
-          `).all(query) as Record<string, unknown>[];
-        } catch {
-          // Fallback to LIKE search
-          articles = db.prepare(`
-            SELECT id, title, category, tags, content, scope FROM knowledge_base
-            WHERE title LIKE ? OR content LIKE ? OR tags LIKE ?
-            ORDER BY pinned DESC, updatedAt DESC LIMIT 5
-          `).all(`%${query}%`, `%${query}%`, `%${query}%`) as Record<string, unknown>[];
-        }
+        // Sanitize FTS5 special chars that cause SQLITE_ERROR when passed raw to MATCH.
+        // FTS5 operators stripped: " ( ) * ^ and - (negation).
+        // Hyphen is last in the bracket expression so regex treats it as a literal, not a range.
+        // This is inlined here because the MCP is a separate Node package that cannot import
+        // from the Next.js app's src/lib/knowledgeSearch.ts.
+        const safeQuery = query.replace(/["()*^-]/g, ' ').replace(/\s+/g, ' ').trim();
 
         const category = args?.category as string | undefined;
-        if (category) articles = articles.filter((a) => a.category === category);
+
+        // Build SQL-level category filter (applied in both FTS and fallback paths).
+        // Previously this was a post-query JS filter, which meant: if FTS filled its
+        // LIMIT with wrong-category results, category-filtered searches returned 0 rows
+        // even when matching articles existed. Moving it to SQL fixes that.
+        const categoryClause = category ? ' AND kb.category = ?' : '';
+        const categoryParam = category ? [category] : [];
+
+        let articles: Record<string, unknown>[] = [];
+        if (!safeQuery) {
+          // After sanitization nothing usable remains — return empty rather than crash.
+          articles = [];
+        } else {
+          try {
+            // FTS path: weighted BM25 relevance (title=10×, content=1×, tags=5×)
+            // so a title match ranks far above a body-only match.
+            // snippet() extracts a 15-token match excerpt from the content column
+            // (index 1) with <mark> highlighting so agents can see why each result
+            // matched without having to call knowledge_read for every article.
+            // knowledge_base_fts MUST be the primary (leftmost) table in FROM.
+            // SQLite FTS5 auxiliary functions bm25() and snippet() are only
+            // available when the FTS virtual table owns the query, not as a JOIN
+            // target. We alias it and join the content table on rowid.
+            articles = db.prepare(`
+              SELECT kb.id, kb.title, kb.category, kb.tags, kb.content, kb.scope, kb.pinned,
+                snippet(knowledge_base_fts, 1, '<mark>', '</mark>', '...', 15) AS matchSnippet
+              FROM knowledge_base_fts
+              JOIN knowledge_base kb ON kb.rowid = knowledge_base_fts.rowid
+              WHERE knowledge_base_fts MATCH ?${categoryClause}
+              ORDER BY kb.pinned DESC, bm25(knowledge_base_fts, 10.0, 1.0, 5.0) LIMIT 8
+            `).all(safeQuery, ...categoryParam) as Record<string, unknown>[];
+          } catch {
+            // FTS unavailable or virtual table missing — fall back to LIKE.
+            const likeWhere = category
+              ? '(title LIKE ? OR content LIKE ? OR tags LIKE ?) AND category = ?'
+              : '(title LIKE ? OR content LIKE ? OR tags LIKE ?)';
+            const likeParams = category
+              ? [`%${query}%`, `%${query}%`, `%${query}%`, category]
+              : [`%${query}%`, `%${query}%`, `%${query}%`];
+            articles = db.prepare(`
+              SELECT id, title, category, tags, content, scope, pinned FROM knowledge_base
+              WHERE ${likeWhere}
+              ORDER BY pinned DESC, updatedAt DESC LIMIT 8
+            `).all(...likeParams) as Record<string, unknown>[];
+          }
+        }
 
         const result = articles.map((a) => ({
           id: a.id,
           title: a.title,
           category: a.category,
           tags: (() => { try { return JSON.parse(a.tags as string); } catch { return []; } })(),
-          // Include first 800 chars of content inline so agent doesn't need a second call for short articles
+          // matchSnippet shows exactly why the article matched (FTS path only).
+          // Falls back to null for LIKE-fallback results; agents can use knowledge_read for full content.
+          matchSnippet: (a.matchSnippet as string | undefined) || null,
           contentPreview: (a.content as string).slice(0, 800),
           fullContentAvailable: (a.content as string).length > 800,
         }));
@@ -1427,6 +1742,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── knowledge_read ──────────────────────────────────────────────────────
+      /**
+       * Returns the full article content plus any associated links.
+       * Use after knowledge_search to get complete content beyond the 800-char preview.
+       */
       case 'knowledge_read': {
         const article = db.prepare('SELECT * FROM knowledge_base WHERE id = ?').get(args?.id) as Record<string, unknown> | undefined;
         if (!article) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Article not found. Use knowledge_search to find available articles.' }) }], isError: true };
@@ -1446,6 +1765,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── knowledge_write ─────────────────────────────────────────────────────
+      /**
+       * Inserts a new article into knowledge_base at version 1. The article is
+       * immediately searchable via knowledge_search. Tags are stored as a JSON array.
+       * scope defaults to "all"; pinned defaults to false.
+       */
       case 'knowledge_write': {
         const title = String(args?.title ?? '').trim();
         const content = String(args?.content ?? '').trim();
@@ -1464,7 +1788,94 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify({ success: true, id, hint: 'Knowledge saved. Other agents and future sessions can now find this via knowledge_search.' }) }] };
       }
 
+      // ── knowledge_update ────────────────────────────────────────────────────
+      /**
+       * Replaces content/title/category/tags of an existing article and increments
+       * the version counter. Fields omitted from args keep their existing values.
+       * Always fetch the current id via knowledge_search before calling this.
+       */
+      case 'knowledge_update': {
+        const id = String(args?.id ?? '').trim();
+        if (!id) return { content: [{ type: 'text', text: JSON.stringify({ error: 'id required' }) }], isError: true };
+
+        const existing = db.prepare('SELECT * FROM knowledge_base WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+        if (!existing) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Article not found. Use knowledge_search to find the correct id.' }) }], isError: true };
+
+        const content = String(args?.content ?? '').trim();
+        if (!content) return { content: [{ type: 'text', text: JSON.stringify({ error: 'content required' }) }], isError: true };
+
+        const title    = args?.title    ? String(args.title).trim()    : (existing.title as string);
+        const category = args?.category ? String(args.category).trim() : (existing.category as string);
+        const tags     = Array.isArray(args?.tags) ? JSON.stringify(args.tags) : (existing.tags as string);
+        const version  = ((existing.version as number) ?? 1) + 1;
+        const now      = Date.now();
+
+        // Save current content to version history before overwriting
+        if (content !== existing.content) {
+          db.prepare(
+            `INSERT INTO knowledge_versions (articleId, content, editedBy, editedAt, versionNote) VALUES (?, ?, ?, ?, ?)`
+          ).run(id, existing.content as string, 'agent', now, 'Updated via knowledge_update MCP tool');
+        }
+
+        db.prepare(`
+          UPDATE knowledge_base
+          SET title = ?, content = ?, category = ?, tags = ?, version = ?, updatedAt = ?
+          WHERE id = ?
+        `).run(title, content, category, tags, version, now, id);
+
+        return { content: [{ type: 'text', text: JSON.stringify({ success: true, id, version, hint: 'Article updated. Version incremented.' }) }] };
+      }
+
+      // ── context_files_get ───────────────────────────────────────────────────
+      /**
+       * Returns processed markdown content from files the human attached to a
+       * project or campaign as context for agents. Gracefully returns empty when
+       * the context_files table doesn't exist (older DB schema).
+       * entityType: "project" | "campaign".
+       */
+      case 'context_files_get': {
+        const entityType = String(args?.entityType ?? '');
+        const entityId = String(args?.entityId ?? '');
+        if (!entityType || !entityId) return { content: [{ type: 'text', text: JSON.stringify({ error: 'entityType and entityId required' }) }], isError: true };
+
+        // Check if context_files table exists (may not exist on older DBs)
+        const hasContextTable = db.prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='context_files'"
+        ).get();
+
+        const files = hasContextTable
+          ? db.prepare(
+              'SELECT id, originalName, fileType, mimeType, processedContent, summary, createdAt FROM context_files WHERE entityType = ? AND entityId = ? ORDER BY createdAt ASC'
+            ).all(entityType, entityId) as Record<string, unknown>[]
+          : [];
+
+        // Get contextNotes from the entity
+        let notes: string | null = null;
+        if (entityType === 'project') {
+          const p = db.prepare('SELECT contextNotes FROM projects WHERE id = ?').get(entityId) as { contextNotes: string } | undefined;
+          notes = p?.contextNotes ?? null;
+        } else if (entityType === 'campaign') {
+          const c = db.prepare('SELECT contextNotes FROM campaigns WHERE id = ?').get(entityId) as { contextNotes: string } | undefined;
+          notes = c?.contextNotes ?? null;
+        }
+
+        return { content: [{ type: 'text', text: JSON.stringify({
+          entityType,
+          entityId,
+          notes,
+          files: files.map(f => ({
+            id: f.id,
+            name: f.originalName,
+            type: f.fileType,
+            summary: f.summary,
+            content: f.processedContent,
+          })),
+          hint: files.length === 0 && !notes ? 'No context files attached yet.' : `${files.length} context file(s) attached.`,
+        }, null, 2) }] };
+      }
+
       // ── project_context ─────────────────────────────────────────────────────
+      /** @note Duplicate case — unreachable at runtime; the earlier project_context case handles all calls. */
       case 'project_context': {
         if (args?.projectId) {
           const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(args.projectId) as Record<string, any> | undefined;
@@ -1480,15 +1891,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
           // Open task count
           const openTasks = db.prepare(
-            "SELECT COUNT(*) as c FROM tasks WHERE (project = ? OR project_id = ?) AND status NOT IN ('done')"
-          ).get(project.name, args.projectId) as { c: number };
+            "SELECT COUNT(*) as c FROM tasks WHERE project = ? AND status NOT IN ('done')"
+          ).get(project.name) as { c: number };
 
           // Milestone summary — tasks grouped by status
           const statusBreakdown = db.prepare(`
             SELECT status, COUNT(*) as count FROM tasks
-            WHERE project = ? OR project_id = ?
+            WHERE project = ?
             GROUP BY status
-          `).all(project.name, args.projectId) as any[];
+          `).all(project.name) as any[];
 
           return { content: [{ type: 'text', text: JSON.stringify({
             hint: 'This is your project context. Read goal and status before starting work.',
@@ -1497,6 +1908,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             description: project.description,
             goal: project.goal,
             status: project.status,
+            contextNotes: project.contextNotes ?? null,
             assignedAgents: members,
             openTaskCount: openTasks?.c ?? 0,
             tasksByStatus: statusBreakdown,
@@ -1509,8 +1921,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const projects = db.prepare("SELECT * FROM projects WHERE status = 'active' ORDER BY updatedAt DESC").all() as any[];
         const enriched = projects.map((p: any) => {
           const open = db.prepare(
-            "SELECT COUNT(*) as c FROM tasks WHERE (project = ? OR project_id = ?) AND status NOT IN ('done')"
-          ).get(p.name, p.id) as { c: number };
+            "SELECT COUNT(*) as c FROM tasks WHERE project = ? AND status NOT IN ('done')"
+          ).get(p.name) as { c: number };
           const memberCount = db.prepare('SELECT COUNT(*) as c FROM project_members WHERE projectId = ?').get(p.id) as { c: number };
           return {
             id: p.id,
@@ -1530,6 +1942,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── agent_status_set ─────────────────────────────────────────────────────
+      /**
+       * @note Duplicate case — unreachable at runtime; the earlier agent_status_set handles all calls.
+       * This implementation validates status values (active|idle|busy) and does a direct DB update
+       * with firePost side-effect vs. awaitPatch in the primary. Merge the stricter validation
+       * into the primary handler and remove this block.
+       */
       case 'agent_status_set': {
         const agentId = String(args?.agentId ?? '').trim();
         const status = String(args?.status ?? '').trim();
@@ -1564,6 +1982,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── campaign_context ─────────────────────────────────────────────────────
+      /**
+       * @note Duplicate case — unreachable at runtime; the earlier campaign_context handles all calls.
+       * This implementation explicitly checks if the campaigns table exists before querying,
+       * which is more defensive. Merge the table-existence check into the primary handler.
+       */
       case 'campaign_context': {
         // Check if campaigns table exists
         const hasTable = db.prepare(
@@ -1601,6 +2024,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               goal: c.goal ?? null,
               status: c.status,
               channels: (() => { try { return JSON.parse(c.channels ?? '[]'); } catch { return []; } })(),
+              contextNotes: c.contextNotes ?? null,
               updatedAt: c.updatedAt,
             };
             if (hasMembersTable) {
@@ -1619,7 +2043,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // ── Social Media Module Handlers ──────────────────────────────────────
+      // All X handlers read/write x_mentions, x_posts, x_campaigns, and
+      // x_analytics_snapshots. x_post_create and x_reply_queue auto-create
+      // approval rows (tier 3 = human review) so nothing posts without sign-off.
 
+      /** Returns x_mentions rows with JSON fields parsed (ai_replies, safety flags). */
       case 'x_mentions_list': {
         const a = (args || {}) as Record<string, any>;
         const conditions: string[] = [];
@@ -1630,17 +2058,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
         const limit = Math.min(a.limit || 20, 100);
         const rows = db.prepare(`SELECT * FROM x_mentions ${where} ORDER BY tweet_created_at DESC LIMIT ?`).all(...vals, limit) as any[];
+        const safeJson = (v: string | null, fallback: any = null) => {
+          if (!v) return fallback;
+          try { return JSON.parse(v); } catch { return fallback; }
+        };
         const parsed = rows.map((r: any) => ({
           ...r,
-          ai_replies: r.ai_replies ? JSON.parse(r.ai_replies) : null,
-          ai_replies_english: r.ai_replies_english ? JSON.parse(r.ai_replies_english) : null,
-          ai_safety_flags: r.ai_safety_flags ? JSON.parse(r.ai_safety_flags) : [],
+          ai_replies: safeJson(r.ai_replies),
+          ai_replies_english: safeJson(r.ai_replies_english),
+          ai_safety_flags: safeJson(r.ai_safety_flags, []),
           is_reply_to_us: !!r.is_reply_to_us,
           is_spam: !!r.is_spam,
         }));
         return { content: [{ type: 'text', text: JSON.stringify({ mentions: parsed, total: parsed.length }, null, 2) }] };
       }
 
+      /** Updates reply_status, notes, or is_spam on a mention. Only allowed fields are mutated. */
       case 'x_mention_update': {
         const a = (args || {}) as Record<string, any>;
         const allowed = ['reply_status', 'notes', 'is_spam'];
@@ -1654,6 +2087,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify({ ok: true, id: a.id }) }] };
       }
 
+      /**
+       * Inserts a draft post into x_posts (status="draft") and immediately creates
+       * a tier-3 approval in the approvals table. Returns both post_id and approval_id.
+       * The post is NOT sent to X until the approval is approved by a human.
+       */
       case 'x_post_create': {
         const a = (args || {}) as Record<string, any>;
         const id = `xp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -1674,6 +2112,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify({ ok: true, post_id: id, approval_id: apId, status: 'draft — queued for approval' }) }] };
       }
 
+      /** Lists x_posts ordered by created_at desc. Filter status: draft|pending|approved|scheduled|published. */
       case 'x_posts_list': {
         const a = (args || {}) as Record<string, any>;
         const where = a.status ? 'WHERE status = ?' : '';
@@ -1683,6 +2122,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify({ posts: rows, total: (rows as any[]).length }, null, 2) }] };
       }
 
+      /** Creates an X campaign with stages array. Status defaults to "draft". Stages are stored as JSON. */
       case 'x_campaign_create': {
         const a = (args || {}) as Record<string, any>;
         const id = `xc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -1694,6 +2134,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify({ ok: true, campaign_id: id, stages: (stages as any[]).length }) }] };
       }
 
+      /**
+       * Returns the latest analytics snapshot from x_analytics_snapshots plus recent
+       * published posts. Also attempts a live GET /api/x/analytics fetch (non-blocking).
+       */
       case 'x_analytics': {
         const a = (args || {}) as Record<string, any>;
         const snapshot = db.prepare('SELECT * FROM x_analytics_snapshots ORDER BY snapshot_date DESC LIMIT 1').get() as any;
@@ -1713,6 +2157,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify({ snapshot: snapshot || null, recentPosts, liveAnalytics: liveData, period: a.period || 'week' }, null, 2) }] };
       }
 
+      /** Proxies GET /api/x/search?q=&max= to the Next.js app. 15-second timeout. */
       case 'x_search': {
         const a = (args || {}) as Record<string, any>;
         const result = await new Promise<any>((resolve) => {
@@ -1728,6 +2173,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
 
+      /**
+       * Creates a tier-3 approval for a reply to a specific mention. The reply is NOT
+       * posted until human approval. Returns approval_id for polling with approval_check.
+       */
       case 'x_reply_queue': {
         const a = (args || {}) as Record<string, any>;
         const mention = db.prepare('SELECT * FROM x_mentions WHERE id = ?').get(a.mention_id) as any;
@@ -1746,6 +2195,80 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           Date.now(),
         );
         return { content: [{ type: 'text', text: JSON.stringify({ ok: true, approval_id: apId, tier, mention_id: mention.id, status: 'queued for human approval' }) }] };
+      }
+
+      // ── notes_list ───────────────────────────────────────────────────────
+      case 'notes_list': {
+        const limit = Math.min(Number(args?.limit) || 50, 200);
+        const sinceMs = Number(args?.since) || 0;
+
+        let query = 'SELECT * FROM notes';
+        const params: any[] = [];
+
+        if (sinceMs) {
+          query += ' WHERE createdAt >= ?';
+          params.push(sinceMs);
+        }
+
+        query += ' ORDER BY pinned DESC, createdAt DESC LIMIT ?';
+        params.push(limit);
+
+        const notes = db.prepare(query).all(...params);
+        return { content: [{ type: 'text', text: JSON.stringify({ notes, hint: notes.length === 0 ? 'No recent notes from the human. Proceed with the task.' : 'Review these notes for any relevant context or instructions before starting work.' }) }] };
+      }
+
+      // ── notes_create ──────────────────────────────────────────────────────
+      case 'notes_create': {
+        if (!args?.content) return { content: [{ type: 'text', text: JSON.stringify({ error: 'content is required' }) }], isError: true };
+        const id = `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const now = Date.now();
+        db.prepare('INSERT INTO notes (id, content, color, pinned, createdAt, updatedAt) VALUES (?, ?, ?, 0, ?, ?)').run(id, args.content, 'default', now, now);
+        return { content: [{ type: 'text', text: JSON.stringify({ ok: true, id }) }] };
+      }
+
+      // ── scratchpad tools ───────────────────────────────────────────────────
+
+      case 'scratchpad_list': {
+        const scratchDir = path.join(process.env.HOME || '/tmp', 'mission-control', 'scratchpad');
+        if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir, { recursive: true });
+        const files: { name: string; size: number; modified: string }[] = [];
+        for (const f of fs.readdirSync(scratchDir)) {
+          try {
+            const s = fs.statSync(path.join(scratchDir, f));
+            files.push({ name: f, size: s.size, modified: new Date(s.mtimeMs).toISOString() });
+          } catch { /* file deleted between readdir and stat — skip */ }
+        }
+        return { content: [{ type: 'text', text: files.length === 0 ? 'Scratchpad is empty.' : JSON.stringify(files, null, 2) }] };
+      }
+
+      case 'scratchpad_read': {
+        const filename = String(args?.filename || '');
+        if (!filename || filename.includes('/') || filename.includes('\\') || filename.includes('..')) {
+          return { content: [{ type: 'text', text: 'Invalid filename — no path separators or .. allowed' }], isError: true };
+        }
+        const scratchDir = path.join(process.env.HOME || '/tmp', 'mission-control', 'scratchpad');
+        const filePath = path.join(scratchDir, filename);
+        try {
+          const content = fs.readFileSync(filePath, 'utf-8');
+          return { content: [{ type: 'text', text: content }] };
+        } catch {
+          return { content: [{ type: 'text', text: `File not found or unreadable: ${filename}` }], isError: true };
+        }
+      }
+
+      case 'scratchpad_write': {
+        const filename = String(args?.filename || '');
+        const content = String(args?.content || '');
+        if (!filename || filename.includes('/') || filename.includes('\\') || filename.includes('..')) {
+          return { content: [{ type: 'text', text: 'Invalid filename — no path separators or .. allowed' }], isError: true };
+        }
+        if (content.length > 10240) {
+          return { content: [{ type: 'text', text: `Content too large: ${content.length} bytes (max 10KB)` }], isError: true };
+        }
+        const scratchDir = path.join(process.env.HOME || '/tmp', 'mission-control', 'scratchpad');
+        if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir, { recursive: true });
+        fs.writeFileSync(path.join(scratchDir, filename), content, 'utf-8');
+        return { content: [{ type: 'text', text: `Written ${content.length} bytes to scratchpad/${filename}` }] };
       }
 
       default:

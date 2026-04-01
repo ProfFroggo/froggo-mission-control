@@ -1,4 +1,5 @@
 import { Users, Bot, CheckSquare, Activity, Gamepad2, MessageCircle, Monitor, CheckCircle, Settings, Send as SendPlane } from 'lucide-react';
+import { Text, Flex, Box } from '@radix-ui/themes';
 import { formatTimeAgo } from '../utils/formatting';
 import { useStore } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
@@ -20,14 +21,15 @@ export default function QuickStatsWidget() {
   // Show loading state while initial data is loading
   if (loading.tasks || loading.agents) {
     return (
-      <div className="bg-mission-control-surface rounded-lg border border-mission-control-border overflow-hidden">
-        <div className="p-4 border-b border-mission-control-border">
-          <h2 className="font-semibold flex items-center gap-2">
-            <Activity size={16} className="text-mission-control-accent" /> Quick Stats
-          </h2>
-        </div>
+      <Box className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
+        <Box p="4" className="border-b border-mission-control-border">
+          <Flex align="center" gap="2">
+            <Activity size={16} className="text-mission-control-accent" />
+            <Text weight="bold">Quick Stats</Text>
+          </Flex>
+        </Box>
         <WidgetLoading variant="skeleton" lines={4} />
-      </div>
+      </Box>
     );
   }
 
@@ -45,11 +47,11 @@ export default function QuickStatsWidget() {
 
   // Tasks Today - completed vs total
   const today = new Date().toDateString();
-  const tasksToday = tasks.filter(t => 
+  const tasksToday = tasks.filter(t =>
     new Date(t.createdAt).toDateString() === today ||
     new Date(t.updatedAt).toDateString() === today
   );
-  const completedToday = tasks.filter(t => 
+  const completedToday = tasks.filter(t =>
     t.status === 'done' && new Date(t.updatedAt).toDateString() === today
   );
   const totalToday = tasksToday.length;
@@ -72,51 +74,56 @@ export default function QuickStatsWidget() {
   };
 
   return (
-    <div className="bg-mission-control-surface rounded-lg border border-mission-control-border overflow-hidden">
-      <div className="p-4 border-b border-mission-control-border">
-        <h2 className="font-semibold flex items-center gap-2">
-          <Activity size={16} className="text-mission-control-accent" /> Quick Stats
-        </h2>
-      </div>
+    <Box className="bg-mission-control-surface rounded-xl border border-mission-control-border overflow-hidden">
+      <Box p="4" className="border-b border-mission-control-border">
+        <Flex align="center" gap="2">
+          <Activity size={16} className="text-mission-control-accent" />
+          <Text weight="bold">Quick Stats</Text>
+        </Flex>
+      </Box>
 
-      <div className="p-4 space-y-4">
+      <Box p="4" className="space-y-4">
         {/* Active Sessions */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
+        <Box className="space-y-2">
+          <Flex align="center" gap="2">
             <Users size={16} className="text-review" />
-            <span className="text-sm font-medium text-mission-control-text-dim">Active Sessions</span>
-            <span className="ml-auto text-lg font-bold">{sessions.length}</span>
-          </div>
-          <div className="flex flex-wrap gap-2 ml-6">
+            <span className="text-xs text-mission-control-text-dim mt-0.5">Active Sessions</span>
+            <span className="ml-auto text-2xl font-bold tabular-nums text-mission-control-text">{sessions.length}</span>
+          </Flex>
+          <Flex gap="2" ml="6" className="flex-wrap">
             {Object.entries(sessionsByChannel).map(([channel, count]) => (
-              <div
+              <Flex
                 key={channel}
-                className="flex items-center gap-1.5 px-2 py-1 bg-mission-control-bg/50 rounded-md text-xs"
+                align="center"
+                gap="1"
+                px="2"
+                py="1"
+                className="bg-mission-control-bg/50 rounded-md text-xs"
               >
                 <span>{channelIcons[channel] || <Monitor size={14} />}</span>
                 <span className={channelColors[channel] || 'text-mission-control-text-dim'}>
                   {channel}
                 </span>
                 <span className="text-mission-control-text-dim">×{count}</span>
-              </div>
+              </Flex>
             ))}
             {Object.keys(sessionsByChannel).length === 0 && (
               <span className="text-xs text-mission-control-text-dim">No active sessions</span>
             )}
-          </div>
-        </div>
+          </Flex>
+        </Box>
 
         {/* Running Agents */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
+        <Box className="space-y-2">
+          <Flex align="center" gap="2">
             <Bot size={16} className="text-info" />
-            <span className="text-sm font-medium text-mission-control-text-dim">Running Agents</span>
-            <span className="ml-auto text-lg font-bold">{totalAgents}</span>
-          </div>
-          <div className="space-y-1 ml-6">
+            <span className="text-xs text-mission-control-text-dim mt-0.5">Running Agents</span>
+            <span className="ml-auto text-2xl font-bold tabular-nums text-mission-control-text">{totalAgents}</span>
+          </Flex>
+          <Box ml="6" className="space-y-1">
             {busyAgents.length > 0 ? (
               busyAgents.map(agent => (
-                <div key={agent.id} className="flex items-center gap-2 text-xs overflow-hidden">
+                <Flex key={agent.id} align="center" gap="2" className="text-xs overflow-hidden">
                   <AgentAvatar agentId={agent.id} fallbackEmoji={agent.avatar} size="xs" />
                   <span className="text-mission-control-text truncate min-w-0 shrink">{agent.name}</span>
                   {agent.currentTaskId && (
@@ -124,7 +131,7 @@ export default function QuickStatsWidget() {
                       {tasks.find(t => t.id === agent.currentTaskId)?.title}
                     </span>
                   )}
-                </div>
+                </Flex>
               ))
             ) : (
               <span className="text-xs text-mission-control-text-dim">
@@ -132,80 +139,79 @@ export default function QuickStatsWidget() {
               </span>
             )}
             {subagentSessions.length > 0 && (
-              <div className="pt-1 border-t border-mission-control-border/50">
-                <div className="text-xs text-mission-control-text-dim mb-1">
+              <Box pt="1" className="border-t border-mission-control-border/50">
+                <Box className="text-xs text-mission-control-text-dim mb-1">
                   + {subagentSessions.length} sub-agent{subagentSessions.length !== 1 ? 's' : ''}
-                </div>
+                </Box>
                 {subagentSessions.slice(0, 2).map(session => (
-                  <div key={session.key} className="flex items-center gap-2 text-xs overflow-hidden">
+                  <Flex key={session.key} align="center" gap="2" className="text-xs overflow-hidden">
                     <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
                     <span className="text-mission-control-text truncate min-w-0 flex-1">{session.displayName}</span>
-                  </div>
+                  </Flex>
                 ))}
-              </div>
+              </Box>
             )}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         {/* Tasks Today */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
+        <Box className="space-y-2">
+          <Flex align="center" gap="2">
             <CheckSquare size={16} className="text-success" />
-            <span className="text-sm font-medium text-mission-control-text-dim">Tasks Today</span>
-            <span className="ml-auto text-lg font-bold">
+            <span className="text-xs text-mission-control-text-dim mt-0.5">Tasks Today</span>
+            <span className="ml-auto text-2xl font-bold tabular-nums text-mission-control-text">
               {completedToday.length}/{totalToday}
             </span>
-          </div>
-          <div className="ml-6">
+          </Flex>
+          <Box ml="6">
             {totalToday > 0 ? (
-              <div className="space-y-1">
-                <div className="w-full bg-mission-control-border rounded-full h-2 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-green-500 to-green-400 transition-all"
+              <Box className="space-y-1">
+                <Box className="w-full bg-mission-control-border rounded-full h-2 overflow-hidden">
+                  <Box
+                    className="h-full bg-success transition-colors"
                     style={{ width: `${(completedToday.length / totalToday) * 100}%` }}
                   />
-                </div>
-                <div className="flex justify-between text-xs text-mission-control-text-dim">
+                </Box>
+                <Flex justify="between" className="text-xs text-mission-control-text-dim">
                   <span>{completedToday.length} completed</span>
                   <span>{totalToday - completedToday.length} remaining</span>
-                </div>
-              </div>
+                </Flex>
+              </Box>
             ) : (
               <span className="text-xs text-mission-control-text-dim">No tasks created today</span>
             )}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
         {/* Recent Activity */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
+        <Box className="space-y-2">
+          <Flex align="center" gap="2">
             <Activity size={16} className="text-warning" />
-            <span className="text-sm font-medium text-mission-control-text-dim">Recent Activity</span>
-          </div>
-          <div className="ml-6 space-y-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Recent Activity</span>
+          </Flex>
+          <Box ml="6" className="space-y-2">
             {recentActivities.length > 0 ? (
               recentActivities.map((activity) => (
-                <div key={activity.id} className="text-xs overflow-hidden">
-                  <div className="flex items-start gap-2 min-w-0">
-                    <span className="shrink-0">
-                      {activity.type === 'chat' ? <MessageCircle size={14} /> :
-                       activity.type === 'task' ? <CheckCircle size={14} /> :
-                       activity.type === 'agent' ? <Bot size={14} /> : <Settings size={14} />}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-mission-control-text line-clamp-2">{activity.message}</p>
-                      <p className="text-mission-control-text-dim whitespace-nowrap">{formatTimeAgo(activity.timestamp)}</p>
-                    </div>
+                <div key={activity.id} className="flex items-start gap-3 py-2.5 border-b border-mission-control-border/40 last:border-0">
+                  <span className="w-6 h-6 rounded-md flex items-center justify-center bg-mission-control-border/30 flex-shrink-0">
+                    {activity.type === 'chat' ? <MessageCircle size={12} className="text-mission-control-text-dim" /> :
+                     activity.type === 'task' ? <CheckCircle size={12} className="text-mission-control-text-dim" /> :
+                     activity.type === 'agent' ? <Bot size={12} className="text-mission-control-text-dim" /> :
+                     <Settings size={12} className="text-mission-control-text-dim" />}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-mission-control-text line-clamp-2">{activity.message}</p>
+                    <p className="text-[10px] tabular-nums text-mission-control-text-dim mt-0.5">{formatTimeAgo(activity.timestamp)}</p>
                   </div>
                 </div>
               ))
             ) : (
-              <span className="text-xs text-mission-control-text-dim">No recent activity</span>
+              <div className="text-xs text-mission-control-text-dim text-center py-6">No recent activity</div>
             )}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 

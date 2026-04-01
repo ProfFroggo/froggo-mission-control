@@ -12,25 +12,25 @@ export interface AgentTheme {
 }
 
 export const agentThemes: Record<string, AgentTheme> = {
-  'mission-control':     { color: '#4CAF50', border: 'border-green-500/40',  bg: 'bg-green-500/8',   text: 'text-green-400',  ring: 'ring-green-500/50',  dot: 'bg-green-400', pic: 'mission-control.webp' },
-  main:       { color: '#4CAF50', border: 'border-green-500/40',  bg: 'bg-green-500/8',   text: 'text-green-400',  ring: 'ring-green-500/50',  dot: 'bg-green-400', pic: 'mission-control.webp' },
-  coder:      { color: '#2196F3', border: 'border-blue-500/40',   bg: 'bg-blue-500/8',    text: 'text-blue-400',   ring: 'ring-blue-500/50',   dot: 'bg-blue-400',  pic: 'coder.webp' },
-  researcher: { color: '#FF9800', border: 'border-orange-500/40', bg: 'bg-orange-500/8',  text: 'text-orange-400', ring: 'ring-orange-500/50', dot: 'bg-orange-400', pic: 'researcher.webp' },
-  writer:     { color: '#9C27B0', border: 'border-purple-500/40', bg: 'bg-purple-500/8',  text: 'text-purple-400', ring: 'ring-purple-500/50', dot: 'bg-purple-400', pic: 'writer.webp' },
-  chief:      { color: '#F44336', border: 'border-red-500/40',    bg: 'bg-red-500/8',     text: 'text-red-400',    ring: 'ring-red-500/50',    dot: 'bg-red-400',   pic: 'chief.webp' },
-  hr:         { color: '#00897B', border: 'border-teal-500/40',   bg: 'bg-teal-500/8',    text: 'text-teal-400',   ring: 'ring-teal-500/50',   dot: 'bg-teal-400',  pic: 'hr.webp' },
-  inbox:      { color: '#F59E0B', border: 'border-amber-500/40',  bg: 'bg-amber-500/8',   text: 'text-amber-400',  ring: 'ring-amber-500/50',  dot: 'bg-amber-400', pic: 'inbox.webp' },
-  designer:   { color: '#EC4899', border: 'border-pink-500/40',   bg: 'bg-pink-500/8',    text: 'text-pink-400',   ring: 'ring-pink-500/50',   dot: 'bg-pink-400',  pic: 'designer.webp' },
-  social_media_manager: { color: '#1DA1F2', border: 'border-sky-500/40', bg: 'bg-sky-500/8', text: 'text-sky-400', ring: 'ring-sky-500/50', dot: 'bg-sky-400', pic: 'social_media_manager.webp' },
-  clara:    { color: '#6B46C1', border: 'border-violet-500/40', bg: 'bg-violet-500/8', text: 'text-violet-400', ring: 'ring-violet-500/50', dot: 'bg-violet-400', pic: 'clara.webp' },
-  'growth-director': { color: '#E65100', border: 'border-amber-600/40', bg: 'bg-amber-600/8', text: 'text-amber-400', ring: 'ring-amber-600/50', dot: 'bg-amber-400', pic: 'growth-director.webp' },
-  'social-manager': { color: '#1DA1F2', border: 'border-sky-500/40', bg: 'bg-sky-500/8', text: 'text-sky-400', ring: 'ring-sky-500/50', dot: 'bg-sky-400', pic: 'social-manager.webp' },
-  voice: { color: '#E91E63', border: 'border-rose-500/40', bg: 'bg-rose-500/8', text: 'text-rose-400', ring: 'ring-rose-500/50', dot: 'bg-rose-400', pic: 'voice.webp' },
-  'degen-frog': { color: '#00BCD4', border: 'border-cyan-500/40', bg: 'bg-cyan-500/8', text: 'text-cyan-400', ring: 'ring-cyan-500/50', dot: 'bg-cyan-400', pic: 'degen-frog.webp' },
-  jess: { color: '#8B5CF6', border: 'border-indigo-500/40', bg: 'bg-indigo-500/8', text: 'text-indigo-400', ring: 'ring-indigo-500/50', dot: 'bg-indigo-400', pic: 'jess.webp' },
-  'senior-coder': { color: '#1565C0', border: 'border-blue-700/40', bg: 'bg-blue-700/8', text: 'text-blue-300', ring: 'ring-blue-700/50', dot: 'bg-blue-300', pic: 'senior-coder.webp' },
-  'finance-manager':  { color: '#F9A825', border: 'border-yellow-600/40', bg: 'bg-yellow-600/8',  text: 'text-yellow-400', ring: 'ring-yellow-600/50', dot: 'bg-yellow-400', pic: 'finance-manager.webp' },
-  'discord-manager':  { color: '#5865F2', border: 'border-indigo-500/40', bg: 'bg-indigo-500/8', text: 'text-indigo-400', ring: 'ring-indigo-500/50', dot: 'bg-indigo-400', pic: 'discord-manager.webp' },
+  'mission-control':     { color: '#4CAF50', border: 'border-[#4CAF5066]',  bg: 'bg-[#4CAF5014]',   text: 'text-[#4CAF50]',  ring: 'ring-[#4CAF5080]',  dot: 'bg-[#4CAF50]', pic: 'mission-control.webp' },
+  main:       { color: '#4CAF50', border: 'border-[#4CAF5066]',  bg: 'bg-[#4CAF5014]',   text: 'text-[#4CAF50]',  ring: 'ring-[#4CAF5080]',  dot: 'bg-[#4CAF50]', pic: 'mission-control.webp' },
+  coder:      { color: '#2196F3', border: 'border-[#2196F366]',   bg: 'bg-[#2196F314]',    text: 'text-[#2196F3]',   ring: 'ring-[#2196F380]',   dot: 'bg-[#2196F3]',  pic: 'coder.webp' },
+  researcher: { color: '#FF9800', border: 'border-[#FF980066]', bg: 'bg-[#FF980014]',  text: 'text-[#FF9800]', ring: 'ring-[#FF980080]', dot: 'bg-[#FF9800]', pic: 'researcher.webp' },
+  writer:     { color: '#9C27B0', border: 'border-[#9C27B066]', bg: 'bg-[#9C27B014]',  text: 'text-[#9C27B0]', ring: 'ring-[#9C27B080]', dot: 'bg-[#9C27B0]', pic: 'writer.webp' },
+  chief:      { color: '#F44336', border: 'border-[#F4433666]',    bg: 'bg-[#F4433614]',     text: 'text-[#F44336]',    ring: 'ring-[#F4433680]',    dot: 'bg-[#F44336]',   pic: 'chief.webp' },
+  hr:         { color: '#00897B', border: 'border-[#00897B66]',   bg: 'bg-[#00897B14]',    text: 'text-[#00897B]',   ring: 'ring-[#00897B80]',   dot: 'bg-[#00897B]',  pic: 'hr.webp' },
+  inbox:      { color: '#F59E0B', border: 'border-[#F59E0B66]',  bg: 'bg-[#F59E0B14]',   text: 'text-[#F59E0B]',  ring: 'ring-[#F59E0B80]',  dot: 'bg-[#F59E0B]', pic: 'inbox.webp' },
+  designer:   { color: '#EC4899', border: 'border-[#EC489966]',   bg: 'bg-[#EC489914]',    text: 'text-[#EC4899]',   ring: 'ring-[#EC489980]',   dot: 'bg-[#EC4899]',  pic: 'designer.webp' },
+  social_media_manager: { color: '#1DA1F2', border: 'border-[#1DA1F266]', bg: 'bg-[#1DA1F214]', text: 'text-[#1DA1F2]', ring: 'ring-[#1DA1F280]', dot: 'bg-[#1DA1F2]', pic: 'social_media_manager.webp' },
+  clara:    { color: '#6B46C1', border: 'border-[#6B46C166]', bg: 'bg-[#6B46C114]', text: 'text-[#6B46C1]', ring: 'ring-[#6B46C180]', dot: 'bg-[#6B46C1]', pic: 'clara.webp' },
+  'growth-director': { color: '#E65100', border: 'border-[#E6510066]', bg: 'bg-[#E6510014]', text: 'text-[#E65100]', ring: 'ring-[#E6510080]', dot: 'bg-[#E65100]', pic: 'growth-director.webp' },
+  'social-manager': { color: '#1DA1F2', border: 'border-[#1DA1F266]', bg: 'bg-[#1DA1F214]', text: 'text-[#1DA1F2]', ring: 'ring-[#1DA1F280]', dot: 'bg-[#1DA1F2]', pic: 'social-manager.webp' },
+  voice: { color: '#E91E63', border: 'border-[#E91E6366]', bg: 'bg-[#E91E6314]', text: 'text-[#E91E63]', ring: 'ring-[#E91E6380]', dot: 'bg-[#E91E63]', pic: 'voice.webp' },
+  'degen-frog': { color: '#00BCD4', border: 'border-[#00BCD466]', bg: 'bg-[#00BCD414]', text: 'text-[#00BCD4]', ring: 'ring-[#00BCD480]', dot: 'bg-[#00BCD4]', pic: 'degen-frog.webp' },
+  jess: { color: '#8B5CF6', border: 'border-[#8B5CF666]', bg: 'bg-[#8B5CF614]', text: 'text-[#8B5CF6]', ring: 'ring-[#8B5CF680]', dot: 'bg-[#8B5CF6]', pic: 'jess.webp' },
+  'senior-coder': { color: '#1565C0', border: 'border-[#1565C066]', bg: 'bg-[#1565C014]', text: 'text-[#1565C0]', ring: 'ring-[#1565C080]', dot: 'bg-[#1565C0]', pic: 'senior-coder.webp' },
+  'finance-manager':  { color: '#F9A825', border: 'border-[#F9A82566]', bg: 'bg-[#F9A82514]',  text: 'text-[#F9A825]', ring: 'ring-[#F9A82580]', dot: 'bg-[#F9A825]', pic: 'finance-manager.webp' },
+  'discord-manager':  { color: '#5865F2', border: 'border-[#5865F266]', bg: 'bg-[#5865F214]', text: 'text-[#5865F2]', ring: 'ring-[#5865F280]', dot: 'bg-[#5865F2]', pic: 'discord-manager.webp' },
 };
 
 export const defaultTheme: AgentTheme = {
@@ -90,14 +90,14 @@ export function registerAgentTheme(id: string, color: string, pic?: string) {
 }
 
 const FALLBACK_PALETTE = [
-  { color: '#4CAF50', border: 'border-green-500/40',  bg: 'bg-green-500/8',   text: 'text-green-400',  ring: 'ring-green-500/50',  dot: 'bg-green-400' },
-  { color: '#2196F3', border: 'border-blue-500/40',   bg: 'bg-blue-500/8',    text: 'text-blue-400',   ring: 'ring-blue-500/50',   dot: 'bg-blue-400' },
-  { color: '#9C27B0', border: 'border-purple-500/40', bg: 'bg-purple-500/8',  text: 'text-purple-400', ring: 'ring-purple-500/50', dot: 'bg-purple-400' },
-  { color: '#F44336', border: 'border-red-500/40',    bg: 'bg-red-500/8',     text: 'text-red-400',    ring: 'ring-red-500/50',    dot: 'bg-red-400' },
-  { color: '#FF9800', border: 'border-orange-500/40', bg: 'bg-orange-500/8',  text: 'text-orange-400', ring: 'ring-orange-500/50', dot: 'bg-orange-400' },
-  { color: '#00BCD4', border: 'border-cyan-500/40',   bg: 'bg-cyan-500/8',    text: 'text-cyan-400',   ring: 'ring-cyan-500/50',   dot: 'bg-cyan-400' },
-  { color: '#E91E63', border: 'border-rose-500/40',   bg: 'bg-rose-500/8',    text: 'text-rose-400',   ring: 'ring-rose-500/50',   dot: 'bg-rose-400' },
-  { color: '#00897B', border: 'border-teal-500/40',   bg: 'bg-teal-500/8',    text: 'text-teal-400',   ring: 'ring-teal-500/50',   dot: 'bg-teal-400' },
+  { color: '#4CAF50', border: 'border-[#4CAF5066]',  bg: 'bg-[#4CAF5014]',   text: 'text-[#4CAF50]',  ring: 'ring-[#4CAF5080]',  dot: 'bg-[#4CAF50]' },
+  { color: '#2196F3', border: 'border-[#2196F366]',   bg: 'bg-[#2196F314]',    text: 'text-[#2196F3]',   ring: 'ring-[#2196F380]',   dot: 'bg-[#2196F3]' },
+  { color: '#9C27B0', border: 'border-[#9C27B066]', bg: 'bg-[#9C27B014]',  text: 'text-[#9C27B0]', ring: 'ring-[#9C27B080]', dot: 'bg-[#9C27B0]' },
+  { color: '#F44336', border: 'border-[#F4433666]',    bg: 'bg-[#F4433614]',     text: 'text-[#F44336]',    ring: 'ring-[#F4433680]',    dot: 'bg-[#F44336]' },
+  { color: '#FF9800', border: 'border-[#FF980066]', bg: 'bg-[#FF980014]',  text: 'text-[#FF9800]', ring: 'ring-[#FF980080]', dot: 'bg-[#FF9800]' },
+  { color: '#00BCD4', border: 'border-[#00BCD466]',   bg: 'bg-[#00BCD414]',    text: 'text-[#00BCD4]',   ring: 'ring-[#00BCD480]',   dot: 'bg-[#00BCD4]' },
+  { color: '#E91E63', border: 'border-[#E91E6366]',   bg: 'bg-[#E91E6314]',    text: 'text-[#E91E63]',   ring: 'ring-[#E91E6380]',   dot: 'bg-[#E91E63]' },
+  { color: '#00897B', border: 'border-[#00897B66]',   bg: 'bg-[#00897B14]',    text: 'text-[#00897B]',   ring: 'ring-[#00897B80]',   dot: 'bg-[#00897B]' },
 ];
 
 function hashId(id: string): number {

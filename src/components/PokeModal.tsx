@@ -12,12 +12,15 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Send, Loader2, MessageCircle, Activity, AlertTriangle } from 'lucide-react';
+import { X, Send, MessageCircle, Activity, AlertTriangle, Hand } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import BaseModal from './BaseModal';
 import MarkdownMessage from './MarkdownMessage';
 import { useStore } from '../store/store';
 import { chatApi, streamMessage } from '../lib/api';
 import { gateway } from '../lib/gateway';
+import { extractAllArtifacts, generateArtifactTitle } from '../utils/artifactExtractor';
+import { useArtifactStore } from '../store/artifactStore';
 
 interface PokeModalProps {
   taskId: string;
@@ -41,7 +44,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const streamCleanupRef = useRef<(() => void) | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -101,7 +104,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
     setLoading(true);
     setMessages([{
       role: 'system',
-      content: '🫵 Poking for status update...',
+      content: 'Poking for status update...',
       timestamp: Date.now(),
     }]);
 
@@ -119,7 +122,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
 
         const userMsg: PokeMessage = {
           role: 'user',
-          content: `🫵 What's the status of "${taskTitle}"?`,
+          content: `What's the status of "${taskTitle}"?`,
           timestamp: Date.now() - 1000,
         };
         const responseMessages: PokeMessage[] = [userMsg];
@@ -141,6 +144,17 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
             timestamp: Date.now(),
           };
           responseMessages.push(assistantMsg);
+          extractAllArtifacts(assistantMsg.content).forEach(a => {
+            useArtifactStore.getState().addArtifact({
+              type: a.type,
+              title: generateArtifactTitle(a),
+              content: a.content,
+              messageId: `poke-${taskId}-${assistantMsg.timestamp}`,
+              sessionId: `poke:${taskId}`,
+              timestamp: assistantMsg.timestamp,
+              metadata: a.metadata,
+            });
+          });
           // Persist assistant response
           fetch('/api/chat', {
             method: 'POST',
@@ -214,6 +228,17 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
                 content: finalContent,
                 timestamp: ts,
               }]);
+              extractAllArtifacts(finalContent).forEach(a => {
+                useArtifactStore.getState().addArtifact({
+                  type: a.type,
+                  title: generateArtifactTitle(a),
+                  content: a.content,
+                  messageId: `poke-${taskId}-${ts}`,
+                  sessionId: `poke:${taskId}`,
+                  timestamp: ts,
+                  metadata: a.metadata,
+                });
+              });
               // Persist assistant reply
               fetch('/api/chat', {
                 method: 'POST',
@@ -232,7 +257,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
           if (data.state === 'error') {
             setMessages(prev => [...prev, {
               role: 'system',
-              content: `⚠️ ${data.error || 'Error'}`,
+              content: `${data.error || 'Error'}`,
               timestamp: Date.now(),
             }]);
             setStreamingContent('');
@@ -310,7 +335,7 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
     } catch (e: unknown) {
       setMessages(prev => [...prev, {
         role: 'system',
-        content: `⚠️ ${(e as Error).message || 'Failed to send'}`,
+        content: `${(e as Error).message || 'Failed to send'}`,
         timestamp: Date.now(),
       }]);
       setSending(false);
@@ -330,21 +355,21 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
       case 'review': return 'text-warning';
       case 'human-review': return 'text-error';
       case 'done': return 'text-success';
-      default: return 'text-mission-control-text-muted';
+      default: return 'text-mission-control-text-dim';
     }
   };
 
   return (
     <BaseModal isOpen={true} onClose={onClose} size="lg" className="flex flex-col">
       {/* Header with task context */}
-      <div className="flex items-center justify-between p-4 border-b border-mission-control-border bg-mission-control-bg-alt/50">
+      <Flex align="center" justify="between" className="p-4 border-b border-mission-control-border bg-mission-control-border/20/50">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="text-2xl">🫵</span>
+          <Hand size={24} className="text-mission-control-accent" />
           <div className="min-w-0">
             <h2 className="text-base font-semibold text-mission-control-text truncate">
               Poke: {taskTitle}
             </h2>
-            <div className="flex items-center gap-3 text-xs text-mission-control-text-muted">
+            <Flex align="center" gap="3" className="text-xs text-mission-control-text-dim">
               {task && (
                 <>
                   <span className={`flex items-center gap-1 ${getStatusColor(task.status)}`}>
@@ -365,38 +390,40 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
                   )}
                 </>
               )}
-            </div>
+            </Flex>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg hover:bg-mission-control-border/50 text-mission-control-text-muted hover:text-mission-control-text transition-colors"
+          aria-label="Close"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
         >
           <X size={18} />
         </button>
-      </div>
+      </Flex>
 
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] max-h-[500px]">
         {/* History loading state */}
         {!historyLoaded && (
-          <div className="flex items-center justify-center h-full text-mission-control-text-muted text-sm">
-            <Loader2 size={16} className="animate-spin mr-2" />
-            Loading...
+          <div className="flex items-center justify-center h-full gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
           </div>
         )}
         {historyLoaded && messages.map((msg) => (
-          <div
+          <Flex
             key={`${msg.role}-${msg.timestamp}`}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            justify={msg.role === 'user' ? 'end' : 'start'}
           >
             <div
               className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
                 msg.role === 'user'
                   ? 'bg-mission-control-accent/20 text-mission-control-accent ml-auto rounded-br-md'
                   : msg.role === 'system'
-                  ? 'bg-mission-control-border/30 text-mission-control-text-muted italic text-xs'
-                  : 'bg-mission-control-bg-alt text-mission-control-text rounded-bl-md'
+                  ? 'bg-mission-control-border/30 text-mission-control-text-dim italic text-xs'
+                  : 'bg-mission-control-border/20 text-mission-control-text rounded-bl-md'
               }`}
             >
               {msg.role === 'assistant' ? (
@@ -405,25 +432,30 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
                 msg.content
               )}
             </div>
-          </div>
+          </Flex>
         ))}
 
         {/* Streaming content */}
         {streamingContent && (
-          <div className="flex justify-start">
-            <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 text-sm bg-mission-control-bg-alt text-mission-control-text">
+          <Flex justify="start">
+            <div className="max-w-[85%] rounded-2xl rounded-bl-md px-4 py-2.5 text-sm bg-mission-control-border/20 text-mission-control-text">
               <MarkdownMessage content={streamingContent} />
             </div>
-          </div>
+          </Flex>
         )}
 
         {/* Loading indicator */}
         {(loading || sending) && !streamingContent && (
-          <div className="flex justify-start">
-            <div className="rounded-2xl rounded-bl-md px-4 py-2.5 bg-mission-control-bg-alt">
-              <Loader2 size={16} className="animate-spin text-mission-control-text-muted" />
+          <Flex justify="start">
+            <div className="rounded-2xl rounded-bl-md px-4 py-3 bg-mission-control-border/20">
+              <Flex gap="1" align="center">
+                <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-mission-control-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="text-xs text-mission-control-text-dim ml-1">thinking...</span>
+              </Flex>
             </div>
-          </div>
+          </Flex>
         )}
 
         <div ref={messagesEndRef} />
@@ -431,27 +463,29 @@ export default function PokeModal({ taskId, taskTitle, onClose }: PokeModalProps
 
       {/* Input area */}
       <div className="p-3 border-t border-mission-control-border bg-mission-control-bg">
-        <div className="flex items-center gap-2">
-          <input
+        <Flex align="center" gap="2">
+          <textarea
             ref={inputRef}
-            type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={sending ? 'Waiting for response...' : 'Ask about this task...'}
             disabled={sending || loading}
-            className="flex-1 px-4 py-2.5 rounded-lg bg-mission-control-bg-alt border border-mission-control-border text-mission-control-text text-sm focus:outline-none focus:border-mission-control-accent/50 disabled:opacity-50"
+            rows={2}
+            className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-[14px] px-4 py-3 text-sm resize-none text-mission-control-text placeholder:text-mission-control-text-dim outline-none focus:border-[var(--mission-control-accent)] focus:ring-2 focus:ring-[var(--mission-control-accent)]/20 transition-colors"
+            style={{ minHeight: '44px', maxHeight: '120px' }}
           />
           <button
             onClick={sendMessage}
             disabled={!input.trim() || sending || loading}
-            className="p-2.5 rounded-lg bg-mission-control-accent/20 text-mission-control-accent hover:bg-mission-control-accent/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            aria-label="Send"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Send size={16} />
           </button>
-        </div>
-        <p className="text-[10px] text-mission-control-text-muted/40 mt-1.5 text-center">
-          Task-scoped conversation • Responses have personality 🐸
+        </Flex>
+        <p className="text-[10px] text-mission-control-text-dim/70 mt-1.5 text-center">
+          Task-scoped conversation
         </p>
       </div>
     </BaseModal>

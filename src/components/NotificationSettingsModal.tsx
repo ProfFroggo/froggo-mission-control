@@ -5,10 +5,10 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Bell, BellOff, Volume2, VolumeX, Moon, Clock,
-  Hash, AlertCircle, X, Settings, Save, Trash2,
-  ZapOff, MessageSquare
+  Bell, BellOff, Volume2, VolumeX, Moon,
+  X, Settings, Save, Trash2,
 } from 'lucide-react';
+import { Button, Flex, TextField, Select, TextArea, Switch } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { settingsApi } from '../lib/api';
 
@@ -18,10 +18,10 @@ interface NotificationSettingsModalProps {
   onClose: () => void;
 }
 
-export default function NotificationSettingsModal({ 
-  sessionKey, 
-  sessionName, 
-  onClose 
+export default function NotificationSettingsModal({
+  sessionKey,
+  sessionName,
+  onClose
 }: NotificationSettingsModalProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -69,13 +69,13 @@ export default function NotificationSettingsModal({
 
       // Load global defaults
       const defaultsResult = await settingsApi.get('notifications.defaults').catch(() => ({ success: false }));
-      
+
       if (result?.value || (result?.success && result?.settings)) {
         // Has custom settings
         setHasCustomSettings(true);
         const s = result.value || result.settings;
         setSettings(s);
-        
+
         setNotificationLevel(s.notification_level || 'all');
         setSoundEnabled(s.sound_enabled === 1);
         setSoundType(s.sound_type || 'default');
@@ -95,7 +95,7 @@ export default function NotificationSettingsModal({
         setHasCustomSettings(false);
         const d = defaultsResult.value || defaultsResult?.defaults;
         setGlobalDefaults(d);
-        
+
         setNotificationLevel(d.default_notification_level || 'all');
         setSoundEnabled(d.default_sound_enabled === 1);
         setSoundType(d.default_sound_type || 'default');
@@ -151,7 +151,7 @@ export default function NotificationSettingsModal({
 
   const handleResetToDefaults = async () => {
     if (!confirm('Reset this conversation to global notification defaults?')) return;
-    
+
     setSaving(true);
     try {
       const result = await settingsApi.set(`notifications.${sessionKey}`, null);
@@ -169,14 +169,14 @@ export default function NotificationSettingsModal({
   const handleQuickMute = async (hours: number) => {
     const until = new Date();
     until.setHours(until.getHours() + hours);
-    
+
     setSaving(true);
     try {
       const result = await settingsApi.set(`notifications.${sessionKey}`, {
         notification_level: 'none',
         mute_until: until.toISOString(),
       });
-      
+
       if (result?.success) {
         setMuteUntil(until.toISOString());
         setNotificationLevel('none');
@@ -196,7 +196,7 @@ export default function NotificationSettingsModal({
         notification_level: 'all',
         mute_until: null,
       });
-      
+
       if (result?.success) {
         setMuteUntil(null);
         setNotificationLevel('all');
@@ -224,32 +224,32 @@ export default function NotificationSettingsModal({
 
   if (loading) {
     return (
-      <div className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 modal-backdrop-enter">
-        <div className="glass-modal rounded-lg p-8 shadow-xl modal-content-enter">
-          <div className="text-center">Loading settings...</div>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 modal-backdrop-enter">
+        <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl p-8 shadow-2xl modal-content-enter">
+          <div className="text-center text-sm text-mission-control-text-dim">Loading settings...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div 
-      className="fixed inset-0 modal-backdrop backdrop-blur-md flex items-center justify-center z-50 p-4 modal-backdrop-enter" 
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 modal-backdrop-enter"
       onClick={onClose}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClose(); } }}
       role="button"
       tabIndex={0}
       aria-label="Close modal"
     >
-      <div className="glass-modal rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-content-enter" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col modal-content-enter" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">
         {/* Header */}
-        <div className="p-6 border-b border-mission-control-border flex items-center justify-between">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
           <div>
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <Bell size={24} />
+            <h2 className="text-base font-semibold flex items-center gap-2">
+              <Bell size={16} />
               Notification Settings
             </h2>
-            <p className="text-sm text-mission-control-text-dim mt-1">
+            <p className="text-xs text-mission-control-text-dim mt-0.5">
               {sessionName}
             </p>
             {hasCustomSettings && (
@@ -260,8 +260,9 @@ export default function NotificationSettingsModal({
             )}
           </div>
           <button
+            type="button"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             onClick={onClose}
-            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
             title="Close (ESC)"
             aria-label="Close modal"
           >
@@ -270,10 +271,10 @@ export default function NotificationSettingsModal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
           {/* Mute Status */}
           {isMuted && (
-            <div className="bg-warning-subtle border border-warning-border rounded-lg p-4 flex items-start gap-3">
+            <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 flex items-start gap-3">
               <BellOff size={20} className="text-warning flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="font-medium text-warning">Conversation Muted</p>
@@ -281,49 +282,31 @@ export default function NotificationSettingsModal({
                   Until {new Date(muteUntil).toLocaleString()}
                 </p>
               </div>
-              <button
+              <Button
+                size="2"
+                variant="solid"
                 onClick={handleUnmute}
                 disabled={saving}
-                className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent/80 transition-colors disabled:opacity-50"
               >
                 Unmute
-              </button>
+              </Button>
             </div>
           )}
 
           {/* Quick Mute Actions */}
           <div className="bg-mission-control-bg rounded-lg p-4">
-            <h3 className="font-medium mb-3 flex items-center gap-2">
-              <ZapOff size={16} />
-              Quick Mute
-            </h3>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Quick Mute</p>
             <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => handleQuickMute(1)}
-                disabled={saving}
-                className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
-              >
+              <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50" onClick={() => handleQuickMute(1)} disabled={saving}>
                 1 hour
               </button>
-              <button
-                onClick={() => handleQuickMute(4)}
-                disabled={saving}
-                className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
-              >
+              <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50" onClick={() => handleQuickMute(4)} disabled={saving}>
                 4 hours
               </button>
-              <button
-                onClick={() => handleQuickMute(24)}
-                disabled={saving}
-                className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
-              >
+              <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50" onClick={() => handleQuickMute(24)} disabled={saving}>
                 24 hours
               </button>
-              <button
-                onClick={() => handleQuickMute(168)}
-                disabled={saving}
-                className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors disabled:opacity-50"
-              >
+              <button type="button" className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50" onClick={() => handleQuickMute(168)} disabled={saving}>
                 1 week
               </button>
             </div>
@@ -331,128 +314,113 @@ export default function NotificationSettingsModal({
 
           {/* Notification Level */}
           <div>
-            <label htmlFor="notification-level" className="block font-medium mb-2 flex items-center gap-2">
-              <MessageSquare size={16} />
-              Notification Level
-            </label>
-            <select
-              id="notification-level"
-              value={notificationLevel}
-              onChange={(e) => setNotificationLevel(e.target.value)}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
-            >
-              <option value="all">All messages</option>
-              <option value="mentions">Mentions only</option>
-              <option value="none">None (muted)</option>
-              <option value="custom">Custom (use keyword alerts)</option>
-            </select>
+            <label htmlFor="notification-level" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Notification Level</label>
+            <Select.Root value={notificationLevel} onValueChange={setNotificationLevel} size="2">
+              <Select.Trigger id="notification-level" className="w-full" />
+              <Select.Content>
+                <Select.Item value="all">All messages</Select.Item>
+                <Select.Item value="mentions">Mentions only</Select.Item>
+                <Select.Item value="none">None (muted)</Select.Item>
+                <Select.Item value="custom">Custom (use keyword alerts)</Select.Item>
+              </Select.Content>
+            </Select.Root>
           </div>
 
           {/* Sound Settings */}
           <div>
-            <label className="block font-medium mb-3 flex items-center gap-2">
-              {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
-              Sound
-            </label>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Sound</p>
             <div className="space-y-3">
-              <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {soundEnabled ? <Volume2 size={15} className="text-mission-control-text-dim" /> : <VolumeX size={15} className="text-mission-control-text-dim" />}
+                  <span className="text-sm text-mission-control-text">Enable notification sounds</span>
+                </div>
+                <Switch
+                  size="2"
                   checked={soundEnabled}
-                  onChange={(e) => setSoundEnabled(e.target.checked)}
-                  className="w-4 h-4 accent-mission-control-accent"
+                  onCheckedChange={(checked) => setSoundEnabled(checked === true)}
                 />
-                <span>Enable notification sounds</span>
-              </label>
+              </div>
               {soundEnabled && (
-                <select
-                  value={soundType}
-                  onChange={(e) => setSoundType(e.target.value)}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
-                >
-                  <option value="default">Default</option>
-                  <option value="subtle">Subtle</option>
-                  <option value="urgent">Urgent</option>
-                </select>
+                <Select.Root value={soundType} onValueChange={setSoundType} size="2">
+                  <Select.Trigger className="w-full" />
+                  <Select.Content>
+                    <Select.Item value="default">Default</Select.Item>
+                    <Select.Item value="subtle">Subtle</Select.Item>
+                    <Select.Item value="urgent">Urgent</Select.Item>
+                  </Select.Content>
+                </Select.Root>
               )}
             </div>
           </div>
 
           {/* Desktop Notifications */}
           <div>
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell size={15} className="text-mission-control-text-dim" />
+                <span className="text-sm text-mission-control-text">Show desktop notifications</span>
+              </div>
+              <Switch
+                size="2"
                 checked={desktopNotifications}
-                onChange={(e) => setDesktopNotifications(e.target.checked)}
-                className="w-4 h-4 accent-mission-control-accent"
+                onCheckedChange={(checked) => setDesktopNotifications(checked === true)}
               />
-              <span className="flex items-center gap-2">
-                <Bell size={16} />
-                Show desktop notifications
-              </span>
-            </label>
+            </div>
           </div>
 
           {/* Quiet Hours */}
           <div>
-            <span className="block font-medium mb-3 flex items-center gap-2">
-              <Moon size={16} />
-              Quiet Hours
-            </span>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Quiet Hours</p>
             <div className="space-y-3">
-              <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Moon size={15} className="text-mission-control-text-dim" />
+                  <span className="text-sm text-mission-control-text">Enable quiet hours</span>
+                </div>
+                <Switch
+                  size="2"
                   checked={quietHoursEnabled}
-                  onChange={(e) => setQuietHoursEnabled(e.target.checked)}
-                  className="w-4 h-4 accent-mission-control-accent"
+                  onCheckedChange={(checked) => setQuietHoursEnabled(checked === true)}
                 />
-                <span>Enable quiet hours</span>
-              </label>
+              </div>
               {quietHoursEnabled && (
-                <div className="flex gap-3 items-center ml-7">
-                  <input
+                <Flex gap="3" align="center" className="ml-7">
+                  <TextField.Root
                     type="time"
                     value={quietStart}
                     onChange={(e) => setQuietStart(e.target.value)}
-                    className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                    size="2"
                   />
                   <span className="text-mission-control-text-dim">to</span>
-                  <input
+                  <TextField.Root
                     type="time"
                     value={quietEnd}
                     onChange={(e) => setQuietEnd(e.target.value)}
-                    className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                    size="2"
                   />
-                </div>
+                </Flex>
               )}
             </div>
           </div>
 
           {/* Keyword Alerts */}
           <div>
-            <span className="block font-medium mb-3 flex items-center gap-2">
-              <Hash size={16} />
-              Keyword Alerts
-            </span>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2">Keyword Alerts</p>
             <div className="space-y-2">
-              <div className="flex gap-2">
-                <input
-                  type="text"
+              <Flex gap="2">
+                <TextField.Root
                   value={keywordInput}
                   onChange={(e) => setKeywordInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && addKeyword()}
                   placeholder="Add keyword..."
-                  className="flex-1 bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
+                  size="2"
+                  className="flex-1"
                 />
-                <button
-                  onClick={addKeyword}
-                  className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors"
-                >
+                <Button size="2" variant="solid" onClick={addKeyword}>
                   Add
-                </button>
-              </div>
+                </Button>
+              </Flex>
               {keywordAlerts.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {keywordAlerts.map((keyword) => (
@@ -462,8 +430,10 @@ export default function NotificationSettingsModal({
                     >
                       #{keyword}
                       <button
+                        type="button"
+                        className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                         onClick={() => removeKeyword(keyword)}
-                        className="hover:text-error transition-colors"
+                        aria-label={`Remove keyword ${keyword}`}
                       >
                         <X size={14} />
                       </button>
@@ -476,104 +446,102 @@ export default function NotificationSettingsModal({
 
           {/* Priority Level */}
           <div>
-            <label htmlFor="priority-level" className="block font-medium mb-2 flex items-center gap-2">
-              <AlertCircle size={16} />
-              Priority Level
-            </label>
-            <select
-              id="priority-level"
-              value={priorityLevel}
-              onChange={(e) => setPriorityLevel(e.target.value)}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
-            >
-              <option value="low">Low</option>
-              <option value="normal">Normal</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-            </select>
+            <label htmlFor="priority-level" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Priority Level</label>
+            <Select.Root value={priorityLevel} onValueChange={setPriorityLevel} size="2">
+              <Select.Trigger id="priority-level" className="w-full" />
+              <Select.Content>
+                <Select.Item value="low">Low</Select.Item>
+                <Select.Item value="normal">Normal</Select.Item>
+                <Select.Item value="high">High</Select.Item>
+                <Select.Item value="urgent">Urgent</Select.Item>
+              </Select.Content>
+            </Select.Root>
           </div>
 
           {/* Notification Frequency */}
           <div>
-            <label htmlFor="notification-frequency" className="block font-medium mb-2 flex items-center gap-2">
-              <Clock size={16} />
-              Notification Frequency
-            </label>
-            <select
-              id="notification-frequency"
-              value={notificationFrequency}
-              onChange={(e) => setNotificationFrequency(e.target.value)}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
-            >
-              <option value="instant">Instant</option>
-              <option value="batched_15m">Batched (15 minutes)</option>
-              <option value="batched_1h">Batched (1 hour)</option>
-              <option value="daily_digest">Daily digest</option>
-            </select>
+            <label htmlFor="notification-frequency" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Notification Frequency</label>
+            <Select.Root value={notificationFrequency} onValueChange={setNotificationFrequency} size="2">
+              <Select.Trigger id="notification-frequency" className="w-full" />
+              <Select.Content>
+                <Select.Item value="instant">Instant</Select.Item>
+                <Select.Item value="batched_15m">Batched (15 minutes)</Select.Item>
+                <Select.Item value="batched_1h">Batched (1 hour)</Select.Item>
+                <Select.Item value="daily_digest">Daily digest</Select.Item>
+              </Select.Content>
+            </Select.Root>
           </div>
 
           {/* Display Preferences */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={showMessagePreview}
-                onChange={(e) => setShowMessagePreview(e.target.checked)}
-                className="w-4 h-4 accent-mission-control-accent"
-              />
-              <span>Show message preview in notifications</span>
-            </label>
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={badgeCountEnabled}
-                onChange={(e) => setBadgeCountEnabled(e.target.checked)}
-                className="w-4 h-4 accent-mission-control-accent"
-              />
-              <span>Increment unread badge count</span>
-            </label>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Display</p>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-mission-control-text">Show message preview in notifications</span>
+                <Switch
+                  size="2"
+                  checked={showMessagePreview}
+                  onCheckedChange={(checked) => setShowMessagePreview(checked === true)}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-mission-control-text">Increment unread badge count</span>
+                <Switch
+                  size="2"
+                  checked={badgeCountEnabled}
+                  onCheckedChange={(checked) => setBadgeCountEnabled(checked === true)}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Notes */}
           <div>
-            <label htmlFor="notification-notes" className="block font-medium mb-2">Notes</label>
-            <textarea
+            <label htmlFor="notification-notes" className="text-xs font-medium text-mission-control-text-dim mb-1 block">Notes</label>
+            <TextArea
               id="notification-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Optional notes about these settings..."
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent resize-none"
+              size="2"
               rows={3}
+              style={{ resize: 'none' }}
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-mission-control-border flex items-center justify-between">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-mission-control-border flex-shrink-0">
           <div>
             {hasCustomSettings && (
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                color="red"
+                size="2"
                 onClick={handleResetToDefaults}
                 disabled={saving}
-                className="px-4 py-2 bg-error-subtle text-error border border-error-border rounded-lg hover:bg-error-subtle transition-colors flex items-center gap-2 disabled:opacity-50"
               >
                 <Trash2 size={16} />
                 Reset to Defaults
-              </button>
+              </Button>
             )}
           </div>
-          <div className="flex gap-3">
-            <button
+          <Flex gap="3">
+            <Button
+              type="button"
+              variant="ghost"
+              size="2"
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 bg-mission-control-border rounded-lg hover:bg-mission-control-bg transition-colors disabled:opacity-50"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
+              size="2"
+              variant="solid"
               onClick={handleSave}
               disabled={saving}
-              className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               {saving ? (
                 <>Saving...</>
@@ -583,8 +551,8 @@ export default function NotificationSettingsModal({
                   Save Settings
                 </>
               )}
-            </button>
-          </div>
+            </Button>
+          </Flex>
         </div>
       </div>
     </div>

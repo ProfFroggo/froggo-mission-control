@@ -4,6 +4,7 @@
 // Review: 2026-02-17 - suppression retained, patterns are safe
 
 import { useState, useEffect, useRef } from 'react';
+import { Button, TextField, Checkbox, Flex } from '@radix-ui/themes';
 import { MessageSquare, Search, RefreshCw, Clock, ArrowRight, X, Tag, Bell, BellOff, Pin, CheckSquare, Square, Trash2, Archive, FolderPlus, Moon, AlertCircle, ClipboardList, MessageCircle, Gamepad2, Monitor, Bot, Send as SendPlane } from 'lucide-react';
 import { useStore } from '../store/store';
 import { chatApi } from '../lib/api';
@@ -381,7 +382,7 @@ export default function SessionsFilter() {
 
   const handleBulkDelete = async () => {
     if (selectedSessions.size === 0) return;
-    if (!confirm(`⚠️ DELETE ${selectedSessions.size} conversation(s)?\n\nThis will permanently remove all messages and cannot be undone.\n\nConsider using Archive instead to preserve conversations.`)) return;
+    if (!confirm(`DELETE ${selectedSessions.size} conversation(s)?\n\nThis will permanently remove all messages and cannot be undone.\n\nConsider using Archive instead to preserve conversations.`)) return;
     
     try {
       let successCount = 0;
@@ -519,7 +520,7 @@ export default function SessionsFilter() {
       <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between mb-4">
+        <Flex align="center" justify="between" className="mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <MessageSquare size={20} />
             Sessions
@@ -532,117 +533,140 @@ export default function SessionsFilter() {
               </span>
             )}
           </h2>
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <button
               onClick={() => setShowSnoozed(!showSnoozed)}
-              className={`p-2 rounded-lg transition-colors ${
-                showSnoozed 
-                  ? 'hover:bg-mission-control-border' 
-                  : 'bg-info-subtle text-info border border-info-border'
-              }`}
               title={showSnoozed ? 'Hide snoozed conversations' : 'Show snoozed conversations'}
+              aria-label={showSnoozed ? 'Hide snoozed conversations' : 'Show snoozed conversations'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                !showSnoozed
+                  ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               <Moon size={16} />
             </button>
             <button
               onClick={toggleBulkMode}
-              className={`p-2 rounded-lg transition-colors ${
-                bulkMode 
-                  ? 'bg-mission-control-accent text-white' 
-                  : 'hover:bg-mission-control-border'
-              }`}
               title={bulkMode ? 'Exit bulk mode' : 'Enter bulk mode'}
+              aria-label={bulkMode ? 'Exit bulk mode' : 'Enter bulk mode'}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors ${
+                bulkMode
+                  ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                  : 'border border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              }`}
             >
               {bulkMode ? <CheckSquare size={16} /> : <Square size={16} />}
             </button>
             <button
+              type="button"
               onClick={fetchSessions}
-              className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
               title="Refresh"
+              aria-label="Refresh sessions"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <RefreshCw size={16} />
             </button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
 
         {/* Bulk Action Toolbar */}
         {bulkMode && (
           <div className="mb-4 p-3 bg-mission-control-bg border border-mission-control-border rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <button
+            <Flex align="center" justify="between">
+              <Flex align="center" gap="2">
+                <Button
+                  variant="soft"
+                  color="gray"
+                  size="1"
                   onClick={selectAll}
-                  className="text-xs px-3 py-1.5 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg transition-colors"
                 >
                   Select All ({filteredSessions.length})
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="soft"
+                  color="gray"
+                  size="1"
                   onClick={selectNone}
-                  className="text-xs px-3 py-1.5 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg transition-colors"
                   disabled={selectedSessions.size === 0}
                 >
                   Clear Selection
-                </button>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
+                </Button>
+              </Flex>
+              <Flex align="center" gap="2">
+                <Button
+                  variant="soft"
+                  color="green"
+                  size="1"
                   onClick={handleBulkMarkRead}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-success-subtle text-success border border-success-border hover:bg-success-subtle rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <CheckSquare size={14} />
                   Mark Read ({selectedSessions.size})
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="soft"
+                  color="blue"
+                  size="1"
                   onClick={handleBulkFolderAssign}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-info-subtle text-info border border-info-border hover:bg-info-subtle rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FolderPlus size={14} />
                   Assign to Folders
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="soft"
+                  color="orange"
+                  size="1"
                   onClick={handleBulkArchive}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-warning-subtle text-warning border border-warning-border hover:bg-warning-subtle rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Archive size={14} />
                   Archive ({selectedSessions.size})
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="soft"
+                  color="red"
+                  size="1"
                   onClick={handleBulkDelete}
                   disabled={selectedSessions.size === 0}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-error-subtle text-error border border-error-border hover:bg-error-subtle rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Trash2 size={14} />
                   Delete ({selectedSessions.size})
-                </button>
-              </div>
-            </div>
+                </Button>
+              </Flex>
+            </Flex>
           </div>
         )}
 
         {/* Search */}
-        <div className="relative mb-3">
-          <label htmlFor="sessions-search" className="sr-only">Search sessions</label>
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-          <input
+        <div className="mb-3">
+          <TextField.Root
             id="sessions-search"
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search sessions..."
-            className="w-full bg-mission-control-bg border border-mission-control-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              aria-label="Clear search"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim hover:text-mission-control-text"
-            >
-              <X size={14} />
-            </button>
-          )}
+            size="2"
+            className="w-full"
+            aria-label="Search sessions"
+          >
+            <TextField.Slot>
+              <Search size={16} />
+            </TextField.Slot>
+            {search && (
+              <TextField.Slot side="right">
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                  className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </TextField.Slot>
+            )}
+          </TextField.Root>
         </div>
 
         {/* Channel Filter Pills */}
@@ -650,19 +674,16 @@ export default function SessionsFilter() {
           {channelCounts.map((ch) => (
             <button
               key={ch.id}
+              type="button"
               onClick={() => setFilter(ch.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all ${
-                filter === ch.id
-                  ? 'bg-mission-control-accent text-white'
-                  : 'bg-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors whitespace-nowrap ${
+                filter === ch.id ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
               }`}
             >
               <span>{ch.icon}</span>
               <span>{ch.label}</span>
               {ch.count > 0 && (
-                <span className={`text-xs px-1.5 rounded-full ${
-                  filter === ch.id ? 'bg-mission-control-text/20' : 'bg-mission-control-bg'
-                }`}>
+                <span className="text-xs opacity-70">
                   {ch.count}
                 </span>
               )}
@@ -691,13 +712,13 @@ export default function SessionsFilter() {
             {/* Pinned Sessions Section */}
             {pinnedSessionsList.length > 0 && (
               <div className="bg-gradient-to-b from-mission-control-accent/5 to-transparent">
-                <div className="sticky top-0 z-10 px-4 py-2 bg-mission-control-surface/95 backdrop-blur-sm border-b border-mission-control-accent/20 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="sticky top-0 z-10 px-4 py-2 bg-mission-control-surface border-b border-mission-control-accent/20 flex items-center justify-between">
+                  <Flex align="center" gap="2">
                     <Pin size={14} className="text-mission-control-accent fill-current" />
-                    <span className="text-xs font-semibold text-mission-control-accent uppercase tracking-wide">
+                    <span className="text-[10px] font-bold text-mission-control-accent uppercase tracking-wide">
                       Pinned ({pinnedSessionsList.length}/10)
                     </span>
-                  </div>
+                  </Flex>
                   <span className="text-xs text-mission-control-text-dim flex items-center gap-1">
                     <span className="hidden sm:inline">Drag to reorder</span>
                     <span className="text-mission-control-accent">⇅</span>
@@ -724,21 +745,21 @@ export default function SessionsFilter() {
                         : 'hover:bg-mission-control-bg/50'
                     }`}
                   >
-                  <div className="flex items-start gap-3">
+                  <Flex align="start" gap="3">
                     {bulkMode && (
                       <div className="pt-1">
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={selectedSessions.has(session.key)}
-                          onChange={() => toggleSessionSelection(session.key)}
-                          className="w-4 h-4 rounded border-mission-control-border bg-mission-control-bg text-mission-control-accent focus:ring-mission-control-accent focus:ring-offset-0 cursor-pointer"
+                          onCheckedChange={() => toggleSessionSelection(session.key)}
+                          color="grass"
+                          size="2"
                         />
                       </div>
                     )}
                     <div className="text-2xl">{channelInfo.icon}</div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-mission-control-bg0'}`} />
+                      <Flex align="center" gap="2" className="mb-1">
+                        <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-mission-control-surface'}`} />
                         <span className="font-medium truncate">{getSessionName(session)}</span>
                         {pinnedSessions.has(session.key) && (
                           <span className="flex items-center gap-1 px-2 py-0.5 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/30 rounded-full text-xs">
@@ -747,24 +768,24 @@ export default function SessionsFilter() {
                           </span>
                         )}
                         {isMuted && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-warning-subtle text-warning border border-warning-border rounded-full text-xs">
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-warning/10 text-warning border border-warning/30 rounded-full text-xs">
                             <BellOff size={14} />
                             Muted
                           </span>
                         )}
                         {isSnoozeExpired && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-error-subtle text-error border border-error-border rounded-full text-xs animate-pulse">
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-error/10 text-error border border-error/30 rounded-full text-xs animate-pulse">
                             <AlertCircle size={14} />
                             Reminder
                           </span>
                         )}
                         {isSnoozed && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 bg-info-subtle text-info border border-info-border rounded-full text-xs">
+                          <span className="flex items-center gap-1 px-2 py-0.5 bg-info/10 text-info border border-info/30 rounded-full text-xs">
                             <Moon size={14} />
                             Snoozed
                           </span>
                         )}
-                      </div>
+                      </Flex>
                       <div className="flex items-center gap-3 text-xs text-mission-control-text-dim flex-wrap">
                         <span className={`px-2 py-0.5 rounded-full ${channelInfo.color} bg-mission-control-border`}>
                           {channelInfo.label}
@@ -802,50 +823,58 @@ export default function SessionsFilter() {
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           togglePin(session.key);
                         }}
-                        className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${pinnedSessions.has(session.key) ? 'text-mission-control-accent' : ''}`}
                         title={pinnedSessions.has(session.key) ? 'Unpin conversation' : 'Pin conversation'}
+                        aria-label={pinnedSessions.has(session.key) ? 'Unpin conversation' : 'Pin conversation'}
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                       >
                         <Pin size={14} className={pinnedSessions.has(session.key) ? 'fill-current' : ''} />
                       </button>
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowSnoozeModal({ key: session.key, name: getSessionName(session) });
                         }}
-                        className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${isSnoozed ? 'text-info' : ''} ${isSnoozeExpired ? 'text-error animate-pulse' : ''}`}
                         title={isSnoozed ? 'Update snooze' : isSnoozeExpired ? 'Expired reminder - click to manage' : 'Snooze conversation'}
+                        aria-label="Snooze conversation"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                       >
                         {isSnoozeExpired ? <AlertCircle size={14} /> : <Moon size={14} />}
                       </button>
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowNotificationSettings({ key: session.key, name: getSessionName(session) });
                         }}
-                        className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${isMuted ? 'text-warning' : ''}`}
                         title="Notification settings"
+                        aria-label="Notification settings"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                       >
                         {isMuted ? <BellOff size={14} /> : <Bell size={14} />}
                       </button>
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowFolderSelector(session.key);
                         }}
-                        className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                         title="Assign to folders"
+                        aria-label="Assign to folders"
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                       >
                         <Tag size={14} />
                       </button>
                       <ArrowRight size={16} className="text-mission-control-text-dim mt-2" />
-                          </div>
-                        </div>
-                      </div>
-                    </SortableSession>
+                    </div>
+                  </Flex>
+                  </div>
+                </SortableSession>
                   );
                 })}
               </div>
@@ -858,7 +887,7 @@ export default function SessionsFilter() {
           <>
             {pinnedSessionsList.length > 0 && (
               <div className="sticky top-0 z-10 px-4 py-2 bg-mission-control-surface border-b border-mission-control-border">
-                <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wide">
+                <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wide">
                   All Conversations ({unpinnedSessionsList.length})
                 </span>
               </div>
@@ -887,41 +916,41 @@ export default function SessionsFilter() {
                           : 'hover:bg-mission-control-bg/50'
                       }`}
                     >
-                      <div className="flex items-start gap-3">
+                      <Flex align="start" gap="3">
                         {bulkMode && (
                           <div className="pt-1">
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               checked={selectedSessions.has(session.key)}
-                              onChange={() => toggleSessionSelection(session.key)}
-                              className="w-4 h-4 rounded border-mission-control-border bg-mission-control-bg text-mission-control-accent focus:ring-mission-control-accent focus:ring-offset-0 cursor-pointer"
+                              onCheckedChange={() => toggleSessionSelection(session.key)}
+                              color="grass"
+                              size="2"
                             />
                           </div>
                         )}
                         <div className="text-2xl">{channelInfo.icon}</div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-mission-control-bg0'}`} />
+                          <Flex align="center" gap="2" className="mb-1">
+                            <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-success' : 'bg-mission-control-surface'}`} />
                             <span className="font-medium truncate">{getSessionName(session)}</span>
                             {isMuted && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-warning-subtle text-warning border border-warning-border rounded-full text-xs">
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-warning/10 text-warning border border-warning/30 rounded-full text-xs">
                                 <BellOff size={14} />
                                 Muted
                               </span>
                             )}
                             {isSnoozeExpired && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-error-subtle text-error border border-error-border rounded-full text-xs animate-pulse">
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-error/10 text-error border border-error/30 rounded-full text-xs animate-pulse">
                                 <AlertCircle size={14} />
                                 Reminder
                               </span>
                             )}
                             {isSnoozed && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-info-subtle text-info border border-info-border rounded-full text-xs">
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-info/10 text-info border border-info/30 rounded-full text-xs">
                                 <Moon size={14} />
                                 Snoozed
                               </span>
                             )}
-                          </div>
+                          </Flex>
                           <div className="flex items-center gap-3 text-xs text-mission-control-text-dim flex-wrap">
                             <span className={`px-2 py-0.5 rounded-full ${channelInfo.color} bg-mission-control-border`}>
                               {channelInfo.label}
@@ -959,50 +988,58 @@ export default function SessionsFilter() {
                         </div>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               togglePin(session.key);
                             }}
-                            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                             title="Pin conversation"
+                            aria-label="Pin conversation"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                           >
                             <Pin size={14} />
                           </button>
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               setShowSnoozeModal({ key: session.key, name: getSessionName(session) });
                             }}
-                            className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${isSnoozed ? 'text-info' : ''} ${isSnoozeExpired ? 'text-error animate-pulse' : ''}`}
                             title={isSnoozed ? 'Update snooze' : isSnoozeExpired ? 'Expired reminder - click to manage' : 'Snooze conversation'}
+                            aria-label="Snooze conversation"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                           >
                             {isSnoozeExpired ? <AlertCircle size={14} /> : <Moon size={14} />}
                           </button>
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               setShowNotificationSettings({ key: session.key, name: getSessionName(session) });
                             }}
-                            className={`p-2 hover:bg-mission-control-border rounded-lg transition-colors ${isMuted ? 'text-warning' : ''}`}
                             title="Notification settings"
+                            aria-label="Notification settings"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                           >
                             {isMuted ? <BellOff size={14} /> : <Bell size={14} />}
                           </button>
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               setShowFolderSelector(session.key);
                             }}
-                            className="p-2 hover:bg-mission-control-border rounded-lg transition-colors"
                             title="Assign to folders"
+                            aria-label="Assign to folders"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                           >
                             <Tag size={14} />
                           </button>
                           <ArrowRight size={16} className="text-mission-control-text-dim mt-2" />
                         </div>
+                      </Flex>
                       </div>
-                    </div>
-                  </DraggableSession>
+                    </DraggableSession>
                 );
               })}
             </div>
@@ -1015,7 +1052,7 @@ export default function SessionsFilter() {
       {/* Folder Selector Modal */}
       {showFolderSelector && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setShowFolderSelector(null)}
           onKeyDown={(e) => handleKeyDown(e, () => setShowFolderSelector(null))}
           role="button"
@@ -1037,7 +1074,7 @@ export default function SessionsFilter() {
       {/* Folder Manager Modal */}
       {showFolderManager && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setShowFolderManager(false)}
           onKeyDown={(e) => handleKeyDown(e, () => setShowFolderManager(false))}
           role="button"
@@ -1045,7 +1082,7 @@ export default function SessionsFilter() {
           aria-label="Close modal"
         >
           <div
-            className="w-full max-w-3xl h-[80vh] bg-mission-control-surface rounded-lg shadow-xl overflow-hidden"
+            className="w-full max-w-3xl h-[80vh] bg-mission-control-surface rounded-2xl shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             role="presentation"
@@ -1075,7 +1112,7 @@ export default function SessionsFilter() {
       {/* Bulk Folder Assignment Modal */}
       {showBulkFolderAssign && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setShowBulkFolderAssign(false)}
           onKeyDown={(e) => handleKeyDown(e, () => setShowBulkFolderAssign(false))}
           role="button"
@@ -1098,7 +1135,7 @@ export default function SessionsFilter() {
       {/* Snooze Modal */}
       {showSnoozeModal && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setShowSnoozeModal(null)}
           onKeyDown={(e) => handleKeyDown(e, () => setShowSnoozeModal(null))}
           role="button"

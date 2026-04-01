@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useRef, useCallback, useMemo } from 'react';
 import type { CatalogModule } from '../types/catalog';
+import { Flex } from '@radix-ui/themes';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -79,20 +80,20 @@ function buildGraph(modules: CatalogModule[]): { nodes: NodeData[]; edges: EdgeD
 
 function nodeColor(status: NodeData['status']): string {
   if (status === 'installed') return 'var(--color-success)';
-  if (status === 'missing')   return 'var(--color-error, #f87171)';
-  return 'var(--mission-control-text-dim, #6b7280)';
+  if (status === 'missing')   return 'var(--color-error)';
+  return 'var(--mission-control-text-dim)';
 }
 
 function nodeBg(status: NodeData['status']): string {
-  if (status === 'installed') return 'var(--color-success-subtle, rgba(34,197,94,0.08))';
-  if (status === 'missing')   return 'var(--color-error-subtle, rgba(248,113,113,0.08))';
-  return 'var(--mission-control-surface, #1e2023)';
+  if (status === 'installed') return 'var(--color-success-bg)';
+  if (status === 'missing')   return 'var(--color-error-bg)';
+  return 'var(--mission-control-surface)';
 }
 
 function nodeBorder(status: NodeData['status']): string {
-  if (status === 'installed') return 'var(--color-success-border, rgba(34,197,94,0.4))';
-  if (status === 'missing')   return 'var(--color-error-border, rgba(248,113,113,0.4))';
-  return 'var(--mission-control-border, rgba(255,255,255,0.08))';
+  if (status === 'installed') return 'var(--color-success-border)';
+  if (status === 'missing')   return 'var(--color-error-border)';
+  return 'var(--mission-control-border)';
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -133,24 +134,24 @@ export default function ModuleDependencyGraph({ modules }: ModuleDependencyGraph
   return (
     <div
       className="rounded-lg border border-mission-control-border overflow-hidden"
-      style={{ background: 'var(--mission-control-bg, #0f1012)' }}
+      style={{ background: 'var(--mission-control-bg)' }}
     >
       {/* Legend */}
-      <div className="flex items-center gap-5 px-4 py-2.5 border-b border-mission-control-border text-xs text-mission-control-text-dim">
+      <Flex align="center" gap="5" className="px-4 py-2.5 border-b border-mission-control-border text-xs text-mission-control-text-dim">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-3 rounded-sm" style={{ background: 'var(--color-success-subtle, rgba(34,197,94,0.15))', border: '1px solid var(--color-success-border, rgba(34,197,94,0.4))' }} />
+          <span className="inline-block w-3 h-3 rounded-sm" style={{ background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)' }} />
           Installed
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-3 rounded-sm" style={{ background: 'var(--color-error-subtle, rgba(248,113,113,0.08))', border: '1px solid var(--color-error-border, rgba(248,113,113,0.4))' }} />
+          <span className="inline-block w-3 h-3 rounded-sm" style={{ background: 'var(--color-error-bg)', border: '1px solid var(--color-error-border)' }} />
           Required — not installed
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-3 rounded-sm" style={{ background: 'var(--mission-control-surface, #1e2023)', border: '1px solid var(--mission-control-border, rgba(255,255,255,0.08))' }} />
+          <span className="inline-block w-3 h-3 rounded-sm" style={{ background: 'var(--mission-control-surface)', border: '1px solid var(--mission-control-border)' }} />
           Optional
         </span>
         <span className="ml-auto opacity-60">Drag to pan</span>
-      </div>
+      </Flex>
 
       <div style={{ overflow: 'hidden', maxHeight: 360, cursor: 'grab' }}>
         <svg
@@ -178,7 +179,7 @@ export default function ModuleDependencyGraph({ modules }: ModuleDependencyGraph
                 key={i}
                 d={`M${x1},${y1} C${x1},${mx} ${x2},${mx} ${x2},${y2}`}
                 fill="none"
-                stroke={edge.optional ? 'var(--mission-control-border, rgba(255,255,255,0.12))' : 'var(--color-success, #22c55e)'}
+                stroke={edge.optional ? 'var(--mission-control-border)' : 'var(--color-success)'}
                 strokeWidth={edge.optional ? 1 : 1.5}
                 strokeDasharray={edge.optional ? '4 3' : undefined}
                 opacity={0.6}

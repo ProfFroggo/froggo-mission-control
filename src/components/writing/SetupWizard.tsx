@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Wand2, X, ArrowRight, BookOpen, BookText, Type, Loader2, CheckCircle, Sparkles } from 'lucide-react';
+import { Button, TextField, Flex } from '@radix-ui/themes';
 import { useWizardStore } from '../../store/wizardStore';
 import { getWizardAgent } from '../../lib/wizardPrompts';
 import WizardChat from './WizardChat';
@@ -56,7 +57,7 @@ export default function SetupWizard() {
       <div className="h-full overflow-y-auto bg-mission-control-bg">
         <div className="max-w-2xl mx-auto px-6 py-12">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-8">
+          <Flex align="center" gap="3" className="mb-8">
             <div className="p-2 rounded-lg bg-mission-control-accent/15">
               <Wand2 size={24} className="text-mission-control-accent" />
             </div>
@@ -66,27 +67,28 @@ export default function SetupWizard() {
                 Describe your idea and an AI agent will help you build a full plan.
               </p>
             </div>
-          </div>
+          </Flex>
 
           {/* Card */}
           <div className="p-6 rounded-lg border border-mission-control-border bg-mission-control-surface space-y-6">
             {/* Book type selector */}
             <div>
-              <span className="block text-xs font-medium text-mission-control-text-dim mb-2">
+              <span className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">
                 Book Type
               </span>
-              <div className="flex gap-2">
+              <Flex gap="2">
                 {typeOptions.map((opt) => {
                   const Icon = opt.icon;
                   const isSelected = selectedType === opt.key;
                   return (
                     <button
                       key={opt.key}
+                      type="button"
                       onClick={() => handleTypeSelect(opt.key, opt.agent)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
                         isSelected
-                          ? 'border-mission-control-accent bg-mission-control-accent/10 text-mission-control-accent'
-                          : 'border-mission-control-border text-mission-control-text-dim hover:border-mission-control-text-dim'
+                          ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                          : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
                       }`}
                     >
                       <Icon size={16} />
@@ -94,23 +96,22 @@ export default function SetupWizard() {
                     </button>
                   );
                 })}
-              </div>
+              </Flex>
               {/* Custom type name input */}
               {selectedType === 'other' && (
-                <input
+                <TextField.Root
                   id="custom-type-input"
-                  type="text"
                   value={customType}
                   onChange={(e) => setCustomType(e.target.value)}
                   placeholder="e.g. Fantasy, Sci-Fi, Thriller..."
-                  className="mt-2 w-full px-3 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-sm placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent"
+                  className="mt-2"
                 />
               )}
             </div>
 
             {/* Brain dump textarea */}
             <div>
-              <label htmlFor="brain-dump-textarea" className="block text-xs font-medium text-mission-control-text-dim mb-2">
+              <label htmlFor="brain-dump-textarea" className="block text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">
                 Describe your book idea
               </label>
               <textarea
@@ -119,28 +120,30 @@ export default function SetupWizard() {
                 onChange={(e) => setBrainDump(e.target.value)}
                 rows={6}
                 placeholder="What's your book about? Pour out everything -- characters, themes, plot points, personal experiences, inspiration..."
-                className="w-full px-3 py-2 rounded-lg bg-mission-control-bg border border-mission-control-border text-mission-control-text text-sm placeholder:text-mission-control-text-dim/50 focus:outline-none focus:border-mission-control-accent resize-y min-h-[120px]"
+                className="w-full min-h-[120px]"
               />
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-between pt-2">
+            <Flex align="center" justify="between" className="pt-2">
               <button
+                type="button"
                 onClick={() => cancelWizard()}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <X size={14} />
                 Cancel
               </button>
-              <button
+              <Button
+                size="2"
+                variant="solid"
                 onClick={handleStartPlanning}
                 disabled={!brainDump.trim()}
-                className="flex items-center gap-2 px-5 py-2 rounded-lg bg-mission-control-accent text-white text-sm font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Start Planning
                 <ArrowRight size={16} />
-              </button>
-            </div>
+              </Button>
+            </Flex>
           </div>
         </div>
       </div>
@@ -154,7 +157,7 @@ export default function SetupWizard() {
       <div className="h-full flex flex-col bg-mission-control-bg">
         {/* Header bar */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-mission-control-border bg-mission-control-surface flex-shrink-0">
-          <div className="flex items-center gap-2">
+          <Flex align="center" gap="2">
             <Sparkles size={14} className="text-mission-control-accent" />
             <span className="text-sm font-medium text-mission-control-text">
               Planning with {agent.name}
@@ -164,24 +167,26 @@ export default function SetupWizard() {
                 ({messages.length} message{messages.length !== 1 ? 's' : ''})
               </span>
             )}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
+          </Flex>
+          <Flex align="center" gap="2">
+            <Button
+              size="1"
+              variant="solid"
               onClick={() => setStep('extracting')}
               disabled={step === 'extracting' || streaming || messages.length < 4}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mission-control-accent text-white text-xs font-medium hover:bg-mission-control-accent-dim transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Wand2 size={12} />
               Generate Plan
-            </button>
+            </Button>
             <button
+              type="button"
               onClick={() => cancelWizard()}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               <X size={12} />
               Cancel
             </button>
-          </div>
+          </Flex>
         </div>
 
         {/* Chat + optional plan preview sidebar */}

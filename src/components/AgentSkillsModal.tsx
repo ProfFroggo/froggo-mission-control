@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Award } from 'lucide-react';
+import { X, Award, Bot } from 'lucide-react';
+import { Select, Flex, Box } from '@radix-ui/themes';
 import { libraryApi } from '../lib/api';
+import BaseModal, { BaseModalHeader, BaseModalBody } from './BaseModal';
 
 interface AgentSkill {
   agent_id: string;
@@ -14,10 +16,10 @@ interface AgentSkill {
 
 // Proficiency color coding
 function profColor(p: number): string {
-  if (p >= 8) return 'text-success bg-success-subtle border-success-border';
-  if (p >= 6) return 'text-info bg-info-subtle border-info-border';
-  if (p >= 4) return 'text-amber-400 bg-warning/10 border-amber-500/30';
-  return 'text-error bg-error-subtle border-error-border';
+  if (p >= 8) return 'text-success bg-success/10 border-success/30';
+  if (p >= 6) return 'text-info bg-info/10 border-info/30';
+  if (p >= 4) return 'text-warning bg-warning/10 border-warning/30';
+  return 'text-error bg-error/10 border-error/30';
 }
 
 function profLabel(p: number): string {
@@ -28,8 +30,10 @@ function profLabel(p: number): string {
   return 'Beginner';
 }
 
-const AGENT_EMOJIS: Record<string, string> = {
-  'mission-control': '🐸', coder: '💻', researcher: '🔬', writer: '✍️', chief: '👔', hr: '🎓',
+// Map well-known agent IDs to display names; fallback to a Bot icon
+const AGENT_DISPLAY: Record<string, string> = {
+  'mission-control': 'Mission Control', coder: 'Coder', researcher: 'Researcher',
+  writer: 'Writer', chief: 'Chief', hr: 'HR',
 };
 
 export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
@@ -84,82 +88,86 @@ export default function AgentSkillsModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-      <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
-        onClick={handleBackdropClick}
-        onKeyDown={handleBackdropClick}
-        role="button"
-        tabIndex={0}
-        aria-label="Close agent skills"
+    <BaseModal
+      isOpen={!isClosing}
+      onClose={handleClose}
+      size="lg"
+      ariaLabel="Agent Skills and Proficiency"
+      isClosing={isClosing}
+    >
+      <BaseModalHeader
+        title="Skills & Proficiency"
+        onClose={handleClose}
+        icon={<Award size={18} className="text-mission-control-accent" />}
       />
-      <div className={`relative w-full max-w-2xl bg-mission-control-bg border border-mission-control-border rounded-2xl shadow-2xl flex flex-col max-h-[80vh] ${isClosing ? 'animate-scaleOut' : 'animate-scaleIn'}`}>
-        {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-mission-control-border">
-          <Award size={20} className="text-mission-control-accent" />
-          <h2 className="font-bold text-mission-control-text flex-1">Agent Skills & Proficiency</h2>
-          <select
-            value={selectedAgent}
-            onChange={e => setSelectedAgent(e.target.value)}
-            className="text-xs bg-mission-control-surface border border-mission-control-border rounded-lg px-2 py-1 text-mission-control-text"
-          >
-            <option value="all">All Agents</option>
-            {agents.map(a => <option key={a} value={a}>{AGENT_EMOJIS[a] || '🤖'} {a}</option>)}
-          </select>
-          <button onClick={handleClose} className="p-1 text-mission-control-text-dim hover:text-mission-control-text rounded-lg hover:bg-mission-control-surface">
-            <X size={18} />
-          </button>
-        </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {loading ? (
-            <div className="text-center text-mission-control-text-dim py-8">Loading...</div>
-          ) : Object.keys(grouped).length === 0 ? (
-            <div className="text-center py-12">
-              <Award size={32} className="mx-auto text-mission-control-text-dim mb-3 opacity-40" />
-              <p className="text-mission-control-text-dim text-sm">No skills tracked yet.</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {Object.entries(grouped).map(([agentId, agentSkills]) => (
-                <div key={agentId}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">{AGENT_EMOJIS[agentId] || '🤖'}</span>
-                    <span className="font-semibold text-mission-control-text capitalize">{agentId}</span>
-                    <span className="text-xs text-mission-control-text-dim">
-                      · Avg: {(agentSkills.reduce((sum, s) => sum + s.proficiency, 0) / agentSkills.length).toFixed(1)}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {agentSkills.map(skill => (
-                      <div key={`${agentId}-${skill.skill_name}`} className={`rounded-lg border p-2.5 ${profColor(skill.proficiency)}`}>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-sm font-medium">{skill.skill_name}</span>
-                          <span className="text-xs font-bold">{skill.proficiency}/10</span>
-                        </div>
-                        {/* Proficiency bar */}
-                        <div className="h-1.5 bg-black/20 rounded-full overflow-hidden mb-1">
-                          <div
-                            className="h-full rounded-full bg-current transition-all duration-500"
-                            style={{ width: `${skill.proficiency * 10}%` }}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between text-[10px] opacity-70">
-                          <span>{profLabel(skill.proficiency)}</span>
-                          {(skill.success_count > 0 || skill.failure_count > 0) && (
-                            <span>{skill.success_count}✓ {skill.failure_count}✗</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      {/* Agent filter */}
+      <div className="px-6 py-3 border-b border-mission-control-border flex-shrink-0">
+        <Select.Root value={selectedAgent} onValueChange={setSelectedAgent} size="1">
+          <Select.Trigger />
+          <Select.Content>
+            <Select.Item value="all">All Agents</Select.Item>
+            {agents.map(a => (
+              <Select.Item key={a} value={a}>{AGENT_DISPLAY[a] ?? a}</Select.Item>
+            ))}
+          </Select.Content>
+        </Select.Root>
       </div>
-    </div>
+
+      <BaseModalBody maxHeight="70vh">
+        {loading ? (
+          <div className="text-center text-mission-control-text-dim/70 py-8 text-sm">Loading...</div>
+        ) : Object.keys(grouped).length === 0 ? (
+          <div className="text-center py-12">
+            <Award size={32} className="mx-auto text-mission-control-text-dim mb-3 opacity-40" />
+            <p className="text-mission-control-text-dim/70 text-sm">No skills tracked yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {Object.entries(grouped).map(([agentId, agentSkills]) => (
+              <div key={agentId}>
+                <Flex align="center" gap="2" className="mb-3">
+                  <div className="w-6 h-6 rounded-md bg-mission-control-border/40 flex items-center justify-center flex-shrink-0">
+                    <Bot size={12} className="text-mission-control-text-dim" />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">
+                    {AGENT_DISPLAY[agentId] ?? agentId}
+                  </span>
+                  <span className="text-[10px] text-mission-control-text-dim/70 tabular-nums">
+                    Avg {(agentSkills.reduce((sum, s) => sum + s.proficiency, 0) / agentSkills.length).toFixed(1)}/10
+                  </span>
+                </Flex>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {agentSkills.map(skill => (
+                    <div key={`${agentId}-${skill.skill_name}`} className={`rounded-lg border p-2.5 bg-mission-control-surface ${profColor(skill.proficiency)}`}>
+                      <Flex align="center" justify="between" className="mb-1.5">
+                        <span className="text-sm font-medium">{skill.skill_name}</span>
+                        <span className="text-xs font-bold tabular-nums">{skill.proficiency}/10</span>
+                      </Flex>
+                      {/* Proficiency bar */}
+                      <div className="h-1.5 bg-black/20 rounded-full overflow-hidden mb-1">
+                        <div
+                          className="h-full rounded-full bg-current transition-[width] duration-500"
+                          style={{ width: `${skill.proficiency * 10}%` }}
+                        />
+                      </div>
+                      <Flex align="center" justify="between" className="text-[10px] opacity-70 tabular-nums">
+                        <span>{profLabel(skill.proficiency)}</span>
+                        {(skill.success_count > 0 || skill.failure_count > 0) && (
+                          <span className="flex items-center gap-2">
+                            <span className="text-success">{skill.success_count} ok</span>
+                            <span className="text-error">{skill.failure_count} fail</span>
+                          </span>
+                        )}
+                      </Flex>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </BaseModalBody>
+    </BaseModal>
   );
 }

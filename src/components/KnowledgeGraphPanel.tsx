@@ -1,6 +1,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Network } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 
 interface Article {
   id: string;
@@ -191,9 +192,9 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
   for (const n of displayNodes) nodeMap[n.id] = n;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <Flex align="center" justify="center" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="relative w-full max-w-4xl mx-4 rounded-lg bg-mission-control-surface border border-mission-control-border shadow-2xl flex flex-col"
+        className="relative w-full max-w-4xl mx-4 rounded-2xl bg-mission-control-surface border border-mission-control-border shadow-2xl flex flex-col"
         style={{ height: '80vh' }}
         onClick={e => e.stopPropagation()}
       >
@@ -209,7 +210,12 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
               </span>
             ))}
           </div>
-          <button onClick={onClose} className="p-1.5 rounded hover:bg-mission-control-border text-mission-control-text-dim" aria-label="Close">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+          >
             <X size={14} />
           </button>
         </div>
@@ -236,7 +242,7 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
                     key={i}
                     x1={s.x} y1={s.y}
                     x2={t.x} y2={t.y}
-                    stroke="var(--color-border, #333)"
+                    stroke="var(--mission-control-border)"
                     strokeWidth={1.5}
                     strokeOpacity={0.5}
                   />
@@ -279,6 +285,6 @@ export default function KnowledgeGraphPanel({ articles, onNavigate, onClose }: P
           </p>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }

@@ -3,6 +3,7 @@ import {
   Bell, BellOff, Volume2, Moon, Clock,
   AlertCircle, Save, ZapOff
 } from 'lucide-react';
+import { Button, Flex, Switch, Select, TextField, Spinner } from '@radix-ui/themes';
 import { showToast } from './Toast';
 import { settingsApi } from '../lib/api';
 
@@ -107,15 +108,16 @@ export default function GlobalNotificationSettings() {
 
   if (loading) {
     return (
-      <div className="p-8 text-center">
-        <div className="text-mission-control-text-dim">Loading global notification settings...</div>
-      </div>
+      <Flex align="center" justify="center" gap="3" className="p-8">
+        <Spinner size="2" />
+        <span className="text-sm text-mission-control-text-dim">Loading global notification settings...</span>
+      </Flex>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <Flex align="center" justify="between">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Bell size={20} />
@@ -125,11 +127,11 @@ export default function GlobalNotificationSettings() {
             These settings apply to all conversations unless overridden individually
           </p>
         </div>
-      </div>
+      </Flex>
 
       {/* Do Not Disturb */}
       {isDND && (
-        <div className="bg-error-subtle border border-error-border rounded-lg p-4 flex items-start gap-3">
+        <div className="bg-error/10 border border-error/30 rounded-lg p-4 flex items-start gap-3">
           <BellOff size={20} className="text-error flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="font-medium text-error">Do Not Disturb Active</p>
@@ -139,12 +141,9 @@ export default function GlobalNotificationSettings() {
               </p>
             )}
           </div>
-          <button
-            onClick={handleDisableDND}
-            className="px-3 py-1.5 bg-mission-control-accent text-white rounded-lg text-sm hover:bg-mission-control-accent/80 transition-colors"
-          >
+          <Button variant="solid" color="violet" size="2" onClick={handleDisableDND}>
             Disable
-          </button>
+          </Button>
         </div>
       )}
 
@@ -155,175 +154,151 @@ export default function GlobalNotificationSettings() {
           Quick Do Not Disturb
         </h4>
         <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => handleQuickDND(1)}
-            className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors"
-          >
-            1 hour
-          </button>
-          <button
-            onClick={() => handleQuickDND(4)}
-            className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors"
-          >
-            4 hours
-          </button>
-          <button
-            onClick={() => handleQuickDND(24)}
-            className="px-3 py-2 bg-mission-control-border hover:bg-mission-control-accent hover:text-white rounded-lg text-sm transition-colors"
-          >
-            24 hours
-          </button>
+          <Button variant="surface" color="gray" size="2" onClick={() => handleQuickDND(1)}>1 hour</Button>
+          <Button variant="surface" color="gray" size="2" onClick={() => handleQuickDND(4)}>4 hours</Button>
+          <Button variant="surface" color="gray" size="2" onClick={() => handleQuickDND(24)}>24 hours</Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Default Notification Level */}
         <div>
-          <label htmlFor="default-notification-level" className="block font-medium mb-2">Default Notification Level</label>
-          <select
-            id="default-notification-level"
-            value={defaultNotificationLevel}
-            onChange={(e) => setDefaultNotificationLevel(e.target.value)}
-            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
-          >
-            <option value="all">All messages</option>
-            <option value="mentions">Mentions only</option>
-            <option value="none">None</option>
-          </select>
+          <label className="block text-sm font-medium text-mission-control-text mb-2">Default Notification Level</label>
+          <Select.Root value={defaultNotificationLevel} onValueChange={setDefaultNotificationLevel}>
+            <Select.Trigger className="w-full" />
+            <Select.Content>
+              <Select.Item value="all">All messages</Select.Item>
+              <Select.Item value="mentions">Mentions only</Select.Item>
+              <Select.Item value="none">None</Select.Item>
+            </Select.Content>
+          </Select.Root>
         </div>
 
         {/* Default Priority Level */}
         <div>
-          <label htmlFor="default-priority-level" className="block font-medium mb-2 flex items-center gap-2">
+          <label className="text-sm font-medium text-mission-control-text mb-2 flex items-center gap-2">
             <AlertCircle size={16} />
             Default Priority
           </label>
-          <select
-            id="default-priority-level"
-            value={defaultPriorityLevel}
-            onChange={(e) => setDefaultPriorityLevel(e.target.value)}
-            className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
-          >
-            <option value="low">Low</option>
-            <option value="normal">Normal</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
-          </select>
+          <Select.Root value={defaultPriorityLevel} onValueChange={setDefaultPriorityLevel}>
+            <Select.Trigger className="w-full" />
+            <Select.Content>
+              <Select.Item value="low">Low</Select.Item>
+              <Select.Item value="normal">Normal</Select.Item>
+              <Select.Item value="high">High</Select.Item>
+              <Select.Item value="urgent">Urgent</Select.Item>
+            </Select.Content>
+          </Select.Root>
         </div>
       </div>
 
       {/* Sound Settings */}
       <div>
-        <span className="block font-medium mb-3 flex items-center gap-2">
-          <Volume2 size={16} />
-          Sound
-        </span>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Sound</p>
         <div className="space-y-3">
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {defaultSoundEnabled ? <Volume2 size={15} className="text-mission-control-text-dim" /> : <Volume2 size={15} className="text-mission-control-text-dim/40" />}
+              <span className="text-sm text-mission-control-text">Enable notification sounds by default</span>
+            </div>
+            <Switch
+              size="2"
               checked={defaultSoundEnabled}
-              onChange={(e) => setDefaultSoundEnabled(e.target.checked)}
-              className="w-4 h-4 accent-mission-control-accent"
+              onCheckedChange={setDefaultSoundEnabled}
             />
-            <span>Enable notification sounds by default</span>
-          </label>
+          </div>
           {defaultSoundEnabled && (
-            <select
-              value={defaultSoundType}
-              onChange={(e) => setDefaultSoundType(e.target.value)}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg px-4 py-2 focus:outline-none focus:border-mission-control-accent"
-            >
-              <option value="default">Default</option>
-              <option value="subtle">Subtle</option>
-              <option value="urgent">Urgent</option>
-            </select>
+            <Select.Root value={defaultSoundType} onValueChange={setDefaultSoundType}>
+              <Select.Trigger className="w-full" />
+              <Select.Content>
+                <Select.Item value="default">Default</Select.Item>
+                <Select.Item value="subtle">Subtle</Select.Item>
+                <Select.Item value="urgent">Urgent</Select.Item>
+              </Select.Content>
+            </Select.Root>
           )}
         </div>
       </div>
 
       {/* Desktop Notifications */}
       <div>
-        <label className="flex items-center gap-3">
-          <input
-            type="checkbox"
+        <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Desktop</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bell size={15} className="text-mission-control-text-dim" />
+            <span className="text-sm text-mission-control-text">Show desktop notifications by default</span>
+          </div>
+          <Switch
+            size="2"
             checked={defaultDesktopNotifications}
-            onChange={(e) => setDefaultDesktopNotifications(e.target.checked)}
-            className="w-4 h-4 accent-mission-control-accent"
+            onCheckedChange={setDefaultDesktopNotifications}
           />
-          <span className="flex items-center gap-2">
-            <Bell size={16} />
-            Show desktop notifications by default
-          </span>
-        </label>
+        </div>
       </div>
 
       {/* Quiet Hours */}
       <div>
-        <span className="block font-medium mb-3 flex items-center gap-2">
-          <Moon size={16} />
-          Quiet Hours
-        </span>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Quiet Hours</p>
         <div className="space-y-3">
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Moon size={15} className="text-mission-control-text-dim" />
+              <span className="text-sm text-mission-control-text">Enable quiet hours (applies to all conversations)</span>
+            </div>
+            <Switch
+              size="2"
               checked={quietHoursEnabled}
-              onChange={(e) => setQuietHoursEnabled(e.target.checked)}
-              className="w-4 h-4 accent-mission-control-accent"
+              onCheckedChange={setQuietHoursEnabled}
             />
-            <span>Enable quiet hours (applies to all conversations)</span>
-          </label>
+          </div>
           {quietHoursEnabled && (
-            <div className="flex gap-3 items-center ml-7">
-              <input
+            <Flex gap="3" align="center" className="ml-5">
+              <TextField.Root
                 type="time"
                 value={quietStart}
                 onChange={(e) => setQuietStart(e.target.value)}
-                className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                size="2"
               />
-              <span className="text-mission-control-text-dim">to</span>
-              <input
+              <span className="text-sm text-mission-control-text-dim">to</span>
+              <TextField.Root
                 type="time"
                 value={quietEnd}
                 onChange={(e) => setQuietEnd(e.target.value)}
-                className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent"
+                size="2"
               />
-            </div>
+            </Flex>
           )}
         </div>
       </div>
 
       {/* Notification Batching */}
       <div>
-        <span className="block font-medium mb-3 flex items-center gap-2">
-          <Clock size={16} />
-          Notification Batching
-        </span>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Batching</p>
         <div className="space-y-3">
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock size={15} className="text-mission-control-text-dim" />
+              <span className="text-sm text-mission-control-text">Batch notifications (reduce interruptions)</span>
+            </div>
+            <Switch
+              size="2"
               checked={enableBatching}
-              onChange={(e) => setEnableBatching(e.target.checked)}
-              className="w-4 h-4 accent-mission-control-accent"
+              onCheckedChange={setEnableBatching}
             />
-            <span>Batch notifications (reduce interruptions)</span>
-          </label>
+          </div>
           {enableBatching && (
-            <div className="ml-7">
-              <label htmlFor="batch-interval" className="block text-sm text-mission-control-text-dim mb-2">
+            <div className="ml-5">
+              <label className="block text-xs text-mission-control-text-dim mb-2">
                 Batch interval (minutes)
               </label>
-              <input
-                id="batch-interval"
+              <TextField.Root
                 type="number"
-                value={batchIntervalMinutes}
+                value={String(batchIntervalMinutes)}
                 onChange={(e) => setBatchIntervalMinutes(parseInt(e.target.value) || 15)}
                 min="5"
                 max="60"
-                step="5"
-                className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2 focus:outline-none focus:border-mission-control-accent w-32"
+                size="2"
+                className="w-32"
               />
             </div>
           )}
@@ -332,20 +307,19 @@ export default function GlobalNotificationSettings() {
 
       {/* Save Button */}
       <div className="pt-4 border-t border-mission-control-border">
-        <button
+        <Button
           onClick={handleSave}
           disabled={saving}
-          className="px-6 py-2.5 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors flex items-center gap-2 disabled:opacity-50"
+          variant="solid"
+          color="violet"
+          size="2"
         >
           {saving ? (
-            <>Saving...</>
+            <><Spinner size="1" />Saving...</>
           ) : (
-            <>
-              <Save size={16} />
-              Save Global Settings
-            </>
+            <><Save size={16} />Save Global Settings</>
           )}
-        </button>
+        </Button>
         <p className="text-xs text-mission-control-text-dim mt-2">
           These settings apply to all conversations that don&apos;t have custom notification preferences.
         </p>

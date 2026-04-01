@@ -18,13 +18,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Debug auth
-    const rm = (client as any)?._requestMaker || {};
-    console.log('[x/tweet] consumerToken:', rm.consumerToken ? rm.consumerToken.substring(0, 8) + '...' : 'MISSING');
-    console.log('[x/tweet] accessToken:', rm.accessToken ? rm.accessToken.substring(0, 12) + '...' : 'MISSING');
-    console.log('[x/tweet] accessSecret length:', rm.accessSecret?.length || 'MISSING');
-
-    const { text, reply_to } = await req.json();
+    let body: { text?: string; reply_to?: string };
+    try { body = await req.json(); } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+    const { text, reply_to } = body;
     if (!text) return NextResponse.json({ error: 'text is required' }, { status: 400 });
 
     const params: { text: string; reply?: { in_reply_to_tweet_id: string } } = { text };

@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Coins, TrendingUp, AlertTriangle, Zap } from 'lucide-react';
 import { getAgentTheme } from '../utils/agentThemes';
 import AgentTokenDetailModal from './AgentTokenDetailModal';
+import { Box, Flex } from '@radix-ui/themes';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,9 +50,9 @@ function CostSparkline({ byDay }: { byDay: DayUsage[] }) {
 
   if (!points) {
     return (
-      <div className="flex items-center justify-center h-12 text-xs text-mission-control-text-dim">
+      <Flex align="center" justify="center" className="h-12 text-xs text-mission-control-text-dim">
         Not enough data
-      </div>
+      </Flex>
     );
   }
 
@@ -71,15 +72,15 @@ function CostSparkline({ byDay }: { byDay: DayUsage[] }) {
     >
       <defs>
         <linearGradient id="cost-spark-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--color-warning, #f59e0b)" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="var(--color-warning, #f59e0b)" stopOpacity="0.02" />
+          <stop offset="0%" stopColor="var(--color-warning)" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="var(--color-warning)" stopOpacity="0.02" />
         </linearGradient>
       </defs>
       <polygon points={fillPoints} fill="url(#cost-spark-fill)" />
       <polyline
         points={polylinePoints}
         fill="none"
-        stroke="var(--color-warning, #f59e0b)"
+        stroke="var(--color-warning)"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -89,7 +90,7 @@ function CostSparkline({ byDay }: { byDay: DayUsage[] }) {
           cx={points[points.length - 1].x}
           cy={points[points.length - 1].y}
           r={3}
-          fill="var(--color-warning, #f59e0b)"
+          fill="var(--color-warning)"
         />
       )}
     </svg>
@@ -118,8 +119,8 @@ function AgentBar({
       : String(agent.tokens);
 
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs">
+    <Box className="space-y-1">
+      <Flex align="center" justify="between" className="text-xs">
         <button
           type="button"
           onClick={onClick}
@@ -128,18 +129,18 @@ function AgentBar({
         >
           {label}
         </button>
-        <div className="flex items-center gap-2 text-mission-control-text-dim shrink-0 tabular-nums">
+        <Flex align="center" gap="2" className="text-mission-control-text-dim shrink-0 tabular-nums">
           <span>{tokLabel}</span>
           <span className="text-warning">${agent.cost.toFixed(4)}</span>
-        </div>
-      </div>
-      <div className="h-1.5 bg-mission-control-bg rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-500"
+        </Flex>
+      </Flex>
+      <Box className="h-1.5 bg-mission-control-bg rounded-full overflow-hidden">
+        <Box
+          className="h-full rounded-full transition-colors duration-500"
           style={{ width: `${pct}%`, backgroundColor: theme.color }}
         />
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
@@ -152,11 +153,15 @@ function BudgetBanner({ totalCost, budgetUsd }: { totalCost: number; budgetUsd: 
   const isOver = pct >= 100;
 
   return (
-    <div
-      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${
+    <Flex
+      align="center"
+      gap="2"
+      px="3"
+      py="2"
+      className={`rounded-lg text-xs font-medium ${
         isOver
-          ? 'bg-error-subtle border border-error-border text-error'
-          : 'bg-warning-subtle border border-warning-border text-warning'
+          ? 'bg-error/10 border border-error/30 text-error'
+          : 'bg-warning/10 border border-warning/30 text-warning'
       }`}
     >
       <AlertTriangle size={14} className="shrink-0" />
@@ -165,7 +170,7 @@ function BudgetBanner({ totalCost, budgetUsd }: { totalCost: number; budgetUsd: 
           ? `Monthly budget exceeded — $${totalCost.toFixed(4)} / $${budgetUsd.toFixed(2)} (${pct.toFixed(0)}%)`
           : `Approaching monthly budget — $${totalCost.toFixed(4)} / $${budgetUsd.toFixed(2)} (${pct.toFixed(0)}%)`}
       </span>
-    </div>
+    </Flex>
   );
 }
 
@@ -212,17 +217,17 @@ export default function TokenUsageWidget({ days = 30 }: { days?: number }) {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-mission-control-text-dim text-sm">Loading token data...</div>
-      </div>
+      <Flex height="100%" align="center" justify="center">
+        <Box className="text-mission-control-text-dim text-sm">Loading token data...</Box>
+      </Flex>
     );
   }
 
   if (!data) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-mission-control-text-dim text-sm">No token data available</div>
-      </div>
+      <Flex height="100%" align="center" justify="center">
+        <Box className="text-mission-control-text-dim text-sm">No token data available</Box>
+      </Flex>
     );
   }
 
@@ -237,49 +242,49 @@ export default function TokenUsageWidget({ days = 30 }: { days?: number }) {
       : String(data.totalTokens);
 
   return (
-    <div className="h-full flex flex-col gap-5 overflow-y-auto">
+    <Flex direction="column" gap="5" height="100%" className="overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <Flex align="center" justify="between">
+        <Flex align="center" gap="2">
           <Coins size={18} className="text-mission-control-accent" />
           <h2 className="text-base font-semibold">Token Usage</h2>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Budget alert banner */}
       <BudgetBanner totalCost={data.totalCost} budgetUsd={budgetUsd} />
 
       {/* Summary stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-1">
+      <Box className="grid grid-cols-2 gap-3">
+        <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+          <Flex align="center" gap="1" mb="1" className="text-xs text-mission-control-text-dim">
             <Zap size={13} className="text-warning" />
             Total Tokens
-          </div>
-          <div className="text-2xl font-bold tabular-nums">{totalLabel}</div>
-          <div className="text-xs text-mission-control-text-dim mt-0.5">last {days} days</div>
-        </div>
+          </Flex>
+          <Box className="text-2xl font-bold tabular-nums">{totalLabel}</Box>
+          <Box className="text-xs text-mission-control-text-dim mt-0.5">last {days} days</Box>
+        </Box>
 
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <div className="flex items-center gap-1.5 text-xs text-mission-control-text-dim mb-1">
+        <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+          <Flex align="center" gap="1" mb="1" className="text-xs text-mission-control-text-dim">
             <Coins size={13} className="text-success" />
             Est. Cost
-          </div>
-          <div className="text-2xl font-bold text-success tabular-nums">${data.totalCost.toFixed(4)}</div>
-          <div className="text-xs text-mission-control-text-dim mt-0.5 tabular-nums">
+          </Flex>
+          <Box className="text-2xl font-bold text-success tabular-nums">${data.totalCost.toFixed(4)}</Box>
+          <Box className="text-xs text-mission-control-text-dim mt-0.5 tabular-nums">
             {budgetUsd > 0 ? `of $${budgetUsd.toFixed(2)} budget` : 'no budget set'}
-          </div>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Top 3 agents */}
       {top3.length > 0 && (
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-3">
+        <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+          <Flex align="center" gap="1" mb="3" className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
             <TrendingUp size={12} />
             Top Consumers
-          </div>
-          <div className="space-y-3">
+          </Flex>
+          <Box className="space-y-3">
             {top3.map(agent => (
               <AgentBar
                 key={agent.agentId}
@@ -288,30 +293,30 @@ export default function TokenUsageWidget({ days = 30 }: { days?: number }) {
                 onClick={() => setSelectedAgent(agent.agentId)}
               />
             ))}
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
 
       {/* Daily spend sparkline */}
       {data.byDay.length > 0 && (
-        <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-mission-control-text-dim uppercase tracking-wider mb-3">
+        <Box p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+          <Flex align="center" gap="1" mb="3" className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
             <Coins size={12} />
             Daily Spend
-          </div>
+          </Flex>
           <CostSparkline byDay={data.byDay} />
-          <div className="flex justify-between text-xs text-mission-control-text-dim mt-1">
+          <Flex justify="between" mt="1" className="text-xs text-mission-control-text-dim">
             {data.byDay.length > 0 && <span>{data.byDay[0].date}</span>}
             {data.byDay.length > 1 && <span>{data.byDay[data.byDay.length - 1].date}</span>}
-          </div>
-        </div>
+          </Flex>
+        </Box>
       )}
 
       {/* Empty state */}
       {top3.length === 0 && data.byDay.length === 0 && (
-        <div className="flex-1 flex items-center justify-center text-sm text-mission-control-text-dim">
+        <Flex className="flex-1 text-sm text-mission-control-text-dim" align="center" justify="center">
           No token usage recorded in the last {days} days
-        </div>
+        </Flex>
       )}
 
       {/* Agent detail modal */}
@@ -320,6 +325,6 @@ export default function TokenUsageWidget({ days = 30 }: { days?: number }) {
         onClose={() => setSelectedAgent(null)}
         agent={selectedAgent}
       />
-    </div>
+    </Flex>
   );
 }

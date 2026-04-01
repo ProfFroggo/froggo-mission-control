@@ -7,24 +7,81 @@ export interface ExtractedArtifact {
   metadata?: ArtifactMetadata;
 }
 
+// Library path pattern — matches paths inside the mission-control library directory
+// Includes document/media types only (not source code or config files)
+const LIBRARY_PATH_RE = /(?:~|\/Users\/[^/\s]+)\/mission-control\/library\/\S+\.(?:html|htm|svg|pdf|md|png|jpg|jpeg|webp|gif|mp4|webm|mov)/gi;
+
+// Languages that count as document/media output artifacts (NOT process/code)
+// Agents produce these as deliverables; bash/python/typescript/json etc. are processes.
+const DOCUMENT_LANGS = new Set(['html', 'htm', 'svg', 'markdown', 'md']);
+
+// Code languages extracted as `code` artifacts (deliverable source code, not scripts/config)
+const CODE_LANGS = new Set([
+  'javascript', 'js', 'jsx', 'typescript', 'ts', 'tsx',
+  'python', 'py', 'sql', 'css', 'scss', 'sass',
+  'go', 'rust', 'rs', 'java', 'cpp', 'c',
+  'swift', 'kotlin', 'kt', 'ruby', 'rb', 'php',
+]);
+
+// Structured data languages extracted as `data` artifacts
+const DATA_LANGS = new Set(['json']);
+
+// Minimum non-blank lines for a code block to become an artifact (avoids trivial snippets)
+const MIN_CODE_LINES = 8;
+
+// Minimum characters for a structured-document response to become a text artifact
+const MIN_DOC_CHARS = 800;
+
 /**
- * Check if a message contains any extractable artifacts
+ * Returns true if content looks like a standalone structured document
+ * (has an H1 + at least 2 H2 headers + enough content).
+ * This catches long GTM strategies, reports, etc. returned as plain markdown.
+ */
+function isStructuredDocument(content: string): boolean {
+  if (content.length < MIN_DOC_CHARS) return false;
+  const hasH1 = /^#\s+\S/m.test(content);
+  if (!hasH1) return false;
+  const h2count = (content.match(/^##\s+\S/gm) ?? []).length;
+  return h2count >= 2;
+}
+
+function isSubstantialCode(code: string): boolean {
+  return code.split('\n').filter(l => l.trim()).length >= MIN_CODE_LINES;
+}
+
+/**
+ * Check if a message contains any extractable artifacts.
+ * Only returns true for final-output document/media types — not process scripts.
  */
 export function containsArtifacts(content: string): boolean {
-  // Check for code blocks
-  if (/```[\s\S]*?```/.test(content)) return true;
-  
-  // Check for image URLs or data URLs
+  // Document code blocks: html, svg, markdown only
+  if (/```(?:html|htm|svg|markdown|md)\b[\s\S]*?```/i.test(content)) return true;
+
+  // Substantial code blocks: recognized language + minimum non-blank lines
+  const codeRe = /```(\w+)\n([\s\S]*?)```/g;
+  let cm: RegExpExecArray | null;
+  codeRe.lastIndex = 0;
+  // eslint-disable-next-line no-cond-assign
+  while ((cm = codeRe.exec(content)) !== null) {
+    const lang = cm[1].toLowerCase();
+    if ((CODE_LANGS.has(lang) || DATA_LANGS.has(lang)) && isSubstantialCode(cm[2])) return true;
+  }
+
+  // Mermaid diagrams
+  if (/```mermaid\b[\s\S]*?```/i.test(content)) return true;
+
+  // Image markdown or standalone image URLs
   if (/!\[.*?\]\(.*?\)/.test(content)) return true;
-  if (/https?:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)/i.test(content)) return true;
-  if (/\/api\/library\?action=raw&id=[A-Za-z0-9_-]+/.test(content)) return true;
-  
-  // Check for mermaid diagrams
-  if (/```mermaid[\s\S]*?```/.test(content)) return true;
-  
-  // Check for JSON data blocks
-  if (/```json[\s\S]*?```/.test(content)) return true;
-  
+  if (/https?:\/\/[^\s]+\.(?:png|jpg|jpeg|gif|webp|svg)/i.test(content)) return true;
+  if (/\/api\/library\?action=raw&id=[A-Za-z0-9_=-]+/.test(content)) return true;
+
+  // Library file paths (agent output files)
+  LIBRARY_PATH_RE.lastIndex = 0;
+  if (LIBRARY_PATH_RE.test(content)) return true;
+
+  // Structured document: plain markdown response that looks like a deliverable
+  if (isStructuredDocument(content)) return true;
+
   return false;
 }
 
@@ -52,87 +109,104 @@ function extractTitleHint(content: string, matchIndex: number): string | null {
 }
 
 /**
- * Extract all artifacts from message content
+ * Extract final-output artifacts from message content.
+ *
+ * Artifacts = documents and media the agent produced as deliverables.
+ * NOT artifacts: bash scripts, python, typescript, JSON data, config files, etc.
+ *
+ * Extracted types:
+ *   - HTML / SVG code blocks  → file  (previewable sites/graphics)
+ *   - Markdown code blocks    → text  (document output)
+ *   - Mermaid diagrams        → diagram
+ *   - Image URLs              → image
+ *   - Library file paths      → file or image (agent-written output files)
  */
 export function extractAllArtifacts(content: string): ExtractedArtifact[] {
   const artifacts: ExtractedArtifact[] = [];
+  let match: RegExpExecArray | null;
 
-  // Extract code blocks
+  // ── Code blocks: document/media output types only ──────────────────────────
   const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
-  let match;
-
   while ((match = codeBlockRegex.exec(content)) !== null) {
-    const language = match[1] || 'text';
+    const lang = (match[1] || '').toLowerCase();
     const code = match[2].trim();
+    if (!code) continue;
     const titleHint = extractTitleHint(content, match.index) ?? undefined;
 
-    // Check if it's a Mermaid diagram
-    if (language.toLowerCase() === 'mermaid') {
-      artifacts.push({
-        type: 'diagram',
-        content: code,
-        metadata: { language: 'mermaid', titleHint },
-      });
+    if (lang === 'mermaid') {
+      artifacts.push({ type: 'diagram', content: code, metadata: { language: 'mermaid', titleHint } });
+    } else if (lang === 'html' || lang === 'htm') {
+      artifacts.push({ type: 'file', content: code, metadata: { language: 'html', titleHint } });
+    } else if (lang === 'svg') {
+      artifacts.push({ type: 'file', content: code, metadata: { language: 'svg', titleHint } });
+    } else if (lang === 'markdown' || lang === 'md') {
+      artifacts.push({ type: 'text', content: code, metadata: { language: 'markdown', titleHint } });
+    } else if (CODE_LANGS.has(lang) && isSubstantialCode(code)) {
+      artifacts.push({ type: 'code', content: code, metadata: { language: lang, titleHint } });
+    } else if (DATA_LANGS.has(lang) && isSubstantialCode(code)) {
+      artifacts.push({ type: 'data', content: code, metadata: { language: lang, titleHint } });
     }
-    // Check if it's JSON data
-    else if (language.toLowerCase() === 'json') {
-      artifacts.push({
-        type: 'data',
-        content: code,
-        metadata: { language: 'json', titleHint },
-      });
-    }
-    // Regular code
-    else if (code.length > 0) {
-      artifacts.push({
-        type: 'code',
-        content: code,
-        metadata: { language, titleHint },
-      });
-    }
+    // All other languages (bash, sh, yaml, etc.) → skip (process scripts, not deliverables)
   }
 
-  // Extract images (markdown format)
-  const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
-  while ((match = imageRegex.exec(content)) !== null) {
-    const altText = match[1];
+  // ── Images ─────────────────────────────────────────────────────────────────
+  const seenUrls = new Set<string>();
+
+  const imageMarkdownRegex = /!\[(.*?)\]\((.*?)\)/g;
+  while ((match = imageMarkdownRegex.exec(content)) !== null) {
     const url = match[2];
-
-    artifacts.push({
-      type: 'image',
-      content: url,
-      metadata: { filename: altText || 'image' },
-    });
-  }
-
-  // Extract standalone image URLs
-  const urlRegex = /https?:\/\/[^\s]+\.(png|jpg|jpeg|gif|webp|svg)/gi;
-  const seenUrls = new Set(artifacts.filter(a => a.type === 'image').map(a => a.content));
-
-  while ((match = urlRegex.exec(content)) !== null) {
-    const url = match[0];
+    // Skip bare filenames — only accept absolute URLs, root-relative paths, or data URIs
+    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/') && !url.startsWith('data:')) continue;
     if (!seenUrls.has(url)) {
-      artifacts.push({
-        type: 'image',
-        content: url,
-        metadata: { filename: 'image' },
-      });
+      artifacts.push({ type: 'image', content: url, metadata: { filename: match[1] || 'image' } });
       seenUrls.add(url);
     }
   }
 
-  // Extract Mission Control library image URLs
-  const libraryUrlRegex = /\/api\/library\?action=raw&id=[A-Za-z0-9_=-]+/g;
-  while ((match = libraryUrlRegex.exec(content)) !== null) {
+  const imageUrlRegex = /https?:\/\/[^\s]+\.(?:png|jpg|jpeg|gif|webp|svg)/gi;
+  while ((match = imageUrlRegex.exec(content)) !== null) {
     const url = match[0];
     if (!seenUrls.has(url)) {
-      artifacts.push({
-        type: 'image',
-        content: url,
-        metadata: { filename: 'image' },
-      });
+      artifacts.push({ type: 'image', content: url, metadata: { filename: 'image' } });
       seenUrls.add(url);
     }
+  }
+
+  const libraryImgUrlRegex = /\/api\/library\?action=raw&id=[A-Za-z0-9_=-]+/g;
+  while ((match = libraryImgUrlRegex.exec(content)) !== null) {
+    const url = match[0];
+    if (!seenUrls.has(url)) {
+      artifacts.push({ type: 'image', content: url, metadata: { filename: 'image' } });
+      seenUrls.add(url);
+    }
+  }
+
+  // ── Library file paths (agent output files) ────────────────────────────────
+  const seenPaths = new Set<string>();
+  LIBRARY_PATH_RE.lastIndex = 0;
+  while ((match = LIBRARY_PATH_RE.exec(content)) !== null) {
+    const filePath = match[0];
+    if (seenPaths.has(filePath)) continue;
+    seenPaths.add(filePath);
+
+    const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+    const filename = filePath.split('/').pop() ?? filePath;
+
+    if (['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext)) {
+      artifacts.push({ type: 'image', content: filePath, metadata: { filename, filePath } });
+    } else if (['html', 'htm', 'svg', 'pdf', 'mp4', 'webm', 'mov'].includes(ext)) {
+      artifacts.push({ type: 'file', content: filePath, metadata: { filename, filePath, language: ext } });
+    } else if (ext === 'md') {
+      artifacts.push({ type: 'text', content: filePath, metadata: { filename, filePath, language: 'markdown' } });
+    }
+  }
+
+  // ── Structured document (whole response is the artifact) ───────────────────
+  // Only if nothing else was extracted — avoids doubling when a doc also has code blocks
+  if (artifacts.length === 0 && isStructuredDocument(content)) {
+    // Extract H1 as title hint
+    const h1 = content.match(/^#\s+(.+)/m)?.[1]?.trim();
+    artifacts.push({ type: 'text', content, metadata: { language: 'markdown', titleHint: h1 } });
   }
 
   return artifacts;

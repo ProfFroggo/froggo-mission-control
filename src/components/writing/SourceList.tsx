@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pencil, Trash2, Plus, ExternalLink } from 'lucide-react';
+import { Flex } from '@radix-ui/themes';
 import { useResearchStore } from '../../store/researchStore';
 import { useWritingStore } from '../../store/writingStore';
 import SourceForm from './SourceForm';
@@ -54,7 +55,7 @@ export default function SourceList() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <Flex direction="column" height="100%">
       <div className="flex-1 overflow-y-auto space-y-1 p-2">
         {sources.length === 0 && editingId !== 'new-source' && (
           <p className="text-[11px] text-mission-control-text-dim text-center py-4">No sources yet</p>
@@ -73,7 +74,7 @@ export default function SourceList() {
               key={source.id}
               className="group p-2 rounded bg-mission-control-bg/30 hover:bg-mission-control-border/40 transition-colors"
             >
-              <div className="flex items-start justify-between gap-1">
+              <Flex align="start" justify="between" gap="1">
                 <div className="flex items-start gap-1.5 flex-1 min-w-0">
                   <span className="text-[9px] font-bold px-1 py-0.5 rounded flex-shrink-0 bg-mission-control-accent/20 text-mission-control-accent">
                     {typeBadge[source.type]?.abbr ?? 'OT'}
@@ -100,20 +101,20 @@ export default function SourceList() {
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                   <button
                     onClick={() => setEditingId(source.id)}
-                    className="p-0.5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border transition-colors"
                     title="Edit"
+                    className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     <Pencil size={11} />
                   </button>
                   <button
                     onClick={() => handleDelete(source.id)}
-                    className="p-0.5 rounded text-mission-control-text-dim hover:text-error hover:bg-error-subtle transition-colors"
                     title="Delete"
+                    className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     <Trash2 size={11} />
                   </button>
                 </div>
-              </div>
+              </Flex>
               {source.notes && (
                 <p className="text-[9px] text-mission-control-text-dim mt-0.5 ml-5 line-clamp-2">{source.notes}</p>
               )}
@@ -132,8 +133,8 @@ export default function SourceList() {
       {editingId !== 'new-source' && (
         <div className="p-2 border-t border-mission-control-border flex-shrink-0">
           <button
+            className="w-full inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             onClick={() => setEditingId('new-source')}
-            className="flex items-center gap-1.5 w-full px-2 py-1 rounded text-xs text-mission-control-text-dim hover:bg-mission-control-border hover:text-mission-control-text transition-colors"
           >
             <Plus size={14} />
             Add Source
@@ -156,6 +157,6 @@ export default function SourceList() {
         }}
         {...deleteDialog.config}
       />
-    </div>
+    </Flex>
   );
 }

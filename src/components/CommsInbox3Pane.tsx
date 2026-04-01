@@ -11,40 +11,33 @@
  * RIGHT: Message detail view with thread and reply
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Button, IconButton, TextField, TextArea, Flex } from '@radix-ui/themes';
 import {
   Mail,
   Inbox, Star, Archive, AlertTriangle,
-  RefreshCw, ChevronRight, ChevronDown, Search,
+  RefreshCw, ChevronRight, ChevronDown,
   Reply, Send,
   Sparkles, X, Paperclip, Eye, Check, MailOpen,
-  Activity as ActivityIcon, FileText, Code,
+  FileText, Code,
   CalendarPlus, ListPlus, Bot, CheckCheck, CheckCircle,
   Clock, Tag, MessageSquare, Filter, CheckSquare, Square,
   AtSign, ChevronUp, Trash2, Menu
 } from 'lucide-react';
+import SearchInput from './SearchInput';
 import { showToast } from './Toast';
-import { gateway } from '../lib/gateway';
 import { sanitizeHtml } from '../utils/sanitize';
-import { useStore, Activity } from '../store/store';
 import MarkdownMessage from './MarkdownMessage';
-import { inboxApi, taskApi, scheduleApi, accountsApi } from '../lib/api';
+import { taskApi, scheduleApi } from '../lib/api';
 import GoogleOAuthSetup from './GoogleOAuthSetup';
-
-// X logo
-const XIcon = ({ size = 16 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </svg>
-);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Account {
   id: string;
   label: string;
-  platform: 'email' | 'twitter' | 'system';
-  address?: string; // email address or phone number
+  platform: 'email';
+  address?: string;
   icon: React.ReactNode;
   color: string;
 }
@@ -108,102 +101,49 @@ interface AIAnalysis {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// Default email accounts (empty — populated dynamically from gateway or user settings)
-const DEFAULT_EMAIL_ACCOUNTS: Account[] = [];
-
-const PLATFORM_ICON_MAP: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-  twitter: { icon: <XIcon size={16} />, color: 'text-mission-control-text-dim', label: 'X / Twitter' },
-};
-
-const SYSTEM_ACCOUNT: Account = {
-  id: 'system',
-  label: 'System',
-  platform: 'system',
-  icon: <ActivityIcon size={16} />,
-  color: 'text-review',
-};
-
 const EMAIL_COLORS = ['text-warning', 'text-info', 'text-success', 'text-error', 'text-review'];
 
-// Build accounts from gateway channels + discovered email accounts + social module
-function buildAccountsFromSources(
-  channelAccounts: Record<string, Array<{ accountId: string; name?: string; connected?: boolean; enabled?: boolean; configured?: boolean; running?: boolean }>>,
-  emailAccounts: Array<{ email: string; label: string }>,
-  twitterConfigured?: boolean,
-): Account[] {
-  const accounts: Account[] = [];
-
-  // Email accounts from Google OAuth (or fallback)
-  emailAccounts.forEach((entry, i) => {
-    accounts.push({
-      id: `email-${entry.email}`,
-      label: entry.label,
-      platform: 'email',
-      address: entry.email,
-      icon: <Mail size={16} />,
-      color: EMAIL_COLORS[i % EMAIL_COLORS.length],
-    });
-  });
-
-  // Platform accounts from gateway — show if configured+running or connected or enabled
-  let hasTwitterFromGateway = false;
-  for (const [platform, entries] of Object.entries(channelAccounts)) {
-    if (platform === 'email') continue;
-    const meta = PLATFORM_ICON_MAP[platform];
-    if (!meta) continue;
-    const visible = entries.some(e => e.connected || e.enabled || e.configured);
-    if (visible) {
-      if (platform === 'twitter') hasTwitterFromGateway = true;
-      accounts.push({
-        id: platform,
-        label: meta.label,
-        platform: platform as Account['platform'],
-        icon: meta.icon,
-        color: meta.color,
-      });
-    }
-  }
-
-  // X/Twitter from social module (if not already added from gateway)
-  if (!hasTwitterFromGateway && twitterConfigured) {
-    accounts.push({
-      id: 'twitter',
-      label: 'X / Twitter',
-      platform: 'twitter' as Account['platform'],
-      icon: <XIcon size={16} />,
-      color: 'text-mission-control-text-dim',
-    });
-  }
-
-  // System always present
-  accounts.push(SYSTEM_ACCOUNT);
-
-  return accounts;
+function buildAccountsFromEmail(emailAccounts: Array<{ email: string; label: string }>): Account[] {
+  return emailAccounts.map((entry, i) => ({
+    id: `email-${entry.email}`,
+    label: entry.label,
+    platform: 'email' as const,
+    address: entry.email,
+    icon: <Mail size={16} />,
+    color: EMAIL_COLORS[i % EMAIL_COLORS.length],
+  }));
 }
 
-// Legacy fallback
 function buildAccountsFallback(): Account[] {
-  return [
-    ...DEFAULT_EMAIL_ACCOUNTS,
-    SYSTEM_ACCOUNT,
-  ];
+  return [];
 }
 
-const FOLDERS: Folder[] = [
-  { id: 'inbox', label: 'All', icon: <Inbox size={16} />, filter: () => true },
-  { id: 'unread', label: 'Unread', icon: <Eye size={16} />, filter: (m) => !m.is_read },
-  { id: 'starred', label: 'Starred', icon: <Star size={16} />, filter: (m) => !!m.is_starred },
-  { id: 'unreplied', label: 'Needs Reply', icon: <Reply size={16} />, filter: (m) => (m.unreplied_count && m.unreplied_count > 0) || (m.has_reply === false) },
-  { id: 'mentions', label: 'Mentions', icon: <AtSign size={16} />, filter: (m) => {
-    const kw = ['@you', '@me', 'mentioned you', 'tagged you'];
-    return kw.some(k => m.preview?.toLowerCase().includes(k) || m.subject?.toLowerCase().includes(k));
-  }},
-  { id: 'urgent', label: 'Urgent', icon: <AlertTriangle size={16} />, filter: (m) => {
-    const kw = ['urgent', 'asap', 'important', 'emergency', 'critical'];
-    return kw.some(k => m.preview?.toLowerCase().includes(k) || m.subject?.toLowerCase().includes(k));
-  }},
-  { id: 'archived', label: 'Archived', icon: <Archive size={16} />, filter: () => false }, // loaded separately
+// Gmail-native label folders — id matches Gmail labelIds param
+interface GmailLabel {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  gmailQ?: string;         // Gmail search query override
+  gmailLabelIds: string[]; // Gmail API labelIds param
+  clientFilter?: (m: ConversationItem) => boolean; // optional secondary filter
+}
+
+const GMAIL_LABELS: GmailLabel[] = [
+  { id: 'INBOX',   label: 'Inbox',       icon: <Inbox size={14} />,         gmailLabelIds: ['INBOX'] },
+  { id: 'STARRED', label: 'Starred',     icon: <Star size={14} />,          gmailLabelIds: ['STARRED'] },
+  { id: 'SENT',    label: 'Sent',        icon: <Send size={14} />,          gmailLabelIds: ['SENT'] },
+  { id: 'DRAFT',   label: 'Drafts',      icon: <FileText size={14} />,      gmailLabelIds: ['DRAFT'] },
+  { id: 'SPAM',    label: 'Spam',        icon: <AlertTriangle size={14} />, gmailLabelIds: ['SPAM'] },
+  { id: 'TRASH',   label: 'Trash',       icon: <Trash2 size={14} />,        gmailLabelIds: ['TRASH'] },
 ];
+
+// Keep FOLDERS alias for any existing usage during transition
+const FOLDERS = GMAIL_LABELS.map(l => ({
+  id: l.id.toLowerCase(),
+  label: l.label,
+  icon: l.icon,
+  filter: l.clientFilter ?? (() => true),
+}));
 
 // ─── Quick Reply Templates ─────────────────────────────────────────────────────
 
@@ -264,20 +204,12 @@ type TimeFilter = 'all' | 'today' | 'week';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function platformColor(p: string): string {
-  const map: Record<string, string> = {
-    email: 'text-warning', twitter: 'text-mission-control-text-dim', system: 'text-review'
-  };
-  return map[p] || 'text-mission-control-text-dim';
+function platformColor(_p: string): string {
+  return 'text-warning';
 }
 
-function platformIcon(platform: string, size: number) {
-  switch (platform) {
-    case 'email': return <Mail size={size} />;
-    case 'twitter': return <XIcon size={size} />;
-    case 'system': return <ActivityIcon size={size} />;
-    default: return <Mail size={size} />;
-  }
+function platformIcon(_platform: string, size: number) {
+  return <Mail size={size} />;
 }
 
 // Triage badge colors
@@ -371,52 +303,60 @@ function EmailBodyRenderer({ body, metadata }: { body: string; metadata: EmailMe
       {hasMetadata && (
         <div className="px-4 py-3 border-b border-mission-control-border space-y-1">
           {metadata.from && (
-            <div className="flex gap-2 text-sm">
+            <Flex gap="2" className="text-sm">
               <span className="text-mission-control-text-dim shrink-0 whitespace-nowrap">From</span>
               <span className="font-medium">{metadata.from}</span>
-            </div>
+            </Flex>
           )}
           {metadata.to && (
-            <div className="flex gap-2 text-sm">
+            <Flex gap="2" className="text-sm">
               <span className="text-mission-control-text-dim shrink-0 whitespace-nowrap">To</span>
               <span>{metadata.to}</span>
-            </div>
+            </Flex>
           )}
           {metadata.cc && (
-            <div className="flex gap-2 text-sm">
+            <Flex gap="2" className="text-sm">
               <span className="text-mission-control-text-dim shrink-0 whitespace-nowrap">Cc</span>
               <span className="text-mission-control-text-dim">{metadata.cc}</span>
-            </div>
+            </Flex>
           )}
           {metadata.date && (
-            <div className="flex gap-2 text-sm">
+            <Flex gap="2" className="text-sm">
               <span className="text-mission-control-text-dim shrink-0 whitespace-nowrap">Date</span>
               <span className="text-mission-control-text-dim">{metadata.date}</span>
-            </div>
+            </Flex>
           )}
           {metadata.subject && (
-            <div className="flex gap-2 text-sm">
+            <Flex gap="2" className="text-sm">
               <span className="text-mission-control-text-dim shrink-0 whitespace-nowrap">Subject</span>
               <span className="font-semibold">{metadata.subject}</span>
-            </div>
+            </Flex>
           )}
         </div>
       )}
 
       {/* HTML/Plain toggle for HTML emails */}
       {htmlMode && (
-        <div className="flex items-center gap-2 px-4 py-1.5 border-b border-mission-control-border bg-mission-control-bg/50">
+        <div className="flex items-center gap-0.5 p-1 mx-4 my-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
           <button
             onClick={() => setShowHtml(true)}
-            className={`text-xs px-2 py-0.5 rounded ${showHtml ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              showHtml
+                ? 'bg-mission-control-surface text-mission-control-accent shadow-sm'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+            }`}
           >
-            <Code size={10} className="inline mr-1" />HTML
+            <Code size={10} />HTML
           </button>
           <button
             onClick={() => setShowHtml(false)}
-            className={`text-xs px-2 py-0.5 rounded ${!showHtml ? 'bg-mission-control-accent/20 text-mission-control-accent' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              !showHtml
+                ? 'bg-mission-control-surface text-mission-control-accent shadow-sm'
+                : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/50'
+            }`}
           >
-            <FileText size={10} className="inline mr-1" />Plain
+            <FileText size={10} />Plain
           </button>
         </div>
       )}
@@ -468,10 +408,23 @@ function LeftPane({
 
   return (
     <div className="w-80 flex flex-col">
+      {/* Panel Header */}
+      <Flex align="center" justify="between" px="6" py="4" className="bg-mission-control-surface border-b border-mission-control-border">
+        <Flex align="center" gap="3">
+          <div className="p-2 bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+            <Mail size={16} className="text-mission-control-accent" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-mission-control-text">Communications</h2>
+            <p className="text-sm text-mission-control-text-dim">Messages &amp; inbox</p>
+          </div>
+        </Flex>
+      </Flex>
       {/* All Messages */}
       <button
+        type="button"
         onClick={() => { onSelectAccount(null); onSelectFolder('inbox'); }}
-        className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b border-mission-control-border transition-colors ${
+        className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b border-mission-control-border transition-colors w-full text-left ${
           selectedAccount === null ? 'bg-mission-control-accent/10 text-mission-control-accent' : 'hover:bg-mission-control-border'
         }`}
       >
@@ -487,8 +440,9 @@ function LeftPane({
       {/* Accounts Section — grouped by channel type */}
       <div className="border-b border-mission-control-border">
         <button
+          type="button"
           onClick={() => setAccountsExpanded(!accountsExpanded)}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider text-mission-control-text-dim w-full hover:bg-mission-control-border/50"
+          className="inline-flex items-center gap-2 px-4 py-2 w-full text-[10px] font-bold uppercase tracking-wider rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
           {accountsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           Channels
@@ -496,55 +450,31 @@ function LeftPane({
         </button>
         {accountsExpanded && (
           <div className="pb-2">
-            {/* Group accounts by platform */}
-            {(() => {
-              const emailAccts = accounts.filter(a => a.platform === 'email');
-              const twitterAccts = accounts.filter(a => a.platform === 'twitter');
-              const systemAccts = accounts.filter(a => a.platform === 'system');
-
-              const renderGroup = (label: string, groupAccounts: Account[]) => {
-                if (groupAccounts.length === 0) return null;
-                return (
-                  <div key={label}>
-                    <div className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-mission-control-text-dim">
-                      {label}
-                    </div>
-                    {groupAccounts.map(account => (
-                      <button
-                        key={account.id}
-                        onClick={() => { onSelectAccount(account.id); onSelectFolder('inbox'); }}
-                        className={`flex items-center gap-2.5 px-4 py-2 text-sm w-full transition-colors ${
-                          selectedAccount === account.id
-                            ? 'bg-mission-control-accent/10 text-mission-control-accent border-r-2 border-mission-control-accent'
-                            : 'hover:bg-mission-control-border/50'
-                        }`}
-                      >
-                        <span className={account.color}>{account.icon}</span>
-                        <div className="flex flex-col items-start flex-1 min-w-0">
-                          <span className="truncate w-full text-left">{account.label}</span>
-                          {account.address && (
-                            <span className="text-[10px] text-mission-control-text-dim truncate w-full text-left">{account.address}</span>
-                          )}
-                        </div>
-                        {(accountCounts[account.id] || 0) > 0 && (
-                          <span className="bg-mission-control-accent/20 text-mission-control-accent text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
-                            {accountCounts[account.id]}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                );
-              };
-
-              return (
-                <>
-                  {renderGroup('Email', emailAccts)}
-                  {renderGroup('X / Twitter', twitterAccts)}
-                  {renderGroup('System', systemAccts)}
-                </>
-              );
-            })()}
+            {accounts.map(account => (
+              <button
+                type="button"
+                key={account.id}
+                onClick={() => { onSelectAccount(account.id); onSelectFolder('inbox'); }}
+                className={`flex items-center gap-2.5 px-4 py-2 text-sm w-full transition-colors text-left ${
+                  selectedAccount === account.id
+                    ? 'bg-mission-control-accent/10 text-mission-control-accent border-r-2 border-mission-control-accent'
+                    : 'hover:bg-mission-control-border/50'
+                }`}
+              >
+                <span className={account.color}>{account.icon}</span>
+                <div className="flex flex-col items-start flex-1 min-w-0">
+                  <span className="truncate w-full text-left">{account.label}</span>
+                  {account.address && (
+                    <span className="text-xs text-mission-control-text-dim truncate w-full text-left">{account.address}</span>
+                  )}
+                </div>
+                {(accountCounts[account.id] || 0) > 0 && (
+                  <span className="bg-mission-control-accent/20 text-mission-control-accent text-xs px-1.5 py-0.5 rounded-full flex-shrink-0">
+                    {accountCounts[account.id]}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -552,8 +482,9 @@ function LeftPane({
       {/* Folders Section */}
       <div>
         <button
+          type="button"
           onClick={() => setFoldersExpanded(!foldersExpanded)}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider text-mission-control-text-dim w-full hover:bg-mission-control-border/50"
+          className="inline-flex items-center gap-2 px-4 py-2 w-full text-[10px] font-bold uppercase tracking-wider rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
           {foldersExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           Folders
@@ -562,9 +493,10 @@ function LeftPane({
           <div className="pb-2">
             {FOLDERS.map(folder => (
               <button
+                type="button"
                 key={folder.id}
                 onClick={() => onSelectFolder(folder.id)}
-                className={`flex items-center gap-2 px-4 py-2 text-sm w-full transition-colors ${
+                className={`flex items-center gap-2 px-4 py-2 text-sm w-full transition-colors text-left ${
                   selectedFolder === folder.id
                     ? 'bg-mission-control-accent/10 text-mission-control-accent'
                     : 'hover:bg-mission-control-border/50'
@@ -599,7 +531,6 @@ function CenterPane({
   accountLabel,
   onRefresh,
   refreshing,
-  selectedPlatform,
   hasMore,
   onLoadMore,
   onLoadAll,
@@ -618,60 +549,48 @@ function CenterPane({
   accountLabel: string;
   onRefresh: () => void;
   refreshing: boolean;
-  selectedPlatform?: string;
   hasMore?: boolean;
   onLoadMore?: () => void;
   onLoadAll?: () => void;
   aiAnalyses?: Map<string, AIAnalysis>;
   onMarkAllRead?: () => void;
 }) {
-  // Platform-specific empty states
-  const emptyState = () => {
-    const p = selectedPlatform;
-    if (p === 'system') return { icon: <ActivityIcon size={32} className="mx-auto mb-2 opacity-30" />, msg: 'No system activity' };
-    if (p === 'twitter') return { icon: <XIcon size={32} />, msg: 'No X DMs' };
-    return { icon: <Mail size={32} className="mx-auto mb-2 opacity-30" />, msg: 'No messages' };
-  };
-
   const unreadCount = conversations.filter(c => !c.is_read).length;
 
   return (
     <div className="w-96 flex-shrink-0 bg-mission-control-bg border-r border-mission-control-border flex flex-col">
       {/* Header */}
       <div className="px-4 py-3 border-b border-mission-control-border">
-        <div className="flex items-center justify-between mb-2">
+        <Flex align="center" justify="between" className="mb-2">
           <h2 className="font-semibold text-sm">{accountLabel}</h2>
-          <div className="flex items-center gap-1">
+          <Flex align="center" gap="1">
             {unreadCount > 0 && onMarkAllRead && (
               <button
+                type="button"
                 onClick={onMarkAllRead}
                 title="Mark all as read"
-                className="flex items-center gap-1 p-1.5 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim text-xs"
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <CheckCheck size={14} />
               </button>
             )}
             <button
+              type="button"
               onClick={onRefresh}
               disabled={loading || refreshing}
-              className="p-1.5 rounded-lg hover:bg-mission-control-border transition-colors disabled:opacity-50"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
             </button>
-          </div>
-        </div>
+          </Flex>
+        </Flex>
         {/* Search */}
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-mission-control-text-dim" />
-          <input
-            type="text"
-            aria-label="Search messages input"
-            value={searchQuery}
-            onChange={e => onSearchChange(e.target.value)}
-            placeholder="Search messages..."
-            className="w-full pl-9 pr-3 py-2 bg-mission-control-surface border border-mission-control-border rounded-lg text-sm focus:outline-none focus:border-mission-control-accent"
-          />
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onChange={onSearchChange}
+          placeholder="Search messages..."
+          className="w-full"
+        />
       </div>
 
       {/* Message List */}
@@ -681,17 +600,17 @@ function CenterPane({
           <div className="divide-y divide-mission-control-border/30">
             {[0, 1, 2].map(i => (
               <div key={i} className="px-3 py-3 animate-pulse">
-                <div className="flex items-start gap-2">
+                <Flex align="start" gap="2">
                   <div className="mt-2 w-2 h-2 rounded-full bg-mission-control-border flex-shrink-0" />
                   <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
+                    <Flex align="center" gap="2">
                       <div className="h-3 bg-mission-control-border rounded w-28" />
                       <div className="h-2 bg-mission-control-border rounded w-10 ml-auto" />
-                    </div>
+                    </Flex>
                     <div className="h-3 bg-mission-control-border rounded w-40" />
                     <div className="h-2 bg-mission-control-border rounded w-full" />
                   </div>
-                </div>
+                </Flex>
               </div>
             ))}
           </div>
@@ -711,31 +630,39 @@ function CenterPane({
                 tabIndex={0}
                 onClick={() => onSelect(conv)}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(conv); } }}
-                className={`group w-full text-left px-3 py-2.5 border-b border-mission-control-border/30 border-l-2 transition-colors cursor-pointer ${
+                className={`group w-full text-left flex items-start gap-3 px-4 py-3 border-b border-mission-control-border/40 border-l-2 transition-colors cursor-pointer last:border-b-0 ${
                   selectedId === conv.id
-                    ? 'bg-mission-control-accent/10 border-l-mission-control-accent'
-                    : 'border-l-transparent hover:bg-mission-control-surface'
-                } ${!conv.is_read ? 'bg-mission-control-surface/30' : ''}`}
+                    ? 'bg-mission-control-accent/[0.12] border-l-[var(--mission-control-accent,var(--accent-9))]'
+                    : !conv.is_read
+                    ? 'bg-mission-control-accent/5 border-l-transparent hover:bg-mission-control-accent/8'
+                    : 'border-l-transparent hover:bg-mission-control-border/10'
+                }`}
               >
-                <div className="flex items-start gap-2 overflow-hidden w-full">
-                  {/* Unread dot */}
-                  <div className="mt-2 flex-shrink-0 w-2">
-                    {!conv.is_read && <div className="w-2 h-2 bg-mission-control-accent rounded-full" />}
+                {/* Unread dot — always takes space to keep alignment */}
+                  <div className="mt-1.5 flex-shrink-0 w-2">
+                    {!conv.is_read && <div className="w-2 h-2 rounded-full bg-mission-control-accent" />}
                   </div>
 
                   <div className="flex-1 min-w-0 overflow-hidden">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className={`text-sm truncate flex-1 min-w-0 ${!conv.is_read ? 'font-bold' : 'font-medium'}`}>
+                    <Flex align="center" gap="2" className="mb-0.5">
+                      <span className={`text-sm truncate flex-1 min-w-0 ${!conv.is_read ? 'font-semibold text-mission-control-text' : 'font-medium text-mission-control-text/80'}`}>
                         {conv.name || conv.from || 'Unknown'}
                       </span>
-                      <span className="text-[11px] text-mission-control-text-dim flex-shrink-0">{conv.relativeTime}</span>
-                    </div>
+                      <span className={`text-[10px] tabular-nums flex-shrink-0 inline-flex items-center gap-0.5 ${
+                        Date.now() - new Date(conv.timestamp).getTime() > 3 * 24 * 60 * 60 * 1000
+                          ? 'text-warning'
+                          : 'text-mission-control-text-dim'
+                      }`}>
+                        {Date.now() - new Date(conv.timestamp).getTime() > 3 * 24 * 60 * 60 * 1000 && <Clock size={9} />}
+                        {conv.relativeTime}
+                      </span>
+                    </Flex>
                     {conv.subject && (
-                      <div className={`text-sm truncate ${!conv.is_read ? 'font-semibold' : 'text-mission-control-text/80'}`}>
+                      <div className={`text-xs text-mission-control-text-dim line-clamp-1 mt-0.5 ${!conv.is_read ? 'font-semibold text-mission-control-text' : ''}`}>
                         {conv.subject}
                       </div>
                     )}
-                    <p className="text-xs text-mission-control-text-dim/70 truncate mt-0.5">{conv.preview}</p>
+                    <p className="text-xs text-mission-control-text-dim/70 line-clamp-1 mt-0.5">{conv.preview}</p>
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                       <span className={`flex-shrink-0 ${platformColor(conv.platform)}`}>
                         {platformIcon(conv.platform, 10)}
@@ -747,20 +674,20 @@ function CenterPane({
                         />
                       )}
                       {conv.message_count && conv.message_count > 1 && (
-                        <span className="text-[10px] text-mission-control-text-dim bg-mission-control-border/60 rounded px-1 py-0.5">
+                        <span className="text-xs tabular-nums text-mission-control-text-dim bg-mission-control-border/60 rounded px-1 py-0.5">
                           {conv.message_count}
                         </span>
                       )}
                       {conv.unread_count && conv.unread_count > 0 && (
                         <span
-                          className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold tabular-nums bg-warning text-white rounded-full flex-shrink-0"
+                          className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold tabular-nums bg-mission-control-accent text-white rounded-full flex-shrink-0"
                           title={`${conv.unread_count} unread`}
                         >
-                          {conv.unread_count > 99 ? '99+' : conv.unread_count}
+                          {conv.unread_count > 999 ? '999+' : conv.unread_count}
                         </span>
                       )}
                       {((conv.unreplied_count && conv.unreplied_count > 0) || conv.has_reply === false) && (
-                        <span className="text-[10px] text-warning bg-warning-subtle rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
+                        <span className="text-xs text-warning bg-warning/10 rounded px-1 py-0.5 flex items-center gap-0.5 font-medium" title="Awaiting reply">
                           <Reply size={8} />
                           reply
                         </span>
@@ -773,41 +700,39 @@ function CenterPane({
                   </div>
 
                   {/* Action buttons */}
-                  {conv.platform !== 'system' && (
-                    <div className="flex flex-col gap-0.5 flex-shrink-0 ml-1">
+                  {(
+                    <div className="flex flex-col gap-0.5 flex-shrink-0 ml-auto pl-1">
                       <button
+                        type="button"
                         onClick={e => { e.stopPropagation(); onToggleStar(conv.id); }}
-                        className={`p-1 rounded hover:bg-mission-control-border transition-opacity ${
-                          conv.is_starred ? 'text-warning' : 'text-mission-control-text-dim opacity-0 group-hover:opacity-100'
-                        }`}
                         title={conv.is_starred ? 'Unstar' : 'Star'}
+                        className={`inline-flex items-center justify-center w-7 h-7 rounded-md hover:bg-mission-control-border/40 transition-colors ${conv.is_starred ? 'text-yellow-400' : 'text-mission-control-text-dim opacity-0 group-hover:opacity-100 transition-opacity'}`}
                       >
                         <Star size={14} fill={conv.is_starred ? 'currentColor' : 'none'} />
                       </button>
                       <button
                         onClick={e => { e.stopPropagation(); onArchive(conv); }}
-                        className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim opacity-0 group-hover:opacity-100 transition-opacity"
                         title="Archive"
+                        className="inline-flex items-center justify-center w-6 h-6 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors opacity-0 group-hover:opacity-100"
                       >
                         <Archive size={14} />
                       </button>
                       <button
                         onClick={e => { e.stopPropagation(); onToggleRead(conv); }}
-                        className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim opacity-0 group-hover:opacity-100 transition-opacity"
                         title={conv.is_read ? 'Mark unread' : 'Mark read'}
+                        className="inline-flex items-center justify-center w-6 h-6 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors opacity-0 group-hover:opacity-100"
                       >
                         {conv.is_read ? <MailOpen size={14} /> : <Check size={14} />}
                       </button>
                     </div>
                   )}
-                </div>
               </div>
             ))}
             {hasMore && onLoadMore && (
-              <div className="flex gap-2 px-2 py-2">
+              <Flex gap="2" px="2" py="2">
                 <button
                   onClick={onLoadMore}
-                  className="flex-1 py-2 text-sm text-mission-control-accent hover:bg-mission-control-surface/50 transition-colors flex items-center justify-center gap-1 rounded"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                 >
                   <ChevronDown size={14} />
                   Load more (+50)
@@ -815,12 +740,12 @@ function CenterPane({
                 {onLoadAll && (
                   <button
                     onClick={onLoadAll}
-                    className="flex-1 py-2 text-sm text-mission-control-accent hover:bg-mission-control-surface/50 transition-colors flex items-center justify-center gap-1 rounded"
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
                   >
                     Load All
                   </button>
                 )}
-              </div>
+              </Flex>
             )}
           </>
         )}
@@ -878,11 +803,11 @@ function InboxDashboard({
     <div className="flex-1 flex flex-col bg-mission-control-bg overflow-y-auto">
       {/* Header */}
       <div className="px-5 py-4 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center gap-2 mb-1">
+        <Flex align="center" gap="2" className="mb-1">
           <Sparkles size={18} className="text-mission-control-accent" />
           <h2 className="text-heading-2">Smart Inbox</h2>
           {analysisLoading && <RefreshCw size={12} className="animate-spin text-mission-control-text-dim ml-auto" />}
-        </div>
+        </Flex>
         <p className="text-xs text-mission-control-text-dim">AI-powered overview of your communications</p>
       </div>
 
@@ -891,19 +816,19 @@ function InboxDashboard({
         <div className="grid grid-cols-4 gap-2">
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
             <div className="text-2xl font-bold tabular-nums text-mission-control-accent">{unreadCount}</div>
-            <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Unread</div>
+            <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Unread</div>
           </div>
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
             <div className="text-2xl font-bold tabular-nums text-error">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'urgent').length}</div>
-            <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Urgent</div>
+            <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Urgent</div>
           </div>
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
             <div className="text-2xl font-bold tabular-nums text-warning">{priorityMessages.filter(m => aiAnalyses.get(m.id)?.triage === 'action').length}</div>
-            <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Action</div>
+            <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Action</div>
           </div>
           <div className="bg-mission-control-surface rounded-lg p-3 border border-mission-control-border">
             <div className="text-2xl font-bold tabular-nums text-mission-control-text">{messages.length}</div>
-            <div className="text-[10px] text-mission-control-text-dim uppercase tracking-wider">Total</div>
+            <div className="text-xs text-mission-control-text-dim uppercase tracking-wider">Total</div>
           </div>
         </div>
 
@@ -923,7 +848,7 @@ function InboxDashboard({
         {/* Priority Messages */}
         {priorityMessages.length > 0 && (
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
               <AlertTriangle size={12} />
               Needs Your Attention
             </h3>
@@ -932,31 +857,32 @@ function InboxDashboard({
                 const analysis = aiAnalyses.get(msg.id);
                 return (
                   <button
+                    type="button"
                     key={msg.id}
                     onClick={() => onSelect(msg)}
-                    className="w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-3 hover:border-mission-control-accent/50 hover:bg-mission-control-accent/5 transition-colors group"
+                    className="w-full text-left bg-mission-control-surface border border-mission-control-border rounded-lg p-3 hover:border-mission-control-accent/50 hover:bg-mission-control-accent/5 transition-colors group cursor-pointer"
                   >
-                    <div className="flex items-start gap-2">
+                    <Flex align="start" gap="2">
                       <span className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${
                         analysis?.triage === 'urgent' ? 'bg-error' : 'bg-warning'
                       }`} />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
+                        <Flex align="center" gap="2" className="mb-0.5">
                           <span className={`${platformColor(msg.platform)}`}>{platformIcon(msg.platform, 11)}</span>
                           <span className="text-sm font-medium truncate">{msg.name || msg.from}</span>
-                          <span className="text-[10px] text-mission-control-text-dim ml-auto flex-shrink-0">{msg.relativeTime}</span>
-                        </div>
+                          <span className="text-xs tabular-nums text-mission-control-text-dim ml-auto flex-shrink-0">{msg.relativeTime}</span>
+                        </Flex>
                         {analysis?.summary && (
                           <p className="text-xs text-mission-control-text/70 truncate">{analysis.summary}</p>
                         )}
                         {/* Quick action hint */}
                         {analysis?.reply_needed && (
-                          <span className="text-[10px] text-mission-control-accent mt-1 inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="text-xs text-mission-control-accent mt-1 inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Reply size={9} /> Click to reply
                           </span>
                         )}
                       </div>
-                    </div>
+                    </Flex>
                   </button>
                 );
               })}
@@ -967,25 +893,27 @@ function InboxDashboard({
         {/* Suggested Tasks from Comms */}
         {allTasks.length > 0 && (
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-2 flex items-center gap-1.5">
               <ListPlus size={12} />
               Suggested Tasks
             </h3>
             <div className="space-y-1.5">
               {allTasks.slice(0, 5).map((item) => (
-                <div key={`${item.task.title}-${item.from}`} className="flex items-center gap-2 bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2">
+                <Flex key={`${item.task.title}-${item.from}`} align="center" gap="2" className="bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-2">
                   <span className={`flex-shrink-0 ${platformColor(item.platform)}`}>{platformIcon(item.platform, 11)}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm truncate">{item.task.title}</p>
-                    <p className="text-[10px] text-mission-control-text-dim truncate">From {item.from}{item.task.description ? ` — ${item.task.description}` : ''}</p>
+                    <p className="text-xs text-mission-control-text-dim truncate">From {item.from}{item.task.description ? ` — ${item.task.description}` : ''}</p>
                   </div>
-                  <button
+                  <Button
                     onClick={() => onCreateTask(item.task)}
-                    className="flex-shrink-0 text-[10px] px-2.5 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20 rounded-md hover:bg-mission-control-accent/20 transition-colors font-medium"
+                    size="1"
+                    variant="soft"
+                   
                   >
                     Create
-                  </button>
-                </div>
+                  </Button>
+                </Flex>
               ))}
             </div>
           </div>
@@ -996,7 +924,7 @@ function InboxDashboard({
           <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
             <Sparkles size={32} className="mb-3 text-mission-control-text-dim/30" />
             <p className="text-sm text-mission-control-text-dim">AI is analyzing your messages...</p>
-            <p className="text-[10px] text-mission-control-text-dim/50 mt-1">Select a message or wait for batch analysis</p>
+            <p className="text-xs text-mission-control-text-dim/70 mt-1">Select a message or wait for batch analysis</p>
           </div>
         )}
 
@@ -1247,35 +1175,37 @@ function RightPane({
     );
   }
 
-  const isSystem = conversation.platform === 'system';
-
   return (
     <div className="flex-1 flex flex-col bg-mission-control-bg min-w-0 text-left">
       {/* Header */}
-      <div className="px-5 py-3 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between gap-3 mb-0.5">
-          <h2 className="font-bold text-base truncate min-w-0 flex-1">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0 bg-mission-control-surface">
+        <Flex align="center" justify="between" gap="3" className="mb-0.5 w-full">
+          <h2 className="text-sm font-semibold text-mission-control-text truncate min-w-0 flex-1">
             {conversation.subject || conversation.name || conversation.from || 'Message'}
           </h2>
           {onTriageWithAgent && (
-            <button
+            <Button
               onClick={onTriageWithAgent}
-              className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-mission-control-accent/10 text-mission-control-accent hover:bg-mission-control-accent/20 transition-colors flex-shrink-0"
+              size="1"
+              variant="soft"
+             
+              className="flex-shrink-0"
               title="Send to Inbox Agent for triage"
             >
               <Bot size={13} />
               Triage
-            </button>
+            </Button>
           )}
           <button
+            type="button"
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-mission-control-border flex-shrink-0"
+            className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors flex-shrink-0"
             title="Close"
           >
             <X size={16} />
           </button>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-mission-control-text-dim">
+        </Flex>
+        <Flex align="center" gap="2" className="text-sm text-mission-control-text-dim">
           <span className={platformColor(conversation.platform)}>
             {platformIcon(conversation.platform, 14)}
           </span>
@@ -1288,44 +1218,46 @@ function RightPane({
               <span>{conversation.message_count} messages in thread</span>
             </>
           )}
-        </div>
+        </Flex>
       </div>
 
       {/* AI Analysis Banner */}
-      {!isSystem && aiAnalysis && (
-        <div className="px-4 py-3 border-b border-mission-control-border bg-gradient-to-r from-mission-control-surface to-mission-control-bg/50">
+      {aiAnalysis && (
+        <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
           {/* Summary + Triage */}
-          <div className="flex items-center gap-2 mb-1.5">
+          <Flex align="center" gap="2" className="mb-1.5">
             <Sparkles size={13} className="text-mission-control-accent flex-shrink-0" />
             <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-              aiAnalysis.triage === 'urgent' ? 'bg-error-subtle text-error' :
-              aiAnalysis.triage === 'action' ? 'bg-warning-subtle text-warning' :
-              aiAnalysis.triage === 'fyi' ? 'bg-info-subtle text-info' :
+              aiAnalysis.triage === 'urgent' ? 'bg-error/10 text-error' :
+              aiAnalysis.triage === 'action' ? 'bg-warning/10 text-warning' :
+              aiAnalysis.triage === 'fyi' ? 'bg-info/10 text-info' :
               'bg-mission-control-bg/20 text-mission-control-text-dim'
             }`}>
               {TRIAGE_LABELS[aiAnalysis.triage]}
             </span>
             {!aiAnalysis.reply_needed && (
-              <span className="text-[10px] text-success bg-success-subtle px-1.5 py-0.5 rounded font-medium">
+              <span className="text-xs text-success bg-success/10 px-1.5 py-0.5 rounded font-medium">
                 No reply needed
               </span>
             )}
-          </div>
+          </Flex>
           <p className="text-xs text-mission-control-text/80 mb-2 leading-relaxed">{aiAnalysis.summary}</p>
 
           {/* Detected Tasks */}
           {aiAnalysis.tasks.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-1.5">
               {aiAnalysis.tasks.map((task) => (
-                <button
+                <Button
                   key={task.title}
                   onClick={() => onCreateTask?.(task)}
-                  className="flex items-center gap-1 text-[10px] px-2 py-1 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20 rounded-md hover:bg-mission-control-accent/20 transition-colors"
+                  size="1"
+                  variant="soft"
+                 
                   title={task.description}
                 >
                   <ListPlus size={10} />
                   {task.title}
-                </button>
+                </Button>
               ))}
             </div>
           )}
@@ -1334,15 +1266,18 @@ function RightPane({
           {aiAnalysis.events.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {aiAnalysis.events.map((event) => (
-                <button
+                <Button
                   key={event.title || `${event.date}-${event.time}`}
                   onClick={() => onCreateEvent?.(event)}
-                  className="flex items-center gap-1 text-[10px] px-2 py-1 bg-review-subtle text-review border border-review-border rounded-md hover:bg-review-subtle transition-colors"
+                  size="1"
+                  variant="soft"
+                  color="violet"
+                 
                   title={`${event.date} ${event.time || ''} ${event.location || ''}`}
                 >
                   <CalendarPlus size={10} />
                   {event.title}
-                </button>
+                </Button>
               ))}
             </div>
           )}
@@ -1350,53 +1285,41 @@ function RightPane({
       )}
 
       {/* Thread / Message Body */}
-      <div ref={threadScrollRef} className="flex-1 overflow-y-auto px-5 py-3 text-left min-w-0">
+      <div ref={threadScrollRef} className="flex-1 min-h-0 overflow-y-auto px-5 py-3 text-left min-w-0">
         {loadingThread || loadingBody ? (
           <div className="text-center text-mission-control-text-dim py-8 text-sm">Loading...</div>
-        ) : isSystem ? (
-          /* System activity detail */
-          <div className="bg-mission-control-surface rounded-lg p-4 border border-mission-control-border">
-            <div className="flex items-center gap-2 mb-3 pb-3 border-b border-mission-control-border">
-              <ActivityIcon size={14} className="text-review" />
-              <span className="font-semibold text-sm">{conversation.name || 'System'}</span>
-              <span className="text-xs text-mission-control-text-dim ml-auto">{conversation.relativeTime}</span>
-            </div>
-            <MarkdownMessage content={conversation.preview} />
-          </div>
         ) : conversation.platform === 'email' && emailBody ? (
           /* Email body with proper rendering */
           <EmailBodyRenderer body={emailBody} metadata={emailMetadata} />
         ) : thread.length > 0 ? (
           /* Chat thread */
-          <div className="space-y-4">
+          <div className="space-y-3">
             {thread.map((msg, i) => (
-              <div key={msg.id || i} className={`flex ${msg.fromMe ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[75%] rounded-lg px-4 py-2.5 ${
+              <Flex key={msg.id || i} justify={msg.fromMe ? 'end' : 'start'}>
+                <div className={`max-w-[75%] ${
                   msg.fromMe
-                    ? 'bg-mission-control-accent/20 border border-mission-control-accent/30'
-                    : 'bg-mission-control-surface border border-mission-control-border'
+                    ? 'bg-mission-control-accent text-white rounded-2xl rounded-br-sm px-4 py-2'
+                    : 'bg-mission-control-surface border border-mission-control-border rounded-2xl rounded-bl-sm px-4 py-2'
                 }`}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-semibold">{msg.fromMe ? 'You' : msg.senderName || msg.sender}</span>
-                    <span className="text-[10px] text-mission-control-text-dim">{msg.timestamp}</span>
-                  </div>
+                  <div className="text-xs font-semibold mb-0.5 opacity-70">{msg.fromMe ? 'You' : msg.senderName || msg.sender}</div>
                   {isHtmlContent(msg.text)
                     ? /* SECURITY: sanitizeInlineHtml → sanitizeHtml (DOMPurify) strips all unsafe HTML/attrs */
                       <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeInlineHtml(msg.text) }} />
-                    : <MarkdownMessage content={msg.text} />
+                    : <div className="text-sm leading-relaxed"><MarkdownMessage content={msg.text} /></div>
                   }
+                  <div className="text-[10px] text-mission-control-text-dim/60 mt-1">{msg.timestamp}</div>
                 </div>
-              </div>
+              </Flex>
             ))}
             <div ref={threadEndRef} />
           </div>
         ) : conversation.platform === 'telegram' ? (
           /* Telegram empty state — show preview while thread loads */
           <div className="bg-mission-control-surface rounded-lg p-4 border border-mission-control-border">
-            <div className="flex items-center gap-2 mb-3 pb-3 border-b border-mission-control-border text-info">
+            <Flex align="center" gap="2" className="mb-3 pb-3 border-b border-mission-control-border text-info">
               <Send size={14} />
               <span className="font-semibold text-sm text-mission-control-text">{conversation.name || conversation.from}</span>
-            </div>
+            </Flex>
             <div className="mb-3"><MarkdownMessage content={conversation.preview} /></div>
             <p className="text-xs text-mission-control-text-dim italic">Thread history could not be loaded. Check tgcli connection.</p>
           </div>
@@ -1408,21 +1331,22 @@ function RightPane({
         )}
       </div>
 
-      {/* AI Assistant Panel — not for system messages */}
-      {!isSystem && showAIPanel && (
+      {/* AI Assistant Panel */}
+      {showAIPanel && (
         <div className="px-5 py-3 border-t border-mission-control-border bg-mission-control-surface/50">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
+          <Flex align="center" justify="between" className="mb-3">
+            <Flex align="center" gap="2">
               <Sparkles size={16} className="text-mission-control-accent" />
               <span className="text-sm font-semibold">AI Assistant</span>
-            </div>
+            </Flex>
             <button
+              type="button"
               onClick={() => setShowAIPanel(false)}
-              className="p-1 rounded hover:bg-mission-control-border"
+              className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
             >
               <X size={14} />
             </button>
-          </div>
+          </Flex>
 
           {/* Suggested Replies */}
           <div className="mb-4">
@@ -1436,9 +1360,10 @@ function RightPane({
               <div className="space-y-2">
                 {suggestedReplies.map((reply) => (
                   <button
+                    type="button"
                     key={reply.slice(0, 50)}
                     onClick={() => applySuggestion(reply)}
-                    className="w-full text-left p-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent hover:bg-mission-control-accent/5 transition-colors text-sm"
+                    className="w-full text-left p-3 bg-mission-control-bg border border-mission-control-border rounded-lg hover:border-mission-control-accent hover:bg-mission-control-accent/5 transition-colors text-sm cursor-pointer"
                   >
                     {reply}
                   </button>
@@ -1450,25 +1375,25 @@ function RightPane({
           {/* Response Planner */}
           <div>
             <span className="text-xs font-medium text-mission-control-text-dim mb-2 block">Response Planner</span>
-            <p className="text-[10px] text-mission-control-text-dim mb-2">Tell AI what you want to say, and it&apos;ll draft the message for you</p>
-            <div className="flex gap-2">
-              <input
-                type="text"
+            <p className="text-xs text-mission-control-text-dim mb-2">Tell AI what you want to say, and it&apos;ll draft the message for you</p>
+            <Flex gap="2">
+              <TextField.Root
                 aria-label="AI response intent input"
                 value={aiIntent}
                 onChange={e => setAiIntent(e.target.value)}
                 placeholder="E.g., 'Confirm I'll handle this by tomorrow'"
-                className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-mission-control-accent"
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     generateFromIntent();
                   }
                 }}
+                className="flex-1"
               />
-              <button
+              <Button
                 onClick={generateFromIntent}
                 disabled={!aiIntent.trim() || generatingFromIntent}
-                className="bg-mission-control-accent hover:bg-mission-control-accent/80 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm flex items-center gap-2"
+                size="2"
+                variant="solid"
               >
                 {generatingFromIntent ? (
                   <>
@@ -1479,109 +1404,128 @@ function RightPane({
                     <Sparkles size={14} /> Generate
                   </>
                 )}
-              </button>
-            </div>
+              </Button>
+            </Flex>
           </div>
         </div>
       )}
 
       {/* Smart Reply Chips — Gmail-style quick replies */}
-      {!isSystem && !showAIPanel && !replyText && aiAnalysis?.reply_needed && (
+      {!showAIPanel && !replyText && aiAnalysis?.reply_needed && (
         <div className="px-5 py-2 border-t border-mission-control-border/50 bg-mission-control-surface/50 flex items-center gap-2 overflow-x-auto">
           <Sparkles size={11} className="text-mission-control-accent flex-shrink-0" />
           {aiAnalysis.reply_draft && (
-            <button
+            <Button
               onClick={() => setReplyText(aiAnalysis.reply_draft!)}
-              className="text-xs px-3 py-1.5 bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20 rounded-full hover:bg-mission-control-accent/20 transition-colors whitespace-nowrap"
+              size="1"
+              variant="soft"
+              radius="full"
+              className="whitespace-nowrap"
             >
               {aiAnalysis.reply_draft.length > 40 ? aiAnalysis.reply_draft.slice(0, 40) + '...' : aiAnalysis.reply_draft}
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             onClick={() => setReplyText('Thanks, got it!')}
-            className="text-xs px-3 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-full hover:border-mission-control-accent/30 transition-colors whitespace-nowrap"
+            size="1"
+            variant="soft"
+            color="gray"
+            radius="full"
+            className="whitespace-nowrap"
           >
             Thanks, got it!
-          </button>
-          <button
-            onClick={() => setReplyText("I&apos;ll look into this and get back to you.")}
-            className="text-xs px-3 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-full hover:border-mission-control-accent/30 transition-colors whitespace-nowrap"
+          </Button>
+          <Button
+            onClick={() => setReplyText("I'll look into this and get back to you.")}
+            size="1"
+            variant="soft"
+            color="gray"
+            radius="full"
+            className="whitespace-nowrap"
           >
             I&apos;ll look into this
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={generateReply}
             disabled={generating}
-            className="text-xs px-3 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-full hover:border-mission-control-accent/30 transition-colors whitespace-nowrap flex items-center gap-1"
+            size="1"
+            variant="soft"
+            color="gray"
+            radius="full"
+            className="whitespace-nowrap"
           >
             <Sparkles size={10} className={generating ? 'animate-spin' : ''} />
             Custom AI reply
-          </button>
+          </Button>
         </div>
       )}
 
-      {/* Reply Box — not for system messages */}
-      {!isSystem && (
-        <div className="px-5 py-3 border-t border-mission-control-border bg-mission-control-surface">
-          <div className="flex items-center justify-between mb-2">
+      {/* Reply Box */}
+      {(
+        <div className="flex flex-col gap-2 px-4 py-3 border-t border-mission-control-border flex-shrink-0 bg-mission-control-surface">
+          <Flex align="center" justify="between" className="mb-2">
             <span className="text-xs font-medium text-mission-control-text-dim">Reply</span>
-            <div className="flex items-center gap-2">
+            <Flex align="center" gap="2">
               <button
                 onClick={() => setShowAIPanel(!showAIPanel)}
-                className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
                   showAIPanel
-                    ? 'bg-mission-control-accent/20 text-mission-control-accent'
-                    : 'text-mission-control-accent hover:bg-mission-control-accent/10'
+                    ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent'
+                    : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text hover:border-mission-control-accent/20'
                 }`}
               >
                 <Sparkles size={14} />
                 AI Assist
               </button>
               <button
+                type="button"
                 onClick={generateReply}
                 disabled={generating}
-                className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-accent disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
               >
                 <Sparkles size={14} className={generating ? 'animate-spin' : ''} />
                 {generating ? 'Generating...' : 'Quick Draft'}
               </button>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <textarea
+            </Flex>
+          </Flex>
+          <Flex gap="2">
+            <TextArea
               ref={replyRef}
               aria-label="Reply message textarea"
               value={replyText}
               onChange={e => setReplyText(e.target.value)}
               placeholder="Write your reply..."
-              className="flex-1 bg-mission-control-bg border border-mission-control-border rounded-lg p-2.5 text-sm resize-none h-20 focus:outline-none focus:border-mission-control-accent"
+              className="flex-1"
+              rows={3}
               onKeyDown={e => {
                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                   handleSend();
                 }
               }}
             />
-          </div>
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-[10px] text-mission-control-text-dim">⌘+Enter to send</span>
-            <div className="flex gap-2">
+          </Flex>
+          <Flex align="center" justify="between" className="mt-2">
+            <span className="text-xs text-mission-control-text-dim">⌘+Enter to send</span>
+            <Flex gap="2">
               {replyText && (
                 <button
+                  type="button"
                   onClick={() => setReplyText('')}
-                  className="text-mission-control-text-dim hover:text-mission-control-text text-sm px-3 py-2"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                 >
                   Discard
                 </button>
               )}
-              <button
+              <Button
                 onClick={handleSend}
                 disabled={!replyText.trim()}
-                className="bg-mission-control-accent hover:bg-mission-control-accent/80 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm flex items-center gap-2"
+                size="2"
+                variant="solid"
               >
                 <Send size={14} /> Send
-              </button>
-            </div>
-          </div>
+              </Button>
+            </Flex>
+          </Flex>
         </div>
       )}
     </div>
@@ -1618,34 +1562,14 @@ export default function CommsInbox3Pane() {
     let cancelled = false;
     const loadAccounts = async () => {
       try {
-        // Fetch email accounts from Google auth if available, otherwise legacy accounts API
-        let emailAccounts: Array<{ email: string; label: string }> = [];
-
-        if (googleAuth.authenticated && googleAuth.email) {
-          emailAccounts = [{ email: googleAuth.email, label: googleAuth.email.split('@')[0] }];
-        } else {
-          const emailResult = await accountsApi.getAll()
-            .catch(() => null);
-          const emailResultAccounts = Array.isArray(emailResult) ? emailResult : (emailResult?.accounts || []);
-          emailAccounts = emailResultAccounts.length > 0
-            ? emailResultAccounts.map((a: any) => typeof a === 'string' ? { email: a, label: a } : a as { email: string; label: string })
-            : [];
-        }
+        // Email account from Google OAuth
+        const emailAccounts: Array<{ email: string; label: string }> = googleAuth.email
+          ? [{ email: googleAuth.email, label: googleAuth.email.split('@')[0] }]
+          : [];
 
         if (cancelled) return;
 
-        const channelAccounts = gateway.connected
-          ? ((await gateway.getChannelsStatus().catch(() => null))?.channelAccounts ?? {})
-          : {};
-
-        // Check if X/Twitter is configured via social module
-        let twitterConfigured = false;
-        try {
-          const flagRes = await fetch('/api/settings/twitter_setup_complete').then(r => r.ok ? r.json() : null).catch(() => null);
-          twitterConfigured = flagRes?.value === 'true';
-        } catch { /* non-critical */ }
-
-        const detected = buildAccountsFromSources(channelAccounts, emailAccounts, twitterConfigured);
+        const detected = buildAccountsFromEmail(emailAccounts);
         if (detected.length > 0) setAccounts(detected);
       } catch (e) {
         // ignore
@@ -1656,9 +1580,6 @@ export default function CommsInbox3Pane() {
     loadAccounts();
     return () => { cancelled = true; };
   }, [googleAuth.authenticated, googleAuth.email]);
-
-  // Zustand store for activities (system channel)
-  const activities = useStore((s) => s.activities);
 
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
   const [selectedFolder, setSelectedFolder] = useState('inbox');
@@ -1680,31 +1601,6 @@ export default function CommsInbox3Pane() {
   const [aiAnalyses, setAiAnalyses] = useState<Map<string, AIAnalysis>>(new Map());
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const analysisBatchRef = useRef<Set<string>>(new Set());
-
-  // Convert activities to ConversationItems for system channel
-  const systemMessages: ConversationItem[] = activities.map((a: Activity) => {
-    const diffMs = Date.now() - a.timestamp;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    let relativeTime = 'just now';
-    if (diffMins >= 60) relativeTime = `${diffHours}h ago`;
-    else if (diffMins >= 1) relativeTime = `${diffMins}m ago`;
-
-    const typeLabels: Record<string, string> = {
-      task: 'Task Update', chat: 'Chat', agent: 'Agent', system: 'System', error: 'Error'
-    };
-
-    return {
-      id: `system-${a.id}`,
-      platform: 'system',
-      name: typeLabels[a.type] || 'System',
-      subject: a.sessionKey ? `Session: ${a.sessionKey}` : undefined,
-      preview: a.message,
-      timestamp: new Date(a.timestamp).toISOString(),
-      relativeTime,
-      is_read: true,
-    };
-  });
 
   // Determine which account's platform we're filtering on
   const getAccountPlatform = (accountId: string | null): string | null => {
@@ -1769,10 +1665,6 @@ export default function CommsInbox3Pane() {
     const fCounts: Record<string, number> = {};
 
     for (const account of accounts) {
-      if (account.platform === 'system') {
-        aCounts[account.id] = systemMessages.filter(m => !m.is_read).length;
-        continue;
-      }
       const platform = account.platform;
       aCounts[account.id] = msgs.filter(m => {
         if (m.platform !== platform || m.is_read) return false;
@@ -1793,7 +1685,7 @@ export default function CommsInbox3Pane() {
 
     setAccountCounts(aCounts);
     setFolderCounts(fCounts);
-  }, [accounts, systemMessages.length]);
+  }, [accounts]);
 
   // Load messages from backend
   const loadMessages = useCallback(async (forceRefresh = false) => {
@@ -1805,52 +1697,33 @@ export default function CommsInbox3Pane() {
     }
 
     try {
-      // Fetch messages from all sources: Gmail + X/Twitter inbox + generic inbox
       let chats: ConversationItem[] = [];
 
-      // Source 1: Gmail (if authenticated)
       if (googleAuth.authenticated) {
-        const gmailQ = showArchived ? '-in:inbox' : 'in:inbox';
-        const gmailResult = await fetch(`/api/gmail/messages?q=${encodeURIComponent(gmailQ)}&maxResults=50`).then(r => r.json()).catch(() => ({ messages: [] }));
-        if (gmailResult.needsAuth || gmailResult.error === 'deleted_client' || gmailResult.error?.includes('invalid_client') || gmailResult.error?.includes('deleted')) {
+        // Use Gmail label for the selected folder
+        const gmailLabel = GMAIL_LABELS.find(l => l.id === selectedFolder.toUpperCase()) ?? GMAIL_LABELS[0];
+        const params = new URLSearchParams({
+          labelIds: gmailLabel.gmailLabelIds.join(','),
+          maxResults: '50',
+        });
+        const gmailResult = await fetch(`/api/gmail/messages?${params}`).then(r => r.json()).catch(() => ({ messages: [] }));
+        if (gmailResult.needsAuth || gmailResult.error?.includes('invalid_client') || gmailResult.error?.includes('deleted')) {
           setGoogleAuth({ authenticated: false, checked: true });
         } else {
           chats = (gmailResult.messages ?? []) as ConversationItem[];
         }
-      } else {
-        // Fallback: generic inbox items (non-mention)
-        const result = await inboxApi.getAll({ limit: String(messageLimit), archived: String(showArchived) });
-        const items = Array.isArray(result) ? result : (result?.chats || result?.items || []);
-        chats = items.filter((item: any) => item.type !== 'x-mention');
       }
 
-      // Source 2: X/Twitter mentions from inbox DB (always load these)
-      try {
-        const xResult = await inboxApi.getAll();
-        const xItems = (Array.isArray(xResult) ? xResult : [])
-          .filter((item: any) => item.type === 'x-mention')
-          .map((item: any) => {
-            let meta: any = {};
-            try { meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : (item.metadata || {}); } catch { /* noop */ }
-            return {
-              id: String(item.id),
-              platform: 'twitter',
-              from: meta.author_username ? `@${meta.author_username}` : 'Unknown',
-              name: meta.author_name || meta.author_username || 'Unknown',
-              subject: meta.mention_type === 'reply' ? 'Reply' : meta.mention_type === 'quote' ? 'Quote Tweet' : 'Mention',
-              preview: item.content || meta.text || '',
-              timestamp: new Date(meta.created_at || item.createdAt || Date.now()).toISOString(),
-              relativeTime: '',
-              is_read: !!item.isRead,
-              is_starred: !!item.starred,
-              priorityLevel: meta.ai_judgment?.triage === 'escalate' ? 'urgent' : undefined,
-            } as ConversationItem;
-          });
-        chats = [...chats, ...xItems];
-      } catch { /* X mentions non-critical */ }
-
       if (isMounted.current) {
-        const msgs = (chats as unknown as ConversationItem[]).map(m => {
+        // Deduplicate by id — prevents double-rendering when sources overlap
+        const seen = new Set<string>();
+        const unique = (chats as unknown as ConversationItem[]).filter(m => {
+          const k = String(m.id);
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+        const msgs = unique.map(m => {
           if (!m.timestamp) return m;
           const diffMs = Date.now() - new Date(m.timestamp).getTime();
           const diffMins = Math.floor(diffMs / 60000);
@@ -1877,29 +1750,12 @@ export default function CommsInbox3Pane() {
     }
   }, [selectedFolder, computeCounts, messageLimit, googleAuth.authenticated]);
 
-  // Determine the selected platform for empty state
-  const selectedPlatform = selectedAccount
-    ? accounts.find(a => a.id === selectedAccount)?.platform
-    : undefined;
 
   // Update display when filters change
   useEffect(() => {
-    // If system account is selected, show system messages
-    if (selectedPlatform === 'system') {
-      let filtered = [...systemMessages];
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        filtered = filtered.filter(m =>
-          (m.name && m.name.toLowerCase().includes(q)) ||
-          m.preview.toLowerCase().includes(q)
-        );
-      }
-      setDisplayMessages(filtered);
-    } else {
-      const filtered = filterMessages(allMessages, selectedAccount, selectedFolder, searchQuery);
-      setDisplayMessages(filtered);
-    }
-  }, [allMessages, selectedAccount, selectedFolder, searchQuery, filterMessages, selectedPlatform, activities]);
+    const filtered = filterMessages(allMessages, selectedAccount, selectedFolder, searchQuery);
+    setDisplayMessages(filtered);
+  }, [allMessages, selectedAccount, selectedFolder, searchQuery, filterMessages]);
 
   // Initial load + event-driven refresh with 60s fallback
   useEffect(() => {
@@ -2008,13 +1864,17 @@ export default function CommsInbox3Pane() {
         }
       }
 
-      // Mark as read
-      try {
-        await inboxApi.markRead(Number(selectedConversation.id) || 0).catch(() => {});
-        setAllMessages(prev => prev.map(m =>
-          m.id === selectedConversation.id ? { ...m, is_read: true } : m
-        ));
-      } catch (_e) { /* ignore */ }
+      // Mark as read via Gmail API
+      if (googleAuth.authenticated) {
+        await fetch(`/api/gmail/messages/${selectedConversation.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ read: true }),
+        }).catch(() => {});
+      }
+      setAllMessages(prev => prev.map(m =>
+        m.id === selectedConversation.id ? { ...m, is_read: true } : m
+      ));
 
       // Trigger AI analysis
       if (selectedConversation.platform !== 'system') {
@@ -2189,8 +2049,6 @@ export default function CommsInbox3Pane() {
     try {
       if (googleAuth.authenticated && conv.platform === 'email') {
         await fetch(`/api/gmail/messages/${conv.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ read: newReadState }) });
-      } else {
-        await inboxApi.markRead(Number(conv.id) || 0).catch(() => {});
       }
       setAllMessages(prev => prev.map(m =>
         m.id === conv.id ? { ...m, is_read: newReadState } : m
@@ -2206,9 +2064,6 @@ export default function CommsInbox3Pane() {
       if (googleAuth.authenticated && currentMsg?.platform === 'email') {
         await fetch(`/api/gmail/messages/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ starred: newStarred }) });
         setAllMessages(prev => prev.map(m => m.id === id ? { ...m, is_starred: newStarred } : m));
-      } else {
-        const result = await inboxApi.star(Number(id) || 0, newStarred);
-        if (result) setAllMessages(prev => prev.map(m => m.id === id ? { ...m, is_starred: newStarred } : m));
       }
     } catch (e) { /* ignore */ }
   };
@@ -2308,15 +2163,19 @@ export default function CommsInbox3Pane() {
   const showGmailSetup = googleAuth.checked && !googleAuth.authenticated && allMessages.length === 0;
 
   return (
-    <div className="h-full flex overflow-hidden relative">
+    <Flex height="100%" className="overflow-hidden relative">
       {/* Mobile sidebar toggle */}
-      <button
+      <IconButton
         onClick={() => setMobileSidebarOpen(true)}
-        className="md:hidden absolute top-3 left-3 z-30 p-2 rounded-lg bg-mission-control-surface border border-mission-control-border hover:bg-mission-control-border transition-colors"
+        size="2"
+        variant="soft"
+        color="gray"
+       
         aria-label="Open sidebar"
+        className="md:hidden absolute top-3 left-3 z-30"
       >
         <Menu size={16} />
-      </button>
+      </IconButton>
 
       {/* Mobile sidebar overlay */}
       {mobileSidebarOpen && (
@@ -2333,7 +2192,7 @@ export default function CommsInbox3Pane() {
               loadingAccounts={loadingAccounts}
             />
           </div>
-          <div className="flex-1 bg-black/40" onClick={() => setMobileSidebarOpen(false)} />
+          <div className="flex-1 bg-black/60 backdrop-blur-sm" onClick={() => setMobileSidebarOpen(false)} />
         </div>
       )}
 
@@ -2373,7 +2232,6 @@ export default function CommsInbox3Pane() {
             accountLabel={getAccountLabel()}
             onRefresh={() => loadMessages(true)}
             refreshing={refreshing}
-            selectedPlatform={selectedPlatform}
             hasMore={displayMessages.length >= messageLimit}
             onLoadMore={handleLoadMore}
             onLoadAll={handleLoadAll}
@@ -2400,6 +2258,6 @@ export default function CommsInbox3Pane() {
           />
         </>
       )}
-    </div>
+    </Flex>
   );
 }

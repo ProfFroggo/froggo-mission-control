@@ -14,6 +14,7 @@ import {
   Download,
   X,
 } from 'lucide-react';
+import { Button, Flex } from '@radix-ui/themes';
 import BaseModal, { BaseModalHeader } from './BaseModal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -84,12 +85,12 @@ interface SparklineProps {
   currentValue?: string;
 }
 
-function Sparkline({ data, width = 120, height = 36, color = 'var(--color-info, #3b82f6)', label, unit = '', currentValue }: SparklineProps) {
+function Sparkline({ data, width = 120, height = 36, color = 'var(--color-info)', label, unit = '', currentValue }: SparklineProps) {
   if (data.length < 2) {
     return (
       <div className="flex flex-col gap-1">
         {label && <span className="text-[10px] text-mission-control-text-dim uppercase tracking-wide">{label}</span>}
-        <div style={{ width, height }} className="flex items-center justify-center text-[10px] text-mission-control-text-dim">no data</div>
+        <Flex style={{ width, height }} align="center" justify="center" className="text-[10px] text-mission-control-text-dim">no data</Flex>
       </div>
     );
   }
@@ -112,14 +113,14 @@ function Sparkline({ data, width = 120, height = 36, color = 'var(--color-info, 
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <div className="flex items-baseline justify-between">
+        <Flex align="baseline" justify="between">
           <span className="text-[10px] text-mission-control-text-dim uppercase tracking-wide">{label}</span>
           {currentValue && (
             <span className="text-[11px] font-mono font-medium text-mission-control-text tabular-nums">
               {currentValue}{unit}
             </span>
           )}
-        </div>
+        </Flex>
       )}
       <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
         <polyline
@@ -156,14 +157,14 @@ function StatusItem({ icon, label, status, detail }: StatusItemProps) {
     'text-error';
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border">
+    <Flex align="center" gap="2" className="px-3 py-2 rounded-lg bg-mission-control-surface border border-mission-control-border">
       <span className="text-mission-control-text-dim">{icon}</span>
       <div className="flex flex-col flex-1 min-w-0">
         <span className="text-xs font-medium text-mission-control-text">{label}</span>
         {detail && <span className="text-[10px] text-mission-control-text-dim truncate">{detail}</span>}
       </div>
       <StatusIcon size={14} className={iconColor} aria-label={status} />
-    </div>
+    </Flex>
   );
 }
 
@@ -178,7 +179,7 @@ interface StatCardProps {
 function StatCard({ label, value, sub }: StatCardProps) {
   return (
     <div className="flex flex-col gap-0.5 px-3 py-2.5 rounded-lg bg-mission-control-surface border border-mission-control-border">
-      <span className="text-[10px] uppercase tracking-wide text-mission-control-text-dim">{label}</span>
+      <span className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim">{label}</span>
       <span className="text-base font-semibold text-mission-control-text tabular-nums font-mono">{value}</span>
       {sub && <span className="text-[10px] text-mission-control-text-dim">{sub}</span>}
     </div>
@@ -307,7 +308,7 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
       showCloseButton={false}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-mission-control-border">
+      <Flex align="center" gap="3" className="px-6 py-4 border-b border-mission-control-border">
         <Activity size={18} className="text-mission-control-accent flex-shrink-0" />
         <div className="flex-1 min-w-0">
           <h2 className="text-base font-semibold text-mission-control-text">Platform Health</h2>
@@ -321,54 +322,55 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
         {/* Overall status pill */}
         <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border ${
           overall === 'ok'
-            ? 'bg-success-subtle border-success/30 text-success'
+            ? 'bg-success/10 border-success/30 text-success'
             : overall === 'degraded'
-            ? 'bg-warning-subtle border-warning/30 text-warning'
-            : 'bg-error-subtle border-error/30 text-error'
+            ? 'bg-warning/10 border-warning/30 text-warning'
+            : 'bg-error/10 border-error/30 text-error'
         }`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${statusDotColor(overall)}`} />
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusDotColor(overall)}`} />
           {overall === 'ok' ? 'Healthy' : overall === 'degraded' ? 'Degraded' : 'Error'}
         </span>
 
         {/* Refresh button */}
         <button
+          type="button"
           onClick={fetchMetrics}
           disabled={loading}
-          className="p-1.5 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text disabled:opacity-50"
-          title="Refresh metrics"
-          type="button"
           aria-label="Refresh metrics"
+          title="Refresh metrics"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
         </button>
 
         {/* Export CSV */}
-        <button
+        <Button
           onClick={() => exportCsv(history)}
           disabled={history.length === 0}
-          className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-lg bg-mission-control-surface border border-mission-control-border hover:bg-mission-control-border transition-colors text-mission-control-text disabled:opacity-40"
+          size="1"
+          variant="soft"
+         
           title="Export metrics as CSV"
-          type="button"
         >
           <Download size={12} aria-hidden="true" />
           Export
-        </button>
+        </Button>
 
         {/* Close */}
         <button
-          onClick={onClose}
-          className="p-1.5 rounded-lg hover:bg-mission-control-border transition-colors text-mission-control-text-dim hover:text-mission-control-text"
           type="button"
+          onClick={onClose}
           aria-label="Close health dashboard"
+          className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
         >
           <X size={14} />
         </button>
-      </div>
+      </Flex>
 
-      <div className="overflow-y-auto p-6 flex flex-col gap-6" style={{ maxHeight: 'calc(90vh - 64px)' }}>
+      <div className="overflow-y-auto p-6 flex flex-col gap-6 max-h-[calc(90vh-64px)]">
         {/* ── Traffic light status row ── */}
         <section>
-          <h3 className="text-[11px] uppercase tracking-widest text-mission-control-text-dim mb-3 font-medium">Component Status</h3>
+          <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Component Status</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <StatusItem
               icon={<Database size={13} />}
@@ -399,13 +401,13 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
 
         {/* ── Sparkline charts ── */}
         <section>
-          <h3 className="text-[11px] uppercase tracking-widest text-mission-control-text-dim mb-3 font-medium">Trends (last {history.length} samples)</h3>
+          <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Trends (last {history.length} samples)</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-lg bg-mission-control-surface border border-mission-control-border">
             <Sparkline
               data={responseTimeSeries}
               width={SPARKLINE_WIDTH}
               height={SPARKLINE_HEIGHT}
-              color="var(--color-info, #3b82f6)"
+              color="var(--color-info)"
               label="API Response"
               unit="ms"
               currentValue={current ? String(current.api.avgResponseMs) : undefined}
@@ -414,7 +416,7 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
               data={activeAgentsSeries}
               width={SPARKLINE_WIDTH}
               height={SPARKLINE_HEIGHT}
-              color="var(--color-success, #22c55e)"
+              color="var(--color-success)"
               label="Active Agents"
               currentValue={current ? String(current.agents.active) : undefined}
             />
@@ -422,7 +424,7 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
               data={completionRateSeries}
               width={SPARKLINE_WIDTH}
               height={SPARKLINE_HEIGHT}
-              color="var(--mission-control-accent, #22c55e)"
+              color="var(--mission-control-accent)"
               label="Task Completion"
               unit="%"
               currentValue={completionRate !== null ? String(completionRate) : '—'}
@@ -431,7 +433,7 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
               data={memUsageSeries}
               width={SPARKLINE_WIDTH}
               height={SPARKLINE_HEIGHT}
-              color="var(--color-warning, #f59e0b)"
+              color="var(--color-warning)"
               label="Heap Used"
               unit="MB"
               currentValue={current ? String(current.memory.heapUsedMb) : undefined}
@@ -442,7 +444,7 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
         {/* ── Key stats grid ── */}
         {current && (
           <section>
-            <h3 className="text-[11px] uppercase tracking-widest text-mission-control-text-dim mb-3 font-medium">Key Metrics</h3>
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3">Key Metrics</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <StatCard
                 label="Uptime"
@@ -491,17 +493,17 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
         )}
 
         {!current && !loading && (
-          <div className="flex items-center justify-center py-12 text-mission-control-text-dim text-sm">
+          <Flex align="center" justify="center" className="py-12 text-mission-control-text-dim text-sm">
             <Activity size={16} className="mr-2" aria-hidden="true" />
             No metrics available yet
-          </div>
+          </Flex>
         )}
 
         {loading && !current && (
-          <div className="flex items-center justify-center py-12 text-mission-control-text-dim text-sm">
+          <Flex align="center" justify="center" className="py-12 text-mission-control-text-dim text-sm">
             <RefreshCw size={16} className="mr-2 animate-spin" aria-hidden="true" />
             Loading metrics...
-          </div>
+          </Flex>
         )}
       </div>
     </BaseModal>

@@ -128,12 +128,13 @@ export function IconButton({
   const variantClass = {
     default: '',
     primary: 'bg-mission-control-accent text-white hover:bg-mission-control-accent/90',
-    danger: 'text-error hover:bg-error-subtle',
+    danger: 'text-error hover:bg-error/10',
     ghost: 'hover:bg-transparent hover:text-mission-control-accent',
   }[variant];
   
   return (
-    <button 
+    <button
+      type="button"
       className={`${children ? 'icon-text' : sizeClass} ${variantClass} ${className}`}
       {...props}
     >

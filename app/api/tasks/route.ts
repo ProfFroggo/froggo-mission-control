@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { emitSSEEvent } from '@/lib/sseEmitter';
 import { createNotification } from '@/lib/notificationWriter';
+import { jsonResponse } from '@/lib/jsonResponse';
 
 
 const JSON_FIELDS = ['tags', 'labels', 'blockedBy', 'blocks', 'recurrence'];
@@ -75,18 +76,74 @@ export async function GET(request: NextRequest) {
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const sql = `SELECT * FROM tasks ${where} ORDER BY priority ASC, createdAt DESC LIMIT 200`;
 
-    // idx_tasks_priority_status and idx_tasks_status_updated cover the ORDER BY priority ASC, createdAt DESC
-    // idx_tasks_assignedTo_status covers ?assignedTo= filter; idx_tasks_status covers ?status= filter
-    const rows = db.prepare(sql).all(...values) as Record<string, unknown>[];
+    // Pagination: ?limit=N&offset=N — defaults to 100 rows, max 500.
+    // Sorted by updatedAt DESC so the most recently-active tasks load first.
+    const rawLimit = searchParams.get('limit');
+    const rawOffset = searchParams.get('offset');
+    const limit = Math.min(Math.max(1, rawLimit ? parseInt(rawLimit, 10) || 100 : 100), 500);
+    const offset = Math.max(0, rawOffset ? parseInt(rawOffset, 10) || 0 : 0);
+
+    const sql = `SELECT * FROM tasks ${where} ORDER BY updatedAt DESC LIMIT ? OFFSET ?`;
+
+    // idx_tasks_status_updated covers the ORDER BY updatedAt DESC for most filter combinations
+    const rows = db.prepare(sql).all(...values, limit, offset) as Record<string, unknown>[];
     const tasks = rows.map(parseTask);
 
-    return NextResponse.json(tasks, {
+    // Return totalCount in a header so the client knows if more pages exist
+    // without needing a separate count query on every paginated request.
+    const countSql = `SELECT COUNT(*) as count FROM tasks ${where}`;
+    const { count: totalCount } = db.prepare(countSql).get(...values) as { count: number };
+
+
+    // ?summary=1 — strip large text-only fields to reduce initial payload for faster LCP.
+    // Excluded fields are lazy-hydrated by TaskDetailPanel when a task is opened.
+    // Savings: planningNotes (~319KB) + subtask descriptions (~77KB) = ~396KB off the wire.
+    const summaryMode = searchParams.get('summary') === '1';
+    if (summaryMode) {
+      for (const task of tasks) {
+        delete (task as any).planningNotes;
+      }
+    }
+
+    // ?include=subtasks — fetch all subtasks for these tasks in one query instead of N+1 round-trips.
+    // This is critical for LCP: without it, the client makes 20+ sequential HTTP rounds to load
+    // subtasks for 200 tasks (batches of 10), adding ~8 seconds to LCP.
+    const includeSubtasks = searchParams.get('include') === 'subtasks';
+    if (includeSubtasks && tasks.length > 0) {
+      const taskIds = tasks.map((t) => t.id as string);
+      const placeholders = taskIds.map(() => '?').join(',');
+
+      // In summary mode, only select fields needed for Kanban board rendering (not description —
+      // that's loaded fresh by TaskDetailPanel via loadSubtasksForTask on open).
+      const subtaskSelect = summaryMode
+        ? 'SELECT id, taskId, title, completed, position, assignedTo, createdAt FROM subtasks'
+        : 'SELECT * FROM subtasks';
+
+      const subtaskRows = db.prepare(
+        `${subtaskSelect} WHERE taskId IN (${placeholders}) ORDER BY taskId, position ASC, createdAt ASC`
+      ).all(...taskIds) as Record<string, unknown>[];
+
+      // Group subtasks by taskId and coerce completed boolean
+      const subtasksByTaskId = new Map<string, Record<string, unknown>[]>();
+      for (const row of subtaskRows) {
+        const taskId = row.taskId as string;
+        const normalized = { ...row, completed: row.completed === 1 || row.completed === true };
+        if (!subtasksByTaskId.has(taskId)) subtasksByTaskId.set(taskId, []);
+        subtasksByTaskId.get(taskId)!.push(normalized);
+      }
+
+      // Attach subtasks to each task
+      for (const task of tasks) {
+        (task as any).subtasks = subtasksByTaskId.get(task.id as string) ?? [];
+      }
+    }
+
+    return jsonResponse(tasks, request, {
       headers: {
-        'Cache-Control': 'private, max-age=5, stale-while-revalidate=30',
-        'Content-Type': 'application/json',
-        'Vary': 'Accept-Encoding',
+        'X-Total-Count': String(totalCount),
+        'X-Limit': String(limit),
+        'X-Offset': String(offset),
       },
     });
   } catch (error) {

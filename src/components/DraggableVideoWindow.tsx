@@ -11,6 +11,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { X, Minimize2, Maximize2, Monitor, Video, Move, Camera } from 'lucide-react';
+import { Button, Flex } from '@radix-ui/themes';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('VideoWindow');
@@ -126,7 +127,7 @@ export default function DraggableVideoWindow({
         tabIndex={0}
         aria-label="Expand video window"
       >
-        <div className="flex items-center gap-2 px-3 py-2">
+        <Flex align="center" gap="2" className="px-3 py-2">
           {videoMode === 'camera' ? <Video size={16} className="text-review" /> : <Monitor size={16} className="text-info" />}
           <span className="text-xs font-medium text-mission-control-text">
             {videoMode === 'camera' ? 'Camera' : 'Screen'}
@@ -136,12 +137,12 @@ export default function DraggableVideoWindow({
               e.stopPropagation();
               onClose();
             }}
-            className="p-1 rounded hover:bg-mission-control-border text-mission-control-text-dim hover:text-error transition-colors"
             aria-label="Close video window"
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
           >
             <X size={14} />
           </button>
-        </div>
+        </Flex>
       </div>
     );
   }
@@ -162,7 +163,7 @@ export default function DraggableVideoWindow({
     >
       {/* Header bar */}
       <div
-        className={`absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-black/80 to-transparent backdrop-blur-sm flex items-center justify-between px-3 z-10 ${
+        className={`absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-between px-3 z-10 ${
           viewMode !== 'fullwidth' ? 'cursor-move' : ''
         }`}
         onMouseDown={handleDragStart}
@@ -171,44 +172,49 @@ export default function DraggableVideoWindow({
         tabIndex={viewMode !== 'fullwidth' ? 0 : -1}
         aria-label="Drag video window"
       >
-        <div className="flex items-center gap-2">
+        <Flex align="center" gap="2">
           <Move size={12} className="text-mission-control-text-dim" />
           <span className="text-xs font-medium text-white flex items-center gap-1">
             {videoMode === 'camera' ? <><Camera size={14} className="inline" />Camera</> : <><Monitor size={14} className="inline" />Screen</>}
           </span>
-        </div>
+        </Flex>
         
-        <div className="flex items-center gap-1">
+        <Flex align="center" gap="1">
           {videoMode === 'screen' && onSwitchSource && (
-            <button
+            <Button
+              size="1"
+              variant="solid"
+              color="gray"
               onClick={onSwitchSource}
-              className="px-2 py-1 rounded bg-black/60 text-white text-xs font-medium hover:bg-black/80 transition-colors"
             >
               Switch Source
-            </button>
+            </Button>
           )}
           <button
+            type="button"
             onClick={minimize}
-            className="p-1 rounded hover:bg-mission-control-text/10 text-mission-control-text transition-colors"
             title="Minimize"
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/10 transition-colors"
           >
             <Minimize2 size={14} />
           </button>
           <button
+            type="button"
             onClick={toggleViewMode}
-            className="p-1 rounded hover:bg-mission-control-text/10 text-mission-control-text transition-colors"
             title={viewMode === 'fullwidth' ? 'Exit full width' : 'Full width'}
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/10 transition-colors"
           >
             <Maximize2 size={14} />
           </button>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1 rounded hover:bg-error-subtle text-white transition-colors"
             title="Close"
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface/10 transition-colors"
           >
             <X size={14} />
           </button>
-        </div>
+        </Flex>
       </div>
 
       {/* Video */}

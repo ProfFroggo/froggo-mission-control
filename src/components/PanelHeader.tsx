@@ -1,12 +1,31 @@
 /**
  * PanelHeader.tsx
- * 
- * Standardized panel header component for consistent layout across all panels.
- * Provides consistent spacing, typography, and action button placement.
+ *
+ * Canonical panel header — matches the Library panel reference implementation.
+ *
+ * Default layout: icon in accent-tinted box + bold title + dimmed subtitle.
+ * Actions render on the right side of the header row.
+ *
+ * Usage with tabs below the header:
+ *   Wrap <PanelHeader> + <TabNav> in a single
+ *   `<div className="border-b border-mission-control-border bg-mission-control-surface">`
+ *   and pass `border={false}` to PanelHeader.
+ *
+ * Usage without tabs:
+ *   Use <PanelHeader> standalone — it renders its own border-b by default.
  */
 
-import { ReactNode } from 'react';
+import React, { ReactNode, isValidElement } from 'react';
 import { LucideIcon } from 'lucide-react';
+import { Button, Spinner, Badge, Flex, Box } from '@radix-ui/themes';
+
+/** Renders an icon prop that may be a Lucide component (function or forwardRef object) or a pre-rendered ReactNode. */
+function renderIcon(Icon: LucideIcon | ReactNode, size: number, className: string) {
+  if (!Icon) return null;
+  if (isValidElement(Icon)) return Icon;
+  // forwardRef icons have typeof === 'object', not 'function'
+  return React.createElement(Icon as React.ElementType, { size, className });
+}
 
 interface PanelHeaderAction {
   icon?: LucideIcon | ReactNode;
@@ -15,27 +34,21 @@ interface PanelHeaderAction {
   variant?: 'primary' | 'secondary' | 'ghost';
   disabled?: boolean;
   loading?: boolean;
-  kbd?: string; // Keyboard shortcut hint
+  kbd?: string;
 }
 
 interface PanelHeaderProps {
-  // Title
   icon?: LucideIcon | ReactNode;
   title: string;
   subtitle?: string | ReactNode;
-  
-  // Stats/Badges
   badge?: string | number;
   stats?: { label: string; value: string | number; color?: string }[];
-  
-  // Actions
   actions?: PanelHeaderAction[];
-  children?: ReactNode; // For custom content (filters, search, etc.)
-  
-  // Styling
-  variant?: 'default' | 'compact' | 'large';
+  children?: ReactNode;
+  /** Pass false when tabs follow below — caller provides the border-b wrapper. */
   border?: boolean;
-  gradient?: boolean;
+  /** compact variant keeps the old tight style (px-4 py-3, small text) for modals/sidebars. */
+  variant?: 'default' | 'compact';
 }
 
 export default function PanelHeader({
@@ -46,128 +59,141 @@ export default function PanelHeader({
   stats,
   actions,
   children,
-  variant = 'default',
   border = true,
-  gradient = false,
+  variant = 'default',
 }: PanelHeaderProps) {
-  // Variant-specific spacing
-  const variantStyles = {
-    compact: 'p-3',
-    default: 'p-4',
-    large: 'p-6',
-  };
-
-  const titleStyles = {
-    compact: 'text-heading-3',
-    default: 'text-heading-2',
-    large: 'text-heading-1',
-  };
-
-  const subtitleStyles = {
-    compact: 'text-caption',
-    default: 'text-secondary',
-    large: 'text-body',
-  };
-
-  return (
-    <div
-      className={`
-        ${variantStyles[variant]}
-        ${border ? 'border-b border-mission-control-border' : ''}
-        ${gradient ? 'bg-gradient-to-r from-mission-control-surface to-mission-control-bg' : 'bg-mission-control-surface'}
-      `}
-    >
-      {/* Title Row */}
-      <div className="flex items-center justify-between gap-4 mb-2">
-        {/* Left: Title & Icon */}
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          {/* Icon */}
+  if (variant === 'compact') {
+    return (
+      <Flex
+        align="center"
+        justify="between"
+        px="4"
+        py="3"
+        className={`bg-mission-control-surface${border ? ' border-b border-mission-control-border' : ''}`}
+      >
+        <Flex align="center" gap="2" className="min-w-0 flex-1">
           {Icon && (
-            <div className="flex-shrink-0">
-              {typeof Icon === 'function' ? (
-                <Icon size={variant === 'compact' ? 20 : variant === 'large' ? 28 : 24} className="text-mission-control-accent" />
-              ) : (
-                Icon
-              )}
-            </div>
+            <Box className="flex-shrink-0">
+              {renderIcon(Icon, 16, 'text-mission-control-accent')}
+            </Box>
           )}
-
-          {/* Title & Subtitle */}
-          <div className="min-w-0 flex-1">
-            <h1 className={`${titleStyles[variant]} truncate flex items-center gap-2`}>
-              {title}
+          <Box className="min-w-0 flex-1">
+            <Flex align="center" gap="2">
+              <h2 className="text-sm font-semibold text-mission-control-text truncate">{title}</h2>
               {badge !== undefined && (
-                <span className="px-2 py-0.5 bg-mission-control-accent/20 text-mission-control-accent rounded-full text-sm font-normal">
-                  {badge}
-                </span>
+                <Badge color="violet" variant="soft" size="1">{badge}</Badge>
               )}
-            </h1>
+            </Flex>
             {subtitle && (
-              <div className={`${subtitleStyles[variant]} mt-0.5`}>
-                {subtitle}
-              </div>
+              <Box mt="1" className="text-xs text-mission-control-text-dim">{subtitle}</Box>
             )}
-          </div>
-        </div>
-
-        {/* Right: Actions */}
-        {actions && actions.length > 0 && (
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {actions.map((action, index) => {
-              const ActionIcon = typeof action.icon === 'function' ? action.icon : null;
-
-              return (
-                <button
-                  key={action.label || `action-${index}`}
-                  onClick={action.onClick}
-                  disabled={action.disabled || action.loading}
-                  className={`
-                    inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium
-                    transition-all duration-150 active:scale-95
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                    ${
-                      action.variant === 'primary'
-                        ? 'bg-mission-control-accent text-white hover:bg-mission-control-accent/90 shadow-glow'
-                        : action.variant === 'ghost'
-                        ? 'hover:bg-mission-control-border text-mission-control-text'
-                        : 'bg-mission-control-bg border border-mission-control-border hover:border-mission-control-accent/50 text-mission-control-text'
-                    }
-                  `}
-                >
-                  {action.loading ? (
-                    <div className="animate-spin">⏳</div>
-                  ) : ActionIcon ? (
-                    <ActionIcon size={16} className="flex-shrink-0" />
-                  ) : (
-                    action.icon as ReactNode
-                  )}
-                  {action.label && <span>{action.label}</span>}
-                  {action.kbd && (
-                    <kbd className="px-1.5 py-0.5 bg-mission-control-text/20 rounded text-xs">
-                      {action.kbd}
-                    </kbd>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          </Box>
+        </Flex>
+        {((actions && actions.length > 0) || children) && (
+          <Flex align="center" gap="1" ml="2" className="flex-shrink-0">
+            {renderActions(actions)}
+            {children}
+          </Flex>
         )}
-      </div>
+      </Flex>
+    );
+  }
 
-      {/* Stats Row (if provided) */}
-      {stats && stats.length > 0 && (
-        <div className="flex items-center gap-4 text-sm text-mission-control-text-dim">
-          {stats.map((stat) => (
-            <div key={stat.label} className="flex items-center gap-1.5">
-              <span className={stat.color || 'text-mission-control-text'}>{stat.value}</span>
-              <span>{stat.label}</span>
-            </div>
-          ))}
-        </div>
+  // Default: Library-style header
+  return (
+    <Flex
+      align="start"
+      justify="between"
+      p="6"
+      pb="4"
+      className={`bg-mission-control-surface${border ? ' border-b border-mission-control-border' : ''}`}
+    >
+      {/* Left: icon-in-box + title + subtitle */}
+      <Flex align="center" gap="3">
+        {Icon && (
+          <Box p="2" className="bg-mission-control-accent/20 rounded-lg flex-shrink-0">
+            {renderIcon(Icon, 24, 'text-mission-control-accent')}
+          </Box>
+        )}
+        <Box>
+          <Flex align="center" gap="2">
+            <h2 className="text-xl font-semibold text-mission-control-text">{title}</h2>
+            {badge !== undefined && (
+              <Badge color="violet" variant="soft" size="2">{badge}</Badge>
+            )}
+          </Flex>
+          {subtitle && (
+            <p className="text-sm text-mission-control-text-dim mt-0.5">{subtitle}</p>
+          )}
+          {stats && stats.length > 0 && (
+            <Flex align="center" gap="3" mt="1" className="text-xs text-mission-control-text-dim tabular-nums font-mono">
+              {stats.map((stat) => (
+                <Flex key={stat.label} align="center" gap="1">
+                  <span className={stat.color || 'text-mission-control-text'}>{stat.value}</span>
+                  <span>{stat.label}</span>
+                </Flex>
+              ))}
+            </Flex>
+          )}
+        </Box>
+      </Flex>
+
+      {/* Right: actions */}
+      {((actions && actions.length > 0) || children) && (
+        <Flex align="center" gap="2" ml="4" className="flex-shrink-0">
+          {renderActions(actions)}
+          {children}
+        </Flex>
       )}
-
-      {/* Custom Content (filters, search, etc.) */}
-      {children && <div className="mt-4">{children}</div>}
-    </div>
+    </Flex>
   );
+}
+
+function renderActions(actions?: PanelHeaderAction[]) {
+  if (!actions) return null;
+  return actions.map((action, index) => {
+    const ActionIcon = (action.icon && !isValidElement(action.icon)) ? action.icon as LucideIcon : null;
+    const radixVariant = action.variant === 'primary' ? 'solid' : action.variant === 'ghost' ? 'ghost' : 'surface';
+    const radixColor = action.variant === 'primary' ? 'violet' : 'gray';
+
+    if (!action.label && ActionIcon) {
+      return (
+        <button
+          key={index}
+          type="button"
+          onClick={action.onClick}
+          disabled={action.disabled || action.loading}
+          aria-label={action.kbd || `action-${index}`}
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mission-control-accent)]/50"
+        >
+          {action.loading ? <Spinner size="1" /> : <ActionIcon size={14} />}
+        </button>
+      );
+    }
+
+    return (
+      <Button
+        key={action.label || `action-${index}`}
+        onClick={action.onClick}
+        disabled={action.disabled || action.loading}
+        variant={radixVariant as 'solid' | 'ghost' | 'surface'}
+        color={radixColor as 'violet' | 'gray'}
+        size="1"
+      >
+        {action.loading ? (
+          <Spinner size="1" />
+        ) : ActionIcon ? (
+          <ActionIcon size={14} />
+        ) : (
+          action.icon as ReactNode
+        )}
+        {action.label && <span>{action.label}</span>}
+        {action.kbd && (
+          <kbd className="px-1 py-0.5 bg-mission-control-text/20 rounded text-xs font-mono">
+            {action.kbd}
+          </kbd>
+        )}
+      </Button>
+    );
+  });
 }

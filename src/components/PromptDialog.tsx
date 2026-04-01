@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { TextArea, TextField } from '@radix-ui/themes';
 import BaseModal from './BaseModal';
 import { LoadingButton } from './LoadingStates';
 
@@ -123,61 +124,64 @@ export default function PromptDialog({
       showCloseButton={false}
       preventEscClose={isSubmitting}
     >
-      <div className="p-6">
+      <div className="flex flex-col max-h-[85vh]">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-mission-control-text">{title}</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-mission-control-border flex-shrink-0">
+          <h2 className="text-base font-semibold text-mission-control-text">{title}</h2>
           <button
+            type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="p-1 rounded hover:bg-mission-control-bg-subtle text-mission-control-text-dim hover:text-mission-control-text transition-colors"
             aria-label="Close"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <X size={20} />
+            <X size={16} />
           </button>
         </div>
 
-        {/* Message */}
-        {message && (
-          <p className="text-sm text-mission-control-text-dim mb-4">{message}</p>
-        )}
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          {/* Message */}
+          {message && (
+            <p className="text-sm text-mission-control-text-dim">{message}</p>
+          )}
 
-        {/* Input */}
-        {multiline ? (
-          <textarea
-            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            rows={4}
-            className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:ring-2 focus:ring-mission-control-accent focus:border-transparent resize-none"
-            disabled={isSubmitting}
-          />
-        ) : (
-          <input
-            ref={inputRef as React.RefObject<HTMLInputElement>}
-            type="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            className="w-full px-3 py-2 bg-mission-control-bg border border-mission-control-border rounded-lg text-mission-control-text placeholder-mission-control-text-dim focus:outline-none focus:ring-2 focus:ring-mission-control-accent focus:border-transparent"
-            disabled={isSubmitting}
-          />
-        )}
+          {/* Input */}
+          {multiline ? (
+            <TextArea
+              ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              rows={4}
+              disabled={isSubmitting}
+            />
+          ) : (
+            <TextField.Root
+              ref={inputRef as React.RefObject<HTMLInputElement>}
+              type="text"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              disabled={isSubmitting}
+            />
+          )}
 
-        {/* Error */}
-        {submitError && (
-          <p className="text-sm text-error mt-2">{submitError}</p>
-        )}
+          {/* Error */}
+          {submitError && (
+            <p className="text-sm text-error">{submitError}</p>
+          )}
+        </div>
 
-        {/* Actions */}
-        <div className="flex justify-end gap-3 mt-6">
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-mission-control-border flex-shrink-0">
           <button
+            type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-bg-subtle rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {cancelLabel}
           </button>
@@ -185,7 +189,6 @@ export default function PromptDialog({
             onClick={handleSubmit}
             loading={isSubmitting || loading}
             disabled={!value.trim()}
-            className="px-4 py-2 text-sm font-medium bg-mission-control-accent text-white rounded-lg hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {confirmLabel}
           </LoadingButton>

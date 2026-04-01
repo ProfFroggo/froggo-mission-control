@@ -1,0 +1,32 @@
+{
+  "id": "notes",
+  "name": "Notes",
+  "version": "1.0.0",
+  "description": "Quick notes and thoughts pinboard for capturing ideas, instructions, and context.",
+  "author": "Mission Control Team",
+  "icon": "StickyNote",
+  "category": "productivity",
+  "core": true,
+  "credentials": [],
+  "views": [
+    {
+      "id": "notes",
+      "label": "Notes",
+      "icon": "StickyNote",
+      "entrypoint": "./views/NotesPanel.tsx"
+    }
+  ],
+  "ipcChannels": {
+    "handle": []
+  },
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+  "permissions": {
+    "ipc": [],
+    "filesystem": [],
+    "network": false,
+    "shell": false
+  }
+}

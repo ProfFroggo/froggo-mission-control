@@ -1,122 +1,116 @@
-// Skeleton loading components with shimmer effect
+// Skeleton loading components - wraps Radix Themes Skeleton
+
+import { Skeleton as RadixSkeleton, Box, Flex } from '@radix-ui/themes';
 
 interface SkeletonProps {
   className?: string;
   shimmer?: boolean;
 }
 
-export function Skeleton({ className = '', shimmer = true }: SkeletonProps) {
-  return (
-    <div 
-      className={`relative overflow-hidden bg-mission-control-border/50 rounded ${className}`}
-    >
-      {shimmer && (
-        <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-      )}
-    </div>
-  );
+export function Skeleton({ className = '', shimmer: _shimmer = true }: SkeletonProps) {
+  return <RadixSkeleton className={className} />;
 }
 
 export function SkeletonText({ lines = 3, className = '' }: { lines?: number; className?: string }) {
   return (
-    <div className={`space-y-2 ${className}`}>
+    <Box className={`space-y-2 ${className}`}>
       {Array.from({ length: lines }).map((_, i) => (
-        <Skeleton 
-          key={i} 
-          className={`h-4 ${i === lines - 1 ? 'w-3/4' : 'w-full'}`} 
+        <RadixSkeleton
+          key={i}
+          className={`h-4 ${i === lines - 1 ? 'w-3/4' : 'w-full'}`}
         />
       ))}
-    </div>
+    </Box>
   );
 }
 
 export function SkeletonCard({ className = '' }: SkeletonProps) {
   return (
-    <div className={`p-4 bg-mission-control-surface border border-mission-control-border rounded-lg ${className}`}>
-      <div className="flex items-center gap-3 mb-3">
-        <Skeleton className="w-10 h-10 rounded-full" />
-        <div className="flex-1">
-          <Skeleton className="h-4 w-1/3 mb-2" />
-          <Skeleton className="h-3 w-1/2" />
-        </div>
-      </div>
+    <Box p="4" className={`bg-mission-control-surface border border-mission-control-border rounded-lg ${className}`}>
+      <Flex align="center" gap="3" mb="3">
+        <RadixSkeleton className="w-10 h-10 rounded-full" />
+        <Box className="flex-1">
+          <RadixSkeleton className="h-4 w-1/3 mb-2" />
+          <RadixSkeleton className="h-3 w-1/2" />
+        </Box>
+      </Flex>
       <SkeletonText lines={2} />
-    </div>
+    </Box>
   );
 }
 
 export function SkeletonList({ count = 3, className = '' }: { count?: number; className?: string }) {
   return (
-    <div className={`space-y-3 ${className}`}>
+    <Box className={`space-y-3 ${className}`}>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 p-3 bg-mission-control-surface border border-mission-control-border rounded-lg">
-          <Skeleton className="w-8 h-8 rounded-lg" />
-          <div className="flex-1">
-            <Skeleton className="h-4 w-2/3 mb-1" />
-            <Skeleton className="h-3 w-1/2" />
-          </div>
-        </div>
+        <Flex key={i} align="center" gap="3" p="3" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+          <RadixSkeleton className="w-8 h-8 rounded-lg" />
+          <Box className="flex-1">
+            <RadixSkeleton className="h-4 w-2/3 mb-1" />
+            <RadixSkeleton className="h-3 w-1/2" />
+          </Box>
+        </Flex>
       ))}
-    </div>
+    </Box>
   );
 }
 
 export function SkeletonTable({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
   return (
-    <div className="space-y-2">
+    <Box className="space-y-2">
       {/* Header */}
-      <div className="flex gap-4 p-3 bg-mission-control-border/50 rounded-lg">
+      <Flex gap="4" p="3" className="bg-mission-control-border/50 rounded-lg">
         {Array.from({ length: cols }).map((_, i) => (
-          <Skeleton key={i} className="h-4 flex-1" />
+          <RadixSkeleton key={i} className="h-4 flex-1" />
         ))}
-      </div>
+      </Flex>
       {/* Rows */}
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex gap-4 p-3">
+        <Flex key={i} gap="4" p="3">
           {Array.from({ length: cols }).map((_, j) => (
-            <Skeleton key={j} className="h-4 flex-1" />
+            <RadixSkeleton key={j} className="h-4 flex-1" />
           ))}
-        </div>
+        </Flex>
       ))}
-    </div>
+    </Box>
   );
 }
 
 export function SkeletonMessage({ className = '' }: SkeletonProps) {
   return (
-    <div className={`flex gap-3 ${className}`}>
-      <Skeleton className="w-8 h-8 rounded-full flex-shrink-0" />
-      <div className="flex-1">
-        <Skeleton className="h-4 w-24 mb-2" />
-        <div className="p-3 bg-mission-control-surface rounded-lg">
+    <Flex gap="3" className={className}>
+      <RadixSkeleton className="w-8 h-8 rounded-full flex-shrink-0" />
+      <Box className="flex-1">
+        <RadixSkeleton className="h-4 w-24 mb-2" />
+        <Box p="3" className="bg-mission-control-surface rounded-lg">
           <SkeletonText lines={2} />
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Flex>
   );
 }
 
 export function SkeletonInbox() {
   return (
-    <div className="space-y-3">
+    <Box className="space-y-3">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="p-4 bg-mission-control-surface border border-mission-control-border rounded-lg">
-          <div className="flex items-start gap-3">
-            <Skeleton className="w-10 h-10 rounded-lg" />
-            <div className="flex-1">
-              <div className="flex justify-between mb-2">
-                <Skeleton className="h-5 w-1/3" />
-                <Skeleton className="h-4 w-16" />
-              </div>
+        <Box key={i} p="4" className="bg-mission-control-surface border border-mission-control-border rounded-lg">
+          <Flex align="start" gap="3">
+            <RadixSkeleton className="w-10 h-10 rounded-lg" />
+            <Box className="flex-1">
+              <Flex justify="between" mb="2">
+                <RadixSkeleton className="h-5 w-1/3" />
+                <RadixSkeleton className="h-4 w-16" />
+              </Flex>
               <SkeletonText lines={2} />
-              <div className="flex gap-2 mt-3">
-                <Skeleton className="h-8 w-20 rounded-lg" />
-                <Skeleton className="h-8 w-20 rounded-lg" />
-              </div>
-            </div>
-          </div>
-        </div>
+              <Flex gap="2" mt="3">
+                <RadixSkeleton className="h-8 w-20 rounded-lg" />
+                <RadixSkeleton className="h-8 w-20 rounded-lg" />
+              </Flex>
+            </Box>
+          </Flex>
+        </Box>
       ))}
-    </div>
+    </Box>
   );
 }

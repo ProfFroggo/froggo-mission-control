@@ -19,14 +19,24 @@ export function runDispatchCycle(): { dispatched: number; skipped: number } {
   try {
     const db = getDb();
 
-    // Only dispatch tasks that are in-progress but have no running process
-    // (stuck recovery). Clara review cron handles todo → internal-review → dispatch.
-    // Do NOT dispatch 'todo' tasks — that's Clara's job via pre-review.
-    const tasks = db.prepare(
+    // 1. Stuck in-progress recovery — tasks with no activity for 30+ minutes
+    const stuckInProgress = db.prepare(
       `SELECT id, assignedTo FROM tasks
        WHERE status = 'in-progress' AND assignedTo IS NOT NULL AND assignedTo != ''
          AND updatedAt < ?`
-    ).all(Date.now() - 10 * 60_000) as Array<{ id: string; assignedTo: string }>;
+    ).all(Date.now() - 30 * 60_000) as Array<{ id: string; assignedTo: string }>;
+
+    // 2. Pre-rejected todo retry — tasks Clara rejected that need planning fixes.
+    //    Only picks them up if the rejection is >60s old (avoids racing with Clara's
+    //    own 3-second re-dispatch attempt).
+    const preRejectedTodos = db.prepare(
+      `SELECT id, assignedTo FROM tasks
+       WHERE status = 'todo' AND assignedTo IS NOT NULL AND assignedTo != ''
+         AND (reviewStatus = 'pre-rejected' OR (reviewNotes IS NOT NULL AND reviewNotes != ''))
+         AND updatedAt < ?`
+    ).all(Date.now() - 60_000) as Array<{ id: string; assignedTo: string }>;
+
+    const tasks = [...stuckInProgress, ...preRejectedTodos];
 
     const now = Date.now();
     for (const task of tasks) {
@@ -61,6 +71,13 @@ export function runDispatchCycle(): { dispatched: number; skipped: number } {
 
 // Singleton cron — uses globalThis to survive Next.js HMR in dev
 export function startDispatcherCron(): void {
+  // Skip during next build to avoid spawning agents during static generation
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    process.env.NEXT_BUILD === '1' ||
+    process.argv.some((a: string) => a === 'build')
+  ) return;
+
   const g = globalThis as Record<string, unknown>;
   if (g.__taskDispatcherInterval) return;
   // Set sentinel immediately (before setInterval) to prevent concurrent callers from racing in

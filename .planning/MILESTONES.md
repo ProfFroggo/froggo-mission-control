@@ -1,5 +1,26 @@
 # Project Milestones: Mission Control Next.js
 
+## v9.0 Platform Hardening (Shipped: 2026-04-01)
+
+**Delivered:** Codebase quality pass — fixed critical dispatch engine bugs, data integrity gaps, added real-time SSE→Zustand bridge, database performance indexes, memory/KB injection caps, scratchpad MCP tools, UI consistency fixes, and accessibility improvements.
+
+**Phases completed:** 88.1–88.9 (9 phases)
+
+**Key accomplishments:**
+
+- **Dispatch engine**: Set-based concurrency tracking (no double-decrement), agent-scoped session keys, double preemption guard, smart dispatch routing + P0 preemption
+- **Data integrity**: Budgets PK + unique constraint, inbox spawn guard (max 2, 5-min timeout), recurrence transaction, multi-step mutation transactions
+- **Database**: 2 composite indexes, N+1 fixes in projects/campaigns list (batch member fetch), LIMIT 200 on automations
+- **Real-time**: Central SSE→Store bridge, polling reduced from 10-60s to 60-120s as fallback, EventBus reconnection fix, SSE connection status indicator, approval SSE events
+- **Context optimization**: Memory injection caps (2KB file limit, 8KB total), KB snippet cap (400 chars), 3 scratchpad MCP tools
+- **UI**: FinancePanel PanelHeader migration, activity feed bounded at 500, artifacts bounded at 200, cache headers on projects/campaigns
+- **Accessibility**: Aria-labels on icon-only buttons, model pricing update reminder
+- **Deferred (Phase 88.8)**: noImplicitAny, eslint scoping, pre-commit hooks, CSP split — each needs dedicated session
+
+**Roadmap:** `.planning/phases/88-platform-hardening/ROADMAP.md`
+
+---
+
 ## v6.0 Security Hardening (Shipped: 2026-03-07)
 
 **Delivered:** Eliminated all critical/high security vulnerabilities — command injection via shell-interpolated agent IDs fixed, path traversal blocked in library/soul/files routes, Gemini API key moved server-side out of localStorage, 5 security headers added, input length limits enforced across all user-facing routes, and 20 security regression checks added to the E2E smoke test.

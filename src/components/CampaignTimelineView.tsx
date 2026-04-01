@@ -3,6 +3,7 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useMemo } from 'react';
 import { Calendar, CheckCircle2, Circle, Flag, Play } from 'lucide-react';
+import { Flex, Heading } from '@radix-ui/themes';
 import type { Campaign } from '../types/campaigns';
 
 interface TaskItem {
@@ -45,27 +46,27 @@ function MilestoneDot({ type, taskStatus, isPast }: { type: MilestoneType; taskS
         className="rounded-full border-2 flex items-center justify-center flex-shrink-0"
         style={{
           width: size, height: size,
-          borderColor: 'var(--color-success, #22c55e)',
-          backgroundColor: isPast ? 'var(--color-success, #22c55e)' : 'var(--mission-control-bg0, #111)',
+          borderColor: 'var(--color-success)',
+          backgroundColor: isPast ? 'var(--color-success)' : 'var(--mission-control-bg0)',
         }}
       >
-        <Play size={7} style={{ color: isPast ? '#fff' : 'var(--color-success, #22c55e)' }} />
+        <Play size={7} style={{ color: isPast ? 'white' : 'var(--color-success)' }} />
       </div>
     );
   }
 
   if (type === 'end') {
-    const color = isPast ? 'var(--color-error, #ef4444)' : 'var(--color-info, #6366f1)';
+    const color = isPast ? 'var(--color-error)' : 'var(--color-info)';
     return (
       <div
         className="rounded-full border-2 flex items-center justify-center flex-shrink-0"
         style={{
           width: size, height: size,
           borderColor: color,
-          backgroundColor: isPast ? color : 'var(--mission-control-bg0, #111)',
+          backgroundColor: isPast ? color : 'var(--mission-control-bg0)',
         }}
       >
-        <Flag size={7} style={{ color: isPast ? '#fff' : color }} />
+        <Flag size={7} style={{ color: isPast ? 'white' : color }} />
       </div>
     );
   }
@@ -73,11 +74,11 @@ function MilestoneDot({ type, taskStatus, isPast }: { type: MilestoneType; taskS
   // task dot
   const isDone = taskStatus === 'done';
   const color = isDone || isPast
-    ? 'var(--mission-control-text-dim, #888)'
-    : 'var(--color-info, #6366f1)';
+    ? 'var(--mission-control-text-dim)'
+    : 'var(--color-info)';
 
   return isDone ? (
-    <CheckCircle2 size={size} style={{ color: 'var(--color-success, #22c55e)', flexShrink: 0 }} />
+    <CheckCircle2 size={size} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
   ) : (
     <Circle size={size} style={{ color, flexShrink: 0 }} />
   );
@@ -116,17 +117,17 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
 
   // Phase bands for the track
   const PHASES = [
-    { label: 'Planning', from: 0, to: 20, color: 'rgba(99,102,241,0.15)' },
-    { label: 'Execution', from: 20, to: 60, color: 'rgba(34,197,94,0.10)' },
-    { label: 'Review', from: 60, to: 90, color: 'rgba(234,179,8,0.12)' },
-    { label: 'Complete', from: 90, to: 100, color: 'rgba(34,197,94,0.18)' },
+    { label: 'Planning', from: 0, to: 20, color: 'color-mix(in srgb, var(--color-info) 15%, transparent)' },
+    { label: 'Execution', from: 20, to: 60, color: 'color-mix(in srgb, var(--color-success) 10%, transparent)' },
+    { label: 'Review', from: 60, to: 90, color: 'color-mix(in srgb, var(--color-warning) 12%, transparent)' },
+    { label: 'Complete', from: 90, to: 100, color: 'color-mix(in srgb, var(--color-success) 18%, transparent)' },
   ];
 
   if (milestones.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-        <Calendar size={28} className="text-mission-control-text-dim" />
-        <p className="text-sm text-mission-control-text-dim">No timeline data.</p>
+      <div className="flex flex-col items-center justify-center h-full py-16 gap-3 text-center">
+        <Calendar size={32} className="text-mission-control-text-dim opacity-40" />
+        <p className="text-sm font-medium text-mission-control-text">No timeline data</p>
         <p className="text-xs text-mission-control-text-dim">Set start/end dates and add due dates to tasks.</p>
       </div>
     );
@@ -136,15 +137,15 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
     <div className="flex flex-col gap-6 p-6">
       {/* Phase label + progress */}
       {campaignProgress !== null && phaseLabel && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider">Phase</span>
+        <Flex align="center" justify="between">
+          <Flex align="center" gap="2">
+            <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Phase</span>
             <span className="text-xs px-2 py-0.5 rounded-full border border-mission-control-accent/40 text-mission-control-accent bg-mission-control-accent/10 font-medium">
               {phaseLabel}
             </span>
-          </div>
-          <span className="text-xs text-mission-control-text-dim">{campaignProgress}% elapsed</span>
-        </div>
+          </Flex>
+          <span className="text-xs tabular-nums text-mission-control-text-dim">{campaignProgress}% elapsed</span>
+        </Flex>
       )}
 
       {/* Horizontal timeline track */}
@@ -167,7 +168,7 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
         {/* Base track */}
         <div
           className="absolute left-0 right-0 rounded-full"
-          style={{ top: 19, height: 6, backgroundColor: 'var(--mission-control-border, #2a2a2a)' }}
+          style={{ top: 19, height: 6, backgroundColor: 'var(--mission-control-border)' }}
         />
 
         {/* Phase labels below track */}
@@ -175,7 +176,7 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
           {PHASES.map(p => (
             <div
               key={p.label}
-              className="absolute text-[9px] text-mission-control-text-dim"
+              className="absolute text-xs text-mission-control-text-dim"
               style={{ left: `${p.from}%`, transform: 'none', paddingTop: 6 }}
             >
               {p.label}
@@ -189,8 +190,8 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
             className="absolute flex flex-col items-center pointer-events-none"
             style={{ left: `${nowPct}%`, top: 0, transform: 'translateX(-50%)', zIndex: 3 }}
           >
-            <div className="w-0.5 rounded-full" style={{ height: 22, backgroundColor: 'var(--mission-control-accent, #6366f1)' }} />
-            <span className="text-[10px] font-semibold whitespace-nowrap mt-0.5" style={{ color: 'var(--mission-control-accent, #6366f1)' }}>
+            <div className="w-0.5 rounded-full" style={{ height: 22, backgroundColor: 'var(--mission-control-accent)' }} />
+            <span className="text-xs font-semibold whitespace-nowrap mt-0.5" style={{ color: 'var(--mission-control-accent)' }}>
               Today
             </span>
           </div>
@@ -211,18 +212,18 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
             >
               <MilestoneDot type={m.type} taskStatus={m.taskStatus} isPast={isPast} />
               <span
-                className="text-[10px] mt-3 text-center leading-tight"
+                className="text-xs mt-3 text-center leading-tight"
                 style={{
                   maxWidth: 72,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  color: isPast ? 'var(--mission-control-text-dim)' : 'var(--mission-control-text-primary)',
+                  color: isPast ? 'var(--mission-control-text-dim)' : 'var(--mission-control-text)',
                 }}
               >
                 {m.label}
               </span>
-              <span className="text-[9px] mt-0.5" style={{ color: 'var(--mission-control-text-dim)' }}>
+              <span className="text-xs mt-0.5 tabular-nums" style={{ color: 'var(--mission-control-text-dim)' }}>
                 {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
               </span>
             </div>
@@ -232,16 +233,18 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
 
       {/* Milestone list */}
       <div className="space-y-2 mt-8">
-        <h3 className="text-xs font-medium text-mission-control-text-dim uppercase tracking-wider mb-3">Milestones</h3>
+        <Heading size="1" weight="medium" className="text-mission-control-text-dim uppercase tracking-wider mb-3">Milestones</Heading>
         {milestones.map(m => {
           const isPast = m.date < now;
           const isSoon = !isPast && m.date <= now + 7 * 24 * 60 * 60 * 1000;
           const isTask = m.type === 'task';
           return (
-            <div
+            <Flex
               key={m.id}
+              align="center"
+              gap="3"
               onClick={() => isTask && onMilestoneClick && onMilestoneClick(m.id)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
+              className={`px-3 py-2.5 rounded-lg border transition-colors ${
                 isTask && onMilestoneClick ? 'cursor-pointer hover:border-mission-control-accent/40' : ''
               } ${
                 isPast
@@ -255,13 +258,13 @@ export default function CampaignTimelineView({ campaign, tasks, onMilestoneClick
               <span className={`text-sm flex-1 truncate ${isPast && m.taskStatus !== 'done' ? 'text-mission-control-text-dim' : 'text-mission-control-text'}`}>
                 {m.label}
               </span>
-              <span className="text-xs text-mission-control-text-dim flex-shrink-0">
+              <span className="text-xs tabular-nums text-mission-control-text-dim flex-shrink-0">
                 {new Date(m.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
               </span>
               {m.type === 'task' && m.taskStatus === 'done' && (
                 <CheckCircle2 size={13} className="text-mission-control-text-dim flex-shrink-0" />
               )}
-            </div>
+            </Flex>
           );
         })}
       </div>

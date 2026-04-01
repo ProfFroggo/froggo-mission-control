@@ -1,0 +1,29 @@
+{
+  "id": "budget",
+  "name": "Budget",
+  "version": "1.0.0",
+  "description": "Budget tracking, invoice management, and AI-powered finance analysis.",
+  "author": "Mission Control Team",
+  "icon": "Wallet",
+  "category": "finance",
+  "core": true,
+  "credentials": [],
+  "views": [
+    {
+      "id": "budget",
+      "label": "Budget",
+      "icon": "Wallet",
+      "entrypoint": "./views/BudgetPanel.tsx"
+    }
+  ],
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+  "permissions": {
+    "ipc": [],
+    "filesystem": ["~/mission-control/data/budget-files/"],
+    "network": true,
+    "shell": false
+  }
+}

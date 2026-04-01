@@ -1,0 +1,29 @@
+{
+  "id": "dashboard",
+  "name": "Dashboard",
+  "version": "2.0.0",
+  "description": "Command center — agents, work queue, and today at a glance.",
+  "author": "Mission Control Team",
+  "icon": "LayoutDashboard",
+  "category": "core",
+  "core": true,
+  "credentials": [],
+  "views": [
+    {
+      "id": "dashboard",
+      "label": "Dashboard",
+      "icon": "LayoutDashboard",
+      "entrypoint": "./components/Dashboard.tsx"
+    }
+  ],
+  "dependencies": {
+    "core": ">=1.0.0",
+    "modules": []
+  },
+  "permissions": {
+    "ipc": [],
+    "filesystem": [],
+    "network": false,
+    "shell": false
+  }
+}

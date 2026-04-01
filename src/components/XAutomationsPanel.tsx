@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { 
-  Plus, Settings, Play, Pause, Trash2, Edit, 
-  AlertCircle, CheckCircle, Clock, Zap, 
+import { Button, IconButton, TextField, Select, TextArea, Flex } from '@radix-ui/themes';
+import {
+  Plus, Settings, Play, Pause, Trash2, Edit,
+  AlertCircle, CheckCircle, Clock, Zap,
   MessageCircle, Hash, Calendar as CalendarIcon, Users, Mail
 } from 'lucide-react';
 import { showToast } from './Toast';
@@ -127,9 +128,9 @@ export default function XAutomationsPanel() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-mission-control-border bg-mission-control-surface">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+      <div className="px-4 py-3 border-b border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between" className="mb-3">
+          <Flex align="center" gap="3">
             <div className="p-2 bg-review-subtle rounded-lg">
               <Zap size={24} className="text-review" />
             </div>
@@ -140,18 +141,19 @@ export default function XAutomationsPanel() {
                 {automations.filter(a => a.enabled).length} active
               </p>
             </div>
-          </div>
-          <button
+          </Flex>
+          <Button
             onClick={() => {
               setEditingAutomation(null);
               setShowBuilder(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors"
+            size="2"
+            variant="solid"
           >
             <Plus size={16} />
             New Automation
-          </button>
-        </div>
+          </Button>
+        </Flex>
       </div>
       
       {/* Content */}
@@ -168,12 +170,13 @@ export default function XAutomationsPanel() {
             <p className="text-sm mb-4">
               Create IFTTT-style automations to automatically engage with your audience
             </p>
-            <button
+            <Button
               onClick={() => setShowBuilder(true)}
-              className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 transition-colors"
+              size="2"
+              variant="solid"
             >
               Create Your First Automation
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="w-full flex gap-4 overflow-x-auto pb-4">
@@ -185,109 +188,106 @@ export default function XAutomationsPanel() {
               return (
                 <div
                   key={automation.id}
-                  className={`flex-shrink-0 w-96 bg-mission-control-surface rounded-lg border-2 transition-all ${
-                    automation.enabled 
-                      ? 'border-success-border hover:border-success-border' 
-                      : 'border-mission-control-border hover:border-mission-control-border/80'
-                  }`}
+                  className="flex-shrink-0 w-96 bg-mission-control-surface border border-mission-control-border rounded-xl p-4 hover:border-mission-control-accent/30 transition-colors"
                 >
-                  <div className="p-4">
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-start gap-3 flex-1">
-                        <div className={`p-2 rounded-lg ${automation.enabled ? 'bg-success-subtle' : 'bg-mission-control-border'}`}>
-                          {TriggerIcon && <TriggerIcon size={20} className={automation.enabled ? 'text-success' : 'text-mission-control-text-dim'} />}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold">{automation.name}</h3>
-                            {automation.enabled && (
-                              <span className="px-2 py-0.5 text-xs bg-success-subtle text-success rounded-full">
-                                Active
-                              </span>
-                            )}
-                          </div>
-                          {automation.description && (
-                            <p className="text-sm text-mission-control-text-dim">{automation.description}</p>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Actions */}
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => toggleAutomation(automation.id, !automation.enabled)}
-                          className={`p-2 rounded-lg transition-colors ${
-                            automation.enabled 
-                              ? 'bg-warning-subtle text-warning hover:bg-warning-subtle' 
-                              : 'bg-success-subtle text-success hover:bg-success-subtle'
-                          }`}
-                          title={automation.enabled ? 'Pause' : 'Activate'}
-                        >
-                          {automation.enabled ? <Pause size={16} /> : <Play size={16} />}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingAutomation(automation);
-                            setShowBuilder(true);
-                          }}
-                          className="p-2 rounded-lg bg-mission-control-border hover:bg-mission-control-border/80 transition-colors"
-                          title="Edit"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => deleteAutomation(automation.id)}
-                          className="p-2 rounded-lg bg-error-subtle text-error hover:bg-error-subtle transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {/* Automation Flow */}
-                    <div className="flex items-center gap-3 text-sm mb-3 p-3 bg-mission-control-bg rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <span className="text-mission-control-text-dim">IF</span>
-                        <span className="px-2 py-1 bg-info-subtle text-info rounded">
-                          {automation.trigger_type}
+                  {/* Header: name + status + actions */}
+                  <Flex align="start" justify="between" className="mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="text-sm font-semibold text-mission-control-text truncate">
+                          {automation.name}
                         </span>
-                        {trigger.keywords && (
-                          <span className="text-mission-control-text-dim">
-                            {'"' + trigger.keywords.join(', ') + '"'}
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                          automation.enabled
+                            ? 'bg-success/10 text-success'
+                            : 'bg-mission-control-border/50 text-mission-control-text-dim'
+                        }`}>
+                          {automation.enabled ? 'Active' : 'Paused'}
+                        </span>
+                        {TriggerIcon && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info">
+                            <TriggerIcon size={10} />
+                            {automation.trigger_type}
                           </span>
                         )}
                       </div>
-                      <span className="text-mission-control-text-dim">→</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-mission-control-text-dim">THEN</span>
-                        <div className="flex gap-1">
-                          {Array.isArray(actions) && actions.map((action: XAutomationAction, i: number) => (
-                            <span key={i} className="px-2 py-1 bg-success-subtle text-success rounded">
-                              {action.type}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Stats */}
-                    <div className="flex items-center gap-6 text-xs text-mission-control-text-dim">
-                      <div className="flex items-center gap-1">
-                        <CheckCircle size={14} />
-                        {automation.total_executions} executions
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock size={14} />
-                        {automation.max_executions_per_hour}/hr limit
-                      </div>
-                      {automation.last_executed_at && (
-                        <div className="flex items-center gap-1">
-                          Last: {new Date(automation.last_executed_at).toLocaleString()}
-                        </div>
+                      {automation.description && (
+                        <p className="text-xs text-mission-control-text-dim line-clamp-2">
+                          {automation.description}
+                        </p>
                       )}
                     </div>
+
+                    {/* Actions */}
+                    <Flex align="center" gap="1" className="ml-2 flex-shrink-0">
+                      <IconButton
+                        onClick={() => toggleAutomation(automation.id, !automation.enabled)}
+                        size="1"
+                        variant="ghost"
+                        color={automation.enabled ? 'orange' : 'green'}
+                        title={automation.enabled ? 'Pause' : 'Activate'}
+                      >
+                        {automation.enabled ? <Pause size={14} /> : <Play size={14} />}
+                      </IconButton>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingAutomation(automation);
+                          setShowBuilder(true);
+                        }}
+                        title="Edit"
+                        className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteAutomation(automation.id)}
+                        title="Delete"
+                        className="inline-flex items-center justify-center w-6 h-6 rounded-md text-mission-control-text-dim hover:text-danger hover:bg-mission-control-border/40 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </Flex>
+                  </Flex>
+
+                  {/* Automation Flow */}
+                  <div className="flex items-center gap-2 text-xs mb-3 px-3 py-2 bg-mission-control-bg rounded-lg flex-wrap">
+                    <span className="text-mission-control-text-dim font-medium">IF</span>
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-info/10 text-info">
+                      {automation.trigger_type}
+                    </span>
+                    {trigger.keywords && (
+                      <span className="text-mission-control-text-dim truncate max-w-[120px]">
+                        {'"' + trigger.keywords.join(', ') + '"'}
+                      </span>
+                    )}
+                    <span className="text-mission-control-text-dim">→</span>
+                    <span className="text-mission-control-text-dim font-medium">THEN</span>
+                    <div className="flex gap-1 flex-wrap">
+                      {Array.isArray(actions) && actions.map((action: XAutomationAction, i: number) => (
+                        <span key={i} className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-success/10 text-success">
+                          {action.type}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <span className="flex items-center gap-1 text-[10px] text-mission-control-text-dim tabular-nums">
+                      <CheckCircle size={11} />
+                      {automation.total_executions} runs
+                    </span>
+                    <span className="flex items-center gap-1 text-[10px] text-mission-control-text-dim tabular-nums">
+                      <Clock size={11} />
+                      {automation.max_executions_per_hour}/hr
+                    </span>
+                    {automation.last_executed_at && (
+                      <span className="text-[10px] text-mission-control-text-dim tabular-nums">
+                        Last: {new Date(automation.last_executed_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
                   </div>
                 </div>
               );
@@ -384,8 +384,8 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
   };
   
   return (
-    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
-      <div className="bg-mission-control-surface border border-mission-control-border rounded-lg w-full max-w-3xl mx-4 max-h-[90vh] overflow-auto">
+    <Flex align="center" justify="center" className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50">
+      <div className="bg-mission-control-surface border border-mission-control-border rounded-2xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-auto">
         {/* Header */}
         <div className="p-6 border-b border-mission-control-border">
           <h2 className="text-xl font-semibold mb-2">
@@ -401,101 +401,94 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
           {/* Basic Info */}
           <div>
             <label htmlFor="automation-name" className="block text-sm font-medium mb-2">Name</label>
-            <input
+            <TextField.Root
               id="automation-name"
-              type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Auto-thank new followers"
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+              size="2"
             />
           </div>
-          
+
           <div>
             <label htmlFor="automation-description" className="block text-sm font-medium mb-2">Description (optional)</label>
-            <textarea
+            <TextArea
               id="automation-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What does this automation do?"
               rows={2}
-              className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent resize-none"
+              resize="none"
+              size="2"
             />
           </div>
           
           {/* Trigger Section */}
           <div className="border-t border-mission-control-border pt-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="px-3 py-1 bg-info-subtle text-info rounded-lg text-sm">IF</span>
+              <span className="px-3 py-1 bg-info/10 text-info rounded-lg text-sm">IF</span>
               Trigger
             </h3>
             
             <div className="space-y-4">
               <div>
                 <label htmlFor="automation-trigger" className="block text-sm font-medium mb-2">When this happens...</label>
-                <select
-                  id="automation-trigger"
-                  value={triggerType}
-                  onChange={(e) => setTriggerType(e.target.value as any)}
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
-                >
-                  <option value="mention">Someone mentions me</option>
-                  <option value="keyword">Tweet contains keywords</option>
-                  <option value="time">At a specific time/interval</option>
-                  <option value="follower">Someone follows/unfollows me</option>
-                  <option value="dm">I receive a DM</option>
-                </select>
+                <Select.Root value={triggerType} onValueChange={(v) => setTriggerType(v as any)}>
+                  <Select.Trigger id="automation-trigger" className="w-full" />
+                  <Select.Content>
+                    <Select.Item value="mention">Someone mentions me</Select.Item>
+                    <Select.Item value="keyword">Tweet contains keywords</Select.Item>
+                    <Select.Item value="time">At a specific time/interval</Select.Item>
+                    <Select.Item value="follower">Someone follows/unfollows me</Select.Item>
+                    <Select.Item value="dm">I receive a DM</Select.Item>
+                  </Select.Content>
+                </Select.Root>
               </div>
-              
+
               {/* Trigger-specific config */}
               {triggerType === 'keyword' && (
                 <div>
                   <label htmlFor="automation-keywords" className="block text-sm font-medium mb-2">Keywords (comma-separated)</label>
-                  <input
+                  <TextField.Root
                     id="automation-keywords"
-                    type="text"
                     value={triggerConfig.keywords?.join(', ') || ''}
-                    onChange={(e) => setTriggerConfig({ 
-                      ...triggerConfig, 
+                    onChange={(e) => setTriggerConfig({
+                      ...triggerConfig,
                       keywords: e.target.value.split(',').map((k: string) => k.trim()).filter(Boolean)
                     })}
                     placeholder="bitcoin, crypto, web3"
-                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
+                    size="2"
                   />
                 </div>
               )}
-              
+
               {triggerType === 'time' && (
                 <div>
                   <label htmlFor="automation-interval" className="block text-sm font-medium mb-2">Interval</label>
-                  <select
-                    id="automation-interval"
-                    value={triggerConfig.interval || '1h'}
-                    onChange={(e) => setTriggerConfig({ ...triggerConfig, interval: e.target.value })}
-                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
-                  >
-                    <option value="15m">Every 15 minutes</option>
-                    <option value="30m">Every 30 minutes</option>
-                    <option value="1h">Every hour</option>
-                    <option value="6h">Every 6 hours</option>
-                    <option value="12h">Every 12 hours</option>
-                    <option value="24h">Every 24 hours</option>
-                  </select>
+                  <Select.Root value={triggerConfig.interval || '1h'} onValueChange={(v) => setTriggerConfig({ ...triggerConfig, interval: v })}>
+                    <Select.Trigger id="automation-interval" className="w-full" />
+                    <Select.Content>
+                      <Select.Item value="15m">Every 15 minutes</Select.Item>
+                      <Select.Item value="30m">Every 30 minutes</Select.Item>
+                      <Select.Item value="1h">Every hour</Select.Item>
+                      <Select.Item value="6h">Every 6 hours</Select.Item>
+                      <Select.Item value="12h">Every 12 hours</Select.Item>
+                      <Select.Item value="24h">Every 24 hours</Select.Item>
+                    </Select.Content>
+                  </Select.Root>
                 </div>
               )}
-              
+
               {triggerType === 'follower' && (
                 <div>
                   <label htmlFor="automation-follower-action" className="block text-sm font-medium mb-2">Action</label>
-                  <select
-                    id="automation-follower-action"
-                    value={triggerConfig.action || 'follow'}
-                    onChange={(e) => setTriggerConfig({ ...triggerConfig, action: e.target.value })}
-                    className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3 outline-none focus:border-mission-control-accent"
-                  >
-                    <option value="follow">New follower</option>
-                    <option value="unfollow">Lost follower</option>
-                  </select>
+                  <Select.Root value={triggerConfig.action || 'follow'} onValueChange={(v) => setTriggerConfig({ ...triggerConfig, action: v })}>
+                    <Select.Trigger id="automation-follower-action" className="w-full" />
+                    <Select.Content>
+                      <Select.Item value="follow">New follower</Select.Item>
+                      <Select.Item value="unfollow">Lost follower</Select.Item>
+                    </Select.Content>
+                  </Select.Root>
                 </div>
               )}
             </div>
@@ -504,84 +497,88 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
           {/* Actions Section */}
           <div className="border-t border-mission-control-border pt-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <span className="px-3 py-1 bg-success-subtle text-success rounded-lg text-sm">THEN</span>
+              <span className="px-3 py-1 bg-success/10 text-success rounded-lg text-sm">THEN</span>
               Actions
             </h3>
             
             <div className="space-y-3 mb-4">
               {actions.map((action, index) => (
-                <div key={action.id || `action-${index}`} className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4">
-                  <div className="flex items-start gap-3">
+                <div key={action.id || `action-${index}`} className="bg-mission-control-bg border border-mission-control-border rounded-xl p-4">
+                  <Flex align="start" gap="3">
                     <div className="flex-1 space-y-3">
-                      <select
+                      <Select.Root
                         value={action.type}
-                        onChange={(e) => {
+                        onValueChange={(v) => {
                           const newActions = [...actions];
-                          newActions[index] = { ...action, type: e.target.value as any };
+                          newActions[index] = { ...action, type: v as any };
                           setActions(newActions);
                         }}
-                        className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-2 text-sm"
                       >
-                        <option value="reply">Reply to tweet</option>
-                        <option value="like">Like tweet</option>
-                        <option value="retweet">Retweet</option>
-                        <option value="dm">Send DM</option>
-                        <option value="add_to_list">Add user to list</option>
-                      </select>
-                      
+                        <Select.Trigger className="w-full" />
+                        <Select.Content>
+                          <Select.Item value="reply">Reply to tweet</Select.Item>
+                          <Select.Item value="like">Like tweet</Select.Item>
+                          <Select.Item value="retweet">Retweet</Select.Item>
+                          <Select.Item value="dm">Send DM</Select.Item>
+                          <Select.Item value="add_to_list">Add user to list</Select.Item>
+                        </Select.Content>
+                      </Select.Root>
+
                       {(action.type === 'reply' || action.type === 'dm') && (
-                        <textarea
+                        <TextArea
                           value={action.config.template || ''}
                           onChange={(e) => {
                             const newActions = [...actions];
-                            newActions[index] = { 
-                              ...action, 
+                            newActions[index] = {
+                              ...action,
                               config: { ...action.config, template: e.target.value }
                             };
                             setActions(newActions);
                           }}
                           placeholder="Message template... Use {{username}}, {{tweet}}, etc."
                           rows={3}
-                          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-2 text-sm resize-none"
+                          resize="none"
+                          size="2"
                         />
                       )}
-                      
+
                       {action.type === 'add_to_list' && (
-                        <input
-                          type="text"
+                        <TextField.Root
                           value={action.config.listId || ''}
                           onChange={(e) => {
                             const newActions = [...actions];
-                            newActions[index] = { 
-                              ...action, 
+                            newActions[index] = {
+                              ...action,
                               config: { ...action.config, listId: e.target.value }
                             };
                             setActions(newActions);
                           }}
                           placeholder="List ID or name"
-                          className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-2 text-sm"
+                          size="2"
                         />
                       )}
                     </div>
                     
                     <button
+                      type="button"
                       onClick={() => setActions(actions.filter((_, i) => i !== index))}
-                      className="p-2 text-error hover:bg-error-subtle rounded-lg transition-colors"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
                     >
                       <Trash2 size={16} />
                     </button>
-                  </div>
+                  </Flex>
                 </div>
               ))}
             </div>
             
-            <button
+            <Button
               onClick={() => setActions([...actions, { type: 'reply', config: {} }])}
-              className="flex items-center gap-2 px-4 py-2 bg-mission-control-border rounded-lg hover:bg-mission-control-border/80 transition-colors text-sm"
+              size="2"
+              variant="soft"
             >
               <Plus size={14} />
               Add Action
-            </button>
+            </Button>
           </div>
           
           {/* Rate Limits */}
@@ -591,27 +588,27 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="automation-max-per-hour" className="block text-sm font-medium mb-2">Max per hour</label>
-                <input
+                <TextField.Root
                   id="automation-max-per-hour"
                   type="number"
-                  value={maxPerHour}
+                  value={String(maxPerHour)}
                   onChange={(e) => setMaxPerHour(parseInt(e.target.value) || 0)}
                   min="1"
                   max="100"
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3"
+                  size="2"
                 />
               </div>
-              
+
               <div>
                 <label htmlFor="automation-max-per-day" className="block text-sm font-medium mb-2">Max per day</label>
-                <input
+                <TextField.Root
                   id="automation-max-per-day"
                   type="number"
-                  value={maxPerDay}
+                  value={String(maxPerDay)}
                   onChange={(e) => setMaxPerDay(parseInt(e.target.value) || 0)}
                   min="1"
                   max="1000"
-                  className="w-full bg-mission-control-surface border border-mission-control-border rounded-lg p-3"
+                  size="2"
                 />
               </div>
             </div>
@@ -619,29 +616,32 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
         </div>
         
         {/* Footer */}
-        <div className="p-6 border-t border-mission-control-border flex items-center justify-between">
+        <Flex align="center" justify="between" className="p-6 border-t border-mission-control-border">
           <p className="text-sm text-mission-control-text-dim">
             <AlertCircle size={14} className="inline mr-1" />
             Automations run in the background. Be mindful of X&apos;s rate limits.
           </p>
-          
-          <div className="flex gap-3">
-            <button
+
+          <Flex gap="3">
+            <Button
               onClick={onClose}
-              className="px-4 py-2 bg-mission-control-border rounded-lg hover:bg-mission-control-border/80 transition-colors"
+              size="2"
+              variant="soft"
+              color="gray"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleSave}
               disabled={saving || !name.trim() || actions.length === 0}
-              className="px-4 py-2 bg-mission-control-accent text-white rounded-lg hover:bg-mission-control-accent/80 disabled:opacity-50 transition-colors"
+              size="2"
+              variant="solid"
             >
               {saving ? 'Saving...' : automation ? 'Update' : 'Create'}
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Flex>
+        </Flex>
       </div>
-    </div>
+    </Flex>
   );
 }

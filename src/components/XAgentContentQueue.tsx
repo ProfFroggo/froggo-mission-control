@@ -18,6 +18,7 @@ import {
   Square,
   Eye,
 } from 'lucide-react';
+import { Button, Spinner, TextArea, Flex } from '@radix-ui/themes';
 import { showToast } from './Toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -218,12 +219,13 @@ function DraftCard({
       }`}
     >
       {/* Top row */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2">
+      <Flex align="start" justify="between" gap="2" className="mb-2">
+        <Flex align="center" gap="2">
           {!autoApprove && (
             <button
+              type="button"
               onClick={onToggleSelect}
-              className="flex-shrink-0"
+              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               aria-label={selected ? 'Deselect draft' : 'Select draft'}
             >
               {selected ? (
@@ -233,24 +235,28 @@ function DraftCard({
               )}
             </button>
           )}
-          <span className="px-2 py-0.5 text-xs rounded bg-info-subtle text-info">
+          <span className="px-2 py-0.5 text-xs rounded bg-info/10 text-info">
             {draft.topic}
           </span>
           <span className="text-xs text-mission-control-text-dim">
             {formatScheduledTime(draft.scheduledAt)}
           </span>
-        </div>
-        <div className="flex items-center gap-1">
+        </Flex>
+        <Flex align="center" gap="1">
           <button
             onClick={() => setShowPreview(!showPreview)}
-            className={`p-1 rounded hover:opacity-70 ${showPreview ? 'text-info' : 'text-mission-control-text-dim'}`}
             title="Toggle preview"
+            className={`inline-flex items-center justify-center w-6 h-6 rounded transition-colors ${
+              showPreview
+                ? 'bg-mission-control-accent/10 border border-mission-control-accent/30 text-mission-control-accent'
+                : 'text-mission-control-text-dim hover:text-mission-control-text'
+            }`}
           >
             <Eye size={13} />
           </button>
           <Bot size={14} className="text-mission-control-text-dim flex-shrink-0" />
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* Content */}
       <p className="text-sm leading-relaxed mb-3 text-mission-control-text">
@@ -274,36 +280,45 @@ function DraftCard({
           Will auto-approve
         </span>
       ) : (
-        <div className="flex items-center gap-2">
-          <button
+        <Flex align="center" gap="2">
+          <Button
             onClick={handleApproveAndSchedule}
             disabled={scheduling}
-            className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-success-subtle text-success transition-opacity disabled:opacity-50"
+            variant="soft"
+            color="green"
+            size="1"
+            className="flex-1"
           >
             <Check size={12} />
             {scheduling ? 'Scheduling...' : 'Approve'}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => { setFeedbackMode('changes'); setShowFeedback(!showFeedback); }}
-            className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs rounded-lg border border-warning bg-warning-subtle text-warning transition-opacity hover:opacity-70"
+            variant="soft"
+            color="yellow"
+            size="1"
+            className="flex-1"
           >
             <MessageSquare size={12} />
             Changes
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => { setFeedbackMode('reject'); setShowFeedback(!showFeedback); }}
-            className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-error-subtle text-error transition-opacity hover:opacity-70"
+            variant="soft"
+            color="red"
+            size="1"
+            className="flex-1"
           >
             <X size={12} />
             Reject
-          </button>
-        </div>
+          </Button>
+        </Flex>
       )}
 
       {/* Feedback field */}
       {showFeedback && (
         <div className="mt-3 space-y-2">
-          <textarea
+          <TextArea
             value={feedbackText}
             onChange={(e) => setFeedbackText(e.target.value)}
             rows={2}
@@ -312,26 +327,25 @@ function DraftCard({
                 ? 'Describe what changes you want...'
                 : 'Reason for rejection (optional)...'
             }
-            className="w-full px-3 py-2 text-xs border border-mission-control-border rounded-lg resize-none focus:outline-none bg-mission-control-bg text-mission-control-text"
+            resize="vertical"
           />
-          <div className="flex items-center gap-2">
-            <button
+          <Flex align="center" gap="2">
+            <Button
               onClick={handleFeedbackSubmit}
-              className={`px-3 py-1.5 text-xs rounded-lg ${
-                feedbackMode === 'changes'
-                  ? 'bg-warning-subtle text-warning'
-                  : 'bg-error-subtle text-error'
-              }`}
+              variant="soft"
+              color={feedbackMode === 'changes' ? 'yellow' : 'red'}
+              size="1"
             >
               {feedbackMode === 'changes' ? 'Send Feedback' : 'Reject Draft'}
-            </button>
+            </Button>
             <button
+              type="button"
               onClick={() => { setShowFeedback(false); setFeedbackText(''); }}
-              className="px-3 py-1.5 text-xs rounded-lg bg-mission-control-surface text-mission-control-text-dim"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
             >
               Cancel
             </button>
-          </div>
+          </Flex>
         </div>
       )}
     </div>
@@ -518,28 +532,28 @@ export function XAgentContentQueue() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-mission-control-bg">
-        <div className="w-6 h-6 border-2 border-info border-t-transparent rounded-full animate-spin" />
+        <Spinner size="3" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-mission-control-bg overflow-y-auto">
+    <Flex direction="column" height="100%" className="bg-mission-control-bg overflow-y-auto">
       {/* Header */}
       <div className="p-4 border-b border-mission-control-border">
-        <div className="flex items-center gap-2 mb-1">
+        <Flex align="center" gap="2" className="mb-1">
           <Bot size={20} className="text-info" />
           <h2 className="text-lg font-semibold text-mission-control-text">Agent Mode</h2>
           <span
             className={`px-2 py-0.5 text-xs rounded-full font-medium ${
               settings.enabled
-                ? 'bg-success-subtle text-success'
+                ? 'bg-success/10 text-success'
                 : 'bg-mission-control-surface text-mission-control-text-dim'
             }`}
           >
             {settings.enabled ? 'Active' : 'Inactive'}
           </span>
-        </div>
+        </Flex>
         <p className="text-sm text-mission-control-text-dim">
           Let agents draft, schedule, and post within your defined limits.
         </p>
@@ -547,7 +561,7 @@ export function XAgentContentQueue() {
 
       <div className="flex-1 p-4 space-y-6">
         {/* Master toggle */}
-        <div className="flex items-center justify-between p-4 rounded-lg border border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between" className="p-4 rounded-lg border border-mission-control-border bg-mission-control-surface">
           <div>
             <div className="text-sm font-medium text-mission-control-text mb-0.5">Agent Mode</div>
             <div className="text-xs text-mission-control-text-dim">
@@ -555,8 +569,10 @@ export function XAgentContentQueue() {
             </div>
           </div>
           <button
+            type="button"
             onClick={handleToggleAgentMode}
             disabled={saving}
+            className="inline-flex items-center justify-center rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors p-1"
             aria-label={settings.enabled ? 'Disable agent mode' : 'Enable agent mode'}
           >
             {settings.enabled ? (
@@ -565,62 +581,65 @@ export function XAgentContentQueue() {
               <ToggleLeft size={36} className="text-mission-control-text-dim" />
             )}
           </button>
-        </div>
+        </Flex>
 
         {/* Content brief */}
         <div>
           <label className="block text-sm font-medium text-mission-control-text mb-2">
             Content Brief
           </label>
-          <textarea
+          <TextArea
             value={briefText}
             onChange={(e) => setBriefText(e.target.value)}
             rows={4}
             placeholder="Describe your brand voice, key topics, posting frequency, and any restrictions the agent should follow..."
-            className="w-full px-3 py-2 text-sm border border-mission-control-border rounded-lg resize-none focus:outline-none focus:ring-2 bg-mission-control-bg text-mission-control-text placeholder:text-mission-control-text-dim"
-            style={{ '--tw-ring-color': 'var(--color-info)' } as React.CSSProperties}
+            resize="vertical"
           />
           {/* Additional context / constraints */}
           <div className="mt-2">
             <label className="block text-xs font-medium mb-1 text-mission-control-text-dim">
               Additional context / constraints (added to next generation)
             </label>
-            <textarea
+            <TextArea
               value={briefContext}
               onChange={(e) => setBriefContext(e.target.value)}
               rows={2}
               placeholder="e.g. Focus on product launch this week. Avoid any competitor mentions. Use a conversational tone."
-              className="w-full px-3 py-2 text-sm border border-mission-control-border rounded-lg resize-none focus:outline-none bg-mission-control-bg text-mission-control-text placeholder:text-mission-control-text-dim"
+              resize="vertical"
             />
           </div>
-          <div className="flex items-center justify-between mt-2">
+          <Flex align="center" justify="between" className="mt-2">
             <p className="text-xs text-mission-control-text-dim">
               Agents reference this brief when generating content.
             </p>
-            <button
+            <Button
               onClick={handleSaveBrief}
               disabled={saving || (briefText === settings.brief && !briefContext.trim())}
-              className="px-3 py-1.5 text-xs rounded-lg transition-colors disabled:opacity-50 bg-info text-white"
+              variant="solid"
+              color="violet"
+              size="1"
             >
-              {saving ? 'Saving...' : 'Save Brief'}
-            </button>
-          </div>
+              {saving ? <><Spinner size="1" /> Saving...</> : 'Save Brief'}
+            </Button>
+          </Flex>
         </div>
 
         {/* Auto-approve toggle */}
-        <div className="flex items-center justify-between p-3 rounded-lg border border-mission-control-border bg-mission-control-surface">
+        <Flex align="center" justify="between" className="p-3 rounded-lg border border-mission-control-border bg-mission-control-surface">
           <div>
-            <div className="flex items-center gap-2 mb-0.5">
+            <Flex align="center" gap="2" className="mb-0.5">
               <Zap size={14} className="text-warning" />
               <span className="text-sm font-medium text-mission-control-text">Auto-approve drafts</span>
-            </div>
+            </Flex>
             <p className="text-xs text-mission-control-text-dim">
               Approved drafts go directly to Scheduled without manual review.
             </p>
           </div>
           <button
+            type="button"
             onClick={handleToggleAutoApprove}
             disabled={saving}
+            className="inline-flex items-center justify-center rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors p-1"
             aria-label={settings.autoApprove ? 'Disable auto-approve' : 'Enable auto-approve'}
           >
             {settings.autoApprove ? (
@@ -629,50 +648,53 @@ export function XAgentContentQueue() {
               <ToggleLeft size={28} className="text-mission-control-text-dim" />
             )}
           </button>
-        </div>
+        </Flex>
 
         {settings.autoApprove && (
-          <div className="flex items-start gap-2 p-3 rounded-lg text-xs bg-warning-subtle text-warning">
+          <Flex align="start" gap="2" className="p-3 rounded-lg text-xs bg-warning/10 text-warning">
             <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
             <span>
               Auto-approve is ON — agent drafts will be scheduled without human review. Monitor the activity log regularly.
             </span>
-          </div>
+          </Flex>
         )}
 
         {/* Agent draft queue */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
+          <Flex align="center" justify="between" className="mb-3">
+            <Flex align="center" gap="2">
               <Clock size={16} className="text-mission-control-text-dim" />
               <span className="text-sm font-medium text-mission-control-text">
                 Upcoming Drafts
               </span>
               {pendingDrafts.length > 0 && (
-                <span className="px-2 py-0.5 text-xs rounded-full font-medium bg-info-subtle text-info">
+                <span className="px-2 py-0.5 text-xs rounded-full font-medium bg-info/10 text-info">
                   {pendingDrafts.length}
                 </span>
               )}
-            </div>
-            <div className="flex items-center gap-2">
+            </Flex>
+            <Flex align="center" gap="2">
               {pendingSelectedCount > 0 && (
-                <button
+                <Button
                   onClick={handleBatchApprove}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg font-medium bg-success-subtle text-success"
+                  variant="soft"
+                  color="green"
+                  size="1"
                 >
                   <CheckSquare size={12} />
                   Approve selected ({pendingSelectedCount})
-                </button>
+                </Button>
               )}
               <button
+                type="button"
                 onClick={loadDrafts}
-                className="flex items-center gap-1 text-xs text-mission-control-text-dim hover:text-mission-control-text"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors"
               >
                 <RefreshCw size={12} />
                 Refresh
               </button>
-            </div>
-          </div>
+            </Flex>
+          </Flex>
 
           {pendingDrafts.length === 0 ? (
             <div className="text-center py-8 text-mission-control-text-dim text-sm border border-dashed border-mission-control-border rounded-lg">
@@ -711,7 +733,7 @@ export function XAgentContentQueue() {
               {approvedDrafts.map((draft) => (
                 <div
                   key={draft.id}
-                  className="flex items-start gap-3 p-3 rounded-lg border border-mission-control-border bg-mission-control-bg-alt opacity-75"
+                  className="flex items-start gap-3 p-3 rounded-lg border border-mission-control-border bg-mission-control-border/20 opacity-75"
                 >
                   <Check size={14} className="text-success flex-shrink-0 mt-0.5" />
                   <div>
@@ -729,7 +751,7 @@ export function XAgentContentQueue() {
           <div className="text-sm font-medium text-mission-control-text mb-3">Activity Log</div>
           <div className="space-y-0">
             {activity.map((entry) => (
-              <div key={entry.id} className="flex items-center gap-3 py-2 text-sm border-b border-mission-control-border last:border-b-0">
+              <Flex key={entry.id} align="center" gap="3" className="py-2 text-sm border-b border-mission-control-border last:border-b-0">
                 <span
                   className="text-xs font-medium flex-shrink-0 w-16 text-right"
                   style={{ color: actionColor(entry.action) }}
@@ -738,12 +760,12 @@ export function XAgentContentQueue() {
                 </span>
                 <span className="text-mission-control-text flex-1 leading-relaxed truncate">{entry.summary}</span>
                 <span className="text-xs text-mission-control-text-dim flex-shrink-0 w-14 text-right tabular-nums">{relativeTime(entry.timestamp)}</span>
-              </div>
+              </Flex>
             ))}
           </div>
         </div>
       </div>
-    </div>
+    </Flex>
   );
 }
 
