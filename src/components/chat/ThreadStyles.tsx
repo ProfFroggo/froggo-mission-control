@@ -169,8 +169,31 @@ export function ensureCSS() {
     }
     .aui-composer-icon-btn:disabled { opacity: 0.35; pointer-events: none; }
     .aui-composer-icon-btn-active {
-      background: color-mix(in srgb, var(--mission-control-accent) 12%, transparent);
-      color: var(--mission-control-accent);
+      background: color-mix(in srgb, var(--color-error, #ef4444) 15%, transparent);
+      color: var(--color-error, #ef4444);
+      animation: aui-mic-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes aui-mic-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    /* Listening state: red border + glow on composer root */
+    .aui-composer-root.aui-listening {
+      border-color: var(--color-error, #ef4444);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error, #ef4444) 20%, transparent);
+    }
+    .aui-listening-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 16px; font-size: 12px; font-weight: 500;
+      color: var(--color-error, #ef4444);
+      background: color-mix(in srgb, var(--color-error, #ef4444) 8%, transparent);
+      border-bottom: 1px solid color-mix(in srgb, var(--color-error, #ef4444) 15%, transparent);
+      animation: aui-mic-pulse 1.5s ease-in-out infinite;
+    }
+    .aui-listening-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--color-error, #ef4444);
+      animation: aui-mic-pulse 1s ease-in-out infinite;
     }
     .aui-send-btn {
       display: inline-flex; align-items: center; justify-content: center;
@@ -1097,11 +1120,18 @@ export function MissionControlComposer({
   const isRunning = loading;
 
   return (
-    <ComposerPrimitive.Root className="aui-composer-root">
+    <ComposerPrimitive.Root className={`aui-composer-root ${isListening ? 'aui-listening' : ''}`}>
+      {/* Recording indicator bar — visible when mic is active */}
+      {isListening && (
+        <div className="aui-listening-bar">
+          <span className="aui-listening-dot" />
+          Recording — speak now, click mic to stop
+        </div>
+      )}
       {/* Textarea — always enabled so users can type queued messages while agent streams */}
       <ComposerPrimitive.Input
         className="aui-composer-input min-h-[22px] max-h-[160px] overflow-auto"
-        placeholder={isRunning ? "Type to queue next message…" : (placeholder ?? "Message… (Enter to send, Shift+Enter for newline)")}
+        placeholder={isListening ? "Listening… speak or click mic to stop" : isRunning ? "Type to queue next message…" : (placeholder ?? "Message… (Enter to send, Shift+Enter for newline)")}
         submitMode="enter"
         disabled={disabled && !isRunning}
         rows={1}
