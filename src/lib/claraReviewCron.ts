@@ -814,6 +814,46 @@ export function runReviewCycle(): { queued: number } {
     }
   } catch { /* non-critical */ }
 
+  // ── P2 high-redispatch alert: tasks with >5 re-dispatches → chat alert ───────
+  // Count-based check (not time-based) to catch looping tasks that keep resetting
+  // updatedAt and therefore never trigger the 4h stuck-escalation above.
+  try {
+    const p2Tasks = getDb()
+      .prepare(`SELECT t.id, t.title, t.assignedTo FROM tasks t
+                WHERE t.status = 'in-progress'
+                  AND t.priority = 'p2'
+                  AND t.assignedTo IS NOT NULL`)
+      .all() as { id: string; title: string; assignedTo: string }[];
+
+    for (const task of p2Tasks) {
+      const redispatchCount = (getDb().prepare(
+        `SELECT COUNT(*) as cnt FROM task_activity WHERE taskId = ? AND action IN ('stuck-recovery', 'auto_redispatch')`
+      ).get(task.id) as { cnt: number } | undefined)?.cnt ?? 0;
+
+      if (redispatchCount > 5) {
+        // Dedup: only alert once per 4 hours per task
+        const fourHoursAgo = Date.now() - 4 * 60 * 60_000;
+        const recentAlert = (getDb().prepare(
+          `SELECT COUNT(*) as cnt FROM task_activity WHERE taskId = ? AND action = 'p2-high-redispatch-alert' AND timestamp > ?`
+        ).get(task.id, fourHoursAgo) as { cnt: number } | undefined)?.cnt ?? 0;
+
+        if (recentAlert === 0) {
+          const now = Date.now();
+          getDb().prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
+            .run(task.id, 'system', 'p2-high-redispatch-alert',
+              `P2 task has accumulated ${redispatchCount} re-dispatch attempts with no completion — mission-control review needed.`,
+              now);
+          try {
+            getDb().prepare(`INSERT INTO chat_room_messages (roomId, agentId, content, timestamp) VALUES (?, ?, ?, ?)`)
+              .run('mission-control', 'system',
+                `P2 task "${task.title}" (assigned to ${task.assignedTo}) has been re-dispatched ${redispatchCount} times without completing. Review for silent loops or agent issues.`,
+                now);
+          } catch { /* non-critical */ }
+        }
+      }
+    }
+  } catch { /* non-critical */ }
+
   // ── Stale human-review alert: tasks in human-review >24h → chat reminder ────
   try {
     const twentyFourHoursAgo = Date.now() - 24 * 60 * 60_000;
