@@ -269,6 +269,19 @@
 }
 
 /* ============================================
+   LIGHT MODE OVERRIDES
+   Applied when :root has the .light class
+   (set by themeToggle.ts on appearance change)
+   ============================================ */
+
+:root.light {
+  /* Accent contrast fix: green-500 (#22c55e) on white = 3.9:1 (fails WCAG AA).
+     green-600 (#16a34a) on white = 4.8:1 (passes WCAG AA 4.5:1 minimum).
+     Dark mode accent (#22c55e on #0a0a0a) passes at 7.0:1 — leave unchanged. */
+  --mission-control-accent: #16a34a;
+}
+
+/* ============================================
    SEMANTIC UTILITY CLASSES
    ============================================ */
 
