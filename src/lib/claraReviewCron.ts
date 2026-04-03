@@ -69,7 +69,7 @@ function resetReviewStatus(taskId: unknown): void {
     getDb()
       .prepare("UPDATE tasks SET reviewStatus = NULL, updatedAt = ? WHERE id = ? AND reviewStatus = 'in-review'")
       .run(Date.now(), taskId);
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to reset review status:', err); }
 }
 
 function resetPreReviewStatus(taskId: unknown): void {
@@ -77,7 +77,7 @@ function resetPreReviewStatus(taskId: unknown): void {
     getDb()
       .prepare("UPDATE tasks SET reviewStatus = NULL, updatedAt = ? WHERE id = ? AND reviewStatus = 'pre-review'")
       .run(Date.now(), taskId);
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to reset pre-review status:', err); }
 }
 
 // ── Pre-work review (internal-review → in-progress or back to todo) ───────────
@@ -95,7 +95,7 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
       .prepare('SELECT COUNT(*) as cnt FROM subtasks WHERE taskId = ?')
       .get(task.id as string) as { cnt: number } | undefined;
     subtaskCount = row?.cnt ?? 0;
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to fetch subtask count:', err); }
 
   let hasAgent         = !!assignedTo;
   const hasPlanningNotes = !!(task.planningNotes as string | null)?.trim();
@@ -110,7 +110,7 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
     if (subs.length > 0) {
       subtaskDetails = subs.map(s => `  [${s.completed ? 'x' : ' '}] ${s.title}`).join('\n');
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to fetch subtask details:', err); }
 
   // Fetch recent activity for context
   let recentActivity = '';
@@ -119,7 +119,7 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
     if (acts.length > 0) {
       recentActivity = acts.map(a => `  - [${a.action}] ${a.msg}`).join('\n');
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to fetch recent activity:', err); }
 
   const message = [
     `## Pre-work Quality Review — Task: ${task.id}`,
@@ -200,14 +200,14 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
       inPreReview.delete(task.id as string);
       return;
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to check review count for escalation:', err); }
 
   trackEvent('clara.pre-review.start', { taskId: task.id });
   try {
     getDb()
       .prepare("UPDATE tasks SET reviewStatus = 'pre-review', updatedAt = ? WHERE id = ?")
       .run(Date.now(), task.id);
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to set pre-review status:', err); }
 
   const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env as Record<string, string>;
 
@@ -226,6 +226,9 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
     '--output-format', 'stream-json',
     '--verbose',
     '--model', 'claude-haiku-4-5-20251001',
+    // SECURITY EXCEPTION (F11): --dangerously-skip-permissions required for autonomous
+    // server-side execution. Without it, subprocess hangs at permission prompt → timeout.
+    // Mitigated by: --allowedTools whitelist, --disallowedTools blacklist, clean env.
     '--dangerously-skip-permissions',
     '--allowedTools', TIER_TOOLS['worker'].join(','),
     ...(claraDisallowed.length > 0 ? ['--disallowedTools', claraDisallowed.join(',')] : []),
@@ -243,7 +246,7 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
   } catch (e) {
     inPreReview.delete(task.id as string);
     resetPreReviewStatus(task.id);
-    try { proc.kill(); } catch { /* already exited */ }
+    try { proc.kill(); } catch (killErr) { console.warn('[clara-review-cron] Non-critical: proc.kill after stdin failure:', killErr); }
     console.error('[clara-review-cron] stdin write failed for task', task.id, e);
     return;
   }
@@ -252,7 +255,7 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
   proc.stderr!.on('data', (chunk: Buffer) => { stderrBuf += chunk.toString(); });
 
   const reviewTimeout = setTimeout(() => {
-    try { proc.kill(); } catch { /* already exited */ }
+    try { proc.kill(); } catch (err) { console.warn('[clara-review-cron] Non-critical: pre-review timeout kill failed:', err); }
   }, 3 * 60_000);
 
   proc.on('close', (code: number | null) => {
@@ -263,7 +266,7 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
       try {
         getDb().prepare('INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)')
           .run(task.id, 'clara', 'clara-process-exit', `Pre-review exited code ${code}: ${stderrBuf.slice(0, 200)}`, Date.now());
-      } catch { /* activity logging */ }
+      } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to log pre-review exit activity:', err); }
     }
     trackEvent('clara.pre-review.complete', { taskId: task.id });
 
@@ -276,7 +279,7 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
       if (snapshot?.status === 'internal-review' && snapshot?.reviewStatus === 'pre-review') {
         resetPreReviewStatus(task.id);
       }
-    } catch { /* non-critical — fall back to always-reset */ resetPreReviewStatus(task.id); }
+    } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to check pre-review status:', err); resetPreReviewStatus(task.id); }
 
     // Brief delay so DB write from MCP has settled, then check outcome
     setTimeout(() => {
@@ -347,7 +350,7 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
                 if (check?.status === 'todo') {
                   dispatchTask(task.id as string);
                 }
-              } catch { /* non-critical */ }
+              } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to re-dispatch after pre-review rejection:', err); }
             }, 3000);
           }
         } else {
@@ -355,7 +358,7 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
           // Task stays in internal-review, will be retried next cycle
           console.warn(`[clara-review-cron] Clara subprocess produced no decision for ${task.id} (status=${current?.status}) — will retry next cycle`);
         }
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[clara-review-cron] Non-critical: pre-review post-close handler failed:', err); }
     }, 2000);
   });
 
@@ -367,7 +370,7 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
     try {
       getDb().prepare('INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)')
         .run(task.id, 'clara', 'clara-spawn-error', `Pre-review spawn failed: ${err.message}`, Date.now());
-    } catch { /* truly non-critical — activity logging */ }
+    } catch (logErr) { console.warn('[clara-review-cron] Non-critical: failed to log pre-review spawn error:', logErr); }
   });
 }
 
@@ -399,7 +402,7 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
       activitySummary = '**Recent activity:**\n' +
         acts.map(a => `  - [${a.action}] ${(a.message || '').slice(0, 120)}`).join('\n');
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to fetch subtask/activity for post-review:', err); }
 
   const message = [
     `## Post-work Review — Task: ${task.id}`,
@@ -450,7 +453,7 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
       inReview.delete(task.id as string);
       return;
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to check post-review escalation count:', err); }
 
   // Stamp reviewedAt so we can detect stale in-review rows
   const startedAt = Date.now();
@@ -459,7 +462,7 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
     getDb()
       .prepare("UPDATE tasks SET reviewStatus = 'in-review', updatedAt = ? WHERE id = ?")
       .run(startedAt, task.id);
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to set in-review status:', err); }
 
   const { CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION_ID, ...cleanEnv } = process.env as Record<string, string>;
 
@@ -478,6 +481,9 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
     '--output-format', 'stream-json',
     '--verbose',
     '--model', 'claude-haiku-4-5-20251001',
+    // SECURITY EXCEPTION (F11): --dangerously-skip-permissions required for autonomous
+    // server-side execution. Without it, subprocess hangs at permission prompt → timeout.
+    // Mitigated by: --allowedTools whitelist, --disallowedTools blacklist, clean env.
     '--dangerously-skip-permissions',
     '--allowedTools', TIER_TOOLS['worker'].join(','),
     ...(claraDisallowed.length > 0 ? ['--disallowedTools', claraDisallowed.join(',')] : []),
@@ -495,7 +501,7 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
   } catch (e) {
     inReview.delete(task.id as string);
     resetReviewStatus(task.id);
-    try { proc.kill(); } catch { /* already exited */ }
+    try { proc.kill(); } catch (killErr) { console.warn('[clara-review-cron] Non-critical: proc.kill after post-review stdin failure:', killErr); }
     console.error('[clara-review-cron] stdin write failed for task', task.id, e);
     return;
   }
@@ -505,7 +511,7 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
 
   // Kill Clara's process after 3 minutes — prevents zombie reviews
   const reviewTimeout = setTimeout(() => {
-    try { proc.kill(); } catch { /* already exited */ }
+    try { proc.kill(); } catch (err) { console.warn('[clara-review-cron] Non-critical: post-review timeout kill failed:', err); }
   }, 3 * 60_000);
 
   proc.on('close', (code: number | null) => {
@@ -516,7 +522,7 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
       try {
         getDb().prepare('INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)')
           .run(task.id, 'clara', 'clara-process-exit', `Post-review exited code ${code}: ${stderrBuf.slice(0, 200)}`, Date.now());
-      } catch { /* activity logging */ }
+      } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to log post-review exit activity:', err); }
     }
     trackEvent('clara.review.complete', { taskId: task.id });
     // If Clara exited without calling task_update (MCP failure, model responded without
@@ -533,7 +539,7 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
 
         if (reviewed?.reviewStatus === 'approved' || reviewed?.reviewStatus === 'rejected') {
           // Increment review count only on actual decisions (not silent failures)
-          try { getDb().prepare('UPDATE tasks SET claraReviewCount = COALESCE(claraReviewCount, 0) + 1 WHERE id = ?').run(task.id); } catch { /* */ }
+          try { getDb().prepare('UPDATE tasks SET claraReviewCount = COALESCE(claraReviewCount, 0) + 1 WHERE id = ?').run(task.id); } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to increment review count:', err); }
           const db2 = getDb();
           const notes = (reviewed.reviewNotes || '').slice(0, 500);
           const now2 = Date.now();
@@ -543,7 +549,7 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
             // Set lastClaraReviewAt on rejection so retry cooldown can be enforced
             try {
               db2.prepare('UPDATE tasks SET lastClaraReviewAt = ?, updatedAt = ? WHERE id = ?').run(now2, now2, task.id);
-            } catch { /* non-critical */ }
+            } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to set lastClaraReviewAt:', err); }
 
             const rejMsg = notes
               ? `Post-review failed: ${notes}. Task returned to in-progress for rework.`
@@ -568,7 +574,7 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
                   if (check?.status === 'in-progress') {
                     dispatchTask(task.id as string);
                   }
-                } catch { /* non-critical */ }
+                } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to re-dispatch after post-review rejection:', err); }
               }, 3000);
             }
           } else {
@@ -627,10 +633,10 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
 
               writeFileSync(checkpointPath, checkpoint, 'utf-8');
               trackEvent('memory.checkpoint', { agentId, taskId: task.id as string });
-            } catch { /* non-critical — never block review flow */ }
+            } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to write session checkpoint:', err); }
           }
         }
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[clara-review-cron] Non-critical: post-review outcome handler failed:', err); }
     }, 2000); // Brief delay so DB write from MCP has settled
   });
 
@@ -642,7 +648,7 @@ export function spawnClaraReview(task: Record<string, unknown>): void {
     try {
       getDb().prepare('INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)')
         .run(task.id, 'clara', 'clara-spawn-error', `Post-review spawn failed: ${err.message}`, Date.now());
-    } catch { /* truly non-critical — activity logging */ }
+    } catch (logErr) { console.warn('[clara-review-cron] Non-critical: failed to log post-review spawn error:', logErr); }
   });
 }
 
@@ -677,7 +683,7 @@ export function runReviewCycle(): { queued: number } {
       advanced = todoWithAgent.length;
       console.log(`[clara-review-cron] Auto-advanced ${todoWithAgent.length} todo task(s) to internal-review`);
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: auto-advance pass failed:', err); }
 
   // ── Pre-work pass: tasks in internal-review waiting for Clara's gate ─────────
   try {
@@ -694,7 +700,7 @@ export function runReviewCycle(): { queued: number } {
     if (preTasks.length > 0) {
       console.log(`[clara-review-cron] Queued ${preTasks.length} task(s) for pre-work review`);
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: pre-work review pass failed:', err); }
 
   // ── Post-work pass: safety net for orphaned approved tasks ───────────────────
   try {
@@ -707,7 +713,7 @@ export function runReviewCycle(): { queued: number } {
       getDb().prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
         .run(id, 'system', 'status_change', 'Status → done (auto-advanced orphaned approved task)', now);
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: orphaned approved task cleanup failed:', err); }
 
   // ── Post-work pass: tasks in review waiting for Clara's sign-off ─────────────
   try {
@@ -723,7 +729,7 @@ export function runReviewCycle(): { queued: number } {
     if (reviewTasks.length > 0) {
       console.log(`[clara-review-cron] Queued ${reviewTasks.length} task(s) for post-work review`);
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: post-work review pass failed:', err); }
 
   // ── Stuck in-progress recovery: re-dispatch tasks with no recent activity ────
   try {
@@ -777,7 +783,7 @@ export function runReviewCycle(): { queued: number } {
       recovered = stuckTasks.filter(s => s.assignedTo).length;
     console.log(`[clara-review-cron] Recovered ${stuckTasks.length} stuck in-progress task(s)`);
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: stuck task recovery failed:', err); }
 
   // ── Stuck in-progress escalation: 4h+ with 3+ re-dispatches → human-review ─
   try {
@@ -809,10 +815,10 @@ export function runReviewCycle(): { queued: number } {
             .run('mission-control', 'system',
               `Task "${stuck.title}" (assigned to ${stuck.assignedTo}) has been stuck for 4+ hours after ${recoveryCount} re-dispatch attempts. Moved to human-review.`,
               now);
-        } catch { /* non-critical */ }
+        } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to post stuck-escalation chat message:', err); }
       }
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: stuck task escalation check failed:', err); }
 
   // ── P2 high-redispatch alert: tasks with >5 re-dispatches → chat alert ───────
   // Count-based check (not time-based) to catch looping tasks that keep resetting
@@ -848,11 +854,11 @@ export function runReviewCycle(): { queued: number } {
               .run('mission-control', 'system',
                 `P2 task "${task.title}" (assigned to ${task.assignedTo}) has been re-dispatched ${redispatchCount} times without completing. Review for silent loops or agent issues.`,
                 now);
-          } catch { /* non-critical */ }
+          } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to post P2 high-redispatch alert:', err); }
         }
       }
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: P2 high-redispatch check failed:', err); }
 
   // ── Stale human-review alert: tasks in human-review >24h → chat reminder ────
   try {
@@ -878,10 +884,10 @@ export function runReviewCycle(): { queued: number } {
             .run('mission-control', 'system',
               `Reminder: Task "${stale.title}" has been waiting in human-review for over 24 hours. Please review.`,
               now);
-        } catch { /* non-critical */ }
+        } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to post stale human-review reminder:', err); }
       }
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: stale human-review check failed:', err); }
 
   // ── Queue drain: dispatch next queued task for agents that are now free ──────
   // Tasks with status=internal-review AND reviewStatus=pre-approved are Clara-approved
@@ -913,7 +919,7 @@ export function runReviewCycle(): { queued: number } {
         dispatched.add(q.assignedTo);
       }
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: queue drain pass failed:', err); }
 
   // ── Orphaned review status cleanup: reset stale reviewStatus ────────────────
   try {
@@ -935,7 +941,7 @@ export function runReviewCycle(): { queued: number } {
       reset += staleInReview.changes;
       console.log(`[clara-review-cron] Reset ${staleInReview.changes} stale in-review status(es)`);
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: orphaned review status cleanup failed:', err); }
 
   // ── Memory housekeeping: archive old memory files (once per hour) ─────────
   try {
@@ -966,7 +972,7 @@ export function runReviewCycle(): { queued: number } {
         }
       }
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: memory housekeeping failed:', err); }
 
   // ── Cycle summary ──────────────────────────────────────────────────────────
   if (queued > 0 || advanced > 0 || recovered > 0 || reset > 0) {
@@ -996,7 +1002,7 @@ export function startClaraReviewCron(): void {
     if (stale.changes > 0) {
       console.log(`[clara-review-cron] Reset ${stale.changes} stale post-review task(s) from previous session`);
     }
-  } catch { /* DB may not be ready yet */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to reset stale post-review tasks on startup:', err); }
 
   // On startup: reset stale pre-work 'pre-review' markers
   try {
@@ -1006,7 +1012,7 @@ export function startClaraReviewCron(): void {
     if (stale.changes > 0) {
       console.log(`[clara-review-cron] Reset ${stale.changes} stale pre-review task(s) from previous session`);
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to reset stale pre-review tasks on startup:', err); }
 
   // On startup: recover tasks stuck in internal-review for > 10 minutes with no activity.
   // These are Clara's dropped reviews (process crash, timeout, etc.) — move back to todo.
@@ -1032,7 +1038,7 @@ export function startClaraReviewCron(): void {
     if (timedOut.length > 0) {
       console.log(`[clara-review-cron] Moved ${timedOut.length} timed-out pre-review task(s) back to todo`);
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[clara-review-cron] Non-critical: failed to recover timed-out pre-review tasks:', err); }
 
   // On startup: re-dispatch tasks stuck in 'in-progress' from a previous server session.
   recoverStuckInProgressTasks();

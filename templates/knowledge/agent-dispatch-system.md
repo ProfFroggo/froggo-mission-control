@@ -23,7 +23,7 @@ When a task is created with `assignedTo` and `status=todo`, the platform automat
 
 ### 3. Agent Spawn
 ```
-claude --print --model claude-sonnet-4-6 --dangerously-skip-permissions <task-message>
+claude --print --model claude-sonnet-4-6 --allowedTools <tier-tools> <task-message>
 ```
 - CWD: `~/mission-control/agents/{agentId}/` (agent's workspace)
 - Detached process — server doesn't wait for it

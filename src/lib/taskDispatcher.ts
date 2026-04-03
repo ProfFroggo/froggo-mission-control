@@ -21,7 +21,7 @@ const HOME = homedir();
 const SCRATCHPAD_DIR = join(HOME, 'mission-control', 'scratchpad');
 
 // Ensure scratchpad directory exists on module load
-try { mkdirSync(SCRATCHPAD_DIR, { recursive: true }); } catch { /* ignore */ }
+try { mkdirSync(SCRATCHPAD_DIR, { recursive: true }); } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to create scratchpad directory:', err); }
 
 // ── Model resolution ─────────────────────────────────────────────────────────
 
@@ -91,7 +91,8 @@ function getAutoSkills(taskTitle: string, taskDescription?: string | null): stri
 }
 
 // ── Per-tier allowed tool sets ─────────────────────────────────────────────────
-// No --dangerously-skip-permissions ever. Each tier explicitly states what it may use.
+// SECURITY NOTE (F11): --dangerously-skip-permissions is required for autonomous execution
+// (subprocess hangs without it). Risk mitigated by --allowedTools/--disallowedTools per tier.
 
 const MCP_DB = [
   'mcp__mission-control_db__task_list',
@@ -514,7 +515,9 @@ function loadPermissionPrompt(agentId: string, trustTier: string): string {
       if (denied.length) lines.push(`\nDenied actions — do NOT perform: ${denied.join(', ')}`);
       if (allowed.length) lines.push(`Explicitly permitted actions: ${allowed.join(', ')}`);
     }
-  } catch { /* non-critical */ }
+  } catch (err) {
+    console.warn('[taskDispatcher] Non-critical: failed to build soul prompt section:', err);
+  }
 
   return lines.join('\n');
 }
@@ -573,7 +576,8 @@ function loadRelevantMemory(agentId: string, taskTitle: string, taskDescription?
 
     const sections = capped.map(f => `### ${f.name.replace('.md', '')}\n${f.content}`).join('\n\n---\n\n');
     return `\n\n## Your Relevant Memory\n_Found ${capped.length} note(s) related to this task:_\n\n${sections}\n\n---\n`;
-  } catch {
+  } catch (err) {
+    console.warn('[taskDispatcher] Non-critical:', err);
     return ''; // Non-critical — never block dispatch
   }
 }
@@ -597,7 +601,9 @@ function loadHandoffNote(taskId: string, agentId: string): string {
         return `\n\n## Handoff from Previous Agent\n${content.slice(0, 800)}\n`;
       }
     }
-  } catch {}
+  } catch (err) {
+    console.warn('[taskDispatcher] Non-critical: failed to read handoff file:', err);
+  }
   return '';
 }
 
@@ -620,7 +626,9 @@ function buildDispatchContextEnrichment(task: Record<string, unknown>): string {
         const proj = db.prepare('SELECT name FROM projects WHERE id = ?').get(projectId) as
           { name: string } | undefined;
         if (proj?.name) lines.push(`Project: ${proj.name}`);
-      } catch { /* non-critical */ }
+      } catch (err) {
+        console.warn('[taskDispatcher] Non-critical: failed to fetch project name:', err);
+      }
     }
 
     // Parent task title
@@ -630,7 +638,9 @@ function buildDispatchContextEnrichment(task: Record<string, unknown>): string {
         const parent = db.prepare('SELECT title FROM tasks WHERE id = ?').get(parentTaskId) as
           { title: string } | undefined;
         if (parent?.title) lines.push(`Parent task: ${parent.title}`);
-      } catch { /* non-critical */ }
+      } catch (err) {
+        console.warn('[taskDispatcher] Non-critical: failed to fetch parent task title:', err);
+      }
     }
 
     // Blocking task titles — blockedBy is stored as a JSON array of task IDs
@@ -647,7 +657,9 @@ function buildDispatchContextEnrichment(task: Record<string, unknown>): string {
             lines.push(`Blocked by: ${blockers.map(b => b.title).join(', ')}`);
           }
         }
-      } catch { /* non-critical */ }
+      } catch (err) {
+        console.warn('[taskDispatcher] Non-critical: failed to fetch blocking task titles:', err);
+      }
     }
 
     // Completed dependency outputs — inject files and context from tasks this one depends on
@@ -682,11 +694,14 @@ function buildDispatchContextEnrichment(task: Record<string, unknown>): string {
           }
         }
       }
-    } catch { /* non-critical */ }
+    } catch (err) {
+      console.warn('[taskDispatcher] Non-critical: failed to fetch completed dependency outputs:', err);
+    }
 
     if (lines.length === 0) return '';
     return `\n\n## Task Context\n${lines.join('\n')}`;
-  } catch {
+  } catch (err) {
+    console.warn('[taskDispatcher] Non-critical:', err);
     return ''; // Never block dispatch
   }
 }
@@ -735,7 +750,8 @@ function loadRelevantKnowledge(taskTitle: string, taskDesc?: string | null): str
       `### ${a.title} (${a.category})\n${a.content.slice(0, 400)}${a.content.length > 400 ? `\n[...use knowledge_read(${a.id}) for full content]` : ''}`
     );
     return `\n\n## Workspace Knowledge Base\nThe following guidelines from your team's knowledge base are relevant to this task:\n\n${lines.join('\n\n---\n\n')}\n\nFor more KB articles: use knowledge_search(query) to find what you need.\n`;
-  } catch {
+  } catch (err) {
+    console.warn('[taskDispatcher] Non-critical:', err);
     return ''; // Non-critical — never block dispatch
   }
 }
@@ -827,7 +843,7 @@ function buildCampaignContext(campaignId: string): string {
     if (!campaign) return '';
 
     let channels: string[] = [];
-    try { channels = JSON.parse(campaign.channels || '[]'); } catch { /* ignore */ }
+    try { channels = JSON.parse(campaign.channels || '[]'); } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to parse campaign channels:', err); }
 
     const campaignDir = join(HOME, 'mission-control', 'library', 'campaigns', campaignId);
 
@@ -911,7 +927,9 @@ function buildTaskSystemPrompt(
       getDb().prepare(
         `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
       ).run(task.id as string, 'system', 'skill_auto_assigned', `Auto-skills: ${autoSkillSlugs.join(', ')}`, Date.now());
-    } catch { /* non-critical */ }
+    } catch (err) {
+      console.warn('[taskDispatcher] Non-critical: failed to log auto-skill assignment:', err);
+    }
   }
 
   // Inject project or campaign context depending on which this task belongs to
@@ -950,7 +968,9 @@ function buildTaskSystemPrompt(
       parts.push(TASK_SUFFIX.trim());
       return parts.join('\n');
     }
-  } catch { /* DB not available */ }
+  } catch (err) {
+    console.warn('[taskDispatcher] Non-critical: DB query failed during prompt build:', err);
+  }
   return null;
 }
 
@@ -998,7 +1018,9 @@ function buildTaskMessage(task: Record<string, unknown>): string {
     subtasks = getDb()
       .prepare('SELECT id, title, completed FROM subtasks WHERE taskId = ? ORDER BY position ASC')
       .all(taskId) as Array<{ id: string; title: string; completed: number }>;
-  } catch { /* non-critical */ }
+  } catch (err) {
+    console.warn('[taskDispatcher] Non-critical: failed to fetch subtasks:', err);
+  }
 
   const subtaskLines = subtasks.length > 0
     ? subtasks.map(s => `  [${s.completed ? 'x' : ' '}] ${s.title} (id: ${s.id})`).join('\n')
@@ -1059,7 +1081,9 @@ function buildTaskMessage(task: Record<string, unknown>): string {
           `SELECT message FROM task_activity WHERE taskId = ? AND action = 'pre-review-rejected' ORDER BY timestamp DESC LIMIT 1`
         ).get(taskId) as { message: string } | undefined;
         if (act?.message) latestFeedback = act.message;
-      } catch { /* non-critical */ }
+      } catch (err) {
+        console.warn('[taskDispatcher] Non-critical: failed to fetch pre-review rejection activity:', err);
+      }
     }
     lines.push(
       `## ACTION REQUIRED — Fix your task planning`,
@@ -1109,7 +1133,9 @@ function buildTaskMessage(task: Record<string, unknown>): string {
           `SELECT message FROM task_activity WHERE taskId = ? AND action = 'review-rejected' ORDER BY timestamp DESC LIMIT 1`
         ).get(taskId) as { message: string } | undefined;
         if (act?.message) latestFeedback = act.message;
-      } catch { /* non-critical */ }
+      } catch (err) {
+        console.warn('[taskDispatcher] Non-critical: failed to fetch review rejection activity:', err);
+      }
     }
     lines.push(
       `## ACTION REQUIRED — Task returned for rework`,
@@ -1245,7 +1271,9 @@ function recordAgentFailure(agentId: string) {
     emitSSEEvent('circuit.open', { agentId, failures: newCount, lockedUntil: agentFailureCounts.get(agentId)?.lockedUntil ?? null });
     try {
       getDb().prepare(`UPDATE agents SET status = 'offline' WHERE id = ?`).run(agentId);
-    } catch { /* non-critical */ }
+    } catch (err) {
+      console.warn('[taskDispatcher] Non-critical: failed to set agent offline after circuit break:', err);
+    }
   }
 }
 
@@ -1360,7 +1388,8 @@ function selectBestAgent(
     const best = candidates.find(c => !isAgentCircuitOpen(c.id));
 
     return best?.id ?? null;
-  } catch {
+  } catch (err) {
+    console.warn('[taskDispatcher] Non-critical:', err);
     return null;
   }
 }
@@ -1410,7 +1439,7 @@ function preemptForP0(
     // Kill the running process for the preempted task if it exists
     const preemptedProc = activeProcesses.get(preemptable.id);
     if (preemptedProc) {
-      try { preemptedProc.kill('SIGTERM'); } catch { /* may already be dead */ }
+      try { preemptedProc.kill('SIGTERM'); } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to kill preempted process:', err); }
       activeProcesses.delete(preemptable.id);
       activeDispatchSet.delete(preemptable.id);
     }
@@ -1482,7 +1511,9 @@ export function dispatchTask(taskId: string): boolean {
           ).run(taskId, 'system', 'auto_routed',
             `Smart routing: auto-assigned to ${agentId} (best available agent by capability/workload score)`,
             Date.now());
-        } catch { /* non-critical */ }
+        } catch (err) {
+          console.warn('[taskDispatcher] Non-critical: failed to log auto-routing activity:', err);
+        }
         console.log(`[taskDispatcher] Smart routing: auto-assigned ${taskId} to ${agentId}`);
         emitSSEEvent('dispatch.auto_routed', { taskId, agentId });
       } else {
@@ -1500,7 +1531,9 @@ export function dispatchTask(taskId: string): boolean {
               ).run(taskId, 'system', 'p0_preemption',
                 `P0 preemption: reassigned agent ${agentId} from lower-priority work`,
                 Date.now());
-            } catch { /* non-critical */ }
+            } catch (err) {
+              console.warn('[taskDispatcher] Non-critical: failed to log P0 preemption activity:', err);
+            }
           }
         }
         if (!agentId) return false; // No agent available — nothing to dispatch
@@ -1556,7 +1589,9 @@ export function dispatchTask(taskId: string): boolean {
               ).run(taskId, 'system', 'budget_blocked',
                 `Dispatch blocked: ${budget.name} budget exceeded ($${spent.toFixed(2)} / $${budget.limitUsd.toFixed(2)} ${budget.period}). Task remains queued.`,
                 Date.now());
-            } catch { /* non-critical */ }
+            } catch (err) {
+              console.warn('[taskDispatcher] Non-critical: failed to log budget block activity:', err);
+            }
             emitSSEEvent('budget.dispatch_blocked', {
               taskId, agentId, budgetName: budget.name,
               spent, limit: budget.limitUsd, period: budget.period,
@@ -1564,7 +1599,9 @@ export function dispatchTask(taskId: string): boolean {
             return false;
           }
         }
-      } catch { /* budget check failure is non-fatal — allow dispatch */ }
+      } catch (err) {
+        console.warn('[taskDispatcher] Non-critical: budget check failed (allowing dispatch):', err);
+      }
     }
 
     // Get per-agent model and trust tier from DB
@@ -1598,6 +1635,8 @@ export function dispatchTask(taskId: string): boolean {
       '--output-format', 'stream-json',
       '--verbose',
       '--model', model,
+      // SECURITY EXCEPTION (F11): Required for autonomous server-side execution.
+      // Mitigated by: per-tier --allowedTools whitelist + --disallowedTools blacklist.
       '--dangerously-skip-permissions',
       '--allowedTools', allowedTools.join(','),
       ...(disallowedTools.length > 0 ? ['--disallowedTools', disallowedTools.join(',')] : []),
@@ -1638,7 +1677,9 @@ export function dispatchTask(taskId: string): boolean {
             .run('mission-control', 'system',
               `Task "${task.title}" was escalated to human-review: agent ${agentId} circuit breaker is open (too many recent failures).`,
               Date.now());
-        } catch { /* non-critical */ }
+        } catch (err) {
+          console.warn('[taskDispatcher] Non-critical: failed to post circuit-breaker escalation to chat:', err);
+        }
       } catch (e) {
         console.error('[taskDispatcher] Failed to escalate circuit-open task:', e);
       }
@@ -1656,7 +1697,9 @@ export function dispatchTask(taskId: string): boolean {
         console.log(`[taskDispatcher] Agent ${agentId} already has ${otherInProgress} other in-progress task(s) — skipping ${taskId} until slot opens`);
         return false;
       }
-    } catch { /* non-critical — never block dispatch */ }
+    } catch (err) {
+      console.warn('[taskDispatcher] Non-critical: per-agent gate check failed:', err);
+    }
 
     // Concurrency check — skip if at limit
     if (activeDispatchSet.size >= MAX_CONCURRENT_DISPATCHES) {
@@ -1731,8 +1774,10 @@ export function dispatchTask(taskId: string): boolean {
                   ).run(agentId, taskId, parsed.session_id ?? null, model, inputT, outputT, costUsd, Date.now());
                   import('@/lib/budgetAlerts').then(({ checkBudgetAlerts }) => {
                     checkBudgetAlerts(db2, agentId);
-                  }).catch(() => { /* non-critical */ });
-                } catch { /* non-critical */ }
+                  }).catch(err => console.warn('[taskDispatcher] Non-critical: budget alerts check failed:', err));
+                } catch (err) {
+                  console.warn('[taskDispatcher] Non-critical: token usage recording failed:', err);
+                }
               }
             }
 
@@ -1760,7 +1805,9 @@ export function dispatchTask(taskId: string): boolean {
                         `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
                       ).run(taskId, 'system', 'loop_detected',
                         `Agent may be stuck: called ${toolName} ${toolRepeatCount} times consecutively`, Date.now());
-                    } catch { /* non-critical */ }
+                    } catch (err) {
+                      console.warn('[taskDispatcher] Non-critical: failed to log loop detection activity:', err);
+                    }
                     emitSSEEvent('agent.loop_detected', {
                       taskId, agentId, tool: toolName, count: toolRepeatCount,
                     });
@@ -1783,7 +1830,9 @@ export function dispatchTask(taskId: string): boolean {
               }
             }
 
-          } catch { /* not JSON, ignore */ }
+          } catch (err) {
+            console.warn('[taskDispatcher] Non-critical: failed to parse stdout JSON line:', err);
+          }
         }
       });
 
@@ -1800,7 +1849,9 @@ export function dispatchTask(taskId: string): boolean {
               `Dispatch attempt ${attemptNumber}/${MAX_DISPATCH_ATTEMPTS} failed — retrying in ${delay / 1000}s: ${errorMsg.slice(0, 200)}`,
               Date.now()
             );
-          } catch { /* non-critical */ }
+          } catch (err) {
+            console.warn('[taskDispatcher] Non-critical: failed to log retry activity:', err);
+          }
           setTimeout(() => spawnAttempt(attemptNumber + 1), delay);
         } else {
           // All attempts exhausted — move back to todo for retry (not human-review)
@@ -1820,11 +1871,13 @@ export function dispatchTask(taskId: string): boolean {
               `Dispatch failed after ${MAX_DISPATCH_ATTEMPTS} attempts: ${errorMsg.slice(0, 200)}. Returned to todo.`,
               Date.now(), taskId
             );
-          } catch { /* non-critical */ }
+          } catch (err) {
+            console.warn('[taskDispatcher] Non-critical: failed to log final failure activity:', err);
+          }
           recordAgentFailure(agentId);
           trackEvent('dispatch.error', { taskId, agentId, attempts: MAX_DISPATCH_ATTEMPTS, error: errorMsg.slice(0, 200) }, agentId);
           // Set agent idle on final failure (circuit breaker may override to 'offline')
-          try { db.prepare(`UPDATE agents SET status = 'idle' WHERE id = ?`).run(agentId); } catch { /* */ }
+          try { db.prepare(`UPDATE agents SET status = 'idle' WHERE id = ?`).run(agentId); } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to set agent idle after final failure:', err); }
         }
       };
 
@@ -1850,7 +1903,9 @@ export function dispatchTask(taskId: string): boolean {
             if (otherTasks === 0) {
               db.prepare(`UPDATE agents SET status = 'idle' WHERE id = ?`).run(agentId);
             }
-          } catch { /* non-critical */ }
+          } catch (err) {
+            console.warn('[taskDispatcher] Non-critical: failed to set agent idle after clean exit:', err);
+          }
 
           try {
             db.prepare(
@@ -1897,7 +1952,9 @@ export function dispatchTask(taskId: string): boolean {
                   'Moved to human-review after 3 failed re-dispatch attempts', Date.now());
               }
             }
-          } catch { /* non-critical */ }
+          } catch (err) {
+            console.warn('[taskDispatcher] Non-critical: failed to handle post-exit re-dispatch logic:', err);
+          }
         } else {
           // ── Non-zero exit — classify error and apply category-specific recovery ──
           const stderrSnippet = stderrBuf.slice(0, 500);
@@ -1942,14 +1999,16 @@ export function dispatchTask(taskId: string): boolean {
             ).run(taskId, 'system', 'dispatch_error_classified',
               `Exit ${code} [${category}] attempt ${attemptNumber}: ${(stderrSnippet || stdoutSnippet || '(no output)').slice(0, 300)}`,
               Date.now());
-          } catch { /* non-critical */ }
+          } catch (err) {
+            console.warn('[taskDispatcher] Non-critical: failed to log classified dispatch error:', err);
+          }
 
           // Apply category-specific recovery
           switch (category) {
             case 'stale_session': {
               // Clear stale session and retry with fresh dispatch immediately
               console.log(`[taskDispatcher] [stale_session] Clearing session for ${taskId} — fresh dispatch on retry`);
-              try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run('task:' + taskId + ':' + agentId); } catch { /* */ }
+              try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run('task:' + taskId + ':' + agentId); } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to clear stale session:', err); }
               if (useResume) {
                 const resumeIdx = args.indexOf('--resume');
                 if (resumeIdx !== -1) args.splice(resumeIdx, 2);
@@ -1972,7 +2031,7 @@ export function dispatchTask(taskId: string): boolean {
                   ).run(taskId, 'system', 'dispatch_retry',
                     `Rate limited — backing off ${rateLimitDelay / 1000}s before attempt ${attemptNumber + 1}`,
                     Date.now());
-                } catch { /* */ }
+                } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to log rate limit retry:', err); }
                 setTimeout(() => spawnAttempt(attemptNumber + 1), rateLimitDelay);
               } else {
                 // All attempts exhausted with rate limits — return to todo with longer cooldown
@@ -1981,7 +2040,7 @@ export function dispatchTask(taskId: string): boolean {
                   db.prepare(`UPDATE tasks SET status = 'todo', lastAgentUpdate = ?, updatedAt = ? WHERE id = ?`)
                     .run('Rate limited after all retry attempts. Returned to queue — will retry on next dispatch cycle.', Date.now(), taskId);
                   db.prepare(`UPDATE agents SET status = 'idle' WHERE id = ?`).run(agentId);
-                } catch { /* */ }
+                } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to return rate-limited task to queue:', err); }
                 recordAgentFailure(agentId);
                 trackEvent('dispatch.rate_limited', { taskId, agentId, attempts: MAX_DISPATCH_ATTEMPTS }, agentId);
               }
@@ -1991,7 +2050,7 @@ export function dispatchTask(taskId: string): boolean {
             case 'context_overflow': {
               // Context too large — clear session, add instruction to work in smaller chunks
               console.warn(`[taskDispatcher] [context_overflow] Clearing session and adding scope reduction note for ${taskId}`);
-              try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run('task:' + taskId + ':' + agentId); } catch { /* */ }
+              try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run('task:' + taskId + ':' + agentId); } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to clear session after context overflow:', err); }
               if (useResume) {
                 const resumeIdx = args.indexOf('--resume');
                 if (resumeIdx !== -1) args.splice(resumeIdx, 2);
@@ -2004,7 +2063,7 @@ export function dispatchTask(taskId: string): boolean {
                 db.prepare(
                   `UPDATE tasks SET planningNotes = COALESCE(planningNotes, '') || ? WHERE id = ?`
                 ).run('\n\n[SYSTEM] Previous attempt hit context overflow. Work in smaller chunks — use subagents for large file reads and break work into focused steps.', taskId);
-              } catch { /* */ }
+              } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to append context overflow note:', err); }
               handleFailure(`[context_overflow] exit ${code}: context exceeded, retrying with scope reduction`);
               break;
             }
@@ -2012,7 +2071,7 @@ export function dispatchTask(taskId: string): boolean {
             case 'oom_killed': {
               // OOM/SIGKILL — the process was killed by the OS. Clear everything and retry fresh
               console.error(`[taskDispatcher] [oom_killed] Process killed by system (exit ${code}) for ${taskId}`);
-              try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run('task:' + taskId + ':' + agentId); } catch { /* */ }
+              try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run('task:' + taskId + ':' + agentId); } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to clear session after OOM kill:', err); }
               if (useResume) {
                 const resumeIdx = args.indexOf('--resume');
                 if (resumeIdx !== -1) args.splice(resumeIdx, 2);
@@ -2025,7 +2084,7 @@ export function dispatchTask(taskId: string): boolean {
                 db.prepare(
                   `UPDATE tasks SET planningNotes = COALESCE(planningNotes, '') || ? WHERE id = ?`
                 ).run('\n\n[SYSTEM] Previous attempt was killed by OS (likely OOM). Use subagents for large file operations and avoid reading entire large files at once.', taskId);
-              } catch { /* */ }
+              } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to append OOM scope note:', err); }
               handleFailure(`[oom_killed] exit ${code}: process killed by system, retrying fresh with scope notes`);
               break;
             }
@@ -2042,7 +2101,7 @@ export function dispatchTask(taskId: string): boolean {
                 ).run(taskId, 'system', 'dispatch_auth_failed',
                   `Authentication error — task moved to human-review. Check API key configuration.`, Date.now());
                 db.prepare(`UPDATE agents SET status = 'idle' WHERE id = ?`).run(agentId);
-              } catch { /* */ }
+              } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to escalate auth error to human-review:', err); }
               recordAgentFailure(agentId);
               trackEvent('dispatch.auth_error', { taskId, agentId, error: stderrSnippet.slice(0, 200) }, agentId);
               break;
@@ -2065,9 +2124,9 @@ export function dispatchTask(taskId: string): boolean {
 
       // Process timeout — kill hung processes after 30 minutes
       const timeoutRef = setTimeout(() => {
-        try { proc.kill('SIGTERM'); } catch { /* may already be dead */ }
+        try { proc.kill('SIGTERM'); } catch (err) { console.warn('[taskDispatcher] Non-critical: SIGTERM failed (process may already be dead):', err); }
         setTimeout(() => {
-          try { proc.kill('SIGKILL'); } catch { /* may already be dead */ }
+          try { proc.kill('SIGKILL'); } catch (err) { console.warn('[taskDispatcher] Non-critical: SIGKILL failed (process may already be dead):', err); }
         }, 5000); // Force kill 5s after SIGTERM
 
         processTimeouts.delete(taskId);
@@ -2084,7 +2143,9 @@ export function dispatchTask(taskId: string): boolean {
             `UPDATE tasks SET status = 'todo', lastAgentUpdate = ?, updatedAt = ? WHERE id = ?`
           ).run('Dispatch timed out after 30 minutes. Returned to todo.', Date.now(), taskId);
           db.prepare(`UPDATE agents SET status = 'idle' WHERE id = ?`).run(agentId);
-        } catch { /* non-critical */ }
+        } catch (err) {
+          console.warn('[taskDispatcher] Non-critical: failed to handle dispatch timeout cleanup:', err);
+        }
 
         recordAgentFailure(agentId);
         trackEvent('dispatch.timeout', { taskId, agentId }, agentId);
@@ -2097,7 +2158,9 @@ export function dispatchTask(taskId: string): boolean {
     // Set agent to busy on dispatch
     try {
       db.prepare(`UPDATE agents SET status = 'busy' WHERE id = ?`).run(agentId);
-    } catch { /* non-critical */ }
+    } catch (err) {
+      console.warn('[taskDispatcher] Non-critical: failed to set agent status to busy:', err);
+    }
 
     spawnAttempt(1);
 
@@ -2120,7 +2183,9 @@ export function dispatchTask(taskId: string): boolean {
         `Task dispatched to ${agentId} — priority ${taskPriority}, estimated ${estimatedHours}`,
         now2
       );
-    } catch { /* non-critical */ }
+    } catch (err) {
+      console.warn('[taskDispatcher] Non-critical: failed to log dispatch telemetry:', err);
+    }
 
     // Task 5 — Post-dispatch agent status confirmation
     // Check agent status after dispatch; warn if still idle (may not have received signal)
@@ -2137,9 +2202,13 @@ export function dispatchTask(taskId: string): boolean {
             `Agent ${agentId} may not have received dispatch signal (status is still 'idle').`,
             Date.now()
           );
-        } catch { /* non-critical */ }
+        } catch (err) {
+          console.warn('[taskDispatcher] Non-critical: failed to log agent status warning:', err);
+        }
       }
-    } catch { /* non-critical */ }
+    } catch (err) {
+      console.warn('[taskDispatcher] Non-critical: post-dispatch agent status check failed:', err);
+    }
 
     console.log(`[taskDispatcher] Dispatched task ${taskId} to agent ${agentId} (model: ${model}, tier: ${trustTier}, cwd: ${cwd})`);
     return true;

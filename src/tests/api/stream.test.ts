@@ -402,7 +402,8 @@ describe('/api/agents/[id]/stream route', () => {
       expect(spawnArgs).toContain('--verbose');
       expect(spawnArgs).toContain('--output-format');
       expect(spawnArgs).toContain('stream-json');
-      expect(spawnArgs).toContain('--dangerously-skip-permissions');
+      // Note: --dangerously-skip-permissions removed (F11 security remediation).
+      // Stream route uses --allowedTools/--disallowedTools for tool-level access control.
     });
 
     it('uses provided model in spawn args', async () => {
