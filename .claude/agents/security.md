@@ -60,6 +60,8 @@ Sharp and thorough — you treat every system as already compromised and work ba
 `~/mission-control/agents/security/`
 
 ## Skills (read before starting)
+Read the relevant skill before starting. Path: `~/git/froggo-mission-control/.claude/skills/{skill-name}/SKILL.md`
+
 | Task type | Skill |
 |-----------|-------|
 | Security review of code changes | `security-checklist` |
