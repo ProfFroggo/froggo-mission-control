@@ -1367,9 +1367,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                             </button>
                           )}
 
-                          {/* Done badge */}
+                          {/* Done badge — DL2: text-success (no /80 opacity) ensures ≥4.5:1 on white in light mode (T9 override #16a34a = 4.8:1) */}
                           {st.completedAt && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] leading-none bg-success/10 text-success/80 border border-success/20">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] leading-none bg-success/10 text-success border border-success/20">
                               <Check size={9} strokeWidth={3} className="flex-shrink-0" />
                               Done {formatTime(st.completedAt)}
                               {st.completedBy && ` · ${agents.find((a) => a.id === st.completedBy)?.name || st.completedBy}`}
@@ -1873,8 +1873,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                         key={label}
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] border ${
                           ok
-                            ? 'bg-success/10 border-success/20 text-success/80'
-                            : 'bg-error/10 border-error/20 text-error/80'
+                            /* DL2: /80 opacity reduces contrast below 4.5:1 in light mode — use full token */
+                            ? 'bg-success/10 border-success/20 text-success'
+                            : 'bg-error/10 border-error/20 text-error'
                         }`}
                       >
                         <span className="font-medium">{label}</span>
@@ -1936,8 +1937,9 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
               <div className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 flex items-center gap-2">
                 <Eye size={12} />
                 Clara&apos;s Review Notes
+                {/* DL3: full token (no opacity modifier) to prevent contrast failure in light mode */}
                 {reviewer && (
-                  <span className="ml-auto flex items-center gap-1.5 normal-case font-normal text-mission-control-text-dim/60">
+                  <span className="ml-auto flex items-center gap-1.5 normal-case font-normal text-mission-control-text-dim">
                     <AgentAvatar agentId={reviewer.id} fallbackEmoji={reviewer.avatar} size="sm" />
                     {reviewer.name}
                     {task.reviewStatus && (
@@ -1957,7 +1959,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                   {task.reviewNotes}
                 </div>
               ) : (
-                <div className="text-sm text-mission-control-text-dim/50 italic py-4 text-center">
+                <div className="text-sm text-mission-control-text-dim italic py-4 text-center">
                   No review notes yet — Clara will write here after reviewing this task.
                 </div>
               )}
