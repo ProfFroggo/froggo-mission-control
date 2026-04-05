@@ -2135,13 +2135,32 @@ export function dispatchTask(taskId: string): boolean {
         console.error(`[taskDispatcher] Process timeout: killed hung dispatch for task ${taskId} after 30 minutes`);
 
         try {
+          // Guard: check current task status before overwriting. The timeout can fire late
+          // (e.g. if clearTimeout was missed after a clean exit) — if the agent already
+          // completed and moved the task to review/done/human-review, do NOT clobber
+          // lastAgentUpdate with the stale timeout message.
+          const currentStatus = (
+            db.prepare(`SELECT status FROM tasks WHERE id = ?`).get(taskId) as
+              { status: string } | undefined
+          )?.status;
+          const taskIsStillActive = !currentStatus || currentStatus === 'in-progress';
+
           db.prepare(
             `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
           ).run(taskId, 'system', 'dispatch_timeout',
-            `Claude CLI process killed after 30-minute timeout. Task returned to todo for retry.`, Date.now());
-          db.prepare(
-            `UPDATE tasks SET status = 'todo', lastAgentUpdate = ?, updatedAt = ? WHERE id = ?`
-          ).run('Dispatch timed out after 30 minutes. Returned to todo.', Date.now(), taskId);
+            taskIsStillActive
+              ? `Claude CLI process killed after 30-minute timeout. Task returned to todo for retry.`
+              : `Claude CLI process killed after 30-minute timeout. Task already at '${currentStatus}' — skipped reset to preserve agent final state.`,
+            Date.now());
+
+          if (taskIsStillActive) {
+            db.prepare(
+              `UPDATE tasks SET status = 'todo', lastAgentUpdate = ?, updatedAt = ? WHERE id = ?`
+            ).run('Dispatch timed out after 30 minutes. Returned to todo.', Date.now(), taskId);
+          } else {
+            console.log(`[taskDispatcher] Timeout fired for task ${taskId} but status is already '${currentStatus}' — skipping status/lastAgentUpdate overwrite to preserve agent final state.`);
+          }
+
           db.prepare(`UPDATE agents SET status = 'idle' WHERE id = ?`).run(agentId);
         } catch (err) {
           console.warn('[taskDispatcher] Non-critical: failed to handle dispatch timeout cleanup:', err);
