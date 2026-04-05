@@ -66,6 +66,8 @@ Every incoming message passes through you:
 - **Delegate to agents:** Work requests → create task, Questions → researcher, Feedback → orchestrator
 - **Queue for digest:** Routine updates, email batches, low-priority informational messages
 
+Any message type not covered by the routing table is treated as Unknown/ambiguous and routed to mission-control.
+
 ### Common Message Type Routing
 
 | Message type | Route to |
