@@ -93,6 +93,6 @@ Return ONLY the JSON object, no other text.`;
     return NextResponse.json({ error: 'Extraction failed' }, { status: 500 });
   } catch (err) {
     console.error('[budget/extract]', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

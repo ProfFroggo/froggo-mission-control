@@ -1242,6 +1242,32 @@ export function getActiveDispatchCount(): number { return activeDispatchSet.size
 const PROCESS_TIMEOUT_MS = 30 * 60 * 1000;
 const processTimeouts = new Map<string, NodeJS.Timeout>();
 
+// ── Graceful shutdown: kill child processes on server exit ────────────────────
+// Prevents zombie Claude CLI processes when the parent (Next.js server) stops.
+// The processes are spawned with detached:true + unref() so they survive parent
+// crashes, but on graceful shutdown we want to clean them up.
+const _shutdownKey = '__taskDispatcher_shutdown_registered';
+if (!(globalThis as Record<string, unknown>)[_shutdownKey]) {
+  (globalThis as Record<string, unknown>)[_shutdownKey] = true;
+  const gracefulShutdown = () => {
+    if (activeProcesses.size === 0) return;
+    console.log(`[taskDispatcher] Graceful shutdown — killing ${activeProcesses.size} active process(es)`);
+    for (const [taskId, proc] of activeProcesses) {
+      try { proc.kill('SIGTERM'); } catch { /* already dead */ }
+      // Force-kill after 3s if still alive
+      setTimeout(() => { try { proc.kill('SIGKILL'); } catch { /* already dead */ } }, 3000).unref();
+      activeProcesses.delete(taskId);
+    }
+    // Clear all pending timeouts
+    for (const [taskId, timeout] of processTimeouts) {
+      clearTimeout(timeout);
+      processTimeouts.delete(taskId);
+    }
+  };
+  process.on('SIGTERM', gracefulShutdown);
+  process.on('SIGINT', gracefulShutdown);
+}
+
 // ── Circuit breaker (Phase 85) ─────────────────────────────────────────────────
 // Tracks consecutive failures per agent and locks out repeated failures.
 const agentFailureCounts = new Map<string, { count: number; lockedUntil?: number }>();
@@ -2039,6 +2065,9 @@ export function dispatchTask(taskId: string): boolean {
               const rateLimitDelay = Math.min(30000 * Math.pow(2, attemptNumber - 1), 120000); // 30s, 60s, 120s
               console.warn(`[taskDispatcher] [rate_limit] Backing off ${rateLimitDelay}ms before retry for ${taskId}`);
               if (attemptNumber < MAX_DISPATCH_ATTEMPTS) {
+                // Release dispatch slot during long backoffs to prevent starvation.
+                // Other tasks can dispatch while we wait. Re-acquire on retry.
+                activeDispatchSet.delete(taskId);
                 try {
                   db.prepare(
                     `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
@@ -2046,7 +2075,15 @@ export function dispatchTask(taskId: string): boolean {
                     `Rate limited — backing off ${rateLimitDelay / 1000}s before attempt ${attemptNumber + 1}`,
                     Date.now());
                 } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to log rate limit retry:', err); }
-                setTimeout(() => spawnAttempt(attemptNumber + 1), rateLimitDelay);
+                setTimeout(() => {
+                  // Re-acquire slot before retry
+                  if (activeDispatchSet.size >= MAX_CONCURRENT_DISPATCHES) {
+                    console.warn(`[taskDispatcher] Dispatch slots full after rate-limit backoff for ${taskId} — deferring to next cycle`);
+                    return;
+                  }
+                  activeDispatchSet.add(taskId);
+                  spawnAttempt(attemptNumber + 1);
+                }, rateLimitDelay);
               } else {
                 // All attempts exhausted with rate limits — return to todo with longer cooldown
                 activeDispatchSet.delete(taskId);

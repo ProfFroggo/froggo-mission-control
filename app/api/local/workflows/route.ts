@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     const workflows = wsDb.listWorkflows(limit, offset);
     return NextResponse.json({ workflows });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -21,6 +21,6 @@ export async function POST(req: NextRequest) {
     const row = wsDb.getWorkflow(id);
     return NextResponse.json({ id, ...row });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

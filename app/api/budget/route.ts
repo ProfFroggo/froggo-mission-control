@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unknown resource' }, { status: 400 });
   } catch (err) {
     console.error('[budget GET]', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -232,7 +232,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unknown resource' }, { status: 400 });
   } catch (err) {
     console.error('[budget POST]', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -290,7 +290,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Unknown resource' }, { status: 400 });
   } catch (err) {
     console.error('[budget PATCH]', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -321,6 +321,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('[budget DELETE]', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     console.error('[google/auth/callback] Error:', err);
-    const msg = err instanceof Error ? err.message : 'Internal server error';
+    const msg = 'Internal server error';
     return new NextResponse(closePageHtml(false, msg), {
       headers: { 'Content-Type': 'text/html' },
     });

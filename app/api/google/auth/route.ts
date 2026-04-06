@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'Missing code or refresh_token' }, { status: 400 });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 

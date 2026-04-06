@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const notes = db.prepare(query).all(...params);
     return NextResponse.json(notes);
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -47,6 +47,6 @@ export async function POST(request: NextRequest) {
     const note = db.prepare('SELECT * FROM notes WHERE id = ?').get(id);
     return NextResponse.json(note, { status: 201 });
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

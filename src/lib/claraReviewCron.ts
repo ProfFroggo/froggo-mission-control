@@ -895,7 +895,8 @@ export function runReviewCycle(): { queued: number } {
       ).get(stale.id, fortyEightHoursAgo) as { cnt: number } | undefined)?.cnt ?? 0;
 
       // Auto-resolve after 48h if it was escalation-caused (not a genuine blocker)
-      if (!hasPendingApproval && (getDb().prepare('SELECT updatedAt FROM tasks WHERE id = ?').get(stale.id) as { updatedAt: number } | undefined)?.updatedAt! < fortyEightHoursAgo) {
+      const staleUpdatedAt = (getDb().prepare('SELECT updatedAt FROM tasks WHERE id = ?').get(stale.id) as { updatedAt: number } | undefined)?.updatedAt ?? 0;
+      if (!hasPendingApproval && staleUpdatedAt < fortyEightHoursAgo) {
         console.log(`[clara-review-cron] Auto-resolving stale human-review task ${stale.id} — resetting to todo after 48h`);
         getDb().prepare(
           `UPDATE tasks SET status = 'todo', reviewStatus = NULL, claraReviewCount = 0, updatedAt = ? WHERE id = ?`

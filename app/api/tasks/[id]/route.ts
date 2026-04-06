@@ -101,19 +101,6 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid priority' }, { status: 400 });
     }
 
-    // Capture previous status before update (for transition-based triggers)
-    const previousStatus = body.status
-      ? (db.prepare('SELECT status FROM tasks WHERE id = ?').get(id) as { status: string } | undefined)?.status
-      : undefined;
-
-    // Validate status transitions — prevent illegal jumps
-    if (body.status && previousStatus && body.status !== previousStatus) {
-      const transitionError = validateTransition(previousStatus, body.status as string);
-      if (transitionError) {
-        return NextResponse.json({ error: transitionError }, { status: 400 });
-      }
-    }
-
     const setClauses: string[] = [];
     const values: unknown[] = [];
 
@@ -135,46 +122,68 @@ export async function PATCH(
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
-    // Auto-clear pre-rejected state when the user fixes the blocking fields.
-    // Clara rejected because planningNotes/description/assignedTo was missing — once fixed, re-queue.
-    if (!('reviewStatus' in body) && !('status' in body)) {
-      const current = db.prepare('SELECT reviewStatus, planningNotes, description, assignedTo FROM tasks WHERE id = ?').get(id) as {
-        reviewStatus: string | null; planningNotes: string | null; description: string | null; assignedTo: string | null;
-      } | undefined;
-      if (current?.reviewStatus === 'pre-rejected') {
-        const fixingPlanningNotes = 'planningNotes' in body && body.planningNotes;
-        const fixingDescription = 'description' in body && body.description;
-        const fixingAssignee = 'assignedTo' in body && body.assignedTo;
-        if (fixingPlanningNotes || fixingDescription || fixingAssignee) {
-          // One of Clara's rejection reasons was just resolved — clear rejection state so auto-advance re-queues it
-          setClauses.push('reviewStatus = ?', 'reviewNotes = ?');
-          values.push(null, null);
-        }
-      }
-    }
-
-    // Auto-advance status based on reviewStatus.
-    // Only fires when reviewStatus is being set AND body does NOT already contain an explicit status.
-    if ('reviewStatus' in body && !('status' in body)) {
-      const current = db.prepare('SELECT status FROM tasks WHERE id = ?').get(id) as { status: string } | undefined;
-      const effectiveStatus = current?.status;
-      if (effectiveStatus === 'review') {
-        if (body.reviewStatus === 'approved') {
-          setClauses.push('status = ?');
-          values.push('done');
-        } else if (body.reviewStatus === 'rejected' || body.reviewStatus === 'needs-changes') {
-          setClauses.push('status = ?');
-          values.push('in-progress');
-        }
-      }
-    }
-
+    // Wrap read+validate+update in a transaction to prevent TOCTOU race conditions.
+    // Without this, concurrent requests (API + agent MCP) could both read the same status,
+    // both validate the same transition, and both succeed — but only the first was valid.
+    let previousStatus: string | undefined;
     const now = Date.now();
-    setClauses.push('updatedAt = ?');
-    values.push(now);
-    values.push(id);
+    const updateResult = db.transaction(() => {
+      // Capture previous status before update (for transition-based triggers)
+      previousStatus = body.status
+        ? (db.prepare('SELECT status FROM tasks WHERE id = ?').get(id) as { status: string } | undefined)?.status
+        : undefined;
 
-    db.prepare(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = ?`).run(...values);
+      // Validate status transitions — prevent illegal jumps
+      if (body.status && previousStatus && body.status !== previousStatus) {
+        const transitionError = validateTransition(previousStatus, body.status as string);
+        if (transitionError) {
+          return { error: transitionError };
+        }
+      }
+
+      // Auto-clear pre-rejected state when the user fixes the blocking fields.
+      // Clara rejected because planningNotes/description/assignedTo was missing — once fixed, re-queue.
+      if (!('reviewStatus' in body) && !('status' in body)) {
+        const current = db.prepare('SELECT reviewStatus, planningNotes, description, assignedTo FROM tasks WHERE id = ?').get(id) as {
+          reviewStatus: string | null; planningNotes: string | null; description: string | null; assignedTo: string | null;
+        } | undefined;
+        if (current?.reviewStatus === 'pre-rejected') {
+          const fixingPlanningNotes = 'planningNotes' in body && body.planningNotes;
+          const fixingDescription = 'description' in body && body.description;
+          const fixingAssignee = 'assignedTo' in body && body.assignedTo;
+          if (fixingPlanningNotes || fixingDescription || fixingAssignee) {
+            setClauses.push('reviewStatus = ?', 'reviewNotes = ?');
+            values.push(null, null);
+          }
+        }
+      }
+
+      // Auto-advance status based on reviewStatus.
+      if ('reviewStatus' in body && !('status' in body)) {
+        const current = db.prepare('SELECT status FROM tasks WHERE id = ?').get(id) as { status: string } | undefined;
+        const effectiveStatus = current?.status;
+        if (effectiveStatus === 'review') {
+          if (body.reviewStatus === 'approved') {
+            setClauses.push('status = ?');
+            values.push('done');
+          } else if (body.reviewStatus === 'rejected' || body.reviewStatus === 'needs-changes') {
+            setClauses.push('status = ?');
+            values.push('in-progress');
+          }
+        }
+      }
+
+      setClauses.push('updatedAt = ?');
+      values.push(now);
+      values.push(id);
+
+      db.prepare(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = ?`).run(...values);
+      return null;
+    })();
+
+    if (updateResult?.error) {
+      return NextResponse.json({ error: updateResult.error }, { status: 400 });
+    }
 
     // Always ensure Clara is reviewer — set whenever reviewerId isn't already populated
     if (!body.reviewerId) {

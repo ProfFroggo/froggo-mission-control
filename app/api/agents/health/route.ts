@@ -68,6 +68,6 @@ export async function GET() {
 
     return NextResponse.json({ agents: health, updatedAt: Date.now() });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
