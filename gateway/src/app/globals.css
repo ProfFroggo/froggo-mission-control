@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@theme {
+  --color-froggo-green: #22c55e;
+  --color-froggo-green-dark: #16a34a;
+  --color-froggo-green-light: #4ade80;
+  --color-surface: #0a0a0f;
+  --color-surface-raised: #111118;
+  --color-surface-overlay: #1a1a24;
+  --color-border-subtle: #1e1e2a;
+  --color-text-muted: #71717a;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-surface);
+  color: #fafafa;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  transition-property: color, background-color, border-color, opacity;
+  transition-timing-function: ease;
+  transition-duration: 150ms;
+}
+
+/* Reset transition on layout-affecting properties */
+*,
+*::before,
+*::after {
+  transition-property: color, background-color, border-color, opacity, box-shadow;
+}

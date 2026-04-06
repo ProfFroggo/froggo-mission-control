@@ -48,6 +48,7 @@
   "exclude": [
     "node_modules",
     "tools",
+    "gateway",
     "workflow-studio",
     ".claude",
     "vitest.config.ts",
