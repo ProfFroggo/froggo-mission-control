@@ -242,7 +242,7 @@ async function handleStart(req: NextRequest): Promise<NextResponse> {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[mixpanel/oauth] Start error:', msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -310,7 +310,7 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
     const clientId = pendingOAuth.clientId;
     pendingOAuth = null;
 
-    console.log('[mixpanel/oauth] Successfully connected! Tokens cached for mcp-remote.');
+    console.error('[mixpanel/oauth] Successfully connected! Tokens cached for mcp-remote.');
 
     return htmlResponse(`
       <h2>Mixpanel Connected</h2>
@@ -415,11 +415,11 @@ async function handleRefresh(): Promise<NextResponse> {
     const codeVerifier = generateCodeVerifier(); // Not critical for refresh but keep file consistent
     await writeTokenFiles(newTokens, clientInfo as Record<string, unknown>, codeVerifier);
 
-    console.log('[mixpanel/oauth] Tokens refreshed successfully.');
+    console.error('[mixpanel/oauth] Tokens refreshed successfully.');
     return NextResponse.json({ success: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 

@@ -78,8 +78,8 @@ export async function GET(request: NextRequest) {
     console.error('[drive/files] Error:', msg);
     const isAuthError = msg.includes('invalid_grant') || msg.includes('unauthorized') || msg.includes('401');
     if (isAuthError) {
-      return NextResponse.json({ error: msg, needsAuth: true }, { status: 401 });
+      return NextResponse.json({ error: 'Authentication required', needsAuth: true }, { status: 401 });
     }
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

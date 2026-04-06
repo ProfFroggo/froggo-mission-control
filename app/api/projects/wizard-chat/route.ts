@@ -185,6 +185,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ text: displayText, widget, widgetData, ready: false });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error('POST /api/projects/wizard-chat error:', msg);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

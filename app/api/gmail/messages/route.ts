@@ -121,8 +121,8 @@ export async function GET(request: NextRequest) {
     // Signal auth-level errors so the client can show setup UI
     const isAuthError = msg.includes('deleted_client') || msg.includes('invalid_client') || msg.includes('invalid_grant') || msg.includes('unauthorized');
     if (isAuthError) {
-      return NextResponse.json({ error: msg, needsAuth: true }, { status: 401 });
+      return NextResponse.json({ error: 'Authentication required', needsAuth: true }, { status: 401 });
     }
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

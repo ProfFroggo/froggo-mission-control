@@ -36,10 +36,20 @@ export async function POST(
 
     const { filePath, fileName, category, uploadedBy } = body;
 
+    if (!filePath || typeof filePath !== 'string') {
+      return NextResponse.json({ error: 'filePath is required' }, { status: 400 });
+    }
+
+    // Validate filePath is within the library root to prevent path traversal
+    const resolvedPath = require('path').resolve(filePath);
+    if (!resolvedPath.startsWith(LIBRARY_ROOT)) {
+      return NextResponse.json({ error: 'File must be within the library directory' }, { status: 403 });
+    }
+
     const result = db.prepare(`
       INSERT INTO task_attachments (taskId, filePath, fileName, category, uploadedBy, createdAt)
       VALUES (?, ?, ?, ?, ?, ?)
-    `).run(taskId, filePath, fileName ?? null, category ?? null, uploadedBy ?? null, Date.now());
+    `).run(taskId, resolvedPath, fileName ?? null, category ?? null, uploadedBy ?? null, Date.now());
 
     const attachment = db.prepare('SELECT * FROM task_attachments WHERE id = ?').get(result.lastInsertRowid);
     return NextResponse.json(attachment, { status: 201 });

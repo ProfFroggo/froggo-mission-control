@@ -114,6 +114,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ text: displayText, widget, ready: false });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

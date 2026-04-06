@@ -264,7 +264,7 @@ const nextScript = path.join(ROOT, 'node_modules', 'next', 'dist', 'bin', 'next'
 const buildResult = spawnSync(process.execPath, [nextScript, 'build'], {
   cwd: ROOT,
   stdio: 'inherit',
-  env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
+  env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1', NODE_ENV: 'production' },
 });
 
 if (buildResult.status !== 0) {

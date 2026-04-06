@@ -90,13 +90,13 @@ export async function POST(request: NextRequest) {
     // Agent not found (no SOUL.md, no DB record)
     if (detail.includes('not found')) {
       return NextResponse.json(
-        { success: false, error: detail },
+        { success: false, error: 'Internal server error' },
         { status: 404 }
       );
     }
 
     return NextResponse.json(
-      { success: false, error: 'Failed to generate reply', detail },
+      { success: false, error: 'Failed to generate reply' },
       { status: 500 }
     );
   }
