@@ -3,6 +3,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { KEYCHAIN_KEYS, keychainGet, keychainSet, keychainDelete } from '@/lib/keychain';
 
+// Sensitive keys that must not be returned in full via GET.
+// Values are masked to confirm presence without exposing the secret.
+const SENSITIVE_KEY_PATTERNS = [
+  '_api_key', '_api_secret', '_secret', '_token', '_bearer',
+  '_password', '_credential', '_private_key',
+];
+
+function isSensitiveKey(key: string): boolean {
+  const lower = key.toLowerCase();
+  return SENSITIVE_KEY_PATTERNS.some(p => lower.includes(p));
+}
+
+function maskValue(value: string | null): string | null {
+  if (!value) return null;
+  if (value.length <= 8) return '••••••••';
+  return value.slice(0, 4) + '••••' + value.slice(-4);
+}
+
+// Keys that agents/system can write but must not be writable via arbitrary POST.
+// These control security-critical behavior.
+const PROTECTED_WRITE_KEYS = new Set([
+  'security.disallowedTools',
+  'security.keys',
+]);
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ key: string }> }
@@ -14,6 +39,10 @@ export async function GET(
     if (KEYCHAIN_KEYS.has(key)) {
       const keychainValue = await keychainGet(key);
       if (keychainValue !== null) {
+        // Mask sensitive values — return presence confirmation, not the secret
+        if (isSensitiveKey(key)) {
+          return NextResponse.json({ key, value: maskValue(keychainValue), masked: true, hasValue: true });
+        }
         return NextResponse.json({ key, value: keychainValue });
       }
     }
@@ -29,6 +58,12 @@ export async function GET(
     if (!value && key === 'anthropic_api_key') {
       value = process.env.ANTHROPIC_API_KEY ?? null;
     }
+
+    // Mask sensitive values
+    if (isSensitiveKey(key) && value) {
+      return NextResponse.json({ key, value: maskValue(value), masked: true, hasValue: true });
+    }
+
     return NextResponse.json({ key, value });
   } catch (error) {
     console.error('GET /api/settings/[key] error:', error);
@@ -47,6 +82,11 @@ export async function PUT(
 
     if (body.value === undefined) {
       return NextResponse.json({ error: 'value is required' }, { status: 400 });
+    }
+
+    // Block writes to security-critical keys via the API
+    if (PROTECTED_WRITE_KEYS.has(key)) {
+      return NextResponse.json({ error: 'This setting cannot be modified via API' }, { status: 403 });
     }
 
     const value = typeof body.value === 'string' ? body.value : JSON.stringify(body.value);

@@ -41,12 +41,13 @@ export async function GET(req: Request) {
     ? path.join(process.env.HOME ?? process.env.USERPROFILE ?? '', rawPath.slice(2))
     : rawPath;
 
-  // Security: must be inside ~/mission-control/
-  const mcBase = path.resolve(path.dirname(ENV.LIBRARY_PATH)); // ~/mission-control
+  // Security: must be inside ~/mission-control/library/ (not the broader ~/mission-control/
+  // which contains the database, tokens, and agent memory files)
+  const libraryBase = path.resolve(ENV.LIBRARY_PATH); // ~/mission-control/library
   const filePath = path.resolve(resolved);
 
-  if (!isInsideMissionControl(filePath, mcBase)) {
-    return NextResponse.json({ error: 'Path outside mission-control directory' }, { status: 403 });
+  if (!filePath.startsWith(libraryBase + path.sep) && filePath !== libraryBase) {
+    return NextResponse.json({ error: 'Path outside library directory' }, { status: 403 });
   }
 
   // Resolve the actual file — handles several common agent path variations:
@@ -54,7 +55,7 @@ export async function GET(req: Request) {
   // 2. Path is a directory → look for same-named file or index.html inside
   // 3. Path like .../Name.html but actual file is .../Name/Name.html
   const resolvedFile = resolveLibraryFile(filePath);
-  if (!resolvedFile || !isInsideMissionControl(resolvedFile, mcBase)) {
+  if (!resolvedFile || (!resolvedFile.startsWith(libraryBase + path.sep) && resolvedFile !== libraryBase)) {
     return NextResponse.json({ error: 'File not found' }, { status: 404 });
   }
 
