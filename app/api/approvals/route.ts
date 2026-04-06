@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     let sql = 'SELECT * FROM approvals';
     if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');
-    sql += ' ORDER BY createdAt DESC';
+    sql += ' ORDER BY createdAt DESC LIMIT 500';
 
     const rows = db.prepare(sql).all(...values) as Record<string, unknown>[];
     return NextResponse.json(rows.map(parseApproval));

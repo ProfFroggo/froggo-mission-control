@@ -1258,6 +1258,9 @@ function initSchema(db: Database.Database) {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_task_activity_taskId_action ON task_activity(taskId, action, timestamp DESC)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_task_activity_action ON task_activity(action, timestamp DESC)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_cleanup ON sessions(createdAt, lastActivity)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_task_attachments_taskId ON task_attachments(taskId)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_scheduled_items_scheduledFor ON scheduled_items(scheduledFor)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_library_files_folder_id ON library_files(folder_id)`);
   } catch { /* non-critical — indexes may already exist */ }
 
   // Knowledge Base: FTS virtual table + triggers

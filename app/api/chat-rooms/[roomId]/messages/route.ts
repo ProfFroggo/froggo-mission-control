@@ -20,7 +20,7 @@ export async function GET(
       values.push(Number(since));
     }
 
-    sql += ' ORDER BY timestamp ASC';
+    sql += ' ORDER BY timestamp ASC LIMIT 500';
 
     const messages = db.prepare(sql).all(...values);
     return NextResponse.json(messages);

@@ -518,6 +518,7 @@ function getDb() {
   try {
     const Database = require(path.join(path.dirname(__filename), '..', 'node_modules', 'better-sqlite3'));
     _db = new Database(DB_PATH, { fileMustExist: true });
+    _db.pragma('busy_timeout = 5000');
     return _db;
   } catch { return null; }
 }
