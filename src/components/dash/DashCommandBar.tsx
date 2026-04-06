@@ -28,9 +28,10 @@ function formatDate(d: Date): string {
 export default function DashCommandBar({ onShowBrief, onQuickAction }: DashCommandBarProps) {
   const { connected, tasks, approvals, agents, gatewaySessions } = useStore();
 
-  const [now, setNow] = useState(() => new Date());
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
+    setNow(new Date());
     const id = setInterval(() => setNow(new Date()), 1_000);
     return () => clearInterval(id);
   }, []);
@@ -54,10 +55,10 @@ export default function DashCommandBar({ onShowBrief, onQuickAction }: DashComma
         />
         <span className="text-sm font-bold text-mission-control-text">Mission Control</span>
         <span className="text-sm text-mission-control-text-dim tabular-nums">
-          {formatDate(now)}
+          {now ? formatDate(now) : '\u00A0'}
         </span>
         <span className="text-sm tabular-nums text-mission-control-text-dim">
-          {formatTime(now)}
+          {now ? formatTime(now) : '\u00A0'}
         </span>
       </div>
 

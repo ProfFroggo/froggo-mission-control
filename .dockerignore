@@ -1,0 +1,38 @@
+# Build artifacts
+.next/
+.next-*/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Dev files
+node_modules/
+.git/
+.gitignore
+
+# Planning / internal
+.planning/
+.claude/
+
+# Tests
+**/*.test.ts
+**/*.test.tsx
+**/__tests__/
+src/tests/
+playwright-report/
+test-results/
+
+# Environment (injected at runtime)
+.env
+.env.local
+.env.*.local
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo

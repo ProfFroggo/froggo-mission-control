@@ -19,6 +19,47 @@ const VAULT_PATH = process.env.VAULT_PATH ||
 const QMD_BIN = process.env.QMD_BIN || '/opt/homebrew/bin/qmd';
 const AGENT_ID = process.env.CLAUDE_CODE_AGENT_ID || process.env.AGENT_ID || 'unknown';
 
+// Cloud shared knowledge layer — queries gateway when scope includes "shared"
+const GATEWAY_URL = process.env.GATEWAY_URL || '';
+const GATEWAY_TOKEN = process.env.INTERNAL_API_TOKEN || '';
+
+async function querySharedKnowledge(query: string, limit: number): Promise<string> {
+  if (!GATEWAY_URL) return '(shared knowledge unavailable — GATEWAY_URL not set)';
+  try {
+    const res = await fetch(`${GATEWAY_URL}/api/knowledge/search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GATEWAY_TOKEN}`,
+      },
+      body: JSON.stringify({ query, scope: 'org', limit }),
+    });
+    if (!res.ok) return `(shared knowledge error: ${res.status})`;
+    const data = await res.json() as { results?: unknown[] };
+    return JSON.stringify(data.results || [], null, 2);
+  } catch (e) {
+    return `(shared knowledge fetch failed: ${e instanceof Error ? e.message : String(e)})`;
+  }
+}
+
+async function writeSharedMemory(content: string, title: string, tags: string[]): Promise<string> {
+  if (!GATEWAY_URL) return '(shared write unavailable — GATEWAY_URL not set)';
+  try {
+    const res = await fetch(`${GATEWAY_URL}/api/memories/shared`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GATEWAY_TOKEN}`,
+      },
+      body: JSON.stringify({ content, title, tags }),
+    });
+    if (!res.ok) return `(shared write error: ${res.status})`;
+    return 'Shared memory written successfully';
+  } catch (e) {
+    return `(shared write failed: ${e instanceof Error ? e.message : String(e)})`;
+  }
+}
+
 function ensureDir(p: string) {
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 }
@@ -45,13 +86,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
       name: 'memory_search',
-      description: 'Search the Obsidian memory vault using QMD BM25, vector, or hybrid search. Falls back to grep if QMD unavailable.',
+      description: 'Search the Obsidian memory vault using QMD BM25, vector, or hybrid search. Falls back to grep if QMD unavailable. Use scope="both" to also search shared org knowledge (cloud only).',
       inputSchema: {
         type: 'object',
         properties: {
           query: { type: 'string',  description: 'Search query' },
           mode:  { type: 'string',  enum: ['bm25', 'vector', 'hybrid'], description: 'Search mode (default: hybrid)' },
           limit: { type: 'number',  description: 'Max results (default 10)' },
+          scope: { type: 'string',  enum: ['local', 'shared', 'both'], description: 'Search scope: "local" (default, vault only), "shared" (org knowledge via gateway), "both" (merged results)' },
         },
         required: ['query'],
       },
@@ -71,7 +113,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'memory_write',
-      description: 'Save important information that you or other agents will need in future sessions. Use after: discovering a key fact about a project, learning a user preference, completing a significant milestone, finding a solution to a recurring problem. category="task" for task outcomes, "decision" for architectural choices, "gotcha" for bugs/pitfalls discovered, "pattern" for reusable solutions, "agent" for agent-specific preferences.',
+      description: 'Save important information that you or other agents will need in future sessions. Use after: discovering a key fact about a project, learning a user preference, completing a significant milestone, finding a solution to a recurring problem. category="task" for task outcomes, "decision" for architectural choices, "gotcha" for bugs/pitfalls discovered, "pattern" for reusable solutions, "agent" for agent-specific preferences. Use scope="shared" to save to org-wide shared knowledge (cloud only).',
       inputSchema: {
         type: 'object',
         properties: {
@@ -80,6 +122,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           title:    { type: 'string', description: 'Note title in kebab-case (used as filename). Example: "2026-03-14-image-resize-bug-fix"' },
           agent:    { type: 'string', description: 'Agent name if category=agent or task' },
           tags:     { type: 'array', items: { type: 'string' }, description: 'Tags for this note (used in expertise map). Example: ["image", "bug-fix", "rembg"]' },
+          scope:    { type: 'string', enum: ['local', 'shared'], description: 'Write scope: "local" (default, vault file), "shared" (org-wide via gateway — cloud only)' },
         },
         required: ['content', 'category', 'title'],
       },
@@ -119,6 +162,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const query  = args?.query as string;
         const mode   = (args?.mode as string) || 'hybrid';
         const limit  = (args?.limit as number) || 10;
+        const scope  = (args?.scope as string) || 'local';
+
+        // If scope is "shared" only, query gateway and return
+        if (scope === 'shared') {
+          const sharedResults = await querySharedKnowledge(query, limit);
+          return { content: [{ type: 'text', text: `## Shared Knowledge Results\n${sharedResults}` }] };
+        }
 
         // TF-IDF enhanced search with fallback to grep
         const searchStart = Date.now();
@@ -135,7 +185,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           );
           const searchMs = Date.now() - searchStart;
           if (searchMs > 500) console.warn(`[memory-mcp] Slow search: ${searchMs}ms for query: ${query}`);
-          return { content: [{ type: 'text', text: stdout || 'No results found.' }] };
+          let text = stdout || 'No results found.';
+          if (scope === 'both') {
+            const shared = await querySharedKnowledge(query, limit);
+            text += `\n\n## Shared Knowledge Results\n${shared}`;
+          }
+          return { content: [{ type: 'text', text }] };
         } catch (e: any) {
           // Fallback: recursive grep + TF-IDF re-ranking — skip binary/noisy dirs
           const SKIP_DIRS = new Set(['data', 'logs', 'worktrees', '.git', '.obsidian', 'node_modules']);
@@ -187,14 +242,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           if (searchMs > 500) console.warn(`[memory-mcp] Slow search (grep+tfidf): ${searchMs}ms for query: ${query}`);
 
           const results = scored.map(d => `## ${d.relPath}\n${d.content.slice(0, 400)}...`);
-          return {
-            content: [{
-              type: 'text',
-              text: results.length > 0
-                ? results.join('\n\n')
-                : `No results for "${query}". (QMD unavailable: ${e.message})`,
-            }],
-          };
+          let text = results.length > 0
+            ? results.join('\n\n')
+            : `No results for "${query}". (QMD unavailable: ${e.message})`;
+          if (scope === 'both') {
+            const shared = await querySharedKnowledge(query, limit);
+            text += `\n\n## Shared Knowledge Results\n${shared}`;
+          }
+          return { content: [{ type: 'text', text }] };
         }
       }
 
@@ -251,6 +306,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const title    = (args?.title as string).replace(/[^a-zA-Z0-9\-_ ]/g, '-').trim().replace(/\s+/g, '-');
         const agent    = (args?.agent  as string) || AGENT_ID;
         const tags     = (args?.tags   as string[]) || [];
+        const writeScope = (args?.scope as string) || 'local';
+
+        // If scope is "shared", write to gateway and return
+        if (writeScope === 'shared') {
+          const result = await writeSharedMemory(content, title, tags);
+          return { content: [{ type: 'text', text: result }] };
+        }
 
         // Resolve destination folder — unified under agents/{id}/memory/
         let folder = CATEGORY_FOLDER[category] || 'memory/knowledge';

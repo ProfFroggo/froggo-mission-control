@@ -11,11 +11,14 @@ import os from 'os';
 import { execSync } from 'child_process';
 import { existsSync, realpathSync, readFileSync } from 'fs';
 
-// Load .env from ~/mission-control/ (survives npm updates) before Next.js reads process.env.
+// Load .env from mission-control home (survives npm updates) before Next.js reads process.env.
 // This runs once at module init so all ENV values below see the correct vars.
 (function loadUserEnv() {
+  const mcHome = process.env.MISSION_CONTROL_HOME
+    ? path.resolve(process.env.MISSION_CONTROL_HOME)
+    : path.join(os.homedir(), 'mission-control');
   const candidates = [
-    path.join(os.homedir(), 'mission-control', '.env'),
+    path.join(mcHome, '.env'),
     path.join(process.cwd(), '.env'),
   ];
   for (const p of candidates) {
@@ -68,6 +71,13 @@ function resolveHome(p: string): string {
   return p.replace(/^~/, os.homedir());
 }
 
+// Base directory for all mission-control data. Container deployments set
+// MISSION_CONTROL_HOME=/data/mission-control to use a persistent volume.
+// Self-hosted (default): ~/mission-control/
+const MC_HOME = process.env.MISSION_CONTROL_HOME
+  ? path.resolve(process.env.MISSION_CONTROL_HOME)
+  : path.join(os.homedir(), 'mission-control');
+
 function resolveClaudeBin(): string {
   if (process.env.CLAUDE_BIN) return process.env.CLAUDE_BIN;
   try {
@@ -103,34 +113,32 @@ function resolveClaudeScript(): string {
 }
 
 export const ENV = {
+  // Base directory — container (MISSION_CONTROL_HOME) or self-hosted (~/mission-control)
+  MC_HOME,
+
   // Database
   DB_PATH: resolveHome(
-    process.env.MC_DB_PATH ||
-    path.join(os.homedir(), 'mission-control', 'data', 'mission-control.db')
+    process.env.MC_DB_PATH || path.join(MC_HOME, 'data', 'mission-control.db')
   ),
 
   // Library (agent output files, docs, assets)
   LIBRARY_PATH: resolveHome(
-    process.env.LIBRARY_PATH ||
-    path.join(os.homedir(), 'mission-control', 'library')
+    process.env.LIBRARY_PATH || path.join(MC_HOME, 'library')
   ),
 
   // Memory vault
   VAULT_PATH: resolveHome(
-    process.env.VAULT_PATH ||
-    path.join(os.homedir(), 'mission-control', 'memory')
+    process.env.VAULT_PATH || path.join(MC_HOME, 'memory')
   ),
 
   // Project root
   PROJECT_DIR: resolveHome(
-    process.env.PROJECT_DIR ||
-    path.join(os.homedir(), 'git', 'mission-control-nextjs')
+    process.env.PROJECT_DIR || path.join(os.homedir(), 'git', 'mission-control-nextjs')
   ),
 
   // Logs
   LOG_DIR: resolveHome(
-    process.env.LOG_DIR ||
-    path.join(os.homedir(), 'mission-control', 'logs')
+    process.env.LOG_DIR || path.join(MC_HOME, 'logs')
   ),
 
   // Claude CLI binary (symlink path, e.g. ~/.npm-global/bin/claude)

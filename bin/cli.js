@@ -535,7 +535,7 @@ function ensureNativeModules() {
 
 // ── Commands ─────────────────────────────────────────────────────────────────
 
-async function cmdSetup(force = false) {
+async function cmdSetup(force = false, nonInteractive = false) {
   const isFirstRun = !existsSync(ENV_FILE);
 
   if (!isFirstRun && !force) {
@@ -612,7 +612,7 @@ async function cmdSetup(force = false) {
     } catch { /* unreadable — assume not authenticated */ }
   }
 
-  if (!claudeAuthenticated) {
+  if (!claudeAuthenticated && !nonInteractive) {
     console.log('');
     warn('Claude Code is not authenticated.');
     console.log([
@@ -1021,6 +1021,16 @@ async function cmdSetup(force = false) {
   success('Data files initialised');
 
   // ── Install persistent service ──────────────────────────────────────────
+  if (nonInteractive) {
+    step('Non-interactive mode — skipping service installation');
+    success('Directory structure, .env, .mcp.json, and agent workspaces created');
+    console.log('');
+    console.log(c.bold(c.green('Setup complete (non-interactive).')));
+    console.log(`  Data: ${MC_HOME}`);
+    console.log(`  Start server: npm start`);
+    console.log('');
+    return;
+  }
   step('Installing persistent service (auto-start at login)');
   // Use the actual Next.js JS entry point — avoids the .bin/next shell wrapper
   // which fails in LaunchAgent/systemd contexts where node isn't in PATH
@@ -1428,7 +1438,8 @@ ${c.bold('USAGE')}
 
 ${c.bold('COMMANDS')}
   (no command)     Setup on first run, or show status
-  setup            Run setup (non-interactive) and open browser to /setup
+  setup            Run setup and open browser to /setup
+  setup --non-interactive   Scaffold dirs + config only (for Docker/CI, no services)
   setup --force    Re-run setup (overwrites existing config)
   setup --dir <path>  Setup a separate instance (e.g. ~/dev/mission-control)
   start            Start the server
@@ -1470,7 +1481,7 @@ async function main() {
 
   switch (cmd) {
     case '':
-    case 'setup':     await cmdSetup(flag === '--force'); break;
+    case 'setup':     await cmdSetup(args.includes('--force'), args.includes('--non-interactive')); break;
     case 'start':     await cmdStart(); break;
     case 'stop':      await cmdStop(); break;
     case 'restart':   await cmdRestart(); break;

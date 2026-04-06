@@ -1,0 +1,42 @@
+# Froggo Mission Control — Fly.io Machine Configuration
+# Each user gets their own Fly Machine running the full MC stack.
+# Deploy: fly deploy (from gateway provisioner, not manually)
+
+app = "froggo-mission-control"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  MISSION_CONTROL_HOME = "/data/mission-control"
+  NEXT_TELEMETRY_DISABLED = "1"
+  PORT = "3000"
+
+[mounts]
+  source = "mc_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+[[http_service.checks]]
+  grace_period = "10s"
+  interval = "30s"
+  method = "GET"
+  path = "/api/health"
+  timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
