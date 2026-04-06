@@ -498,6 +498,18 @@ export async function POST(
   const encoder = new TextEncoder();
   let activeProc: ReturnType<typeof spawn> | null = null;
   let streamCancelled = false; // guard against double-close after cancel()
+
+  // Belt-and-suspenders: also listen for request abort signal (client disconnect)
+  // ReadableStream.cancel() should handle it, but the abort listener is more reliable
+  // in some Next.js/transport configurations.
+  const abortCleanup = () => {
+    if (streamCancelled) return;
+    streamCancelled = true;
+    agentLocks.delete(id);
+    try { activeProc?.kill(); } catch (err) { console.warn('[stream] Non-critical: failed to kill process on abort:', err); }
+  };
+  request.signal.addEventListener('abort', abortCleanup);
+
   const stream = new ReadableStream({
     cancel() {
       // Client disconnected — kill the spawned process and release the lock immediately

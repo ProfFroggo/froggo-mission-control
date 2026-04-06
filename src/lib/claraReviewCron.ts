@@ -29,6 +29,7 @@ const NODE_BIN      = process.execPath;
 const IS_NATIVE_BIN = !CLAUDE_SCRIPT.endsWith('.js');
 const REVIEW_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
 const MAX_CONCURRENT_PER_AGENT = 2; // Allow agents to run up to 2 tasks concurrently
+const MAX_CONCURRENT_REVIEWS = 4; // Global limit on simultaneous Clara review subprocesses
 
 // Track tasks currently being reviewed to avoid duplicates
 const inReview    = new Set<string>(); // post-work review
@@ -697,11 +698,15 @@ export function runReviewCycle(): { queued: number } {
       .all() as Record<string, unknown>[];
 
     for (const task of preTasks) {
+      if (inPreReview.size + inReview.size >= MAX_CONCURRENT_REVIEWS) {
+        console.log(`[clara-review-cron] Global review limit reached (${MAX_CONCURRENT_REVIEWS}) — deferring remaining pre-review tasks`);
+        break;
+      }
       spawnClaraPreReview(task);
       queued++;
     }
     if (preTasks.length > 0) {
-      console.log(`[clara-review-cron] Queued ${preTasks.length} task(s) for pre-work review`);
+      console.log(`[clara-review-cron] Queued ${queued} of ${preTasks.length} task(s) for pre-work review`);
     }
   } catch (err) { console.warn('[clara-review-cron] Non-critical: pre-work review pass failed:', err); }
 
@@ -725,12 +730,18 @@ export function runReviewCycle(): { queued: number } {
                 WHERE status = 'review' AND (reviewStatus IS NULL OR reviewStatus NOT IN ('in-review', 'approved'))`)
       .all() as Record<string, unknown>[];
 
+    let postQueued = 0;
     for (const task of reviewTasks) {
+      if (inPreReview.size + inReview.size >= MAX_CONCURRENT_REVIEWS) {
+        console.log(`[clara-review-cron] Global review limit reached (${MAX_CONCURRENT_REVIEWS}) — deferring remaining post-review tasks`);
+        break;
+      }
       spawnClaraReview(task);
       queued++;
+      postQueued++;
     }
     if (reviewTasks.length > 0) {
-      console.log(`[clara-review-cron] Queued ${reviewTasks.length} task(s) for post-work review`);
+      console.log(`[clara-review-cron] Queued ${postQueued} of ${reviewTasks.length} task(s) for post-work review`);
     }
   } catch (err) { console.warn('[clara-review-cron] Non-critical: post-work review pass failed:', err); }
 

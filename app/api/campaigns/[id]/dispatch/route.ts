@@ -43,10 +43,10 @@ export async function POST(request: NextRequest, { params }: Params) {
 
     db.prepare(`
       INSERT INTO tasks (id, title, description, status, priority, assignedTo, project, createdAt, updatedAt)
-      VALUES (?, ?, ?, 'todo', ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, 'internal-review', ?, ?, ?, ?, ?)
     `).run(taskId, title, fullDescription, priority, agentId, id, now, now);
 
-    await dispatchTask(taskId);
+    dispatchTask(taskId);
 
     db.prepare('UPDATE campaigns SET updatedAt = ? WHERE id = ?').run(now, id);
 

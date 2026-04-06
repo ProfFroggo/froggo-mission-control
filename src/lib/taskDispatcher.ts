@@ -1635,8 +1635,10 @@ export function dispatchTask(taskId: string): boolean {
     const apiKeyEnv = loadAgentApiKeyEnv(agentId);
 
     // Build args — use --resume if session exists, otherwise --system-prompt with soul file
+    // NOTE: baseArgs is the immutable template. Each spawnAttempt clones it to avoid
+    // cross-retry corruption when error recovery splices/pushes args.
     const existingSession = loadTaskSession(taskId, agentId);
-    const args = [
+    const baseArgs = [
       '--print',
       '--output-format', 'stream-json',
       '--verbose',
@@ -1653,10 +1655,10 @@ export function dispatchTask(taskId: string): boolean {
     let useResume = false;
     if (existingSession) {
       useResume = true;
-      args.push('--resume', existingSession);
+      baseArgs.push('--resume', existingSession);
     } else {
       const systemPrompt = buildTaskSystemPrompt(agentId, trustTier, apiKeyEnv, task);
-      if (systemPrompt) args.push('--system-prompt', systemPrompt);
+      if (systemPrompt) baseArgs.push('--system-prompt', systemPrompt);
     }
 
     const message = buildTaskMessage(task);
@@ -1724,6 +1726,18 @@ export function dispatchTask(taskId: string): boolean {
     const RETRY_DELAYS_MS = [2000, 4000]; // delay before attempt 2 and 3
 
     const spawnAttempt = (attemptNumber: number): void => {
+      // Clone baseArgs per attempt to avoid cross-retry mutation corruption
+      const args = [...baseArgs];
+
+      // On retry after stale_session/context_overflow/oom: strip --resume, add fresh --system-prompt
+      if (attemptNumber > 1 && useResume) {
+        const resumeIdx = args.indexOf('--resume');
+        if (resumeIdx !== -1) args.splice(resumeIdx, 2);
+        useResume = false;
+        const freshPrompt = buildTaskSystemPrompt(agentId, trustTier, apiKeyEnv, task);
+        if (freshPrompt) args.push('--system-prompt', freshPrompt);
+      }
+
       console.log(`[taskDispatcher] Spawning: ${NODE_BIN} ${CLAUDE_SCRIPT} (attempt ${attemptNumber}/${MAX_DISPATCH_ATTEMPTS}) for ${taskId} → ${agentId}`);
       console.log(`[taskDispatcher] Args: ${args.slice(0, 6).join(' ')} ... (${args.length} total)`);
       const proc = spawn(NODE_BIN, [CLAUDE_SCRIPT, ...args], {
@@ -2013,15 +2027,9 @@ export function dispatchTask(taskId: string): boolean {
           switch (category) {
             case 'stale_session': {
               // Clear stale session and retry with fresh dispatch immediately
+              // (args mutation handled at top of spawnAttempt on next retry)
               console.log(`[taskDispatcher] [stale_session] Clearing session for ${taskId} — fresh dispatch on retry`);
               try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run('task:' + taskId + ':' + agentId); } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to clear stale session:', err); }
-              if (useResume) {
-                const resumeIdx = args.indexOf('--resume');
-                if (resumeIdx !== -1) args.splice(resumeIdx, 2);
-                useResume = false;
-                const freshPrompt = buildTaskSystemPrompt(agentId, trustTier, apiKeyEnv, task);
-                if (freshPrompt) args.push('--system-prompt', freshPrompt);
-              }
               handleFailure(`[stale_session] exit ${code}: session expired, retrying fresh`);
               break;
             }
@@ -2055,15 +2063,9 @@ export function dispatchTask(taskId: string): boolean {
 
             case 'context_overflow': {
               // Context too large — clear session, add instruction to work in smaller chunks
+              // (args mutation handled at top of spawnAttempt on next retry)
               console.warn(`[taskDispatcher] [context_overflow] Clearing session and adding scope reduction note for ${taskId}`);
               try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run('task:' + taskId + ':' + agentId); } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to clear session after context overflow:', err); }
-              if (useResume) {
-                const resumeIdx = args.indexOf('--resume');
-                if (resumeIdx !== -1) args.splice(resumeIdx, 2);
-                useResume = false;
-                const freshPrompt = buildTaskSystemPrompt(agentId, trustTier, apiKeyEnv, task);
-                if (freshPrompt) args.push('--system-prompt', freshPrompt);
-              }
               // Append a note to task so the next dispatch knows to work smaller
               try {
                 db.prepare(
@@ -2076,15 +2078,9 @@ export function dispatchTask(taskId: string): boolean {
 
             case 'oom_killed': {
               // OOM/SIGKILL — the process was killed by the OS. Clear everything and retry fresh
+              // (args mutation handled at top of spawnAttempt on next retry)
               console.error(`[taskDispatcher] [oom_killed] Process killed by system (exit ${code}) for ${taskId}`);
               try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run('task:' + taskId + ':' + agentId); } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to clear session after OOM kill:', err); }
-              if (useResume) {
-                const resumeIdx = args.indexOf('--resume');
-                if (resumeIdx !== -1) args.splice(resumeIdx, 2);
-                useResume = false;
-                const freshPrompt = buildTaskSystemPrompt(agentId, trustTier, apiKeyEnv, task);
-                if (freshPrompt) args.push('--system-prompt', freshPrompt);
-              }
               // Append scope-reduction note — OOM often means too-large files or too many concurrent reads
               try {
                 db.prepare(
@@ -2125,6 +2121,12 @@ export function dispatchTask(taskId: string): boolean {
       // Handle spawn errors (e.g. ENOENT if claude binary not found)
       proc.on('error', (err) => {
         console.error(`[taskDispatcher] Spawn error attempt ${attemptNumber} for task ${taskId}:`, err);
+        // Clean up the process timeout to prevent stale timeout from firing later
+        const pendingTimeout = processTimeouts.get(taskId);
+        if (pendingTimeout) {
+          clearTimeout(pendingTimeout);
+          processTimeouts.delete(taskId);
+        }
         handleFailure(`spawn error: ${err.message}`);
       });
 

@@ -30,14 +30,15 @@ export async function POST(request: NextRequest, { params }: Params) {
     // Build project-aware description
     const fullDescription = `**Project:** ${project.emoji ?? '📁'} ${project.name}\n**Goal:** ${project.goal ?? 'See project context'}\n\n${description}`;
 
-    // Insert task
+    // Insert task — set to internal-review so it goes through Clara's quality gate
+    // (dispatchTask rejects 'todo' tasks without pre-rejected reviewStatus)
     db.prepare(`
       INSERT INTO tasks (id, title, description, status, priority, assignedTo, project, project_id, createdAt, updatedAt)
-      VALUES (?, ?, ?, 'todo', ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, 'internal-review', ?, ?, ?, ?, ?, ?)
     `).run(taskId, title, fullDescription, priority, agentId, project.name, id, now, now);
 
-    // Dispatch to agent
-    await dispatchTask(taskId);
+    // Dispatch to agent (Clara's cron will also pick this up if dispatch fails)
+    dispatchTask(taskId);
 
     db.prepare('UPDATE projects SET updatedAt = ? WHERE id = ?').run(now, id);
 

@@ -87,5 +87,7 @@ export function startDispatcherCron(): void {
 
   // Run immediately on start, then every 30s
   runDispatchCycle();
-  g.__taskDispatcherInterval = setInterval(runDispatchCycle, 30 * 1000);
+  const interval = setInterval(runDispatchCycle, 30 * 1000);
+  if (typeof interval === 'object' && 'unref' in interval) interval.unref();
+  g.__taskDispatcherInterval = interval;
 }

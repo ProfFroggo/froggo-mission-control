@@ -1318,12 +1318,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (!taskId || !dependsOnId) return { content: [{ type: 'text', text: JSON.stringify({ error: 'taskId and dependsOnId required' }) }], isError: true };
         const depId = `dep-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
         const res = await apiCall('POST', `/api/tasks/${encodeURIComponent(taskId)}/dependencies`, { dependsOnId });
-        // Also try direct DB insert as fallback
+        // Also try direct DB insert as fallback (using singleton connection)
         if (!res || res.error) {
           try {
-            const db = require('better-sqlite3')(process.env.DB_PATH || require('path').join(require('os').homedir(), 'mission-control/data/mission-control.db'));
-            db.prepare('INSERT OR IGNORE INTO task_dependencies (id, taskId, dependsOnId) VALUES (?, ?, ?)').run(depId, taskId, dependsOnId);
-            db.close();
+            const fallbackDb = getDb();
+            fallbackDb.prepare('INSERT OR IGNORE INTO task_dependencies (id, taskId, dependsOnId) VALUES (?, ?, ?)').run(depId, taskId, dependsOnId);
             return { content: [{ type: 'text', text: JSON.stringify({ success: true, id: depId, taskId, dependsOnId }) }] };
           } catch (e: any) {
             return { content: [{ type: 'text', text: JSON.stringify({ error: e.message }) }], isError: true };

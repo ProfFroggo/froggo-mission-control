@@ -39,8 +39,8 @@ export const VALID_STATUSES: string[] = [..._VALID_STATUSES];
  */
 export const VALID_TRANSITIONS: Record<string, string[]> = {
   'todo':            ['internal-review', 'human-review', 'cancelled'],
-  'internal-review': ['in-progress', 'todo'],
-  'in-progress':     ['review', 'human-review', 'failed', 'cancelled'],
+  'internal-review': ['in-progress', 'todo', 'human-review'],
+  'in-progress':     ['review', 'human-review', 'todo', 'internal-review', 'failed', 'cancelled'],
   'review':          ['done', 'in-progress', 'human-review'],
   'human-review':    ['in-progress', 'todo', 'review', 'done', 'cancelled'],
   'done':            ['in-progress'],  // reopen
