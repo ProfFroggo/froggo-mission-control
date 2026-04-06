@@ -405,7 +405,8 @@ export function createSSEStream(params: StreamingOrchestrationParams): ReadableS
               encoder.encode(`data: ${JSON.stringify({ ...event, eventId, streamId })}\n\n`)
             )
           }
-        } catch {
+        } catch (err) {
+          console.warn('[ws/lib/copilot/chat-streaming] Non-critical:', err);
           markClientDisconnected('enqueue_failed')
         }
       }
@@ -448,7 +449,8 @@ export function createSSEStream(params: StreamingOrchestrationParams): ReadableS
         if (clientDisconnected) return
         try {
           controller.enqueue(encoder.encode(': keepalive\n\n'))
-        } catch {
+        } catch (err) {
+          console.warn('[ws/lib/copilot/chat-streaming] Non-critical:', err);
           markClientDisconnected('keepalive_failed')
         }
       }, 15_000)
@@ -470,9 +472,9 @@ export function createSSEStream(params: StreamingOrchestrationParams): ReadableS
           logger.error(
             appendCopilotLogContext('Stream aborted by explicit stop', { requestId, messageId })
           )
-          await eventWriter.close().catch(() => {})
+          await eventWriter.close().catch(err => console.warn('[ws/lib/copilot/chat-streaming] Non-critical:', err))
           await setStreamMeta(streamId, { status: 'cancelled', userId, executionId, runId })
-          await updateRunStatus(runId, 'cancelled', { completedAt: new Date() }).catch(() => {})
+          await updateRunStatus(runId, 'cancelled', { completedAt: new Date() }).catch(err => console.warn('[ws/lib/copilot/chat-streaming] Non-critical:', err))
           return
         }
 
@@ -518,13 +520,13 @@ export function createSSEStream(params: StreamingOrchestrationParams): ReadableS
           await updateRunStatus(runId, 'error', {
             completedAt: new Date(),
             error: errorMessage,
-          }).catch(() => {})
+          }).catch(err => console.warn('[ws/lib/copilot/chat-streaming] Non-critical:', err))
           return
         }
 
         await eventWriter.close()
         await setStreamMeta(streamId, { status: 'complete', userId, executionId, runId })
-        await updateRunStatus(runId, 'complete', { completedAt: new Date() }).catch(() => {})
+        await updateRunStatus(runId, 'complete', { completedAt: new Date() }).catch(err => console.warn('[ws/lib/copilot/chat-streaming] Non-critical:', err))
         if (clientDisconnected) {
           logger.info(
             appendCopilotLogContext('Orchestration completed after client disconnect', {
@@ -542,9 +544,9 @@ export function createSSEStream(params: StreamingOrchestrationParams): ReadableS
           logger.error(
             appendCopilotLogContext('Stream aborted by explicit stop', { requestId, messageId })
           )
-          await eventWriter.close().catch(() => {})
+          await eventWriter.close().catch(err => console.warn('[ws/lib/copilot/chat-streaming] Non-critical:', err))
           await setStreamMeta(streamId, { status: 'cancelled', userId, executionId, runId })
-          await updateRunStatus(runId, 'cancelled', { completedAt: new Date() }).catch(() => {})
+          await updateRunStatus(runId, 'cancelled', { completedAt: new Date() }).catch(err => console.warn('[ws/lib/copilot/chat-streaming] Non-critical:', err))
           return
         }
         if (clientDisconnected) {
@@ -581,7 +583,7 @@ export function createSSEStream(params: StreamingOrchestrationParams): ReadableS
         await updateRunStatus(runId, 'error', {
           completedAt: new Date(),
           error: errorMessage,
-        }).catch(() => {})
+        }).catch(err => console.warn('[ws/lib/copilot/chat-streaming] Non-critical:', err))
       } finally {
         logger.info(appendCopilotLogContext('Closing live SSE stream', { requestId, messageId }), {
           streamId,
@@ -601,11 +603,12 @@ export function createSSEStream(params: StreamingOrchestrationParams): ReadableS
           resolvePendingChatStream(chatId, streamId)
         }
         if (redis) {
-          await redis.del(getStreamAbortKey(streamId)).catch(() => {})
+          await redis.del(getStreamAbortKey(streamId)).catch(err => console.warn('[ws/lib/copilot/chat-streaming] Non-critical:', err))
         }
         try {
           controller.close()
-        } catch {
+        } catch (err) {
+          console.warn('[ws/lib/copilot/chat-streaming] Non-critical:', err);
           // Controller already closed from cancel() — safe to ignore
         }
       }
@@ -628,7 +631,7 @@ export function createSSEStream(params: StreamingOrchestrationParams): ReadableS
         }
       }
       if (eventWriter) {
-        eventWriter.flush().catch(() => {})
+        eventWriter.flush().catch(err => console.warn('[ws/lib/copilot/chat-streaming] Non-critical:', err))
       }
     },
   })

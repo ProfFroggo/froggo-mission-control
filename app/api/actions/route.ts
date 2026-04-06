@@ -121,7 +121,8 @@ export async function POST(req: NextRequest) {
 
       const success = result.status === 0 && !result.error;
       let resultData: unknown;
-      try { resultData = JSON.parse(result.stdout || '{}'); } catch {
+      try { resultData = JSON.parse(result.stdout || '{}'); } catch (err) {
+        console.warn('[actions] Non-critical:', err);
         resultData = { ok: success, output: result.stdout, error: result.stderr };
       }
 

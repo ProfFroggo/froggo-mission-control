@@ -81,10 +81,12 @@ export function safeConsoleStringify(value: unknown): string {
         2
       ) ?? ''
     )
-  } catch {
+  } catch (err) {
+    console.warn('[ws/stores/terminal/console/utils] Non-critical:', err);
     try {
       return String(value)
-    } catch {
+    } catch (err) {
+      console.warn('[ws/stores/terminal/console/utils] Non-critical:', err);
       return '[Unserializable value]'
     }
   }

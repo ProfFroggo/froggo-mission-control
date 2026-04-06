@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
 
   try {
     let body: { text?: string; reply_to?: string };
-    try { body = await req.json(); } catch {
+    try { body = await req.json(); } catch (err) {
+      console.warn('[x/tweet] Non-critical:', err);
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
     const { text, reply_to } = body;

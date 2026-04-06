@@ -86,7 +86,7 @@ function closePageHtml(success: boolean, detail: string): string {
           window.location.origin
         );
       }
-    } catch (_) {}
+    } catch (_) { console.warn('[route] Non-critical:', _); }
     setTimeout(() => window.close(), 1500);
   </script>
 </body>

@@ -158,7 +158,8 @@ export function coerceValue(type: string | null | undefined, value: unknown): un
         try {
           const parsed = JSON.parse(value)
           return parsed
-        } catch {
+        } catch (err) {
+          console.warn('[ws/executor/utils/start-block] Non-critical:', err);
           return value
         }
       }

@@ -12,7 +12,8 @@ const createErrorResponse = async (response: Response, defaultMessage: string) =
   try {
     const errorData = await response.json()
     return errorData.message || errorData.errorMessages?.[0] || defaultMessage
-  } catch {
+  } catch (err) {
+    console.warn('[tools/jira/issues] Non-critical:', err);
     return defaultMessage
   }
 }

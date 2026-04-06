@@ -232,7 +232,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
             metadata: t,
           })));
         }
-      } catch { /* ignore */ }
+      } catch (err) { console.warn('[GlobalSearch] Non-critical:', err); }
 
       // Search sessions via gateway WebSocket
       try {
@@ -279,7 +279,7 @@ export default function GlobalSearch({ isOpen, onClose, onNavigate }: GlobalSear
             status: a.status === 'active' ? 'in-progress' : undefined,
           })));
         }
-      } catch { /* ignore */ }
+      } catch (err) { console.warn('[GlobalSearch] Non-critical:', err); }
 
       // Apply fuzzy search with Fuse.js for better ranking
       if (allResults.length > 0) {

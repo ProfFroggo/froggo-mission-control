@@ -239,8 +239,7 @@ export function useMentionData(props: UseMentionDataProps): MentionDataReturn {
           updatedAt: c.updatedAt,
         }))
       )
-    } catch {
-    } finally {
+    } catch (err) { console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/copilot/components/user-input/hooks/use-mention-data] Non-critical:', err); } finally {
       setIsLoadingPastChats(false)
     }
   }, [isLoadingPastChats, pastChats.length, workflowId])
@@ -262,8 +261,7 @@ export function useMentionData(props: UseMentionDataProps): MentionDataReturn {
         return tb - ta
       })
       setKnowledgeBases(sorted.map((k: any) => ({ id: k.id, name: k.name || 'Untitled' })))
-    } catch {
-    } finally {
+    } catch (err) { console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/copilot/components/user-input/hooks/use-mention-data] Non-critical:', err); } finally {
       setIsLoadingKnowledge(false)
     }
   }, [isLoadingKnowledge, knowledgeBases.length, workspaceId])
@@ -310,8 +308,7 @@ export function useMentionData(props: UseMentionDataProps): MentionDataReturn {
         .sort((a: any, b: any) => a.name.localeCompare(b.name))
 
       setBlocksList([...regularBlocks, ...toolBlocks])
-    } catch {
-    } finally {
+    } catch (err) { console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/copilot/components/user-input/hooks/use-mention-data] Non-critical:', err); } finally {
       setIsLoadingBlocks(false)
     }
   }, [isLoadingBlocks, blocksList.length, isBlockAllowed])
@@ -331,8 +328,7 @@ export function useMentionData(props: UseMentionDataProps): MentionDataReturn {
         .map((t: any) => ({ id: t.id, name: t.name || 'Untitled Template', stars: t.stars || 0 }))
         .sort((a: any, b: any) => b.stars - a.stars)
       setTemplatesList(mapped)
-    } catch {
-    } finally {
+    } catch (err) { console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/copilot/components/user-input/hooks/use-mention-data] Non-critical:', err); } finally {
       setIsLoadingTemplates(false)
     }
   }, [isLoadingTemplates, templatesList.length])
@@ -360,8 +356,7 @@ export function useMentionData(props: UseMentionDataProps): MentionDataReturn {
           'Untitled Workflow',
       }))
       setLogsList(mapped)
-    } catch {
-    } finally {
+    } catch (err) { console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/copilot/components/user-input/hooks/use-mention-data] Non-critical:', err); } finally {
       setIsLoadingLogs(false)
     }
   }, [isLoadingLogs, logsList.length, workspaceId])

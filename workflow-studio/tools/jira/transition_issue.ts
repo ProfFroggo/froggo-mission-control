@@ -129,7 +129,7 @@ export const jiraTransitionIssueTool: ToolConfig<
         try {
           const err = await transitionResponse.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/transition_issue] Non-critical:', _e); }
         throw new Error(message)
       }
 
@@ -152,7 +152,7 @@ export const jiraTransitionIssueTool: ToolConfig<
         try {
           const err = await response.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/transition_issue] Non-critical:', _e); }
         throw new Error(message)
       }
 
@@ -178,7 +178,7 @@ export const jiraTransitionIssueTool: ToolConfig<
               : null
           }
         }
-      } catch {}
+      } catch (err) { console.warn('[ws/tools/jira/transition_issue] Non-critical:', err); }
     }
 
     return {

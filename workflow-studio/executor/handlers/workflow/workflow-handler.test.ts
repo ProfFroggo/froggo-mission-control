@@ -17,7 +17,8 @@ vi.mock('@/executor/utils/http', () => ({
     try {
       const errorData = await response.json()
       return errorData.error || defaultMessage
-    } catch {
+    } catch (err) {
+      console.warn('[ws/executor/handlers/workflow/workflow-handler.test] Non-critical:', err);
       return defaultMessage
     }
   }),

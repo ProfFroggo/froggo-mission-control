@@ -43,7 +43,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
         JSON.stringify({ fileId: id, fileName, question }),
         Date.now()
       );
-    } catch {
+    } catch (err) {
+      console.warn('[library/[id]/ask] Non-critical:', err);
       // task_activity insert is non-critical — continue even if it fails
     }
 

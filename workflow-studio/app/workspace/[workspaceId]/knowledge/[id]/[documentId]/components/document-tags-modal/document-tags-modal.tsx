@@ -67,7 +67,8 @@ function formatValueForDisplay(value: string, fieldType: string): string {
           ).toLocaleDateString()
         }
         return date.toLocaleDateString()
-      } catch {
+      } catch (err) {
+        console.warn('[ws/app/workspace/[workspaceId]/knowledge/[id]/[documentId]/components/document-tags-modal/document-tags-modalx] Non-critical:', err);
         return value
       }
     default:

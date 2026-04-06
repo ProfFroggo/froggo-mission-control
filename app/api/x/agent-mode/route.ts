@@ -23,7 +23,8 @@ function parseBool(raw: string | null, fallback: boolean): boolean {
   if (raw === null) return fallback;
   try {
     return Boolean(JSON.parse(raw));
-  } catch {
+  } catch (err) {
+    console.warn('[x/agent-mode] Non-critical:', err);
     return fallback;
   }
 }
@@ -33,7 +34,8 @@ function parseStr(raw: string | null, fallback: string): string {
   try {
     const parsed = JSON.parse(raw);
     return typeof parsed === 'string' ? parsed : fallback;
-  } catch {
+  } catch (err) {
+    console.warn('[x/agent-mode] Non-critical:', err);
     return raw;
   }
 }

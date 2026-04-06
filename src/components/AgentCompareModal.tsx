@@ -177,6 +177,7 @@ export default function AgentCompareModal({ agentIds, onClose }: AgentCompareMod
                           const theme = getAgentTheme(agentId);
                           return theme.pic ? (
                             <img src={`/api/agents/${agentId}/avatar`} alt={agentData.name} className="w-12 h-12 rounded-lg object-cover mx-auto ring-2 ring-white/10"
+                              loading="lazy" decoding="async" width={48} height={48}
                               onError={(e) => { (e.target as HTMLImageElement).replaceWith(Object.assign(document.createElement('span'), { className: 'text-4xl', textContent: agentData.avatar })); }} />
                           ) : (
                             <span className="text-4xl">{agentData.avatar}</span>

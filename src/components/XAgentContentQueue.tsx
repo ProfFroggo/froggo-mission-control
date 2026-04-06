@@ -372,7 +372,8 @@ export function XAgentContentQueue() {
         setSettings(data);
         setBriefText(data.brief);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[XAgentContentQueue] Non-critical:', err);
       // non-fatal
     } finally {
       setLoading(false);
@@ -393,7 +394,7 @@ export function XAgentContentQueue() {
         );
         const mapped: AgentDraft[] = agentItems.map((item: any) => {
           let meta: any = {};
-          try { meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : (item.metadata || {}); } catch { /* noop */ }
+          try { meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : (item.metadata || {}); } catch (err) { console.warn('[XAgentContentQueue] Non-critical: noop:', err); }
           return {
             id: String(item.id),
             content: item.content || '',
@@ -421,7 +422,7 @@ export function XAgentContentQueue() {
           }));
         setActivity(activityEntries);
       }
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[XAgentContentQueue] Non-critical:', err); }
   }, []);
 
   useEffect(() => { loadSettings(); loadDrafts(); }, [loadSettings, loadDrafts]);
@@ -440,7 +441,8 @@ export function XAgentContentQueue() {
         setBriefText(data.brief);
         showToast('success', 'Saved', 'Agent settings updated');
       }
-    } catch {
+    } catch (err) {
+      console.warn('[XAgentContentQueue] Non-critical:', err);
       showToast('error', 'Error', 'Failed to save settings');
     } finally {
       setSaving(false);
@@ -477,7 +479,8 @@ export function XAgentContentQueue() {
           status: 'scheduled',
         }),
       });
-    } catch {
+    } catch (err) {
+      console.warn('[XAgentContentQueue] Non-critical:', err);
       // non-fatal — draft is already approved locally
     }
   };

@@ -870,7 +870,8 @@ export function regenerateWorkflowStateIds(state: RegenerateStateInput): Regener
             if (Array.isArray(parsed) && remapConditionBlockIds(parsed, oldId, newId)) {
               updatedSubBlock.value = JSON.stringify(parsed)
             }
-          } catch {
+          } catch (err) {
+            console.warn('[ws/lib/workflows/persistence/utils] Non-critical:', err);
             // Not valid JSON, skip
           }
         }

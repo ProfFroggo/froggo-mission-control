@@ -119,7 +119,8 @@ export async function PATCH(request: NextRequest, { params }: RowRouteParams) {
     let body: unknown
     try {
       body = await request.json()
-    } catch {
+    } catch (err) {
+      console.warn('[table/[tableId]/rows/[rowId]] Non-critical:', err);
       return NextResponse.json({ error: 'Request body must be valid JSON' }, { status: 400 })
     }
 
@@ -228,7 +229,8 @@ export async function DELETE(request: NextRequest, { params }: RowRouteParams) {
     let body: unknown
     try {
       body = await request.json()
-    } catch {
+    } catch (err) {
+      console.warn('[table/[tableId]/rows/[rowId]] Non-critical:', err);
       return NextResponse.json({ error: 'Request body must be valid JSON' }, { status: 400 })
     }
 

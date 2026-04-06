@@ -309,7 +309,7 @@ export class AgentBlockHandler implements BlockHandler {
       })
 
       if (!response.ok) {
-        await response.text().catch(() => {})
+        await response.text().catch(err => console.warn('[agent-handler] Failed to drain response body:', err))
         logger.error(`Failed to fetch custom tools: ${response.status}`)
         return null
       }

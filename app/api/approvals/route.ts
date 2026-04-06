@@ -86,9 +86,9 @@ export async function PATCH(request: NextRequest) {
           title: `Approval ${status}: ${row.title}`,
           userId: row.requester ?? undefined,
           metadata: { approvalId: row.id, action, status },
-        }).catch(() => {});
+        }).catch(err => console.warn('[approvals] Non-critical:', err));
       }
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[approvals] Non-critical:', err); }
 
     emitSSEEvent('approval.updated', { ids: validIds, action, status: action === 'approve' ? 'approved' : 'rejected' });
     return NextResponse.json({ updated: validIds.length });

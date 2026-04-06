@@ -51,21 +51,19 @@ interface SidebarProps {
 // Icons are now provided by ViewRegistry — no hardcoded icon map needed
 
 export default function Sidebar({ currentView, onNavigate, onOpenHelp, onWidthChange, onOpenSearch, onOpenShortcuts }: SidebarProps) {
-  // Load persisted sidebar state from localStorage
-  const [expanded, setExpanded] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    const saved = localStorage.getItem('sidebarExpanded');
-    return saved !== null ? saved === 'true' : true; // Default: open
-  });
+  // Always start expanded (SSR-safe); hydrate from localStorage after mount
+  const [expanded, setExpanded] = useState(true);
 
   // Mobile: sidebar hidden by default; toggled via hamburger button
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Listen for sidebar state changes from settings
+  // Hydrate from localStorage after mount + listen for settings changes
   useEffect(() => {
+    const saved = localStorage.getItem('sidebarExpanded');
+    if (saved !== null) setExpanded(saved === 'true');
     const handler = () => {
-      const saved = localStorage.getItem('sidebarExpanded');
-      setExpanded(saved !== null ? saved === 'true' : true);
+      const s = localStorage.getItem('sidebarExpanded');
+      setExpanded(s !== null ? s === 'true' : true);
     };
     window.addEventListener('sidebarStateChange', handler);
     return () => window.removeEventListener('sidebarStateChange', handler);

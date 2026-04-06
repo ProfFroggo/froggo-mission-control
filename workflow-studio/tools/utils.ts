@@ -401,7 +401,7 @@ async function fetchCustomToolFromAPI(
     })
 
     if (!response.ok) {
-      await response.text().catch(() => {})
+      await response.text().catch(err => console.warn('[ws/tools/utils] Non-critical:', err))
       logger.error(`Failed to fetch custom tools: ${response.statusText}`)
       return undefined
     }

@@ -81,7 +81,8 @@ export async function readSSEStream(
               onAccumulated?.(accumulatedContent)
             }
             if (data.done) break
-          } catch {
+          } catch (err) {
+            console.warn('[ws/lib/core/utils/sse] Non-critical:', err);
             // Skip unparseable lines
           }
         }

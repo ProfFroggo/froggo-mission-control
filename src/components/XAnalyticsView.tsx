@@ -66,7 +66,8 @@ export function XAnalyticsView() {
         retweets: t.public_metrics?.retweet_count ?? 0,
         impressions: t.public_metrics?.impression_count ?? 0,
       })));
-    } catch {
+    } catch (err) {
+      console.warn('[XAnalyticsView] Non-critical:', err);
       setSummary(null);
     } finally {
       setLoading(false);

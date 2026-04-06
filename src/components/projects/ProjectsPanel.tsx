@@ -441,7 +441,8 @@ export default function ProjectsPanel() {
       await projectsApi.archiveProject(project.id);
       showToast(`"${project.name}" archived`, 'success');
       load(false);
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectsPanel] Non-critical:', err);
       showToast('Failed to archive project', 'error');
     }
   }, [load]);
@@ -451,7 +452,8 @@ export default function ProjectsPanel() {
       await projectsApi.restoreProject(project.id);
       showToast(`"${project.name}" restored`, 'success');
       load(false);
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectsPanel] Non-critical:', err);
       showToast('Failed to restore project', 'error');
     }
   }, [load]);

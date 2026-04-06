@@ -36,7 +36,8 @@ export async function GET() {
       });
 
     return NextResponse.json({ skills });
-  } catch {
+  } catch (err) {
+    console.warn('[library/skills] Non-critical:', err);
     return NextResponse.json({ skills: [] });
   }
 }

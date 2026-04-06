@@ -15,13 +15,13 @@ function scaffoldAgentWorkspace(agentId: string) {
   const catalogSoul = join(ENV.PROJECT_DIR, 'catalog', 'agents', agentId, 'soul.md');
   const destSoul = join(agentDir, 'SOUL.md');
   if (existsSync(catalogSoul) && !existsSync(destSoul)) {
-    try { copyFileSync(catalogSoul, destSoul); } catch { /* non-critical */ }
+    try { copyFileSync(catalogSoul, destSoul); } catch (err) { console.warn('[setup/install-agents] Non-critical:', err); }
   }
   // Copy CLAUDE.md from catalog if not already present
   const catalogClaude = join(ENV.PROJECT_DIR, 'catalog', 'agents', agentId, 'claude.md');
   const destClaude = join(agentDir, 'CLAUDE.md');
   if (existsSync(catalogClaude) && !existsSync(destClaude)) {
-    try { copyFileSync(catalogClaude, destClaude); } catch { /* non-critical */ }
+    try { copyFileSync(catalogClaude, destClaude); } catch (err) { console.warn('[setup/install-agents] Non-critical:', err); }
   }
 }
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
             agent.defaultPersonality ?? '',
           );
           // Scaffold workspace directories and copy soul/config files
-          try { scaffoldAgentWorkspace(item.id); } catch { /* non-critical */ }
+          try { scaffoldAgentWorkspace(item.id); } catch (err) { console.warn('[setup/install-agents] Non-critical:', err); }
           results.push({ kind: 'agent', id: item.id, success: true });
 
         } else if (item.kind === 'module') {

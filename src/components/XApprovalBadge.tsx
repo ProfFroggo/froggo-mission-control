@@ -82,7 +82,8 @@ export default function XApprovalBadge() {
         ['tweet', 'x-reply', 'research', 'plan', 'draft'].includes(a.type)
       );
       setItems(social as PendingApproval[]);
-    } catch {
+    } catch (err) {
+      console.warn('[XApprovalBadge] Non-critical:', err);
       // non-fatal
     }
   }, []);
@@ -122,7 +123,8 @@ export default function XApprovalBadge() {
       await approvalApi.respond(key, 'approved', undefined, undefined);
       showToast('success', 'Approved');
       await loadItems();
-    } catch {
+    } catch (err) {
+      console.warn('[XApprovalBadge] Non-critical:', err);
       showToast('error', 'Failed to approve');
     } finally {
       setActionLoading((prev) => {
@@ -146,7 +148,8 @@ export default function XApprovalBadge() {
         await approvalApi.respond(key, 'rejected', reason || undefined, undefined);
         showToast('success', 'Rejected');
         await loadItems();
-      } catch {
+      } catch (err) {
+        console.warn('[XApprovalBadge] Non-critical:', err);
         showToast('error', 'Failed to reject');
       } finally {
         setActionLoading((prev) => {
@@ -164,7 +167,8 @@ export default function XApprovalBadge() {
     for (const item of items) {
       try {
         await approvalApi.respond(String(item.id), 'approved', undefined, undefined);
-      } catch {
+      } catch (err) {
+        console.warn('[XApprovalBadge] Non-critical:', err);
         failCount++;
       }
     }
@@ -292,7 +296,7 @@ export default function XApprovalBadge() {
                             try {
                               await approvalApi.respond(String(item.id), 'rejected', 'Skipped — not needed', undefined);
                               await loadItems();
-                            } catch { /* non-fatal */ }
+                            } catch (err) { console.warn('[XApprovalBadge] Non-critical: non-fatal:', err); }
                             setActionLoading(prev => { const n = new Set(prev); n.delete(String(item.id)); return n; });
                           }}
                           disabled={isLoading}

@@ -47,7 +47,8 @@ function encodeCursor(data: CursorData): string {
 function decodeCursor(cursor: string): CursorData | null {
   try {
     return JSON.parse(Buffer.from(cursor, 'base64').toString())
-  } catch {
+  } catch (err) {
+    console.warn('[v1/logs] Non-critical:', err);
     return null
   }
 }

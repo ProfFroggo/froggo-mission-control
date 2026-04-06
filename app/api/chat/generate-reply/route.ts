@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
             break;
           }
         }
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[chat/generate-reply] Non-critical:', err); }
     }
 
     const agentName = agentId === 'social-manager' ? 'Social Manager for Bitso Onchain (@BitsoOnchain)' :
@@ -66,7 +66,7 @@ IMPORTANT: You are ${agentName}, NOT mission-control. Stay in character. Never s
           conversationHistory = '\n\n--- RECENT CONVERSATION (for continuity) ---\n' +
             recentMsgs.reverse().map(m => `${m.role === 'user' ? 'User' : 'You'}: ${(m.content || '').slice(0, 300)}`).join('\n');
         }
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[chat/generate-reply] Non-critical:', err); }
     }
 
     const userPrompt = `${context || ''}${liveData}${conversationHistory}\n\nUser message: ${message}`;

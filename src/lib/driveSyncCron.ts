@@ -68,7 +68,9 @@ export async function runDriveSync(): Promise<{ imported: number; skipped: numbe
     try {
       const meta = JSON.parse(r.metadata);
       if (meta.driveFileId) importedIds.add(meta.driveFileId);
-    } catch { /* skip */ }
+    } catch (err) {
+      console.warn('[driveSyncCron] Failed to parse imported meeting metadata:', err);
+    }
   }
 
   const toImport = files.filter(f => !importedIds.has(f.id));
@@ -129,7 +131,9 @@ export async function runDriveSync(): Promise<{ imported: number; skipped: numbe
           meetingDate = result.meetingDate;
           if (result.title) meetingTitle = result.title;
           summarySource = 'gemini';
-        } catch { /* fall through to extractive */ }
+        } catch (err) {
+          console.warn('[driveSyncCron] Gemini summary failed, falling back to extractive:', err);
+        }
       }
 
       if (!summary) {
@@ -146,7 +150,9 @@ export async function runDriveSync(): Promise<{ imported: number; skipped: numbe
       if (apiKey) {
         try {
           taskProposals = await extractTaskProposals(content, apiKey);
-        } catch { /* non-critical */ }
+        } catch (err) {
+          console.warn('[driveSyncCron] Non-critical: task proposal extraction failed:', err);
+        }
       }
 
       // ── Save meeting record ────────────────────────────────────────────────
@@ -181,7 +187,9 @@ export async function runDriveSync(): Promise<{ imported: number; skipped: numbe
         db.prepare(
           `INSERT INTO activity (type, message, agentId, timestamp) VALUES ('system', ?, 'system', ?)`
         ).run(`Drive sync: imported "${meetingTitle}" from Google Drive`, now);
-      } catch { /* non-critical */ }
+      } catch (err) {
+        console.warn('[driveSyncCron] Non-critical: failed to log drive sync activity:', err);
+      }
 
       imported++;
       console.log(`[DriveSyncCron] Imported: ${file.name} (date: ${scheduledFor}, tasks: ${taskProposals.length})`);

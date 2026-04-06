@@ -14,7 +14,9 @@ async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val;
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.warn('[budget/extract] Keychain lookup for gemini_api_key failed:', err);
+  }
   const db = getDb();
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get('gemini_api_key') as { value: string } | undefined;
   return row?.value || process.env.GEMINI_API_KEY || null;
@@ -78,10 +80,12 @@ Return ONLY the JSON object, no other text.`;
         try {
           const extracted = JSON.parse(match[0]);
           return NextResponse.json({ ok: true, extracted });
-        } catch {
+        } catch (err) {
+          console.warn('[budget/extract] Non-critical:', err);
           return NextResponse.json({ extracted: null, raw: text });
         }
-      } catch {
+      } catch (err) {
+        console.warn('[budget/extract] Non-critical:', err);
         if (model === GEMINI_MODEL) continue;
       }
     }

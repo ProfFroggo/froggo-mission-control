@@ -380,7 +380,8 @@ export default function AutomationBuilderModal({
         setMode('manual');
         setNlError('AI parse unavailable — review and complete the form manually.');
       }
-    } catch {
+    } catch (err) {
+      console.warn('[AutomationBuilderModal] Non-critical:', err);
       setDraft(d => ({ ...d, name: nlDescription.slice(0, 60), description: nlDescription }));
       setMode('manual');
       setNlError('AI parse unavailable — review and complete the form manually.');

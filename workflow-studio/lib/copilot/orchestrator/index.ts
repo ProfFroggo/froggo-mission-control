@@ -177,7 +177,7 @@ export async function orchestrateCopilotStream(
                     : undefined,
               })
               if (runId) {
-                await updateRunStatus(runId, 'paused_waiting_for_tool').catch(() => {})
+                await updateRunStatus(runId, 'paused_waiting_for_tool').catch(err => console.warn('[ws/lib/copilot/orchestrator/index] Non-critical:', err))
               }
             }
           }

@@ -183,7 +183,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
         const data = await res.json();
         setSessionStats(data);
       }
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[XAgentChatPane] Non-critical:', err); }
   }, [sessionKey]);
 
   // Load stats on mount and when tab changes
@@ -206,7 +206,8 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
         showToast('Session reset', 'success');
         fetchSessionStats();
       }
-    } catch {
+    } catch (err) {
+      console.warn('[XAgentChatPane] Non-critical:', err);
       showToast('Failed to reset session', 'error');
     }
   }, [sessionKey, validTab, fetchSessionStats]);
@@ -240,7 +241,8 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
         } else {
           setMessages(tabMessagesRef.current[validTab] || []);
         }
-      } catch {
+      } catch (err) {
+        console.warn('[XAgentChatPane] Non-critical:', err);
         setMessages(tabMessagesRef.current[validTab] || []);
       }
       setHistoryLoaded(true);
@@ -351,7 +353,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
             try {
               const campaignData = JSON.parse(campaignMatch[1].trim());
               window.dispatchEvent(new CustomEvent('x-campaign-proposal', { detail: campaignData }));
-            } catch { /* invalid JSON, ignore */ }
+            } catch (err) { console.warn('[XAgentChatPane] Non-critical: invalid JSON, ignore:', err); }
           }
         }
 
@@ -374,7 +376,7 @@ export default function XAgentChatPane({ tab }: XAgentChatPaneProps) {
             if (res.ok) {
               window.dispatchEvent(new CustomEvent('x-automation-created', { detail: autoData }));
             }
-          } catch { /* invalid JSON, ignore */ }
+          } catch (err) { console.warn('[XAgentChatPane] Non-critical: invalid JSON, ignore:', err); }
         }
       }
       setLoading(false);

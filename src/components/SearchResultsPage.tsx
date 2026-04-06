@@ -107,7 +107,8 @@ export default function SearchResultsPage({ initialQuery = '', onNavigate, onClo
       if (!res.ok) throw new Error('Search failed');
       const json = await res.json() as SearchData;
       setData(json);
-    } catch {
+    } catch (err) {
+      console.warn('[SearchResultsPage] Non-critical:', err);
       setData(null);
     } finally {
       setLoading(false);

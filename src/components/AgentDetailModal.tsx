@@ -450,7 +450,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
     fetch(`/api/agents/${agentId}/stats`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setAgentStats(data); })
-      .catch(() => {})
+      .catch(err => console.warn('[AgentDetailModal] Non-critical:', err))
       .finally(() => setStatsLoading(false));
   }, [activeTab, agentId, agentStats]);
 
@@ -554,7 +554,8 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
         try {
           const parsed = JSON.parse(t.tags);
           if (Array.isArray(parsed)) rawTags.push(...parsed);
-        } catch {
+        } catch (err) {
+          console.warn('[AgentDetailModal] Non-critical:', err);
           rawTags.push(...String(t.tags).split(','));
         }
       }
@@ -721,7 +722,7 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
             } else if (evt.type === 'error') {
               setChatMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: evt.error || 'Error', streaming: false } : m));
             }
-          } catch { /* skip malformed SSE */ }
+          } catch (err) { console.warn('[AgentDetailModal] Non-critical: skip malformed SSE:', err); }
         }
       }
       setChatMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, streaming: false } : m));
@@ -1073,6 +1074,10 @@ export default function AgentDetailModal({ agentId, onClose, initialTab }: Agent
                 src={`/api/agents/${agent.id}/avatar`}
                 alt={agent.name}
                 className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
+                width={48}
+                height={48}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';

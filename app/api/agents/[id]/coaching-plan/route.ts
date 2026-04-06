@@ -128,7 +128,8 @@ export async function GET(
       let plan: WeeklyPlan;
       try {
         plan = JSON.parse(stored.plan) as WeeklyPlan;
-      } catch {
+      } catch (err) {
+        console.warn('[agents/[id]/coaching-plan] Non-critical:', err);
         plan = { week1: [], week2: [], week3: [], week4: [] };
       }
       return NextResponse.json({ plan, focus: stored.focus ?? '', updatedAt: stored.updatedAt });
@@ -177,7 +178,8 @@ export async function GET(
         }
       }
       skillGaps = Array.from(gapSet);
-    } catch {
+    } catch (err) {
+      console.warn('[agents/[id]/coaching-plan] Non-critical:', err);
       // If review data unavailable, generate a generic plan
     }
 

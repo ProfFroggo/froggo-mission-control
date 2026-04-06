@@ -78,7 +78,8 @@ export async function* parseSSEStream(
   } finally {
     try {
       reader.releaseLock()
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/copilot/orchestrator/sse/parser] Non-critical:', err);
       logger.warn('Failed to release SSE reader lock')
     }
   }

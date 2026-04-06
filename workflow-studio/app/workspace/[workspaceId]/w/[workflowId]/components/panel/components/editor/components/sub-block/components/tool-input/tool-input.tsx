@@ -142,7 +142,8 @@ function WorkflowInputMapperInput({
   const parsedValue = useMemo(() => {
     try {
       return value ? JSON.parse(value) : {}
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/components/tool-input/tool-inputx] Non-critical:', err);
       return {}
     }
   }, [value])

@@ -130,7 +130,8 @@ export function FormDeploy({
         let host = url.host
         if (host.startsWith('www.')) host = host.substring(4)
         setFormUrl(`${url.protocol}//${host}/form/${existingForm.identifier}`)
-      } catch {
+      } catch (err) {
+        console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/deploy/components/deploy-modal/components/form/formx] Non-critical:', err);
         setFormUrl(
           isDev
             ? `http://localhost:3000/form/${existingForm.identifier}`

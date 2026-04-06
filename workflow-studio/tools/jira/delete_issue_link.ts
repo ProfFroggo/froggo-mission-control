@@ -78,7 +78,7 @@ export const jiraDeleteIssueLinkTool: ToolConfig<
         try {
           const err = await issueLinkResponse.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/delete_issue_link] Non-critical:', _e); }
         throw new Error(message)
       }
 
@@ -97,7 +97,7 @@ export const jiraDeleteIssueLinkTool: ToolConfig<
       try {
         const err = await response.json()
         message = err?.errorMessages?.join(', ') || err?.message || message
-      } catch (_e) {}
+      } catch (_e) { console.warn('[ws/jira/delete_issue_link] Non-critical:', _e); }
       throw new Error(message)
     }
 

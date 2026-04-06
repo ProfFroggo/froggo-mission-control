@@ -89,7 +89,8 @@ function parseVariableValueByType(value: unknown, type: string): unknown {
     if (typeof value === 'string' && value.trim()) {
       try {
         return JSON.parse(value)
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/workflows/executor/execution-core] Non-critical:', err);
         return []
       }
     }
@@ -101,7 +102,8 @@ function parseVariableValueByType(value: unknown, type: string): unknown {
     if (typeof value === 'string' && value.trim()) {
       try {
         return JSON.parse(value)
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/workflows/executor/execution-core] Non-critical:', err);
         return {}
       }
     }

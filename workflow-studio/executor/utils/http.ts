@@ -36,7 +36,8 @@ export async function extractAPIErrorMessage(response: Response): Promise<string
   try {
     const errorData = await response.json()
     return errorData.error || defaultMessage
-  } catch {
+  } catch (err) {
+    console.warn('[ws/executor/utils/http] Non-critical:', err);
     return defaultMessage
   }
 }

@@ -114,7 +114,8 @@ function shouldRequireApiKeyForModel(model: string): boolean {
       ) {
         return false
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ws/blocks/utils] Non-critical:', err);
       // If model resolution fails, fall through and require an API key.
     }
   }
@@ -300,7 +301,8 @@ export function createVersionedToolSelector<TParams extends Record<string, any>>
       const baseToolId = baseToolSelector(params)
       if (!baseToolId || typeof baseToolId !== 'string') return fallbackToolId
       return baseToolId.endsWith(suffix) ? baseToolId : `${baseToolId}${suffix}`
-    } catch {
+    } catch (err) {
+      console.warn('[ws/blocks/utils] Non-critical:', err);
       return fallbackToolId
     }
   }
@@ -340,7 +342,8 @@ export function normalizeFileInput(
   if (typeof fileParam === 'string') {
     try {
       fileParam = JSON.parse(fileParam)
-    } catch {
+    } catch (err) {
+      console.warn('[ws/blocks/utils] Non-critical:', err);
       return undefined
     }
   }

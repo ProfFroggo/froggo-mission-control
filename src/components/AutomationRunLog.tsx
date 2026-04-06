@@ -176,7 +176,8 @@ export default function AutomationRunLog({ automationId, automationName, onClose
     try {
       await fetch(`/api/automations/${automationId}/run`, { method: 'POST' });
       await fetchRuns();
-    } catch {
+    } catch (err) {
+      console.warn('[AutomationRunLog] Non-critical:', err);
       // silent — run will appear on next refresh
     } finally {
       setRerunning(false);

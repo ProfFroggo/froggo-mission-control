@@ -82,7 +82,7 @@ export const jiraRemoveWatcherTool: ToolConfig<JiraRemoveWatcherParams, JiraRemo
           try {
             const err = await watcherResponse.json()
             message = err?.errorMessages?.join(', ') || err?.message || message
-          } catch (_e) {}
+          } catch (_e) { console.warn('[ws/jira/remove_watcher] Non-critical:', _e); }
           throw new Error(message)
         }
 
@@ -102,7 +102,7 @@ export const jiraRemoveWatcherTool: ToolConfig<JiraRemoveWatcherParams, JiraRemo
         try {
           const err = await response.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/remove_watcher] Non-critical:', _e); }
         throw new Error(message)
       }
 

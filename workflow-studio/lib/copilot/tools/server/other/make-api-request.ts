@@ -57,7 +57,8 @@ export const makeApiRequestServerTool: BaseServerTool<MakeApiRequestParams, ApiR
       if (typeof val === 'string') return val
       try {
         return JSON.stringify(val)
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/copilot/tools/server/other/make-api-request] Non-critical:', err);
         return String(val)
       }
     }
@@ -74,7 +75,8 @@ export const makeApiRequestServerTool: BaseServerTool<MakeApiRequestParams, ApiR
           text = text.replace(/[<>]/g, ' ')
         } while (text !== previous)
         return text.replace(/\s+/g, ' ').trim()
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/copilot/tools/server/other/make-api-request] Non-critical:', err);
         return html
       }
     }

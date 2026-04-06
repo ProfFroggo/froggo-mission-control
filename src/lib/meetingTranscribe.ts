@@ -155,7 +155,9 @@ export class MeetingTranscriber {
       try {
         const { authHeaders } = await import('./api');
         headers = { ...headers, ...authHeaders() };
-      } catch { /* auth module unavailable */ }
+      } catch (err) {
+        console.warn('[meetingTranscribe] Non-critical: auth module unavailable:', err);
+      }
 
       const res = await fetch('/api/gemini/summarize', {
         method: 'POST',

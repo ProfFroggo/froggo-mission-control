@@ -163,7 +163,8 @@ function normalizeDomainEntry(entry: string): string {
   if (trimmed.includes('://')) {
     try {
       return new URL(trimmed).hostname
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/core/config/feature-flags] Non-critical:', err);
       return trimmed
     }
   }

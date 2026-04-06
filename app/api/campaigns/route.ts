@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
     // Ensure types column exists (migration for existing DBs)
     try {
       db.exec(`ALTER TABLE campaigns ADD COLUMN types TEXT`);
-    } catch { /* column already exists */ }
+    } catch (err) { console.warn('[campaigns] Non-critical: column already exists:', err); }
 
     db.prepare(`
       INSERT INTO campaigns (id, name, description, type, types, goal, status, channels, budget, budgetSpent, currency, targetAudience, kpis, startDate, endDate, briefContent, color, createdBy, createdAt, updatedAt)
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
       const roomAgents = Array.isArray(memberAgentIds) ? memberAgentIds : [];
       db.prepare('INSERT OR IGNORE INTO chat_rooms (id, name, agents, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)')
         .run(`campaign-${id}`, `Campaign: ${name.trim()}`, JSON.stringify(roomAgents), now, now);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[campaigns] Non-critical:', err); }
 
     // Create library folder
     try {
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
       const { homedir } = await import('os');
       const folderPath = join(homedir(), 'mission-control', 'library', 'campaigns', id);
       mkdirSync(folderPath, { recursive: true });
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[campaigns] Non-critical:', err); }
 
     const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(id);
     return NextResponse.json({ success: true, id, campaign }, { status: 201 });

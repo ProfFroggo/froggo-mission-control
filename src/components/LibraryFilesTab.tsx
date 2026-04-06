@@ -105,7 +105,8 @@ function loadStarred(): Set<string> {
   try {
     const raw = localStorage.getItem(STARRED_KEY);
     return raw ? new Set<string>(JSON.parse(raw)) : new Set<string>();
-  } catch {
+  } catch (err) {
+    console.warn('[LibraryFilesTab] Non-critical:', err);
     return new Set<string>();
   }
 }
@@ -231,7 +232,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         const data = await res.json();
         setFolders(data.folders || []);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[LibraryFilesTab] Non-critical:', err);
       // silent
     }
   }, []);
@@ -244,7 +246,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         setFsDirs(data.dirs || []);
         if (data.basePath && !basePath) setBasePath(data.basePath);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[LibraryFilesTab] Non-critical:', err);
       // silent
     }
   }, [basePath]);
@@ -256,7 +259,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         const data = await res.json();
         setAvailableTags(data.tags || []);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[LibraryFilesTab] Non-critical:', err);
       // silent
     }
   }, []);
@@ -280,7 +284,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         const data = await res.json().catch(() => ({})) as { error?: string };
         showToast('error', data.error || 'Failed to create folder');
       }
-    } catch {
+    } catch (err) {
+      console.warn('[LibraryFilesTab] Non-critical:', err);
       showToast('error', 'Failed to create folder');
     } finally {
       setNewFolderCreating(false);
@@ -348,7 +353,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
             setDetailContent(data.content.slice(0, 2000));
           }
         }
-      } catch {
+      } catch (err) {
+        console.warn('[LibraryFilesTab] Non-critical:', err);
         // silent
       } finally {
         setDetailContentLoading(false);
@@ -386,7 +392,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       } else {
         setMiniChatMessages(prev => [...prev, { role: 'assistant', content: 'Could not reach the assistant. Check if the library-assistant agent is running.' }]);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[LibraryFilesTab] Non-critical:', err);
       setMiniChatMessages(prev => [...prev, { role: 'assistant', content: 'Failed to send message.' }]);
     } finally {
       setMiniChatLoading(false);
@@ -414,7 +421,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       } else {
         setAskResponse('Could not reach the library assistant. Make sure the agent is running.');
       }
-    } catch {
+    } catch (err) {
+      console.warn('[LibraryFilesTab] Non-critical:', err);
       setAskResponse('Failed to query the agent.');
     } finally {
       setAskLoading(false);
@@ -527,7 +535,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         body: JSON.stringify({ action: 'update', id: file.id, category: newCategory }),
       });
       loadFiles();
-    } catch {
+    } catch (err) {
+      console.warn('[LibraryFilesTab] Non-critical:', err);
       showToast('error', 'Failed to update category');
     }
   };
@@ -544,7 +553,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       if (detailFile?.id === file.id) {
         setDetailFile(prev => prev ? { ...prev, tags: updatedTags } : prev);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[LibraryFilesTab] Non-critical:', err);
       showToast('error', 'Failed to remove tag');
     }
   };
@@ -566,7 +576,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
       if (detailFile?.id === file.id) {
         setDetailFile(prev => prev ? { ...prev, tags: updatedTags } : prev);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[LibraryFilesTab] Non-critical:', err);
       showToast('error', 'Failed to add tag');
     }
   };
@@ -580,7 +591,8 @@ export default function LibraryFilesTab({ initialPath }: LibraryFilesTabProps = 
         body: JSON.stringify({ action: 'update', id: file.id, project: newProject }),
       });
       loadFiles();
-    } catch {
+    } catch (err) {
+      console.warn('[LibraryFilesTab] Non-critical:', err);
       showToast('error', 'Failed to update project');
     }
   };

@@ -44,7 +44,8 @@ export class DocxParser implements FileParser {
           let htmlResult: MammothResult = { value: '', messages: [] }
           try {
             htmlResult = await mammoth.convertToHtml({ buffer })
-          } catch {
+          } catch (err) {
+            console.warn('[ws/lib/file-parsers/docx-parser] Non-critical:', err);
             // HTML conversion is optional
           }
 

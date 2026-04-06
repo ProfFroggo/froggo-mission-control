@@ -461,7 +461,8 @@ export async function executeGetDeployedWorkflowState(
           deployedState: formatted,
         },
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/copilot/orchestrator/tool-executor/workflow-tools/queries] Non-critical:', err);
       return {
         success: true,
         output: {

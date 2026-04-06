@@ -203,7 +203,7 @@ export default function AnalyticsDashboard() {
         setCopiedExport(`${type}-${format}`);
         setTimeout(() => setCopiedExport(null), 2000);
       }
-    } catch { /* silent */ }
+    } catch (err) { console.warn('[AnalyticsDashboard] Non-critical: silent:', err); }
     finally { setExportBusy(false); }
   }
 

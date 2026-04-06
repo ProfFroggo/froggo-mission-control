@@ -65,7 +65,8 @@ export function formatValueForInput(value: unknown, type: string): string {
     try {
       const date = new Date(str)
       return date.toISOString().split('T')[0]
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/tables/[tableId]/utils] Non-critical:', err);
       return str
     }
   }

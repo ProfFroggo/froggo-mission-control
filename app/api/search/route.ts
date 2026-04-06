@@ -77,7 +77,8 @@ export async function GET(request: NextRequest) {
           items: allTasks.slice(offset, offset + limit).map(({ rank_group: _r, ...rest }) => rest),
           total: allTasks.length,
         };
-      } catch {
+      } catch (err) {
+        console.warn('[search] Non-critical:', err);
         // tasks table may vary
       }
     }
@@ -95,7 +96,8 @@ export async function GET(request: NextRequest) {
           items: allAgents.slice(offset, offset + limit),
           total: allAgents.length,
         };
-      } catch {
+      } catch (err) {
+        console.warn('[search] Non-critical:', err);
         // agents table may not exist
       }
     }
@@ -119,7 +121,8 @@ export async function GET(request: NextRequest) {
               ORDER BY kb.pinned DESC, rank
             `).all(safeQuery) as Array<Record<string, unknown>>;
             usedFts = true;
-          } catch {
+          } catch (err) {
+            console.warn('[search] Non-critical:', err);
             // FTS virtual table unavailable — fall through to LIKE
           }
         }
@@ -140,7 +143,8 @@ export async function GET(request: NextRequest) {
           items: allKnowledge.slice(offset, offset + limit),
           total: allKnowledge.length,
         };
-      } catch {
+      } catch (err) {
+        console.warn('[search] Non-critical:', err);
         // knowledge_base table may not exist
       }
     }
@@ -158,7 +162,8 @@ export async function GET(request: NextRequest) {
           items: allFiles.slice(offset, offset + limit),
           total: allFiles.length,
         };
-      } catch {
+      } catch (err) {
+        console.warn('[search] Non-critical:', err);
         // library_files table may not exist
       }
     }
@@ -176,7 +181,8 @@ export async function GET(request: NextRequest) {
           items: allCampaigns.slice(offset, offset + limit),
           total: allCampaigns.length,
         };
-      } catch {
+      } catch (err) {
+        console.warn('[search] Non-critical:', err);
         // campaigns table may not exist
       }
     }
@@ -194,7 +200,8 @@ export async function GET(request: NextRequest) {
           items: allAutomations.slice(offset, offset + limit),
           total: allAutomations.length,
         };
-      } catch {
+      } catch (err) {
+        console.warn('[search] Non-critical:', err);
         // automations table may not exist
       }
     }

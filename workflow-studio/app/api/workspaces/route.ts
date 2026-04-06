@@ -201,7 +201,8 @@ async function createWorkspace(
       userId,
       name,
     })
-  } catch {
+  } catch (err) {
+    console.warn('[workspaces] Non-critical:', err);
     // Telemetry should not fail the operation
   }
 

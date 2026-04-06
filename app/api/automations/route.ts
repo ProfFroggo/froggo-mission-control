@@ -12,7 +12,8 @@ function parseAutomation(row: Record<string, unknown>) {
     if (typeof parsed[field] === 'string') {
       try {
         parsed[field] = JSON.parse(parsed[field] as string);
-      } catch {
+      } catch (err) {
+        console.warn('[automations] Non-critical:', err);
         parsed[field] = field === 'steps' ? [] : {};
       }
     }

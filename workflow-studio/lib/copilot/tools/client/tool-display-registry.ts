@@ -50,7 +50,8 @@ function resolveBlockName(blockId: string | undefined): string | undefined {
   try {
     const blocks = useWorkflowStore.getState().blocks
     return blocks[blockId]?.name || undefined
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/copilot/tools/client/tool-display-registry] Non-critical:', err);
     return undefined
   }
 }
@@ -986,7 +987,8 @@ const META_make_api_request: ToolMetadata = {
       try {
         const urlObj = new URL(url)
         url = urlObj.hostname + urlObj.pathname
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/copilot/tools/client/tool-display-registry] Non-critical:', err);
         // Use URL as-is if parsing fails
       }
 
@@ -1044,7 +1046,8 @@ const META_manage_custom_tool: ToolMetadata = {
       try {
         const tool = getCustomTool(params.toolId)
         toolName = tool?.schema?.function?.name
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/copilot/tools/client/tool-display-registry] Non-critical:', err);
         // Ignore errors accessing cache
       }
     }
@@ -1611,7 +1614,8 @@ const META_run_workflow: ToolMetadata = {
         if (typeof inputs === 'string') {
           try {
             inputs = JSON.parse(inputs)
-          } catch {
+          } catch (err) {
+            console.warn('[ws/lib/copilot/tools/client/tool-display-registry] Non-critical:', err);
             inputs = {}
           }
         }

@@ -67,7 +67,8 @@ function parseVariableAssignments(value: unknown): VariableAssignment[] {
       try {
         const parsed = JSON.parse(trimmed)
         if (Array.isArray(parsed)) return parsed as VariableAssignment[]
-      } catch {
+      } catch (err) {
+        console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/components/variables-input/variables-inputx] Non-critical:', err);
         // Not valid JSON, return empty array
       }
     }
@@ -250,7 +251,7 @@ export function VariablesInput({
         if (data?.connectionData?.sourceBlockId) {
           setActiveSourceBlockId(data.connectionData.sourceBlockId)
         }
-      } catch {}
+      } catch (err) { console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/components/variables-input/variables-inputx] Non-critical:', err); }
 
       setTimeout(() => {
         const el = valueInputRefs.current[assignmentId]

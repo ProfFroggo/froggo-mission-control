@@ -21,7 +21,7 @@ export async function GET() {
         allowedMcpDomains: [...configuredDomains, platformHostname],
       })
     }
-  } catch {}
+  } catch (err) { console.warn('[settings/allowed-mcp-domains] Non-critical:', err); }
 
   return NextResponse.json({ allowedMcpDomains: configuredDomains })
 }

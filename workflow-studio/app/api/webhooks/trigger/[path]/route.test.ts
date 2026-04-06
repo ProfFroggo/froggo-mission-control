@@ -268,7 +268,8 @@ vi.mock('@/lib/webhooks/processor', () => ({
       const rawBody = await cloned.text()
       const body = rawBody ? JSON.parse(rawBody) : {}
       return { body, rawBody }
-    } catch {
+    } catch (err) {
+      console.warn('[webhooks/trigger/[path]/route.test] Non-critical:', err);
       return { body: {}, rawBody: '' }
     }
   }),

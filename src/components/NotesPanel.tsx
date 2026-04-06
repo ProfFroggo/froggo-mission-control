@@ -1,9 +1,10 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { StickyNote, Plus, Trash2, Pin, PinOff, Mic, MicOff } from 'lucide-react';
-import { Button, Flex, Box, Text, Spinner } from '@radix-ui/themes';
+import { StickyNote, Plus, Trash2, Pin, PinOff, Mic, MicOff, X, Download, Sparkles } from 'lucide-react';
+import { Button, Flex, Box, Text, Spinner, Dialog, ScrollArea, IconButton } from '@radix-ui/themes';
 import PanelHeader from './PanelHeader';
 import MicSelector from './MicSelector';
+import MarkdownMessage from './MarkdownMessage';
 import { authHeaders } from '../lib/api';
 import { GeminiStt } from '../lib/globalStt';
 
@@ -57,7 +58,7 @@ export default function NotesPanel() {
         const data = await res.json();
         setNotes(Array.isArray(data) ? data : []);
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.warn('[NotesPanel] Non-critical:', err); }
     setLoading(false);
   }, []);
 
@@ -77,7 +78,7 @@ export default function NotesPanel() {
         setNotes(prev => [note, ...prev]);
         setInput('');
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.warn('[NotesPanel] Non-critical:', err); }
     setSaving(false);
   }, []);
 
@@ -85,7 +86,7 @@ export default function NotesPanel() {
     try {
       await fetch(`/api/notes/${id}`, { method: 'DELETE', headers: authHeaders() });
       setNotes(prev => prev.filter(n => n.id !== id));
-    } catch { /* ignore */ }
+    } catch (err) { console.warn('[NotesPanel] Non-critical:', err); }
   }, []);
 
   const togglePin = useCallback(async (id: string, currentlyPinned: number) => {
@@ -106,7 +107,7 @@ export default function NotesPanel() {
           return filtered;
         });
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.warn('[NotesPanel] Non-critical:', err); }
   }, []);
 
   const toggleSTT = useCallback(() => {
@@ -136,6 +137,48 @@ export default function NotesPanel() {
       addNote(input);
     }
   };
+
+  const [formattedNote, setFormattedNote] = useState<string | null>(null);
+  const [formatting, setFormatting] = useState(false);
+
+  const formatNoteAsMarkdown = useCallback(async (content: string) => {
+    setFormatting(true);
+    setFormattedNote(null);
+    try {
+      const res = await fetch('/api/gemini/generate', {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `Format the following raw note into clean, well-structured Markdown. Add headings, bullet points, and organize the content logically. Keep all the original information — do not add or remove content. Output ONLY the formatted Markdown, nothing else.\n\n---\n\n${content}`,
+            }],
+          }],
+          generationConfig: { temperature: 0.1 },
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const md = data?.candidates?.[0]?.content?.parts?.[0]?.text || content;
+        setFormattedNote(md);
+      } else {
+        setFormattedNote(content);
+      }
+    } catch {
+      setFormattedNote(content);
+    }
+    setFormatting(false);
+  }, []);
+
+  const downloadMarkdown = useCallback((content: string, noteId: string) => {
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `note-${noteId.slice(0, 8)}-${new Date().toISOString().split('T')[0]}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, []);
 
   const pinnedNotes = notes.filter(n => n.pinned);
   const unpinnedNotes = notes.filter(n => !n.pinned);
@@ -210,9 +253,72 @@ export default function NotesPanel() {
                 {note.pinned ? (
                   <Pin size={12} className="absolute top-2 right-2 text-mission-control-accent" />
                 ) : null}
-                <Text size="2" className="text-mission-control-text whitespace-pre-wrap break-words flex-1">
+                <Text size="2" className="text-mission-control-text whitespace-pre-wrap break-words flex-1 line-clamp-6">
                   {note.content}
                 </Text>
+                {note.content.length > 200 || note.content.split('\n').length > 6 ? (
+                  <Dialog.Root onOpenChange={(open) => { if (open) formatNoteAsMarkdown(note.content); else setFormattedNote(null); }}>
+                    <Dialog.Trigger>
+                      <button type="button" className="text-xs text-mission-control-accent hover:underline text-left">
+                        Read more
+                      </button>
+                    </Dialog.Trigger>
+                    <Dialog.Content maxWidth="640px" className="bg-mission-control-surface !backdrop-blur-xl">
+                      <Flex justify="between" align="center" mb="3">
+                        <Flex align="center" gap="2">
+                          <Dialog.Title size="3" className="text-mission-control-text">Note</Dialog.Title>
+                          {formatting && <Spinner size="1" />}
+                        </Flex>
+                        <Flex gap="2" align="center">
+                          {formattedNote && (
+                            <IconButton
+                              variant="ghost"
+                              color="gray"
+                              size="1"
+                              title="Download as Markdown"
+                              onClick={() => downloadMarkdown(formattedNote, note.id)}
+                            >
+                              <Download size={16} />
+                            </IconButton>
+                          )}
+                          <Dialog.Close>
+                            <IconButton variant="ghost" color="gray" size="1"><X size={16} /></IconButton>
+                          </Dialog.Close>
+                        </Flex>
+                      </Flex>
+                      <ScrollArea style={{ maxHeight: '60vh' }}>
+                        {formatting ? (
+                          <Flex direction="column" align="center" gap="2" py="6">
+                            <Sparkles size={20} className="text-mission-control-accent animate-pulse" />
+                            <Text size="2" className="text-mission-control-text-dim">Formatting note...</Text>
+                          </Flex>
+                        ) : formattedNote ? (
+                          <div className="prose prose-sm prose-invert max-w-none text-mission-control-text">
+                            <MarkdownMessage content={formattedNote} />
+                          </div>
+                        ) : (
+                          <Text size="2" className="text-mission-control-text whitespace-pre-wrap break-words">
+                            {note.content}
+                          </Text>
+                        )}
+                      </ScrollArea>
+                      <Flex justify="between" align="center" mt="3">
+                        <Text size="1" className="text-mission-control-text-dim">{timeAgo(note.createdAt)}</Text>
+                        {formattedNote && (
+                          <Button
+                            size="1"
+                            variant="soft"
+                            color="gray"
+                            onClick={() => downloadMarkdown(formattedNote, note.id)}
+                          >
+                            <Download size={12} />
+                            Download .md
+                          </Button>
+                        )}
+                      </Flex>
+                    </Dialog.Content>
+                  </Dialog.Root>
+                ) : null}
                 <Flex align="center" justify="between" className="mt-auto">
                   <Text size="1" className="text-mission-control-text-dim">{timeAgo(note.createdAt)}</Text>
                   <Flex gap="1" className="opacity-0 group-hover:opacity-100 transition-opacity">

@@ -726,7 +726,8 @@ export async function executeTool(
           try {
             const parsed = JSON.parse(errorText)
             if (parsed.error) parsedError = parsed.error
-          } catch {
+          } catch (err) {
+            console.warn('[ws/tools/index] Non-critical:', err);
             // Use raw text
           }
           const toolLabel = tool?.name || toolId
@@ -1000,7 +1001,8 @@ function isSelfOriginUrl(url: string): boolean {
 
     const internalOrigin = new URL(getInternalApiBaseUrl()).origin
     if (targetOrigin === internalOrigin) return true
-  } catch {
+  } catch (err) {
+    console.warn('[ws/tools/index] Non-critical:', err);
     return false
   }
   return false
@@ -1284,7 +1286,8 @@ async function executeToolRequest(
         }
         try {
           await response.arrayBuffer()
-        } catch {
+        } catch (err) {
+          console.warn('[ws/tools/index] Non-critical:', err);
           // Ignore errors when consuming body
         }
         const backoffMs = calculateBackoff(
@@ -1644,7 +1647,8 @@ async function executeMcpTool(
         if (errorData.error) {
           errorMessage = errorData.error
         }
-      } catch {
+      } catch (err) {
+        console.warn('[ws/tools/index] Non-critical:', err);
         // Failed to parse error response, use default message
       }
 

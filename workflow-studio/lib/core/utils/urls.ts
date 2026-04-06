@@ -79,7 +79,8 @@ export function getBaseDomain(): string {
     const fallbackUrl = getEnv('NEXT_PUBLIC_APP_URL') || 'http://localhost:3000'
     try {
       return new URL(fallbackUrl).host
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/core/utils/urls] Non-critical:', err);
       return isProd ? 'sim.ai' : 'localhost:3000'
     }
   }

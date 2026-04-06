@@ -152,7 +152,7 @@ export const jiraCreateIssueLinkTool: ToolConfig<
       try {
         const err = await linkResponse.json()
         message = err?.errorMessages?.join(', ') || err?.message || message
-      } catch (_e) {}
+      } catch (_e) { console.warn('[ws/jira/create_issue_link] Non-critical:', _e); }
       throw new Error(message)
     }
 
@@ -161,7 +161,8 @@ export const jiraCreateIssueLinkTool: ToolConfig<
     try {
       const linkData = await linkResponse.json()
       if (linkData?.id) linkId = String(linkData.id)
-    } catch {
+    } catch (err) {
+      console.warn('[ws/tools/jira/create_issue_link] Non-critical:', err);
       const location = linkResponse.headers.get('location') || linkResponse.headers.get('Location')
       if (location) {
         const match = location.match(/\/issueLink\/(\d+)/)

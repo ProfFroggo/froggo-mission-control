@@ -111,7 +111,8 @@ interface ModuleActivityEntry {
 function readActivityLog(): ModuleActivityEntry[] {
   try {
     return JSON.parse(localStorage.getItem(ACTIVITY_KEY) ?? '[]');
-  } catch {
+  } catch (err) {
+    console.warn('[ModuleLibraryPanel] Non-critical:', err);
     return [];
   }
 }
@@ -127,7 +128,7 @@ function appendActivity(entry: Omit<ModuleActivityEntry, 'id' | 'timestamp'>) {
   try {
     localStorage.setItem(ACTIVITY_KEY, JSON.stringify(updated));
   } catch {
-    try { localStorage.removeItem(ACTIVITY_KEY); localStorage.setItem(ACTIVITY_KEY, JSON.stringify([next])); } catch { /* skip */ }
+    try { localStorage.removeItem(ACTIVITY_KEY); localStorage.setItem(ACTIVITY_KEY, JSON.stringify([next])); } catch (err) { console.warn('[ModuleLibraryPanel] Non-critical: skip:', err); }
   }
 }
 
@@ -702,7 +703,8 @@ export default function ModuleLibraryPanel({ onInstall }: ModuleLibraryPanelProp
       for (const h of data.health) map.set(h.moduleId, h);
       setHealthMap(map);
       setHealthSummary(data.summary);
-    } catch {
+    } catch (err) {
+      console.warn('[ModuleLibraryPanel] Non-critical:', err);
       // Non-critical — health is best-effort
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

@@ -47,7 +47,8 @@ function getSourceHandleYOffset(block: BlockState, sourceHandle?: string | null)
           )
         }
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/workflows/autolayout/core] Non-critical:', err);
       // Fall back to default offset
     }
   }

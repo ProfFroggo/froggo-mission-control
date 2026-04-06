@@ -829,7 +829,8 @@ async function generateOAuthLink(
     if (row?.name) {
       displayName = `${row.name}'s ${serviceName}`
     }
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/copilot/orchestrator/tool-executor/index] Non-critical:', err);
     // Fall back to service name only
   }
 

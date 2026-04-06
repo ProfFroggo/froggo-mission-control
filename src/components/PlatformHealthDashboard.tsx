@@ -252,7 +252,8 @@ export default function PlatformHealthDashboard({ isOpen, onClose }: PlatformHea
         const hist: HistoryResponse = await historyRes.json();
         setHistory(hist.snapshots);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[PlatformHealthDashboard] Non-critical:', err);
       // Non-fatal
     } finally {
       setLoading(false);

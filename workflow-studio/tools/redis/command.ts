@@ -31,7 +31,8 @@ export const redisCommandTool: ToolConfig<RedisCommandParams, RedisCommandRespon
       let parsed: unknown
       try {
         parsed = JSON.parse(params.command)
-      } catch {
+      } catch (err) {
+        console.warn('[ws/tools/redis/command] Non-critical:', err);
         throw new Error(
           `Invalid JSON in command: ${params.command}. Expected a JSON array like ["SET", "key", "value"].`
         )

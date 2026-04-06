@@ -262,7 +262,8 @@ function parseDate(value: string | Date | undefined): Date | null {
 
     const date = new Date(value)
     return Number.isNaN(date.getTime()) ? null : date
-  } catch {
+  } catch (err) {
+    console.warn('[ws/components/emcn/components/date-picker/date-pickerx] Non-critical:', err);
     return null
   }
 }

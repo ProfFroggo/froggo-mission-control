@@ -71,7 +71,7 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
       setNotifications(data.notifications ?? []);
       setUnreadCount(data.unreadCount ?? 0);
       onUnreadCountChange?.(data.unreadCount ?? 0);
-    } catch { /* non-critical */ } finally {
+    } catch (err) { console.warn('[NotificationCenter] Non-critical:', err); } finally {
       setLoading(false);
     }
   }, [tab, onUnreadCountChange]);
@@ -97,7 +97,7 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
       onUnreadCountChange?.(Math.max(0, unreadCount - 1));
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[NotificationCenter] Non-critical:', err); }
   }, [unreadCount, onUnreadCountChange]);
 
   const markAllRead = useCallback(async () => {
@@ -110,7 +110,7 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
       setNotifications(prev => prev.map(n => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })));
       setUnreadCount(0);
       onUnreadCountChange?.(0);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[NotificationCenter] Non-critical:', err); }
   }, [onUnreadCountChange]);
 
   const deleteNotification = useCallback(async (id: string, e: React.MouseEvent) => {
@@ -118,7 +118,7 @@ export default function NotificationCenter({ isOpen, onClose, onUnreadCountChang
     try {
       await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
       setNotifications(prev => prev.filter(n => n.id !== id));
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[NotificationCenter] Non-critical:', err); }
   }, []);
 
   if (!isOpen) return null;

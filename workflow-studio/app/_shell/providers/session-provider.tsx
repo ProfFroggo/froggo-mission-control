@@ -95,9 +95,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           } else {
             posthog.reset()
           }
-        } catch {}
+        } catch (err) { console.warn('[ws/app/_shell/providers/session-providerx] Non-critical:', err); }
       })
-      .catch(() => {})
+      .catch(err => console.warn('[ws/app/_shell/providers/session-providerx] Non-critical:', err))
   }, [data, isPending])
 
   const value = useMemo<SessionHookResult>(

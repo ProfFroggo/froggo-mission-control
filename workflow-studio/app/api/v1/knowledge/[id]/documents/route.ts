@@ -122,7 +122,8 @@ export async function POST(request: NextRequest, { params }: DocumentsRouteParam
     let formData: FormData
     try {
       formData = await request.formData()
-    } catch {
+    } catch (err) {
+      console.warn('[v1/knowledge/[id]/documents] Non-critical:', err);
       return NextResponse.json(
         { error: 'Request body must be valid multipart form data' },
         { status: 400 }

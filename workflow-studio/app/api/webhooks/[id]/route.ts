@@ -232,7 +232,8 @@ export async function DELETE(
             workflowId: webhookData.workflow.id,
           })
         }
-      } catch {
+      } catch (err) {
+        console.warn('[webhooks/[id]] Non-critical:', err);
         // Telemetry should not fail the operation
       }
 
@@ -253,7 +254,8 @@ export async function DELETE(
           webhookId: id,
           workflowId: webhookData.workflow.id,
         })
-      } catch {
+      } catch (err) {
+        console.warn('[webhooks/[id]] Non-critical:', err);
         // Telemetry should not fail the operation
       }
 

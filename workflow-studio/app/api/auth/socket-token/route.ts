@@ -19,7 +19,8 @@ export async function POST() {
     }
 
     return NextResponse.json({ token: response.token })
-  } catch {
+  } catch (err) {
+    console.warn('[auth/socket-token] Non-critical:', err);
     return NextResponse.json({ error: 'Failed to generate token' }, { status: 500 })
   }
 }

@@ -218,7 +218,7 @@ async function doExecuteRunTool(
             (result as any).execution?.error || (result as any).execution?.output?.error
         }
       }
-    } catch {}
+    } catch (err) { console.warn('[ws/lib/copilot/client-sse/run-tool-execution] Non-critical:', err); }
 
     if (manuallyStoppedToolCallIds.has(toolCallId)) {
       logger.info('[RunTool] Skipping generic completion — already manually stopped', {

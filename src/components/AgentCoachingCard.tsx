@@ -241,7 +241,8 @@ const AgentCoachingCard = memo(function AgentCoachingCard({ agentId, agentName }
       const json = await res.json() as CoachingPlan;
       setCoachingPlan(json);
       setFocusInput(json.focus ?? '');
-    } catch {
+    } catch (err) {
+      console.warn('[AgentCoachingCard] Non-critical:', err);
       // non-fatal
     } finally {
       setPlanLoading(false);
@@ -253,7 +254,8 @@ const AgentCoachingCard = memo(function AgentCoachingCard({ agentId, agentName }
     try {
       await fetchCoachingPlan();
       showToast('success', 'Plan refreshed', 'Coaching plan regenerated from latest review data');
-    } catch {
+    } catch (err) {
+      console.warn('[AgentCoachingCard] Non-critical:', err);
       showToast('error', 'Error', 'Failed to refresh coaching plan');
     } finally {
       setPlanLoading(false);

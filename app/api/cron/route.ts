@@ -67,7 +67,9 @@ export async function POST(request: NextRequest) {
         stdio: ['ignore', 'ignore', 'ignore'],
       });
       proc.unref();
-    } catch { /* fire-and-forget */ }
+    } catch (err) {
+      console.warn('[cron] Non-critical: failed to spawn cron job process:', err);
+    }
 
     const updated = jobs.map((j) => j.id === id ? { ...j, state: { ...(j.state as object ?? {}), runningAtMs: Date.now() } } : j);
     writeJobs(updated);

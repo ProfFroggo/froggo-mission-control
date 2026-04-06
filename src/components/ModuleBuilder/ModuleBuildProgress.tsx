@@ -53,7 +53,7 @@ export default function ModuleBuildProgress({ moduleId }: Props) {
         const json = await res.json();
         setData(json);
       }
-    } catch { /* non-critical */ } finally {
+    } catch (err) { console.warn('[ModuleBuildProgress] Non-critical:', err); } finally {
       setLoading(false);
     }
   }, [moduleId]);

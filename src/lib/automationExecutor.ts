@@ -16,7 +16,7 @@ export async function executeAutomation(
   if (!automation) return { success: false, message: 'Automation not found or not active', stepsRun: 0 };
 
   let steps: AutomationStep[] = [];
-  try { steps = typeof automation.steps === 'string' ? JSON.parse(automation.steps as string) : (automation.steps as AutomationStep[]) ?? []; } catch { /* malformed JSON in steps */ }
+  try { steps = typeof automation.steps === 'string' ? JSON.parse(automation.steps as string) : (automation.steps as AutomationStep[]) ?? []; } catch (err) { console.warn('[automationExecutor] Non-critical: malformed JSON in steps:', err); }
   const log: string[] = [];
   let stepsRun = 0;
 
@@ -25,7 +25,7 @@ export async function executeAutomation(
   const startedAt = Date.now();
   try {
     db.prepare('INSERT INTO automation_runs (id, automationId, status, stepsRun, startedAt) VALUES (?, ?, ?, ?, ?)').run(runId, automationId, 'running', 0, startedAt);
-  } catch { /* table may not exist yet */ }
+  } catch (err) { console.warn('[automationExecutor] Non-critical: table may not exist yet:', err); }
 
   for (const step of steps) {
     try {
@@ -47,7 +47,7 @@ export async function executeAutomation(
   try {
     db.prepare('UPDATE automation_runs SET status = ?, message = ?, stepsRun = ?, completedAt = ? WHERE id = ?')
       .run(success ? 'success' : 'failed', message, stepsRun, now, runId);
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[automationExecutor] Non-critical:', err); }
 
   // Emit SSE event so connected clients are notified immediately
   if (success) {
@@ -126,7 +126,7 @@ async function executeStep(
       try {
         db.prepare(`INSERT INTO chat_room_messages (roomId, agentId, content, timestamp) VALUES (?, ?, ?, ?)`)
           .run(cfg.roomId || 'general', cfg.agentId || 'system', cfg.message || 'Automated message', Date.now());
-      } catch { /* room may not exist */ }
+      } catch (err) { console.warn('[automationExecutor] Non-critical: room may not exist:', err); }
       log.push(`Posted to chat room "${cfg.roomId || 'general'}"`);
       break;
     }
@@ -140,7 +140,7 @@ async function executeStep(
       try {
         const pendingCount = (db.prepare("SELECT COUNT(*) as c FROM approvals WHERE status = 'pending'").get() as { c: number }).c;
         emitSSEEvent('inbox.count', { count: pendingCount });
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[automationExecutor] Non-critical:', err); }
       break;
     }
     case 'webhook': {

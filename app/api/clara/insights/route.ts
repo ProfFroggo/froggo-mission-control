@@ -112,7 +112,7 @@ export async function GET() {
       try {
         const agentRow = db.prepare('SELECT name FROM agents WHERE id = ?').get(row.agentId) as AgentRow | undefined;
         if (agentRow?.name) name = agentRow.name;
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[clara/insights] Non-critical:', err); }
       return { agentId: row.agentId, name, rejectionCount: row.rejectionCount };
     });
 

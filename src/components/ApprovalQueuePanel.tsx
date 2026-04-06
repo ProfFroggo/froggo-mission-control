@@ -457,6 +457,7 @@ interface ApprovalCardProps {
   editedContent?: string;
   note: string;
   isSelected: boolean;
+  respondError?: string;
   linkedTask?: { id: string; title: string; status: string; project?: string } | undefined;
   onNoteChange: (v: string) => void;
   onEditToggle: () => void;
@@ -465,14 +466,15 @@ interface ApprovalCardProps {
   onReject: () => void;
   onCancel: () => void;
   onSelect: (e: React.MouseEvent) => void;
+  onDismissError?: () => void;
 }
 
 const SECTION_LABEL = 'text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim';
 
 function ApprovalCard({
   approval, showActions, isScheduledView, isResponding, isEditing, editedContent,
-  note, isSelected, linkedTask,
-  onNoteChange, onEditToggle, onEditContentChange, onApprove, onReject, onCancel, onSelect,
+  note, isSelected, respondError, linkedTask,
+  onNoteChange, onEditToggle, onEditContentChange, onApprove, onReject, onCancel, onSelect, onDismissError,
 }: ApprovalCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [contentExpanded, setContentExpanded] = useState(false);
@@ -693,6 +695,25 @@ function ApprovalCard({
             </div>
           )}
 
+          {/* Inline error for failed approval action */}
+          {respondError && (
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-error/8 border border-error/20">
+              <AlertTriangle size={13} className="text-error shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <span className="text-xs text-error leading-snug">{respondError}</span>
+              </div>
+              {onDismissError && (
+                <button
+                  type="button"
+                  onClick={onDismissError}
+                  className="shrink-0 text-[10px] font-semibold text-error hover:underline"
+                >
+                  Dismiss
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Action controls — pending only */}
           {showActions && (
             <div className="space-y-3 pt-1">
@@ -810,6 +831,8 @@ export default function ApprovalQueuePanel() {
   const [approveAllWorking, setApproveAllWorking] = useState(false);
   const [rejectAllConfirm, setRejectAllConfirm] = useState(false);
   const [rejectAllWorking, setRejectAllWorking] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [respondErrors, setRespondErrors] = useState<Record<string, string>>({});
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -822,12 +845,17 @@ export default function ApprovalQueuePanel() {
         data = await approvalApi.getAll(statusTab);
       }
       setApprovals(Array.isArray(data) ? data : []);
+      setLoadError(null);
       if (!silent) {
         const all = await approvalApi.getAll();
         setAllApprovals(Array.isArray(all) ? all : []);
       }
-    } catch {
-      if (!silent) showToast('Failed to load approvals', 'error');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to load approvals';
+      if (!silent) {
+        setLoadError(msg);
+      }
+      showToast('Failed to load approvals', 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -859,6 +887,8 @@ export default function ApprovalQueuePanel() {
 
   const respond = async (id: string, action: 'approved' | 'rejected' | 'cancelled') => {
     setResponding(prev => new Set(prev).add(id));
+    // Clear any previous error for this item
+    setRespondErrors(prev => { const n = { ...prev }; delete n[id]; return n; });
     try {
       const adjusted = editing.has(id) ? editedContent[id] : undefined;
       await approvalApi.respond(id, action, notes[id], adjusted);
@@ -868,7 +898,9 @@ export default function ApprovalQueuePanel() {
       setEditedContent(prev => { const n = { ...prev }; delete n[id]; return n; });
       setEditing(prev => { const n = new Set(prev); n.delete(id); return n; });
       setSelected(prev => { const n = new Set(prev); n.delete(id); return n; });
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to process approval';
+      setRespondErrors(prev => ({ ...prev, [id]: msg }));
       showToast('Failed to respond', 'error');
     } finally {
       setResponding(prev => { const n = new Set(prev); n.delete(id); return n; });
@@ -1079,6 +1111,24 @@ export default function ApprovalQueuePanel() {
             <RefreshCw className="w-4 h-4 animate-spin" />
             <span className="text-sm">Loading…</span>
           </Flex>
+        ) : loadError ? (
+          <Flex direction="column" align="center" justify="center" gap="3" className="py-20 text-center">
+            <div className="w-12 h-12 rounded-xl bg-error/10 flex items-center justify-center">
+              <AlertTriangle size={24} className="text-error" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-mission-control-text">Failed to load approvals</p>
+              <p className="text-xs text-mission-control-text-dim mt-1 max-w-xs">{loadError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setLoadError(null); load(); }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-error/10 text-error hover:bg-error/20 border border-error/20 transition-colors"
+            >
+              <RefreshCw size={12} />
+              Retry
+            </button>
+          </Flex>
         ) : approvals.length === 0 ? (
           statusTab === 'pending' ? (
             <Flex direction="column" align="center" justify="center" gap="2" className="py-20 text-center">
@@ -1122,6 +1172,7 @@ export default function ApprovalQueuePanel() {
                 editedContent={editedContent[approval.id]}
                 note={notes[approval.id] || ''}
                 isSelected={selected.has(approval.id)}
+                respondError={respondErrors[approval.id]}
                 linkedTask={
                   approval.type === 'task' && approval.metadata?.taskId
                     ? tasks.find(t => t.id === approval.metadata!.taskId as string)
@@ -1134,6 +1185,7 @@ export default function ApprovalQueuePanel() {
                 onReject={() => respond(approval.id, 'rejected')}
                 onCancel={() => respond(approval.id, 'cancelled')}
                 onSelect={e => { e.stopPropagation(); toggleSelect(approval.id); }}
+                onDismissError={() => setRespondErrors(prev => { const n = { ...prev }; delete n[approval.id]; return n; })}
               />
             ))}
           </div>

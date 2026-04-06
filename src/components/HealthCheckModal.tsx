@@ -84,7 +84,8 @@ export default function HealthCheckModal({ onClose }: HealthCheckModalProps) {
       const result = await taskApi.getAll();
       const allTasks = Array.isArray(result) ? result : (result?.tasks || []);
       return allTasks.filter((t: any) => !['done', 'failed', 'cancelled'].includes(t.status));
-    } catch {
+    } catch (err) {
+      console.warn('[HealthCheckModal] Non-critical:', err);
       // fetchTasks failed — return empty array
     }
     return [];

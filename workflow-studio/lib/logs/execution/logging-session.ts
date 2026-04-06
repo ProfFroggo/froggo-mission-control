@@ -782,7 +782,7 @@ export class LoggingSession {
             status: 'success', // Paused executions are not errors
           })
         }
-      } catch (_e) {}
+      } catch (_e) { console.warn('[ws/logging-session] Non-critical:', _e); }
 
       if (this.requestId) {
         logger.debug(
@@ -868,7 +868,8 @@ export class LoggingSession {
     if (this.completionPromise) {
       try {
         await this.completionPromise
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/logs/execution/logging-session] Non-critical:', err);
         /* already handled by safe* wrapper */
       }
     }
@@ -882,7 +883,8 @@ export class LoggingSession {
     if (this.postExecutionPromise) {
       try {
         await this.postExecutionPromise
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/logs/execution/logging-session] Non-critical:', err);
         /* already handled inside the IIFE */
       }
     }

@@ -84,7 +84,8 @@ function loadFromStorage<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
+  } catch (err) {
+    console.warn('[CommandPalette] Non-critical:', err);
     return fallback;
   }
 }
@@ -92,7 +93,8 @@ function loadFromStorage<T>(key: string, fallback: T): T {
 function saveToStorage<T>(key: string, value: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch {
+  } catch (err) {
+    console.warn('[CommandPalette] Non-critical:', err);
     // quota exceeded — ignore
   }
 }
@@ -403,7 +405,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
 
     { id: 'memory-search', icon: <Brain size={16} />, label: 'Search Memory', category: 'Memory', action: async () => {
       withPrompt({ title: 'Search Memory', message: 'Enter search query:', placeholder: 'Search for...' }, async (sq) => {
-        await fetch('/api/chat/sessions/web:dashboard/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'user', content: `Search memory for: ${sq}` }) }).catch(() => {});
+        await fetch('/api/chat/sessions/web:dashboard/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'user', content: `Search memory for: ${sq}` }) }).catch(err => console.warn('[CommandPalette] Non-critical:', err));
         addActivity({ type: 'chat', message: `Memory search: ${sq}`, timestamp: Date.now() }); onNavigate('chat'); onClose();
       });
     }},
@@ -412,7 +414,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
         { title: 'Add Fact', message: 'Enter fact:', placeholder: 'Fact to remember...' },
         { title: 'Category', message: 'Enter category:', placeholder: 'learning' },
         async (fact, category) => {
-          await fetch('/api/chat/sessions/web:dashboard/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'user', content: `Remember this fact (category: ${category}): ${fact}` }) }).catch(() => {});
+          await fetch('/api/chat/sessions/web:dashboard/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'user', content: `Remember this fact (category: ${category}): ${fact}` }) }).catch(err => console.warn('[CommandPalette] Non-critical:', err));
           addActivity({ type: 'system', message: `Added fact: ${fact.slice(0, 30)}...`, timestamp: Date.now() }); onClose();
         }
       );
@@ -540,7 +542,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
             icon: <CheckSquare size={14} />,
             closeAfter: false,
             run: async () => {
-              await fetch(`/api/tasks/${itemId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'done' }) }).catch(() => {});
+              await fetch(`/api/tasks/${itemId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'done' }) }).catch(err => console.warn('[CommandPalette] Non-critical:', err));
               showToast('success', 'Task marked done');
             },
           },
@@ -597,7 +599,7 @@ export default function CommandPalette({ isOpen, onClose, onNavigate }: CommandP
             label: 'Copy Link',
             icon: <ChevronRight size={14} />,
             closeAfter: false,
-            run: () => { navigator.clipboard.writeText(`${window.location.origin}/knowledge/${itemId}`).catch(() => {}); showToast('success', 'Link copied'); },
+            run: () => { navigator.clipboard.writeText(`${window.location.origin}/knowledge/${itemId}`).catch(err => console.warn('[CommandPalette] Non-critical:', err)); showToast('success', 'Link copied'); },
           },
         ];
       default:

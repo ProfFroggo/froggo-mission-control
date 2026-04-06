@@ -51,7 +51,7 @@ const sleep = async (ms: number, options: SleepOptions = {}): Promise<boolean> =
             cleanup()
             resolve(false)
           }
-        } catch {}
+        } catch (err) { console.warn('[ws/executor/handlers/wait/wait-handler] Non-critical:', err); }
       }, CANCELLATION_CHECK_INTERVAL_MS)
     }
 

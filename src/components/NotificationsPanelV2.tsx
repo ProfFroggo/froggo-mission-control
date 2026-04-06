@@ -100,7 +100,7 @@ function loadQuickPrefs(): Record<string, boolean> {
   try {
     const stored = localStorage.getItem('notif.prefs');
     if (stored) return { ...defaults, ...JSON.parse(stored) };
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[NotificationsPanelV2] Non-critical:', err); }
   return defaults;
 }
 
@@ -129,7 +129,8 @@ function playNotificationSound(): void {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.3);
-  } catch {
+  } catch (err) {
+    console.warn('[NotificationsPanelV2] Non-critical:', err);
     // Browser policy blocks AudioContext without prior user gesture — silently ignore
   }
 }
@@ -139,7 +140,8 @@ function firePushNotification(message: string): void {
     if (typeof Notification === 'undefined') return;
     if (Notification.permission !== 'granted') return;
     new Notification('Mission Control', { body: message, icon: '/favicon.ico' });
-  } catch {
+  } catch (err) {
+    console.warn('[NotificationsPanelV2] Non-critical:', err);
     // Push failed — ignore
   }
 }
@@ -265,12 +267,12 @@ export default function NotificationsPanelV2() {
 
   const savePushPref = useCallback((value: boolean) => {
     setPushEnabled(value);
-    try { localStorage.setItem(PUSH_PREF_KEY, String(value)); } catch { /* ignore */ }
+    try { localStorage.setItem(PUSH_PREF_KEY, String(value)); } catch (err) { console.warn('[NotificationsPanelV2] Non-critical:', err); }
   }, []);
 
   const saveSoundPref = useCallback((value: boolean) => {
     setSoundEnabled(value);
-    try { localStorage.setItem(SOUND_PREF_KEY, String(value)); } catch { /* ignore */ }
+    try { localStorage.setItem(SOUND_PREF_KEY, String(value)); } catch (err) { console.warn('[NotificationsPanelV2] Non-critical:', err); }
   }, []);
 
   const handleRequestPush = useCallback(async () => {
@@ -306,7 +308,8 @@ export default function NotificationsPanelV2() {
       setStats(currentStats);
       // Seed seen ids on initial load so we don't fire for existing notifications
       for (const n of active) seenIds.current.add(n.id);
-    } catch {
+    } catch (err) {
+      console.warn('[NotificationsPanelV2] Non-critical:', err);
       showToast('error', 'Failed to load notifications');
     } finally {
       setLoading(false);
@@ -317,7 +320,7 @@ export default function NotificationsPanelV2() {
     try {
       const prefs = await notificationService.getPreferences() as NotificationPreferences[];
       setPreferences(prefs);
-    } catch { /* ignore */ }
+    } catch (err) { console.warn('[NotificationsPanelV2] Non-critical:', err); }
   }, []);
 
   useEffect(() => {
@@ -365,14 +368,14 @@ export default function NotificationsPanelV2() {
   const handleDismissAll = useCallback(async () => {
     setNotifications([]);
     setStats(prev => ({ ...prev, total: 0, unread: 0 }));
-    fetch('/api/notifications/dismiss-all', { method: 'POST' }).catch(() => {});
+    fetch('/api/notifications/dismiss-all', { method: 'POST' }).catch(err => console.warn('[NotificationsPanelV2] Non-critical:', err));
     showToast('success', 'All notifications dismissed');
   }, []);
 
   const handleToggleQuickPref = useCallback((key: string, value: boolean) => {
     const updated = { ...quickPrefs, [key]: value };
     setQuickPrefs(updated);
-    try { localStorage.setItem('notif.prefs', JSON.stringify(updated)); } catch { /* ignore */ }
+    try { localStorage.setItem('notif.prefs', JSON.stringify(updated)); } catch (err) { console.warn('[NotificationsPanelV2] Non-critical:', err); }
   }, [quickPrefs]);
 
   const handleTogglePreference = useCallback(async (type: string, field: keyof NotificationPreferences, value: any) => {
@@ -380,7 +383,8 @@ export default function NotificationsPanelV2() {
       await notificationService.updatePreferences(type, { [field]: value });
       setPreferences(prev => prev.map(p => p.type === type ? { ...p, [field]: value } : p));
       showToast('success', 'Preferences updated');
-    } catch {
+    } catch (err) {
+      console.warn('[NotificationsPanelV2] Non-critical:', err);
       showToast('error', 'Failed to update preferences');
     }
   }, []);
@@ -830,7 +834,7 @@ export default function NotificationsPanelV2() {
                                                 method: 'PATCH',
                                                 headers: { 'Content-Type': 'application/json' },
                                                 body: JSON.stringify({ status: 'approved' }),
-                                              }).catch(() => {});
+                                              }).catch(err => console.warn('[NotificationsPanelV2] Non-critical:', err));
                                             }
                                             handleDismiss(notif.id);
                                             showToast('success', 'Approved');
@@ -850,7 +854,7 @@ export default function NotificationsPanelV2() {
                                                 method: 'PATCH',
                                                 headers: { 'Content-Type': 'application/json' },
                                                 body: JSON.stringify({ status: 'rejected' }),
-                                              }).catch(() => {});
+                                              }).catch(err => console.warn('[NotificationsPanelV2] Non-critical:', err));
                                             }
                                             handleDismiss(notif.id);
                                             showToast('info', 'Denied');

@@ -483,7 +483,8 @@ export class PauseResumeManager {
         if (typeof resumeInput === 'string') {
           try {
             return JSON.parse(resumeInput)
-          } catch {
+          } catch (err) {
+            console.warn('[ws/lib/workflows/executor/human-in-the-loop-manager] Non-critical:', err);
             return { value: resumeInput }
           }
         }

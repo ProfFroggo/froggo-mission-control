@@ -106,7 +106,8 @@ function remapConditionIdsInSubBlocks(
           updated[key] = { ...subBlock, value: JSON.stringify(parsed) }
           continue
         }
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/workflows/persistence/duplicate] Non-critical:', err);
         // Not valid JSON, skip
       }
     }

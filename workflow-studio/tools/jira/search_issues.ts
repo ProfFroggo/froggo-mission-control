@@ -181,7 +181,7 @@ export const jiraSearchIssuesTool: ToolConfig<JiraSearchIssuesParams, JiraSearch
         try {
           const err = await searchResponse.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/search_issues] Non-critical:', _e); }
         throw new Error(message)
       }
 
@@ -199,7 +199,7 @@ export const jiraSearchIssuesTool: ToolConfig<JiraSearchIssuesParams, JiraSearch
         try {
           const err = await response.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/search_issues] Non-critical:', _e); }
         throw new Error(message)
       }
       data = await response.json()

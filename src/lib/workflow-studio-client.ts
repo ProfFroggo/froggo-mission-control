@@ -93,7 +93,8 @@ export class WorkflowStudioClient {
         let errorBody: { error?: string; code?: string } = {};
         try {
           errorBody = await response.json();
-        } catch {
+        } catch (err) {
+          console.warn('[workflow-studio-client] Non-critical:', err);
           // response may not be JSON
         }
         throw new WorkflowStudioError(

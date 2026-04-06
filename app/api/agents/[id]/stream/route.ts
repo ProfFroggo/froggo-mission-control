@@ -146,7 +146,7 @@ function buildTaskContext(taskId: string): string {
     lines.push(`\nYou are chatting about this specific task. When the user asks about progress, status, or what you're working on, refer to the task details above.`);
     lines.push(`---`);
     return lines.join('\n');
-  } catch { return ''; }
+  } catch (err) { console.warn('[stream] Non-critical: failed to build task context:', err); return ''; }
 }
 
 const PROJECT_ROOM_SUFFIX = `
@@ -225,7 +225,7 @@ function buildProjectRoomContext(roomId: string): string {
     lines.push('\n---');
 
     return lines.join('\n') + PROJECT_ROOM_SUFFIX.replace(/\{projectId\}/g, projectId);
-  } catch { return ''; }
+  } catch (err) { console.warn('[stream] Non-critical: failed to build project room context:', err); return ''; }
 }
 
 function buildSystemPrompt(id: string): string | null {
@@ -248,7 +248,7 @@ function buildSystemPrompt(id: string): string | null {
       parts.push('Task management: Use mcp__mission-control_db__task_* tools.\nArtifacts: Wrap code in fenced code blocks.');
       return parts.join('\n');
     }
-  } catch { /* DB not available */ }
+  } catch (err) { console.warn('[stream] Non-critical: DB not available for system prompt:', err); }
   return null;
 }
 
@@ -291,7 +291,7 @@ function loadSessionFromDb(agentId: string): SessionEntry | null {
     if (!row?.sessionId) return null;
     if (Date.now() - row.lastActivity > MAX_SESSION_AGE_MS) return null; // expired — start fresh
     return { sessionId: row.sessionId, soulMtime: 0, lastActivity: row.lastActivity };
-  } catch { return null; }
+  } catch (err) { console.warn('[stream] Non-critical: failed to load session from DB:', err); return null; }
 }
 
 function persistSessionToDb(agentId: string, sessionId: string, model: string) {
@@ -300,7 +300,7 @@ function persistSessionToDb(agentId: string, sessionId: string, model: string) {
     getDb().prepare(`INSERT OR REPLACE INTO agent_sessions (agentId, sessionId, model, createdAt, lastActivity, status)
       VALUES (?, ?, ?, COALESCE((SELECT createdAt FROM agent_sessions WHERE agentId = ?), ?), ?, 'active')`)
       .run(agentId, sessionId, model, agentId, now, now);
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[stream] Non-critical: failed to persist session to DB:', err); }
 }
 
 function soulMtime(id: string): number {
@@ -423,9 +423,9 @@ function resolveAgentTools(agentId: string, sessionKey?: string): { allowed: str
     const agentRow = db.prepare('SELECT trust_tier FROM agents WHERE id = ?').get(agentId) as { trust_tier?: string } | undefined;
     trustTier = agentRow?.trust_tier ?? 'apprentice';
     const globalRow = db.prepare('SELECT value FROM settings WHERE key = ?').get('security.disallowedTools') as { value: string } | undefined;
-    if (globalRow?.value) { try { disallowed = JSON.parse(globalRow.value) ?? disallowed; } catch { /* use default */ } }
+    if (globalRow?.value) { try { disallowed = JSON.parse(globalRow.value) ?? disallowed; } catch (err) { console.warn('[stream] Non-critical: failed to parse global disallowed tools:', err); } }
     const agentRow2 = db.prepare('SELECT value FROM settings WHERE key = ?').get(`agent.${agentId}.disallowedTools`) as { value: string } | undefined;
-    if (agentRow2?.value) { try { disallowed = [...new Set([...disallowed, ...JSON.parse(agentRow2.value)])]; } catch { /* ignore */ } }
+    if (agentRow2?.value) { try { disallowed = [...new Set([...disallowed, ...JSON.parse(agentRow2.value)])]; } catch (err) { console.warn('[stream] Non-critical: failed to parse agent disallowed tools:', err); } }
     // Tools enabled in Agent Management Modal → expand short names to full MCP IDs
     const toolsRow = db.prepare('SELECT value FROM settings WHERE key = ?').get(`agent.${agentId}.tools`) as { value: string } | undefined;
     if (toolsRow?.value) {
@@ -437,12 +437,12 @@ function resolveAgentTools(agentId: string, sessionKey?: string): { allowed: str
           return full ? [full] : [];
         });
         additionalAllowed = [...new Set([...additionalAllowed, ...expanded])];
-      } catch { /* ignore */ }
+      } catch (err) { console.warn('[stream] Non-critical: failed to parse agent tool settings:', err); }
     }
     // Permanently granted tools (stored in DB by user via ToolPermissionCard)
     const grantedRow = db.prepare('SELECT value FROM settings WHERE key = ?').get(`agent.${agentId}.grantedTools`) as { value: string } | undefined;
-    if (grantedRow?.value) { try { additionalAllowed = [...new Set([...additionalAllowed, ...JSON.parse(grantedRow.value)])]; } catch { /* ignore */ } }
-  } catch { /* use defaults */ }
+    if (grantedRow?.value) { try { additionalAllowed = [...new Set([...additionalAllowed, ...JSON.parse(grantedRow.value)])]; } catch (err) { console.warn('[stream] Non-critical: failed to parse granted tools:', err); } }
+  } catch (err) { console.warn('[stream] Non-critical: failed to resolve agent tools, using defaults:', err); }
   // Session-scoped grants (cleared on server restart)
   const sessionKey2 = sessionKey ?? agentId;
   const sessionGrants = sessionToolGrants.get(sessionKey2);
@@ -503,12 +503,12 @@ export async function POST(
       // Client disconnected — kill the spawned process and release the lock immediately
       streamCancelled = true;
       agentLocks.delete(id);
-      try { activeProc?.kill(); } catch { /* ignore */ }
+      try { activeProc?.kill(); } catch (err) { console.warn('[stream] Non-critical: failed to kill process on cancel:', err); }
     },
     start(controller) {
       const enc = (obj: unknown) => {
         if (streamCancelled) return;
-        try { controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`)); } catch { /* closed */ }
+        try { controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`)); } catch (err) { console.warn('[stream] Non-critical: controller already closed:', err); }
       };
 
       enc({ type: 'init' });
@@ -543,8 +543,14 @@ export async function POST(
           if (existsSync(parentMcp)) {
             writeFileSync(join(dir, '.mcp.json'), readFileSync(parentMcp, 'utf-8'));
           }
-        } catch {}
+        } catch (err) { console.warn('[stream] Non-critical: failed to create agent workspace dir:', err); }
         const cwd = existsSync(dir) ? dir : HOME;
+
+        // Pre-spawn: proactively refresh Mixpanel OAuth tokens if stale.
+        // Fire-and-forget — don't block agent spawn on this.
+        try {
+          fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/mixpanel/oauth?action=refresh`, { method: 'POST', signal: AbortSignal.timeout(5000) }).catch(err => console.warn('[stream] Non-critical: Mixpanel OAuth refresh failed:', err));
+        } catch (err) { console.warn('[stream] Non-critical: Mixpanel pre-spawn refresh failed:', err); }
 
         const { allowed, disallowed } = resolveAgentTools(id, sessionKey);
         const args = [
@@ -587,7 +593,7 @@ export async function POST(
               }).join('\n');
               historyContext = `\n\n---\n## Previous conversation context\n${history}\n---`;
             }
-          } catch { /* non-critical */ }
+          } catch (err) { console.warn('[stream] Non-critical: failed to load conversation history:', err); }
           const taskCtx = sessionKey.startsWith('task:') ? buildTaskContext(sessionKey.slice(5)) : '';
           // Project room: inject live GOAL/STATUS/CONTEXT files + update instructions
           const projectRoomId = (() => {
@@ -614,8 +620,8 @@ export async function POST(
         if (CLAUDE_SCRIPT !== 'claude' && !existsSync(CLAUDE_SCRIPT)) {
           enc({ type: 'text', text: `Claude Code not found at ${CLAUDE_SCRIPT}. Run: mission-control setup --force` });
           enc({ type: 'done', code: 1 });
-          try { controller.enqueue(encoder.encode('data: [DONE]\n\n')); } catch {}
-          try { controller.close(); } catch {}
+          try { controller.enqueue(encoder.encode('data: [DONE]\n\n')); } catch (err) { console.warn('[stream] Non-critical: enqueue failed on missing binary:', err); }
+          try { controller.close(); } catch (err) { console.warn('[stream] Non-critical: close failed on missing binary:', err); }
           agentLocks.delete(id);
           return;
         }
@@ -640,7 +646,7 @@ export async function POST(
         if (claudeBinDir && claudeBinDir !== '.' && !cleanEnv.PATH.includes(claudeBinDir)) {
           cleanEnv.PATH = claudeBinDir + ':' + cleanEnv.PATH;
         }
-        if (!cleanEnv.USER)    { try { cleanEnv.USER    = userInfo().username; } catch { /* ignore */ } }
+        if (!cleanEnv.USER)    { try { cleanEnv.USER    = userInfo().username; } catch (err) { console.warn('[stream] Non-critical: failed to get username:', err); } }
         if (!cleanEnv.LOGNAME) { cleanEnv.LOGNAME = cleanEnv.USER ?? ''; }
         if (!cleanEnv.TMPDIR)  { cleanEnv.TMPDIR  = tmpdir(); }
 
@@ -705,7 +711,7 @@ export async function POST(
                           Date.now()
                         );
                         enc({ type: 'tool_permission_request', toolName, reason, approvalId, agentId: id });
-                      } catch { /* non-critical */ }
+                      } catch (err) { console.warn('[stream] Non-critical: failed to create tool permission approval:', err); }
                     }
                   }
                 }
@@ -743,11 +749,12 @@ export async function POST(
                       // eslint-disable-next-line @typescript-eslint/no-require-imports
                       const { checkBudgetAlerts: _cba } = require('@/lib/budgetAlerts');
                       _cba(db, id);
-                    } catch { /* non-critical */ }
-                  } catch { /* non-critical */ }
+                    } catch (err) { console.warn('[stream] Non-critical: budget alert check failed:', err); }
+                  } catch (err) { console.warn('[stream] Non-critical: token usage logging failed:', err); }
                 }
               }
-            } catch {
+            } catch (err) {
+              console.warn('[agents/[id]/stream] Non-critical:', err);
               // Forward non-JSON lines as text, but drop stray numeric exit-code lines (e.g. bare "0")
               const trimmed = line.trim();
               if (trimmed && !/^\d+$/.test(trimmed)) {
@@ -775,8 +782,8 @@ export async function POST(
           proc.kill();
           if (!streamCancelled) {
             enc({ type: 'timeout', text: totalMs >= MAX_TOTAL_TIMEOUT_MS ? 'Response timed out after 60 minutes' : 'Response timed out — no activity for 15 minutes' });
-            try { controller.enqueue(encoder.encode('data: [DONE]\n\n')); } catch { /* closed */ }
-            try { controller.close(); } catch { /* already closed */ }
+            try { controller.enqueue(encoder.encode('data: [DONE]\n\n')); } catch (err) { console.warn('[stream] Non-critical: enqueue on timeout:', err); }
+            try { controller.close(); } catch (err) { console.warn('[stream] Non-critical: close on timeout:', err); }
           }
           agentLocks.delete(id);
         }, 30_000);
@@ -794,9 +801,9 @@ export async function POST(
             enc({ type: 'text', text: friendly });
           }
           enc({ type: 'done', code: code ?? 0 });
-          try { controller.enqueue(encoder.encode('data: [DONE]\n\n')); } catch { /* closed */ }
-          try { controller.close(); } catch { /* already closed */ }
-          try { getDb().prepare('UPDATE agents SET status = ?, lastActivity = ? WHERE id = ?').run('idle', Date.now(), id); } catch {}
+          try { controller.enqueue(encoder.encode('data: [DONE]\n\n')); } catch (err) { console.warn('[stream] Non-critical: enqueue on finish:', err); }
+          try { controller.close(); } catch (err) { console.warn('[stream] Non-critical: close on finish:', err); }
+          try { getDb().prepare('UPDATE agents SET status = ?, lastActivity = ? WHERE id = ?').run('idle', Date.now(), id); } catch (err) { console.warn('[stream] Non-critical: failed to set agent idle:', err); }
         };
 
         proc.on('close', (code) => {
@@ -807,7 +814,7 @@ export async function POST(
           // without keepalive pings (which would pollute the session history).
           if (!resultReceived && resumeId) {
             sessions.delete(sessionKey);
-            try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run(sessionKey); } catch {}
+            try { getDb().prepare('DELETE FROM agent_sessions WHERE agentId = ?').run(sessionKey); } catch (err) { console.warn('[stream] Non-critical: failed to delete stale session:', err); }
 
             // Build history context from stored messages for this surface.
             // Session key format determines which table to read:
@@ -843,7 +850,7 @@ export async function POST(
                 }).join('\n');
                 historyContext = `\n\n---\n## Conversation context (session restored after expiry)\n${history}\n---`;
               }
-            } catch { /* non-critical — proceed without history */ }
+            } catch (err) { console.warn('[stream] Non-critical: failed to load history for session retry:', err); }
 
             const freshArgs = [
               '--print', '--output-format', 'stream-json', '--verbose',
@@ -882,7 +889,8 @@ export async function POST(
                     sessions.set(sessionKey, { sessionId: p.session_id, soulMtime: sm, lastActivity: Date.now() });
                     persistSessionToDb(sessionKey, p.session_id, chatModel);
                   }
-                } catch {
+                } catch (err) {
+                  console.warn('[agents/[id]/stream] Non-critical:', err);
                   const t = line.trim();
                   if (t && !/^\d+$/.test(t)) enc({ type: 'text', text: line });
                 }
@@ -911,7 +919,7 @@ export async function POST(
           clearInterval(timeout);
           enc({ type: 'error', text: err.message });
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-          try { controller.close(); } catch { /* already closed */ }
+          try { controller.close(); } catch (err) { console.warn('[stream] Non-critical: close on error:', err); }
         });
 
       } catch (err: unknown) {

@@ -16,7 +16,7 @@ async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val;
-  } catch { /* keychain unavailable */ }
+  } catch (err) { console.warn('[gemini/summarize] Non-critical: keychain unavailable:', err); }
   return process.env.GEMINI_API_KEY ?? null;
 }
 
@@ -107,7 +107,8 @@ Return ONLY valid JSON, no markdown.`,
         keyTopics: parsed.keyTopics || [],
         participants: parsed.participants || [],
       });
-    } catch {
+    } catch (err) {
+      console.warn('[gemini/summarize] Non-critical:', err);
       // Gemini returned non-JSON — return raw text as summary
       return NextResponse.json({
         summary: raw || 'Failed to generate summary',

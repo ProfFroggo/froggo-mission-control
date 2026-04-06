@@ -218,7 +218,8 @@ export async function upsertPersonalEnvVars(
           toEncrypt[key] = newVal
           updated.push(key)
         }
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/environment/utils] Non-critical:', err);
         toEncrypt[key] = newVal
         updated.push(key)
       }

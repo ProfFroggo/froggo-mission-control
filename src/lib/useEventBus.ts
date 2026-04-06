@@ -48,7 +48,7 @@ const EVENT_TYPES = [
 
 function dispatchEvent(type: string, data: unknown) {
   handlers.get(type)?.forEach(h => {
-    try { h(data); } catch { /* non-fatal */ }
+    try { h(data); } catch (err) { console.warn('[useEventBus] Non-critical: event handler error:', err); }
   });
 }
 
@@ -62,7 +62,7 @@ function attachListeners(es: EventSource): void {
       try {
         const data = JSON.parse(e.data);
         dispatchEvent(type, data);
-      } catch { /* ignore parse errors */ }
+      } catch (err) { console.warn('[useEventBus] Failed to parse SSE event data:', err); }
     };
     namedListeners.set(type, listener);
     es.addEventListener(type, listener);

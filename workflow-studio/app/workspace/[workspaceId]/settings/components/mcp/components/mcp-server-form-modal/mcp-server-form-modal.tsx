@@ -76,7 +76,8 @@ function isDomainAllowed(url: string | undefined, allowedDomains: string[] | nul
   try {
     const hostname = new URL(url).hostname.toLowerCase()
     return allowedDomains.includes(hostname)
-  } catch {
+  } catch (err) {
+    console.warn('[ws/app/workspace/[workspaceId]/settings/components/mcp/components/mcp-server-form-modal/mcp-server-form-modalx] Non-critical:', err);
     return false
   }
 }
@@ -465,7 +466,8 @@ export function McpServerFormModal({
 
         setJsonError('JSON must contain "mcpServers" or a "url" field')
         return null
-      } catch {
+      } catch (err) {
+        console.warn('[ws/app/workspace/[workspaceId]/settings/components/mcp/components/mcp-server-form-modal/mcp-server-form-modalx] Non-critical:', err);
         setJsonError('Invalid JSON')
         return null
       }

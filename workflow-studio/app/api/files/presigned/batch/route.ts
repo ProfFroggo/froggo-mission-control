@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
     let data: BatchPresignedUrlRequest
     try {
       data = await request.json()
-    } catch {
+    } catch (err) {
+      console.warn('[files/presigned/batch] Non-critical:', err);
       return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 })
     }
 

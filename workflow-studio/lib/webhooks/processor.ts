@@ -1378,7 +1378,8 @@ export async function queueWebhookExecution(
       try {
         const parsed = JSON.parse(responseBody)
         return NextResponse.json(parsed, { status: statusCode })
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/webhooks/processor] Non-critical:', err);
         return new NextResponse(responseBody, {
           status: statusCode,
           headers: { 'Content-Type': 'text/plain' },

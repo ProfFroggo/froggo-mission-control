@@ -85,7 +85,8 @@ function formatValueAsJson(value: unknown): string {
   if (typeof value === 'object') {
     try {
       return JSON.stringify(value, null, 2)
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/w/components/preview/components/preview-editor/preview-editorx] Non-critical:', err);
       return String(value)
     }
   }
@@ -159,7 +160,8 @@ function formatInlineValue(value: unknown): string {
   if (typeof value === 'object') {
     try {
       return JSON.stringify(value)
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/w/components/preview/components/preview-editor/preview-editorx] Non-critical:', err);
       return String(value)
     }
   }

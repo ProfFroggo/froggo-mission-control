@@ -95,7 +95,8 @@ export async function executeCreateJob(
             timeStr = `${timeStr}${offset}`
           }
         }
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/copilot/orchestrator/tool-executor/job-tools] Non-critical:', err);
         // Fall through to parse as-is
       }
     }

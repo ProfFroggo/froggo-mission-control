@@ -126,7 +126,8 @@ export default function SecuritySettings() {
       const result = await settingsApi.get('security.disallowedTools');
       const parsed = parseSettingArray<string>(result);
       setDisallowedTools(parsed.length > 0 ? parsed : DEFAULT_DISALLOWED);
-    } catch {
+    } catch (err) {
+      console.warn('[SecuritySettings] Non-critical:', err);
       setDisallowedTools(DEFAULT_DISALLOWED);
     }
   };

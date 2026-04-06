@@ -21,7 +21,7 @@ function findNpm(): string {
   const found = candidates.find(p => existsSync(p));
   if (found) return found;
   // Last resort: try which
-  try { return execSync('which npm', { encoding: 'utf-8', timeout: 3000 }).trim(); } catch {}
+  try { return execSync('which npm', { encoding: 'utf-8', timeout: 3000 }).trim(); } catch (err) { console.warn('[update] Non-critical:', err); }
   return 'npm';
 }
 
@@ -34,7 +34,8 @@ function getCurrentVersion(): string {
     const pkgPath = join(process.cwd(), 'package.json');
     const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
     return pkg.version ?? '0.0.0';
-  } catch {
+  } catch (err) {
+    console.warn('[update] Non-critical:', err);
     return '0.0.0';
   }
 }
@@ -66,7 +67,7 @@ async function getLatestInfo(): Promise<RegistryInfo> {
       const ghData = await ghRes.json();
       releaseNotes = ghData.body as string | undefined;
     }
-  } catch { /* GitHub unreachable — skip */ }
+  } catch (err) { console.warn('[update] Non-critical: GitHub unreachable — skip:', err); }
 
   const info: RegistryInfo = { version, description: data.description, releaseNotes, fetchedAt: Date.now() };
   registryCache = info;
@@ -176,7 +177,7 @@ export async function POST() {
           }).trim();
           const candidate = join(npmRoot, PACKAGE_NAME);
           if (existsSync(candidate)) newInstallDir = candidate;
-        } catch { /* fallback to cwd */ }
+        } catch (err) { console.warn('[update] Non-critical: fallback to cwd:', err); }
 
         send(`Building in ${newInstallDir}...`);
 

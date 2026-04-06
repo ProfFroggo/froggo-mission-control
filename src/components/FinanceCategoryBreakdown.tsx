@@ -79,7 +79,8 @@ export default function FinanceCategoryBreakdown({ selectedAccountId }: Props) {
         }))
         .sort((a, b) => b.total - a.total);
       setBreakdown(rows);
-    } catch {
+    } catch (err) {
+      console.warn('[FinanceCategoryBreakdown] Non-critical:', err);
       setBreakdown([]);
     } finally {
       setLoading(false);

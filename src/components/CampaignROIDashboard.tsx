@@ -213,7 +213,8 @@ export default function CampaignROIDashboard({ campaign, previousCampaign }: Cam
   const metrics: CampaignMetrics = useMemo(() => {
     try {
       return campaign.metrics ? JSON.parse(campaign.metrics) : {};
-    } catch {
+    } catch (err) {
+      console.warn('[CampaignROIDashboard] Non-critical:', err);
       return {};
     }
   }, [campaign.metrics]);
@@ -221,7 +222,8 @@ export default function CampaignROIDashboard({ campaign, previousCampaign }: Cam
   const prevMetrics: CampaignMetrics = useMemo(() => {
     try {
       return previousCampaign?.metrics ? JSON.parse(previousCampaign.metrics) : {};
-    } catch {
+    } catch (err) {
+      console.warn('[CampaignROIDashboard] Non-critical:', err);
       return {};
     }
   }, [previousCampaign]);

@@ -30,7 +30,8 @@ export class BrowserStorage {
 
       try {
         return JSON.parse(item) as T
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/core/utils/browser-storage] Non-critical:', err);
         return item as T
       }
     } catch (error) {
@@ -93,7 +94,8 @@ export class BrowserStorage {
       window.localStorage.setItem(testKey, 'test')
       window.localStorage.removeItem(testKey)
       return true
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/core/utils/browser-storage] Non-critical:', err);
       return false
     }
   }

@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
           controller.enqueue(
             encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
           );
-        } catch {
+        } catch (err) {
+          console.warn('[events] Non-critical:', err);
           // Client disconnected — swallow error
         }
       };
@@ -41,7 +42,8 @@ export async function GET(request: NextRequest) {
       const ping = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(': ping\n\n'));
-        } catch {
+        } catch (err) {
+          console.warn('[events] Non-critical:', err);
           clearInterval(ping);
         }
       }, 25_000);
@@ -50,7 +52,7 @@ export async function GET(request: NextRequest) {
       request.signal.addEventListener('abort', () => {
         sseEmitter.off('event', handler);
         clearInterval(ping);
-        try { controller.close(); } catch { /* already closed */ }
+        try { controller.close(); } catch (err) { console.warn('[events] Non-critical: already closed:', err); }
       });
     },
   });

@@ -61,7 +61,8 @@ export function useAutosave({
     let nextStatus: SaveStatus = 'saved'
     try {
       await onSaveRef.current()
-    } catch {
+    } catch (err) {
+      console.warn('[ws/hooks/use-autosave] Non-critical:', err);
       nextStatus = 'error'
     } finally {
       const elapsed = Date.now() - savingStartRef.current
@@ -94,7 +95,7 @@ export function useAutosave({
         contentRef.current !== savedContentRef.current &&
         !savingRef.current
       ) {
-        onSaveRef.current().catch(() => {})
+        onSaveRef.current().catch(err => console.warn('[ws/hooks/use-autosave] Non-critical:', err))
       }
     }
   }, [])

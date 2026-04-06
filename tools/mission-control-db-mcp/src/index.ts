@@ -442,7 +442,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           agentId: { type: 'string', description: 'Your agent ID' },
           filename: { type: 'string', description: 'Optional short filename (letters/numbers/hyphens, no extension)' },
           projectId: { type: 'string', description: 'Project ID — if provided, image saves to project folder instead of general library' },
-          referenceImagePath: { type: 'string', description: 'Absolute filesystem path to a reference image (e.g. /Users/kevin.macarthur/mission-control/library/brand-assets/Character/DEREK_Character/Derek_Track_Wave.png). Pass this when generating variants of an existing character, logo, or brand asset — Gemini uses the visual reference for far more accurate results than text alone.' },
+          referenceImagePath: { type: 'string', description: 'Absolute filesystem path to a reference image (e.g. ~/mission-control/library/brand-assets/logo.png). Pass this when generating variants of an existing character, logo, or brand asset — Gemini uses the visual reference for far more accurate results than text alone.' },
           referenceImageUrl: { type: 'string', description: 'Library URL of a reference image (e.g. /api/library?action=raw&id=...). Alternative to referenceImagePath when you have the library URL instead of the filesystem path.' },
         },
         required: ['prompt', 'agentId'],
@@ -859,6 +859,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }) }] };
         }
 
+        if (!args?.title || (args.title as string).trim().length === 0) {
+          return { content: [{ type: 'text', text: JSON.stringify({
+            error: 'TASK_CREATION_BLOCKED: title is required and must not be empty.'
+          }) }] };
+        }
+
         const now = Date.now();
         const id = `task-${now}-${Math.random().toString(36).slice(2, 8)}`;
         // Tasks ALWAYS start in todo — no exceptions. Agents cannot create tasks in any other status.
@@ -900,6 +906,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
        * assigned, auto-queues for re-review.
        */
       case 'task_update': {
+        if (!args?.id || typeof args.id !== 'string' || (args.id as string).trim().length === 0) {
+          return { content: [{ type: 'text', text: JSON.stringify({
+            error: 'TASK_UPDATE_BLOCKED: id is required. Provide the task ID to update.'
+          }) }] };
+        }
+
         const now = Date.now();
         const taskId = args?.id as string;
 
@@ -1019,6 +1031,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
        * "completed", "file_created", "decision", or "blocked" to make logs scannable.
        */
       case 'task_add_activity': {
+        if (!args?.taskId) return { content: [{ type: 'text', text: JSON.stringify({ error: 'taskId is required' }) }], isError: true };
+        if (!args?.message) return { content: [{ type: 'text', text: JSON.stringify({ error: 'message is required' }) }], isError: true };
         db.prepare('INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)').run(
           args?.taskId, args?.agentId || null, args?.action || 'update', args?.message, Date.now()
         );
@@ -1032,6 +1046,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
        * fileName defaults to the basename of filePath when omitted.
        */
       case 'task_add_attachment': {
+        if (!args?.taskId || !args?.filePath) return { content: [{ type: 'text', text: JSON.stringify({ error: 'taskId and filePath are required' }) }], isError: true };
         const now = Date.now();
         const fileName = args?.fileName || (args?.filePath as string)?.split('/').pop() || String(args?.filePath);
 
@@ -1062,6 +1077,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
        * pipeline reflects the blocked state.
        */
       case 'approval_create': {
+        if (!args?.type || !args?.title || !args?.content) return { content: [{ type: 'text', text: JSON.stringify({ error: 'type, title, and content are required for approval_create' }) }], isError: true };
         const id = `approval-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const now = Date.now();
         const metadata = args?.metadata ? JSON.stringify(args.metadata) : '{}';
@@ -1081,7 +1097,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'approval_check': {
         const parseMetadata = (row: any) => {
           if (!row) return row;
-          try { row.metadata = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata; } catch { /* keep as string */ }
+          try { row.metadata = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata; } catch (err) { console.warn('[tools/index] Non-critical: keep as string:', err); }
           return row;
         };
         if (args?.id) {
@@ -1148,7 +1164,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             if (targetAgent?.name) {
               deliveryHint = { success: 'true', deliveredTo: targetAgent.name, hint: `Message delivered to ${targetAgent.name}'s 1-1 chat.` };
             }
-          } catch { /* non-critical */ }
+          } catch (err) { console.warn('[tools/index] Non-critical:', err); }
         }
         return { content: [{ type: 'text', text: JSON.stringify({ success: true, ...deliveryHint }) }] };
       }
@@ -1187,6 +1203,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
        * Requirement: every task must have ≥ 2 subtasks before Clara approves it.
        */
       case 'subtask_create': {
+        if (!args?.taskId || !args?.title) return { content: [{ type: 'text', text: JSON.stringify({ error: 'taskId and title are required' }) }], isError: true };
         const id = `sub-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const now = Date.now();
         const position = ((db.prepare('SELECT MAX(position) as p FROM subtasks WHERE taskId = ?').get(args?.taskId) as { p: number | null }).p ?? -1) + 1;
@@ -1231,7 +1248,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const raw = fs.readFileSync(schedulePath, 'utf8').trim();
             if (raw) jobs = JSON.parse(raw);
           }
-        } catch { /* empty file is fine */ }
+        } catch (err) { console.warn('[tools/index] Non-critical: empty file is fine:', err); }
         const id = `job-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const schedule: any = { kind: args?.kind };
         if (args?.kind === 'once')     schedule.atMs    = args?.atMs || Date.now() + 60_000;
@@ -1287,7 +1304,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const raw = fs.readFileSync(schedulePath, 'utf8').trim();
             if (raw) jobs = JSON.parse(raw);
           }
-        } catch { /* empty file */ }
+        } catch (err) { console.warn('[tools/index] Non-critical: empty file:', err); }
         if (args?.enabled !== undefined) {
           jobs = jobs.filter((j: any) => !!j.enabled === !!args.enabled);
         }
@@ -1418,7 +1435,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           db.prepare(
             'INSERT INTO chat_room_messages (roomId, agentId, content, timestamp) VALUES (?, ?, ?, ?)'
           ).run(roomId, agentId, parsed.markdown, Date.now());
-        } catch { /* non-critical — image generation succeeded regardless */ }
+        } catch (err) { console.warn('[tools/index] Non-critical: image generation succeeded regardless', err); }
 
         // Compute library-relative path for image_remove_background chaining
         const HOME_DIR = process.env.HOME || '/tmp';
@@ -1503,7 +1520,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           db.prepare(
             'INSERT INTO chat_room_messages (roomId, agentId, content, timestamp) VALUES (?, ?, ?, ?)'
           ).run(agentId, agentId, parsed.markdown, Date.now());
-        } catch { /* non-critical */ }
+        } catch (err) { console.warn('[tools/index] Non-critical:', err); }
 
         return {
           content: [{
@@ -1567,7 +1584,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 }, {} as Record<string, string>),
               };
             }
-          } catch { /* non-critical */ }
+          } catch (err) { console.warn('[tools/index] Non-critical:', err); }
 
           return { content: [{ type: 'text', text: JSON.stringify({
             id: project.id, name: project.name, description: project.description,
@@ -1639,14 +1656,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         let campaigns: any[] = [];
         try {
           campaigns = db.prepare(query).all(...params) as any[];
-        } catch {
+        } catch (err) {
+          console.warn('[tools/index] Non-critical:', err);
           return { content: [{ type: 'text', text: JSON.stringify({ campaigns: [], note: 'No campaigns table found — campaigns have not been set up yet.' }) }] };
         }
         const result = campaigns.map((c) => {
           let channels: string[] = [];
-          try { channels = JSON.parse(c.channels); } catch { /* keep empty */ }
+          try { channels = JSON.parse(c.channels); } catch (err) { console.warn('[tools/index] Non-critical: keep empty:', err); }
           let kpis: Record<string, unknown> = {};
-          try { kpis = JSON.parse(c.kpis); } catch { /* keep empty */ }
+          try { kpis = JSON.parse(c.kpis); } catch (err) { console.warn('[tools/index] Non-critical: keep empty:', err); }
           const members = db.prepare(`
             SELECT cm.agentId, cm.role, a.name as agentName FROM campaign_members cm
             LEFT JOIN agents a ON a.id = cm.agentId
@@ -1710,7 +1728,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               WHERE knowledge_base_fts MATCH ?${categoryClause}
               ORDER BY kb.pinned DESC, bm25(knowledge_base_fts, 10.0, 1.0, 5.0) LIMIT 8
             `).all(safeQuery, ...categoryParam) as Record<string, unknown>[];
-          } catch {
+          } catch (err) {
+            console.warn('[tools/index] Non-critical:', err);
             // FTS unavailable or virtual table missing — fall back to LIKE.
             const likeWhere = category
               ? '(title LIKE ? OR content LIKE ? OR tags LIKE ?) AND category = ?'
@@ -2094,6 +2113,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
        */
       case 'x_post_create': {
         const a = (args || {}) as Record<string, any>;
+        if (!a.content) return { content: [{ type: 'text', text: JSON.stringify({ error: 'content is required' }) }], isError: true };
         const id = `xp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
         db.prepare(`
           INSERT INTO x_posts (id, content, type, status, thread_tweets, scheduled_for, campaign_id, proposed_by, created_at, updated_at)
@@ -2125,6 +2145,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       /** Creates an X campaign with stages array. Status defaults to "draft". Stages are stored as JSON. */
       case 'x_campaign_create': {
         const a = (args || {}) as Record<string, any>;
+        if (!a.title) return { content: [{ type: 'text', text: JSON.stringify({ error: 'title is required' }) }], isError: true };
         const id = `xc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
         const stages = a.stages || [];
         db.prepare(`
@@ -2153,7 +2174,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             req.end();
           });
           liveData = res;
-        } catch { /* non-critical */ }
+        } catch (err) { console.warn('[tools/index] Non-critical:', err); }
         return { content: [{ type: 'text', text: JSON.stringify({ snapshot: snapshot || null, recentPosts, liveAnalytics: liveData, period: a.period || 'week' }, null, 2) }] };
       }
 
@@ -2236,7 +2257,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           try {
             const s = fs.statSync(path.join(scratchDir, f));
             files.push({ name: f, size: s.size, modified: new Date(s.mtimeMs).toISOString() });
-          } catch { /* file deleted between readdir and stat — skip */ }
+          } catch (err) { console.warn('[tools/index] Non-critical: file deleted between readdir and stat — skip:', err); }
         }
         return { content: [{ type: 'text', text: files.length === 0 ? 'Scratchpad is empty.' : JSON.stringify(files, null, 2) }] };
       }
@@ -2251,7 +2272,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         try {
           const content = fs.readFileSync(filePath, 'utf-8');
           return { content: [{ type: 'text', text: content }] };
-        } catch {
+        } catch (err) {
+          console.warn('[tools/index] Non-critical:', err);
           return { content: [{ type: 'text', text: `File not found or unreadable: ${filename}` }], isError: true };
         }
       }

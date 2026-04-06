@@ -79,7 +79,9 @@ export async function GET(_request: NextRequest) {
             sr.total > 0 ? Math.round((sr.completed / sr.total) * 1000) / 10 : 0;
         }
       }
-    } catch { /* subtasks table may not exist */ }
+    } catch (err) {
+      console.warn('[agent-activity] Non-critical: subtasks query failed (table may not exist):', err);
+    }
 
     // ── Role-specific metrics for special agents ──────────────────────────────
 
@@ -118,7 +120,9 @@ export async function GET(_request: NextRequest) {
         cronRuns,
         actionsLast7Days: mcLast7,
       };
-    } catch { /* non-critical */ }
+    } catch (err) {
+      console.warn('[agent-activity] Non-critical: mission-control metrics query failed:', err);
+    }
 
     // HR — hiring, skills, training metrics
     try {
@@ -156,7 +160,9 @@ export async function GET(_request: NextRequest) {
         problemsResolved: hrResolved,
         actionsLast7Days: hrLast7,
       };
-    } catch { /* non-critical */ }
+    } catch (err) {
+      console.warn('[agent-activity] Non-critical: HR metrics query failed:', err);
+    }
 
     // Clara — quality control metrics
     try {
@@ -189,7 +195,9 @@ export async function GET(_request: NextRequest) {
         escalatedToHuman: humanReview,
         actionsLast7Days: claraLast7,
       };
-    } catch { /* non-critical */ }
+    } catch (err) {
+      console.warn('[agent-activity] Non-critical: Clara metrics query failed:', err);
+    }
 
     // Inbox — communications metrics
     try {
@@ -208,14 +216,18 @@ export async function GET(_request: NextRequest) {
       try {
         inboxTotal = (db.prepare(`SELECT COUNT(*) AS c FROM inbox`).get() as { c: number }).c;
         inboxRead = (db.prepare(`SELECT COUNT(*) AS c FROM inbox WHERE isRead = 1`).get() as { c: number }).c;
-      } catch { /* inbox table may not exist */ }
+      } catch (err) {
+        console.warn('[agent-activity] Non-critical: inbox table query failed:', err);
+      }
 
       let approvalsHandled = 0;
       try {
         approvalsHandled = (db.prepare(
           `SELECT COUNT(*) AS c FROM approvals WHERE status IN ('approved','rejected')`
         ).get() as { c: number }).c;
-      } catch { /* non-critical */ }
+      } catch (err) {
+        console.warn('[agent-activity] Non-critical: approvals query failed:', err);
+      }
 
       byAgent['inbox'] = {
         ...(byAgent['inbox'] || {}),
@@ -227,7 +239,9 @@ export async function GET(_request: NextRequest) {
         actionsLast7Days: inboxLast7,
         totalActions: inboxActions,
       };
-    } catch { /* non-critical */ }
+    } catch (err) {
+      console.warn('[agent-activity] Non-critical: inbox metrics query failed:', err);
+    }
 
     return NextResponse.json(byAgent);
   } catch (error) {

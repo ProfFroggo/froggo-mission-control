@@ -26,7 +26,8 @@ async function main() {
   try {
     const parsed = JSON.parse(input);
     tool_input = parsed.tool_input || parsed.toolInput || {};
-  } catch {
+  } catch (err) {
+    console.warn('[agent-wake] Non-critical: failed to parse input:', err);
     return approve();
   }
 

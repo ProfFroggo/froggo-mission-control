@@ -125,7 +125,8 @@ function ExportButtons({
     setBusy(format);
     try {
       await triggerExport(type, format, from, to);
-    } catch {
+    } catch (err) {
+      console.warn('[ReportsPanel] Non-critical:', err);
       // silent — user will see nothing was downloaded
     } finally {
       setBusy(null);
@@ -394,7 +395,8 @@ export default function ReportsPanel() {
       ]);
       setWeeklyReport(weekly);
       setMonthlyReport(monthly);
-    } catch {
+    } catch (err) {
+      console.warn('[ReportsPanel] Non-critical:', err);
       // silent
     } finally {
       setLoading(false);

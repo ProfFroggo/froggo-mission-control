@@ -67,7 +67,8 @@ function validateRule(value: string, rule: ValidationRule): ValidationResult {
     case 'url':
       try {
         new URL(value);
-      } catch {
+      } catch (err) {
+        console.warn('[validation] Non-critical:', err);
         return { valid: false, error: rule.message };
       }
       break;

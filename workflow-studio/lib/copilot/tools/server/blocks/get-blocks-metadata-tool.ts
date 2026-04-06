@@ -753,7 +753,8 @@ function callOptionsWithFallback(
       // Temporarily replace getState with our mock
       store.useProvidersStore.getState = () => mockProvidersState
     }
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/copilot/tools/server/blocks/get-blocks-metadata-tool] Non-critical:', err);
     // Store module not available, continue with mock
   }
 
@@ -785,7 +786,8 @@ function resolveSubblockOptions(
     } else {
       rawOptions = sb.options
     }
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/copilot/tools/server/blocks/get-blocks-metadata-tool] Non-critical:', err);
     // Options function failed even with fallback, skip
     return undefined
   }
@@ -841,7 +843,8 @@ function normalizeCondition(condition: any): any | undefined {
       return condition()
     }
     return condition
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/copilot/tools/server/blocks/get-blocks-metadata-tool] Non-critical:', err);
     return undefined
   }
 }

@@ -355,7 +355,7 @@ async function migrateWorkflows() {
   } finally {
     try {
       await postgresClient.end({ timeout: 5 })
-    } catch {}
+    } catch (err) { console.warn('[ws/_db/scripts/migrate-deployment-versions] Non-critical:', err); }
   }
 }
 

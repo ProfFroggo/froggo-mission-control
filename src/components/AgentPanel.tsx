@@ -58,6 +58,8 @@ function AvatarWithFallback({ agentId, agentName, themeRing, themeBg, themeText,
           src={`/api/agents/${agentId}/avatar`}
           alt={agentName}
           className="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
           onError={() => setImgFailed(true)}
         />
       ) : (

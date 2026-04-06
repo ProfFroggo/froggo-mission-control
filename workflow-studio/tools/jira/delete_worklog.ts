@@ -82,7 +82,7 @@ export const jiraDeleteWorklogTool: ToolConfig<JiraDeleteWorklogParams, JiraDele
           try {
             const err = await worklogResponse.json()
             message = err?.errorMessages?.join(', ') || err?.message || message
-          } catch (_e) {}
+          } catch (_e) { console.warn('[ws/jira/delete_worklog] Non-critical:', _e); }
           throw new Error(message)
         }
 
@@ -102,7 +102,7 @@ export const jiraDeleteWorklogTool: ToolConfig<JiraDeleteWorklogParams, JiraDele
         try {
           const err = await response.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/delete_worklog] Non-critical:', _e); }
         throw new Error(message)
       }
 

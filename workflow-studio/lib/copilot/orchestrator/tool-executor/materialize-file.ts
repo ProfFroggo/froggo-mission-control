@@ -85,7 +85,8 @@ async function executeImport(
   let parsed: unknown
   try {
     parsed = JSON.parse(content)
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/copilot/orchestrator/tool-executor/materialize-file] Non-critical:', err);
     return { success: false, error: `"${fileName}" is not valid JSON.` }
   }
 

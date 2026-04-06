@@ -51,7 +51,7 @@ export default function MessageReactions({ messageId, isUser }: MessageReactions
       if (!res.ok) return;
       const data = await res.json();
       setReactions(data.reactions ?? []);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[MessageReactions] Non-critical:', err); }
   };
 
   const toggleReaction = async (emoji: string) => {
@@ -66,7 +66,7 @@ export default function MessageReactions({ messageId, isUser }: MessageReactions
       if (!res.ok) return;
       const data = await res.json();
       setReactions(data.reactions ?? []);
-    } catch { /* non-critical */ } finally {
+    } catch (err) { console.warn('[MessageReactions] Non-critical:', err); } finally {
       setLoading(false);
       setShowPicker(false);
     }

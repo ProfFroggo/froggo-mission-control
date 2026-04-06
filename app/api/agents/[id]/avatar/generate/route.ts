@@ -59,7 +59,7 @@ async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val.trim();
-  } catch { /* keytar unavailable */ }
+  } catch (err) { console.warn('[agents/[id]/avatar/generate] Non-critical: keytar unavailable:', err); }
 
   // 2. Env var fallback
   const envKey = process.env.GEMINI_API_KEY;
@@ -70,7 +70,7 @@ async function getGeminiKey(): Promise<string | null> {
     const db = getDb();
     const row = db.prepare(`SELECT value FROM settings WHERE key = 'gemini_api_key'`).get() as { value: string } | undefined;
     if (row?.value) return row.value.trim();
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[agents/[id]/avatar/generate] Non-critical:', err); }
 
   return null;
 }
@@ -163,12 +163,13 @@ export async function POST(req: NextRequest, { params }: Params) {
       const db = getDb();
       try {
         db.prepare(`UPDATE catalog_agents SET avatar = ?, updatedAt = ? WHERE id = ?`).run(avatarPath, Date.now(), id);
-      } catch {
+      } catch (err) {
+        console.warn('[agents/[id]/avatar/generate] Non-critical:', err);
         db.prepare(`UPDATE catalog_agents SET avatar = ?, updated_at = ? WHERE id = ?`).run(avatarPath, Date.now(), id);
       }
       // Also update agents table so the UI knows this agent has a custom avatar
       db.prepare(`UPDATE agents SET avatar = ? WHERE id = ?`).run(avatarPath, id);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[agents/[id]/avatar/generate] Non-critical:', err); }
 
     return NextResponse.json({ path: avatarPath, method, svg: svgData, png: pngBase64 });
   } catch (error) {

@@ -6,6 +6,8 @@ import { getDb } from '@/lib/database';
 
 export const dynamic = 'force-dynamic';
 
+const INTERNAL_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
+
 interface ExecutionResult {
   checked: number;
   fired: number;
@@ -45,9 +47,9 @@ export async function POST() {
         }
 
         let triggerConfig: Record<string, unknown> = {};
-        try { triggerConfig = typeof auto.trigger_config === 'string' ? JSON.parse(auto.trigger_config) : (auto.trigger_config || {}); } catch { /* malformed JSON */ }
+        try { triggerConfig = typeof auto.trigger_config === 'string' ? JSON.parse(auto.trigger_config) : (auto.trigger_config || {}); } catch (err) { console.warn('[x/automations/execute] Non-critical: malformed JSON:', err); }
         let actions: { type: string; config: Record<string, any> }[] = [];
-        try { actions = typeof auto.actions === 'string' ? JSON.parse(auto.actions) : (auto.actions || []); } catch { /* malformed JSON */ }
+        try { actions = typeof auto.actions === 'string' ? JSON.parse(auto.actions) : (auto.actions || []); } catch (err) { console.warn('[x/automations/execute] Non-critical: malformed JSON:', err); }
         const aiEngine: 'gemini' | 'claude' = (auto.ai_engine || 'gemini') as 'gemini' | 'claude';
 
         // Evaluate trigger
@@ -213,7 +215,7 @@ async function executeAction(
       if (aiEngine === 'claude' && triggerData.text) {
         // Use Claude (via generate-reply endpoint) to craft a contextual reply
         try {
-          const res = await fetch(`http://localhost:${process.env.PORT || 3000}/api/chat/generate-reply`, {
+          const res = await fetch(`${INTERNAL_BASE}/api/chat/generate-reply`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -225,7 +227,8 @@ async function executeAction(
           });
           const data = await res.json().catch(() => ({}));
           replyText = data.reply || action.config.template || `Thanks for reaching out, @${triggerData.author_username || 'user'}!`;
-        } catch {
+        } catch (err) {
+          console.warn('[x/automations/execute] Non-critical:', err);
           replyText = action.config.template || `Thanks for reaching out, @${triggerData.author_username || 'user'}!`;
         }
       } else {
@@ -321,7 +324,7 @@ async function executeAction(
     case 'process_mentions': {
       // Fetch + process mentions via the mention processor endpoint
       try {
-        const res = await fetch(`http://localhost:${process.env.PORT || 3000}/api/x/mentions/process`, {
+        const res = await fetch(`${INTERNAL_BASE}/api/x/mentions/process`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: '{}',
@@ -337,7 +340,7 @@ async function executeAction(
       // Generate a report via the reports endpoint
       try {
         const reportType = action.config.report_type || 'competitor-analysis';
-        const res = await fetch(`http://localhost:${process.env.PORT || 3000}/api/x/reports`, {
+        const res = await fetch(`${INTERNAL_BASE}/api/x/reports`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: reportType }),
@@ -354,7 +357,7 @@ async function executeAction(
       const content = action.config.template || action.config.content || '';
       if (!content) return { type: 'post_content', status: 'skipped — no content template' };
       try {
-        const res = await fetch(`http://localhost:${process.env.PORT || 3000}/api/x/posts`, {
+        const res = await fetch(`${INTERNAL_BASE}/api/x/posts`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content, type: 'tweet', status: 'draft', proposed_by: `automation:${automation.id}` }),
@@ -371,7 +374,7 @@ async function executeAction(
       const prompt = action.config.prompt || '';
       if (!prompt) return { type: 'custom_prompt', status: 'skipped — no prompt' };
       try {
-        const res = await fetch(`http://localhost:${process.env.PORT || 3000}/api/chat/generate-reply`, {
+        const res = await fetch(`${INTERNAL_BASE}/api/chat/generate-reply`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: prompt, context: `Automation: ${automation.name}. Trigger data: ${JSON.stringify(triggerData).slice(0, 500)}`, tone: 'professional', tab: 'configure' }),

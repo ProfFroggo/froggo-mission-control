@@ -408,7 +408,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
     fetch(`/api/agents/${agentId}/metrics`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setMetrics(data); })
-      .catch(() => {})
+      .catch(err => console.warn('[AgentConfigPanel] Non-critical:', err))
       .finally(() => setMetricsLoading(false));
   }, [tab, agentId, metrics]);
 
@@ -624,11 +624,15 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
   return (
     <>
       {/* Sub-tabs — border-b-2 underline style */}
-      <div className="flex border-b border-mission-control-border mb-4 overflow-x-auto">
+      <div role="tablist" aria-label="Agent configuration sections" className="flex border-b border-mission-control-border mb-4 overflow-x-auto">
         {TABS.map(t => (
           <button
             type="button"
             key={t.id}
+            role="tab"
+            id={`tab-${t.id}`}
+            aria-selected={tab === t.id}
+            aria-controls={`tabpanel-${t.id}`}
             onClick={() => setTab(t.id)}
             className={`flex-shrink-0 relative px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
               tab === t.id
@@ -646,7 +650,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
       {loading ? (
         <Flex align="center" justify="center" py="5" className="text-mission-control-text-dim text-sm">Loading...</Flex>
       ) : (
-        <>
+        <div role="tabpanel" id={`tabpanel-${tab}`} aria-labelledby={`tab-${tab}`}>
           {/* ── SOUL ── */}
           {tab === 'soul' && (
             <div className="space-y-3">
@@ -655,12 +659,13 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                 <Flex align="center" gap="2" className="px-3 py-2 bg-warning/10 border border-warning/30 rounded-lg text-warning text-xs">
                   <AlertCircle size={12} />
                   Restart {agentName} for changes to take effect.
-                  <button type="button" onClick={() => setShowRestartBanner(false)} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors ml-auto">
+                  <button type="button" aria-label="Dismiss restart notice" onClick={() => setShowRestartBanner(false)} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors ml-auto">
                     <X size={10} />
                   </button>
                 </Flex>
               )}
               <textarea
+                aria-label="Soul file (SOUL.md)"
                 className="w-full font-mono text-sm bg-mission-control-surface border border-mission-control-border rounded-lg px-3 py-3 text-mission-control-text placeholder:text-mission-control-text-dim/50 resize-y focus:outline-none focus:border-[var(--mission-control-accent)] min-h-[300px]"
                 style={{ minHeight: '300px' }}
                 value={soul}
@@ -685,9 +690,9 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
           {tab === 'model' && (
             <div className="space-y-4">
               <p className="text-xs text-mission-control-text-dim">All agents run Claude directly via Anthropic's API. Select the model tier for this agent.</p>
-              <div className="space-y-2">
+              <div role="radiogroup" aria-label="Model selection" className="space-y-2">
                 {CLAUDE_MODELS.map(m => (
-                  <button key={m.id} type="button" onClick={() => { setModel(m.id); setModelDirty(true); }}
+                  <button key={m.id} type="button" role="radio" aria-checked={model === m.id} onClick={() => { setModel(m.id); setModelDirty(true); }}
                     className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-lg border text-left transition-colors ${model === m.id ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'}`}>
                     <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${model === m.id ? 'border-mission-control-accent' : 'border-mission-control-border'}`}>
                       {model === m.id && <div className="w-2 h-2 rounded-full bg-mission-control-accent" />}
@@ -873,7 +878,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                               : `http: ${server.url}`}
                           </p>
                         </div>
-                        <button type="button" onClick={() => removeMcpServer(server.id)} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" style={{ flexShrink: 0, marginLeft: '12px' }}>
+                        <button type="button" aria-label={`Remove ${server.name} MCP server`} onClick={() => removeMcpServer(server.id)} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors" style={{ flexShrink: 0, marginLeft: '12px' }}>
                           <Trash2 size={13} />
                         </button>
                       </Flex>
@@ -912,16 +917,14 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                           value={newMcp.command}
                           onChange={e => setNewMcp(m => ({ ...m, command: e.target.value }))}
                           size="1"
-                          className="w-full"
-                          style={{ fontFamily: 'monospace' }}
+                          className="w-full font-mono"
                         />
                         <TextField.Root
                           placeholder="Arguments (e.g. -y @modelcontextprotocol/server-filesystem /path)"
                           value={newMcp.args}
                           onChange={e => setNewMcp(m => ({ ...m, args: e.target.value }))}
                           size="1"
-                          className="w-full"
-                          style={{ fontFamily: 'monospace' }}
+                          className="w-full font-mono"
                         />
                       </>
                     ) : (
@@ -930,8 +933,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                         value={newMcp.url}
                         onChange={e => setNewMcp(m => ({ ...m, url: e.target.value }))}
                         size="1"
-                        className="w-full"
-                        style={{ fontFamily: 'monospace' }}
+                        className="w-full font-mono"
                       />
                     )}
                     <TextArea
@@ -1008,8 +1010,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                     onChange={e => setNewKey(k => ({ ...k, key: e.target.value }))}
                     onKeyDown={e => e.key === 'Enter' && handleCreateKey()}
                     size="1"
-                    className="w-full"
-                    style={{ fontFamily: 'monospace' }}
+                    className="w-full font-mono"
                   />
                   <Button variant="solid" size="1" onClick={handleCreateKey} disabled={addingKey}>
                     {addingKey ? 'Saving...' : 'Add & Assign to Agent'}
@@ -1054,10 +1055,11 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
 
               {/* Trust tier — compact horizontal pills */}
               <div>
-                <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">Trust Tier</div>
+                <div className="text-xs font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">Trust Tier</div>
                 <div className="flex items-center gap-0.5 p-1 rounded-lg bg-mission-control-bg border border-mission-control-border">
                   {TRUST_TIERS.map(tier => (
                     <button key={tier.id} type="button"
+                      aria-pressed={trustTier === tier.id}
                       onClick={() => {
                         if (tier.id !== trustTier) setPrevTrustTier(trustTier);
                         setTrustTier(tier.id);
@@ -1114,7 +1116,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
 
               {/* Per-action overrides — collapsible groups */}
               <div>
-                <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">Action Overrides</div>
+                <div className="text-xs font-bold text-mission-control-text-dim uppercase tracking-wider mb-2">Action Overrides</div>
                 <div className="space-y-1.5">
                   {PERMISSION_GROUPS.map(group => {
                     const isOpen = expandedGroups[group.label] ?? false;
@@ -1126,7 +1128,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                           onClick={() => setExpandedGroups(prev => ({ ...prev, [group.label]: !isOpen }))}
                           className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors w-full justify-between"
                         >
-                          <span className="flex items-center gap-2 text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">
+                          <span className="flex items-center gap-2 text-xs font-bold text-mission-control-text-dim uppercase tracking-wider">
                             <Shield size={11} /> {group.label}
                           </span>
                           <span className="flex items-center gap-2">
@@ -1149,12 +1151,12 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                                   </div>
                                   <div className="flex items-center gap-1 flex-shrink-0">
                                     {hasOverride && (
-                                      <button type="button" onClick={() => { setPermOverrides(prev => { const n = { ...prev }; delete n[perm.id]; return n; }); setPermDirty(true); }}
+                                      <button type="button" aria-label={`Reset override for ${perm.label}`} onClick={() => { setPermOverrides(prev => { const n = { ...prev }; delete n[perm.id]; return n; }); setPermDirty(true); }}
                                         className="px-2 py-0.5 rounded text-xs text-mission-control-text-dim hover:text-mission-control-text border border-transparent hover:border-mission-control-border transition-colors">Reset</button>
                                     )}
-                                    <button type="button" onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: true })); setPermDirty(true); }}
+                                    <button type="button" aria-label={`Allow ${perm.label}`} onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: true })); setPermDirty(true); }}
                                       className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${overrideVal === true ? 'bg-success/10 border-success/30 text-success' : 'border-mission-control-border text-mission-control-text-dim hover:border-success/30 hover:text-success'}`}>Allow</button>
-                                    <button type="button" onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: false })); setPermDirty(true); }}
+                                    <button type="button" aria-label={`Deny ${perm.label}`} onClick={() => { setPermOverrides(prev => ({ ...prev, [perm.id]: false })); setPermDirty(true); }}
                                       className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${overrideVal === false ? 'bg-error/10 border-error/30 text-error' : 'border-mission-control-border text-mission-control-text-dim hover:border-error/30 hover:text-error'}`}>Deny</button>
                                   </div>
                                 </Flex>
@@ -1170,7 +1172,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
 
               {/* Per-agent blocked commands */}
               <div>
-                <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">Blocked Commands</div>
+                <div className="text-xs font-bold text-mission-control-text-dim uppercase tracking-wider mb-1">Blocked Commands</div>
                 <p className="text-xs text-mission-control-text-dim mb-2">Agent-specific blocked tool patterns (global blocks in Settings → Security always apply).</p>
                 <div className="border border-mission-control-border rounded-lg overflow-hidden">
                   <div className="p-2 bg-mission-control-surface flex gap-2">
@@ -1191,7 +1193,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
                       {agentDisallowed.map(tool => (
                         <Flex key={tool} align="center" justify="between" className="px-3 py-1.5">
                           <code className="text-xs font-mono text-mission-control-text">{tool}</code>
-                          <button type="button" onClick={() => handleRemoveAgentDisallowed(tool)} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
+                          <button type="button" aria-label={`Remove ${tool} from blocked commands`} onClick={() => handleRemoveAgentDisallowed(tool)} className="inline-flex items-center justify-center w-5 h-5 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
                             <X size={12} />
                           </button>
                         </Flex>
@@ -1212,7 +1214,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
             <div className="space-y-4">
               <Flex align="center" gap="2" mb="1">
                 <BarChart2 size={14} className="text-mission-control-text-dim" />
-                <span className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Agent Performance</span>
+                <span className="text-xs font-bold text-mission-control-text-dim uppercase tracking-wider">Agent Performance</span>
               </Flex>
 
               {metricsLoading ? (
@@ -1239,7 +1241,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
 
                   {/* Review stats */}
                   <div className="p-3 rounded-lg bg-mission-control-surface border border-mission-control-border space-y-2">
-                    <div className="text-[10px] font-bold text-mission-control-text-dim uppercase tracking-wider">Clara Review Score</div>
+                    <div className="text-xs font-bold text-mission-control-text-dim uppercase tracking-wider">Clara Review Score</div>
                     <Flex align="center" gap="3">
                       <div className="flex-1 h-2 rounded-full bg-mission-control-surface overflow-hidden">
                         <div
@@ -1306,7 +1308,7 @@ export default function AgentConfigPanel({ agentId, agentName }: AgentConfigPane
               )}
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* HR Actions footer — only for non-protected agents */}

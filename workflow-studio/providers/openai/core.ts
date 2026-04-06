@@ -254,7 +254,8 @@ export async function executeResponsesProviderRequest(
     try {
       const payload = JSON.parse(text)
       return payload?.error?.message || text
-    } catch {
+    } catch (err) {
+      console.warn('[ws/providers/openai/core] Non-critical:', err);
       return text
     }
   }

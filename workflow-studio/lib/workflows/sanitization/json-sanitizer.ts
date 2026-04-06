@@ -96,7 +96,8 @@ function sanitizeConditions(conditionsJson: string): string {
     })
 
     return JSON.stringify(cleaned)
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/workflows/sanitization/json-sanitizer] Non-critical:', err);
     return conditionsJson
   }
 }
@@ -241,7 +242,8 @@ function sanitizeSubBlocks(
           sanitized[key] = sortKeysRecursively(obj) as Record<string, unknown>
           return
         }
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/workflows/sanitization/json-sanitizer] Non-critical:', err);
         // Invalid JSON - pass through as-is
         sanitized[key] = subBlock.value
         return
@@ -310,7 +312,8 @@ function convertConditionHandleToSimple(
   } else if (typeof conditionsValue === 'string') {
     try {
       conditions = JSON.parse(conditionsValue)
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/workflows/sanitization/json-sanitizer] Non-critical:', err);
       return handle
     }
   } else {
@@ -370,7 +373,8 @@ function convertRouterHandleToSimple(handle: string, _blockId: string, block: Bl
   } else if (typeof routesValue === 'string') {
     try {
       routes = JSON.parse(routesValue)
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/workflows/sanitization/json-sanitizer] Non-critical:', err);
       return handle
     }
   } else {

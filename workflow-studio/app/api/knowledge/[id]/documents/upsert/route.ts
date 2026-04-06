@@ -158,7 +158,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           `[${requestId}] Failed to delete old document ${existingDocumentId}, rolling back new record`,
           deleteError
         )
-        await deleteDocument(firstDocument.documentId, requestId).catch(() => {})
+        await deleteDocument(firstDocument.documentId, requestId).catch(err => console.warn('[knowledge/[id]/documents/upsert] Non-critical:', err))
         return NextResponse.json({ error: 'Failed to replace existing document' }, { status: 500 })
       }
     }

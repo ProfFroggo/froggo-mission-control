@@ -19,7 +19,8 @@ process.stdin.on('end', () => {
   try {
     const data = hookInput.trim() ? JSON.parse(hookInput) : {};
     syncSession(data);
-  } catch {
+  } catch (err) {
+    console.warn('[session-sync] Non-critical: failed to parse hook input:', err);
     syncSession({});
   }
 });
@@ -70,8 +71,8 @@ function syncSession(data) {
         .run('session_sync', Date.now(), JSON.stringify({ agent_id: agentId, session_id: sessionId }));
       db.close();
     }
-  } catch {
-    // DB may not exist yet — not fatal
+  } catch (err) {
+    console.warn('[session-sync] Non-critical: DB analytics event failed:', err);
   }
 
   process.exit(0);

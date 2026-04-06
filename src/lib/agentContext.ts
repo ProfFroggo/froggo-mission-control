@@ -131,7 +131,8 @@ async function loadWorkspaceFiles(agentId: string): Promise<Record<string, strin
     const soulResult = await agentApi.readSoul(agentId);
     const soulContent = typeof soulResult === 'string' ? soulResult : soulResult?.content || null;
     return { soul: soulContent };
-  } catch {
+  } catch (err) {
+    console.warn('[agentContext] Non-critical:', err);
     // Workspace files not available via REST
   }
 

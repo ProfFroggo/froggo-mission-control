@@ -30,14 +30,23 @@ function MetricCell({ label, value, sub }: { label: string; value: string | numb
 
 function SkeletonGrid() {
   return (
-    <div className="grid grid-cols-2 divide-x divide-y divide-mission-control-border">
-      {[...Array(4)].map((_, i) => (
-        <div key={i} className="bg-mission-control-surface px-4 py-3">
-          <div className="h-2 w-16 rounded bg-mission-control-border animate-pulse mb-2" />
-          <div className="h-5 w-12 rounded bg-mission-control-border animate-pulse" />
-        </div>
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-2 divide-x divide-y divide-mission-control-border">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-mission-control-surface px-4 py-3">
+            <div className="h-2 w-16 rounded bg-mission-control-border animate-pulse mb-2" />
+            <div className="h-5 w-12 rounded bg-mission-control-border animate-pulse" />
+          </div>
+        ))}
+      </div>
+      {/* Top-post placeholder — matches the loaded "Top post" section height
+          to prevent layout shift (CLS) when data arrives and the card grows. */}
+      <div className="px-4 py-3 border-t border-mission-control-border">
+        <div className="h-2 w-20 rounded bg-mission-control-border animate-pulse mb-2" />
+        <div className="h-3 w-full rounded bg-mission-control-border animate-pulse mb-1" />
+        <div className="h-3 w-2/3 rounded bg-mission-control-border animate-pulse" />
+      </div>
+    </>
   );
 }
 

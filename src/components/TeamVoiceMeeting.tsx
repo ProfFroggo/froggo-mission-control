@@ -33,7 +33,7 @@ async function loadApiKey(): Promise<string> {
       const data = await res.json();
       return data.apiKey || '';
     }
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[TeamVoiceMeeting] Non-critical:', err); }
   return '';
 }
 
@@ -147,7 +147,7 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
     if (!speakerDeviceId) return;
     const audio = document.createElement('audio');
     if (typeof (audio as any).setSinkId === 'function') {
-      (audio as any).setSinkId(speakerDeviceId).catch(() => {});
+      (audio as any).setSinkId(speakerDeviceId).catch(err => console.warn('[TeamVoiceMeeting] Non-critical:', err));
     }
   }, [speakerDeviceId]);
 
@@ -161,7 +161,7 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
         const all = await navigator.mediaDevices.enumerateDevices();
         setMicDevices(all.filter(d => d.kind === 'audioinput'));
         setSpeakerDevices(all.filter(d => d.kind === 'audiooutput'));
-      } catch { /* permission denied — devices listed without labels */ }
+      } catch (err) { console.warn('[TeamVoiceMeeting] Non-critical: permission denied — devices listed without labels:', err); }
     };
     enumerate();
     navigator.mediaDevices.addEventListener('devicechange', enumerate);
@@ -216,7 +216,7 @@ export default function TeamVoiceMeeting({ roomId, onEndVoice }: TeamVoiceMeetin
           animRef.current = requestAnimationFrame(tick);
         };
         tick();
-      } catch { /* ignore */ }
+      } catch (err) { console.warn('[TeamVoiceMeeting] Non-critical:', err); }
     })();
     return () => {
       running = false;
@@ -682,7 +682,8 @@ Respond as ${agentName(agentId)}:`;
         sinkId: speakerDeviceIdRef.current || undefined,
         signal: abort.signal,
       });
-    } catch {
+    } catch (err) {
+      console.warn('[TeamVoiceMeeting] Non-critical:', err);
       // Silently swallow — never block the meeting
     }
 

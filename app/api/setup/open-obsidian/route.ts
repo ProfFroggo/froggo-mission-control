@@ -13,14 +13,16 @@ export async function POST() {
       execSync(`xdg-open "obsidian://open?path=${encodeURIComponent(vaultPath)}"`, { timeout: 5000 });
     }
     return NextResponse.json({ opened: true });
-  } catch {
+  } catch (err) {
+    console.warn('[setup/open-obsidian] Non-critical:', err);
     // Fall back to opening the folder
     try {
       if (process.platform === 'darwin') {
         execSync(`open "${vaultPath}"`, { timeout: 3000 });
       }
       return NextResponse.json({ opened: true, fallback: true });
-    } catch {
+    } catch (err) {
+      console.warn('[setup/open-obsidian] Non-critical:', err);
       return NextResponse.json({ opened: false }, { status: 500 });
     }
   }

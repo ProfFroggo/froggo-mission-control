@@ -111,7 +111,8 @@ export async function POST(req: NextRequest) {
           name: validatedData.name,
           workspaceId: validatedData.workspaceId,
         })
-      } catch {
+      } catch (err) {
+        console.warn('[knowledge] Non-critical:', err);
         // Telemetry should not fail the operation
       }
 

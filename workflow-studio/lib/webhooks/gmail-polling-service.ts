@@ -759,7 +759,7 @@ async function markEmailAsRead(accessToken: string, messageId: string) {
     })
 
     if (!response.ok) {
-      await response.body?.cancel().catch(() => {})
+      await response.body?.cancel().catch(err => console.warn('[ws/lib/webhooks/gmail-polling-service] Non-critical:', err))
       throw new Error(
         `Failed to mark email ${messageId} as read: ${response.status} ${response.statusText}`
       )

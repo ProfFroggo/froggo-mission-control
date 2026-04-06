@@ -75,14 +75,18 @@ class NotificationService {
       if (dismissed) this.dismissedIds = new Set(JSON.parse(dismissed));
       const read = localStorage.getItem('notif_read');
       if (read) this.readIds = new Set(JSON.parse(read));
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[notificationService] Failed to load notification state from localStorage:', err);
+    }
   }
 
   private saveDismissedState() {
     try {
       localStorage.setItem('notif_dismissed', JSON.stringify([...this.dismissedIds]));
       localStorage.setItem('notif_read', JSON.stringify([...this.readIds]));
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[notificationService] Failed to save notification state to localStorage:', err);
+    }
   }
 
   /**
@@ -458,7 +462,8 @@ class NotificationService {
     try {
       const raw = localStorage.getItem('notif_preferences');
       return raw ? JSON.parse(raw) : {};
-    } catch {
+    } catch (err) {
+      console.warn('[notificationService] Non-critical:', err);
       return {};
     }
   }

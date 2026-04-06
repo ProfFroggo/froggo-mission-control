@@ -47,7 +47,8 @@ function parseJson<T>(raw: string | null): T | null {
   if (!raw) return null
   try {
     return JSON.parse(raw) as T
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/credentials/client-state] Non-critical:', err);
     return null
   }
 }

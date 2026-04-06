@@ -137,7 +137,7 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
                       </Suspense>
                     );
                   }
-                } catch { /* not valid JSON — fall through */ }
+                } catch (err) { console.warn('[MarkdownMessage] Non-critical: not valid JSON — fall through:', err); }
               }
 
               if (!streaming && onArtifactOpen && PREVIEWABLE_LANGS.has(lang.toLowerCase())) {

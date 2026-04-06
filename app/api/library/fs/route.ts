@@ -1,8 +1,9 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // GET /api/library/fs?path= — list real filesystem directories under LIBRARY_PATH
+// POST /api/library/fs — write a file to the library (auto-save artifacts)
 import { NextRequest, NextResponse } from 'next/server';
-import { readdirSync, statSync, existsSync } from 'fs';
-import { join, relative, normalize } from 'path';
+import { readdirSync, statSync, existsSync, writeFileSync, mkdirSync } from 'fs';
+import { join, relative, normalize, dirname } from 'path';
 import { ENV } from '@/lib/env';
 
 export const runtime = 'nodejs';
@@ -76,4 +77,51 @@ export async function GET(request: NextRequest) {
   // Full tree walk
   const dirs = walkDirs(basePath, basePath);
   return NextResponse.json({ dirs, basePath });
+}
+
+/** POST /api/library/fs — write a file to the library directory.
+ *  Used by artifact auto-save to persist chat-generated deliverables. */
+export async function POST(request: NextRequest) {
+  try {
+    const { action, path: filePath, content, folder } = await request.json();
+    if (action !== 'write') {
+      return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+    }
+    if (!filePath || typeof filePath !== 'string' || !content) {
+      return NextResponse.json({ error: 'path and content required' }, { status: 400 });
+    }
+
+    const basePath = ENV.LIBRARY_PATH;
+    // Build target: library/{folder?}/{filename}
+    const subdir = folder ? join(basePath, folder) : basePath;
+    const safeName = filePath.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120);
+    const target = join(subdir, safeName);
+
+    // Security: must be within library
+    if (!normalize(target).startsWith(normalize(basePath))) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Don't overwrite existing files — add suffix
+    let finalPath = target;
+    if (existsSync(finalPath)) {
+      const ext = safeName.includes('.') ? '.' + safeName.split('.').pop() : '';
+      const base = ext ? safeName.slice(0, -ext.length) : safeName;
+      let i = 2;
+      while (existsSync(join(subdir, `${base}_${i}${ext}`))) i++;
+      finalPath = join(subdir, `${base}_${i}${ext}`);
+    }
+
+    mkdirSync(dirname(finalPath), { recursive: true });
+    writeFileSync(finalPath, content, 'utf-8');
+
+    return NextResponse.json({
+      success: true,
+      path: finalPath,
+      relativePath: relative(basePath, finalPath),
+    });
+  } catch (error) {
+    console.error('[library/fs] POST error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

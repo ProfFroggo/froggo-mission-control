@@ -69,7 +69,7 @@ export async function POST(
         stdio: ['ignore', 'ignore', 'ignore'],
       });
       proc.unref();
-    } catch { /* non-blocking — do not fail the request */ }
+    } catch (err) { console.warn('[agents/[id]/spawn] Non-critical: non-blocking — do not fail the request:', err); }
 
     // Attempt tmux spawn if tmux session is running
     try {
@@ -79,7 +79,8 @@ export async function POST(
       if (existsSync(resolvedScriptPath) && resolvedScriptPath.startsWith(ALLOWED_TOOLS_DIR)) {
         spawnSync('bash', [resolvedScriptPath, id], { timeout: 5000 });
       }
-    } catch {
+    } catch (err) {
+      console.warn('[agents/[id]/spawn] Non-critical:', err);
       // tmux not available or agent already running — not fatal
     }
 

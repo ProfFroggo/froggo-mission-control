@@ -78,7 +78,7 @@ export function ToolSubBlockRenderer({
           useSubBlockStore.getState().setValue(blockId, syntheticId, parsed)
           return
         }
-      } catch {}
+      } catch (err) { console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/components/tool-input/components/tools/sub-block-rendererx] Non-critical:', err); }
     }
     useSubBlockStore.getState().setValue(blockId, syntheticId, toolParamValue)
   }, [toolParamValue, blockId, syntheticId, isObjectType])

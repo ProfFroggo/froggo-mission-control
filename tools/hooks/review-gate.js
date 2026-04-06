@@ -53,8 +53,8 @@ async function main() {
         process.stderr.write(`[review-gate] Clara review trigger failed for task ${taskId}: ${err}\n`);
       });
     }
-  } catch {
-    // Silently ignore parse errors
+  } catch (err) {
+    console.warn('[review-gate] Non-critical: parse error:', err);
   }
 
   // Always approve — this hook observes and triggers, doesn't block

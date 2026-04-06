@@ -1878,7 +1878,8 @@ function getKnowledgeBaseStorageKey(fileUrl: string | null): string | null {
     const urlPath = new URL(fileUrl, 'http://localhost').pathname
     const storageKey = extractStorageKey(urlPath)
     return storageKey !== urlPath ? storageKey : null
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/knowledge/documents/service] Non-critical:', err);
     return null
   }
 }

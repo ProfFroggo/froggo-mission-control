@@ -25,9 +25,9 @@ function pruneOldUploads() {
       const p = join(UPLOAD_DIR, f);
       try {
         if (now - statSync(p).mtimeMs > MAX_FILE_AGE_MS) unlinkSync(p);
-      } catch { /* skip */ }
+      } catch (err) { console.warn('[agents/upload] Non-critical: skip:', err); }
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[agents/upload] Non-critical:', err); }
 }
 
 export async function POST(request: NextRequest) {

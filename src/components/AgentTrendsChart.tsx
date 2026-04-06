@@ -120,7 +120,8 @@ export default function AgentTrendsChart({ days = 30 }: Props) {
       await navigator.clipboard.writeText(buildBomCsv(data));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } catch (err) {
+      console.warn('[AgentTrendsChart] Non-critical:', err);
       // ignore
     }
   }

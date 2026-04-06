@@ -416,7 +416,8 @@ export function useWorkflowExecution() {
               if (!isCancelled) {
                 try {
                   controller.enqueue(data)
-                } catch {
+                } catch (err) {
+                  console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-workflow-execution] Non-critical:', err);
                   isCancelled = true
                 }
               }
@@ -482,7 +483,7 @@ export function useWorkflowExecution() {
                     if (isUploadErrorCapable(workflowInput)) {
                       try {
                         workflowInput.onUploadError(message)
-                      } catch {}
+                      } catch (err) { console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-workflow-execution] Non-critical:', err); }
                     }
                   }
                 }
@@ -493,7 +494,7 @@ export function useWorkflowExecution() {
                 if (isUploadErrorCapable(workflowInput)) {
                   try {
                     workflowInput.onUploadError('Unexpected error uploading files')
-                  } catch {}
+                  } catch (err) { console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-workflow-execution] Non-critical:', err); }
                 }
                 // Continue execution even if file upload fails
                 workflowInput.files = []
@@ -1310,7 +1311,7 @@ export function useWorkflowExecution() {
               isPreExecutionError: true,
             })
           }
-        } catch {}
+        } catch (err) { console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-workflow-execution] Non-critical:', err); }
       }
 
       errorResult = {
@@ -1504,7 +1505,7 @@ export function useWorkflowExecution() {
       setCurrentExecutionId(activeWorkflowId, null)
       fetch(`/api/workflows/${activeWorkflowId}/executions/${storedExecutionId}/cancel`, {
         method: 'POST',
-      }).catch(() => {})
+      }).catch(err => console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-workflow-execution] Non-critical:', err))
       handleExecutionCancelledConsole({
         workflowId: activeWorkflowId,
         executionId: storedExecutionId,
@@ -1826,7 +1827,8 @@ export function useWorkflowExecution() {
           executionId = pointer.executionId
           fromEventId = pointer.lastEventId
         }
-      } catch {
+      } catch (err) {
+        console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-workflow-execution] Non-critical:', err);
         // fall through to console entries
       }
 

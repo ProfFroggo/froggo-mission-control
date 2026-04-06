@@ -397,7 +397,8 @@ function resolveWorkflowVariables(
       } else if (type === 'json' && typeof variableValue === 'string') {
         try {
           variableValue = JSON.parse(variableValue)
-        } catch {
+        } catch (err) {
+          console.warn('[function/execute] Non-critical:', err);
           // Keep as-is
         }
       }
@@ -520,7 +521,8 @@ function resolveTagVariables(
       if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
         try {
           tagValue = JSON.parse(tagValue)
-        } catch {
+        } catch (err) {
+          console.warn('[function/execute] Non-critical:', err);
           // Keep as string if not valid JSON
         }
       }

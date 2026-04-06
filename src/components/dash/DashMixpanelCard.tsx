@@ -80,7 +80,8 @@ export default function DashMixpanelCard({ range, onNavigate }: DashMixpanelCard
         const res = await fetch(`/api/mixpanel/metrics?days=${days}`);
         const json = (await res.json()) as MixpanelMetricsResponse;
         if (!cancelled) setData(json);
-      } catch {
+      } catch (err) {
+        console.warn('[DashMixpanelCard] Non-critical:', err);
         if (!cancelled) setData({ configured: false });
       } finally {
         if (!cancelled) setLoading(false);

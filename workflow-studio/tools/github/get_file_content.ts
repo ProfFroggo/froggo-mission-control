@@ -187,7 +187,8 @@ export const getFileContentV2Tool: ToolConfig<GetFileContentParams, any> = {
     if (data.content && data.encoding === 'base64') {
       try {
         decodedContent = Buffer.from(data.content, 'base64').toString('utf-8')
-      } catch {
+      } catch (err) {
+        console.warn('[ws/tools/github/get_file_content] Non-critical:', err);
         decodedContent = data.content
       }
     }

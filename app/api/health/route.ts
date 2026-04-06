@@ -38,7 +38,7 @@ function checkClaudeCli(): { found: boolean; authenticated: boolean; path: strin
       const cfg = JSON.parse(readFileSync(cfgPath, 'utf-8'));
       authenticated = !!(cfg.hasCompletedOnboarding || cfg.oauthAccount || cfg.primaryApiKey);
     }
-  } catch { /* unreadable */ }
+  } catch (err) { console.warn('[health] Non-critical: unreadable:', err); }
 
   // Slow fallback: run claude --version ONLY if file check was inconclusive.
   // Cache the result aggressively so repeated health checks don't re-run this.
@@ -46,7 +46,7 @@ function checkClaudeCli(): { found: boolean; authenticated: boolean; path: strin
     try {
       execSync(`"${bin}" --version`, { timeout: 3000, stdio: 'pipe' });
       authenticated = true; // if it runs without auth error, we're good
-    } catch { /* not authenticated or not found */ }
+    } catch (err) { console.warn('[health] Non-critical: not authenticated or not found:', err); }
   }
 
   const result = { found, authenticated, path: bin };
@@ -103,8 +103,8 @@ export async function GET() {
     try {
       const totalModules = db.prepare("SELECT COUNT(*) as cnt FROM catalog_modules").get() as { cnt: number } | undefined;
       modulesTotal = totalModules?.cnt ?? 0;
-    } catch { /* modules table not present */ }
-  } catch { /* DB may not be ready — non-critical */ }
+    } catch (err) { console.warn('[health] Non-critical: modules table not present:', err); }
+  } catch (err) { console.warn('[health] Non-critical: DB may not be ready — non-critical:', err); }
 
   // Git info — non-critical, fail silently
   let gitBranch: string | null = null;
@@ -112,7 +112,7 @@ export async function GET() {
   try {
     gitBranch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: process.cwd(), timeout: 2000, stdio: 'pipe' }).toString().trim();
     gitCommit = execSync('git rev-parse --short HEAD', { cwd: process.cwd(), timeout: 2000, stdio: 'pipe' }).toString().trim();
-  } catch { /* not a git repo or git not available */ }
+  } catch (err) { console.warn('[health] Non-critical: not a git repo or git not available:', err); }
 
   return NextResponse.json({
     cli: claudeStatus.found && claudeStatus.authenticated,

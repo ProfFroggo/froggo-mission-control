@@ -263,7 +263,7 @@ export function useConversationFlow({ moduleSpec, initialState }: ConversationFl
                     fail(new Error(chunk.error || 'Agent error'));
                     return;
                   }
-                } catch { /* malformed SSE line */ }
+                } catch (err) { console.warn('[useConversationFlow] Non-critical: malformed SSE line:', err); }
               }
             }
             finish(accumulated);
@@ -327,7 +327,7 @@ Output ONLY the HTML fragment, no [[ANSWER_READY]] tag, no markdown fences.`;
         const cleaned = result.replace(ANSWER_EXTRACT_RE, '').replace(/^```json?\n?/m, '').replace(/\n?```$/m, '').trim();
         const tasks: LiveTask[] = JSON.parse(cleaned);
         if (Array.isArray(tasks)) setLiveTasks(tasks.map(t => ({ ...t, section })));
-      } catch { /* not valid JSON — that's OK */ }
+      } catch (err) { console.warn('[useConversationFlow] Non-critical: not valid JSON:', err); }
     },
     [tryLLMQuiet],
   );

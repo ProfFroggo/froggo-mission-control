@@ -50,7 +50,7 @@ const HOME = os.homedir();
 const SCHEDULE_PATH = process.env.SCHEDULE_PATH || path.join(HOME, 'mission-control/data/schedule.json');
 const LOG_PATH = process.env.LOG_PATH || path.join(HOME, 'mission-control/logs/cron.log');
 const CLAUDE_BIN = process.env.CLAUDE_BIN || (() => {
-  try { return require('child_process').execSync('which claude', { encoding: 'utf-8', timeout: 2000 }).trim(); } catch {}
+  try { return require('child_process').execSync('which claude', { encoding: 'utf-8', timeout: 2000 }).trim(); } catch (err) { console.warn('[tools/cron-daemon] Non-critical:', err); }
   const candidates = ['/usr/local/bin/claude', path.join(HOME, '.npm-global', 'bin', 'claude'), '/opt/homebrew/bin/claude'];
   return candidates.find(f => require('fs').existsSync(f)) || 'claude';
 })();
@@ -67,7 +67,7 @@ try {
       try { process.kill(existingPid, 0); // Check if process is alive
         console.error(`Cron daemon already running (PID ${existingPid}). Exiting.`);
         process.exit(0);
-      } catch { /* stale PID — proceed */ }
+      } catch (err) { console.warn('[tools/cron-daemon] Non-critical: stale PID — proceed:', err); }
     }
   }
   fs.mkdirSync(path.dirname(PID_PATH), { recursive: true });
@@ -86,7 +86,7 @@ function log(msg) {
   try {
     fs.mkdirSync(path.dirname(LOG_PATH), { recursive: true });
     fs.appendFileSync(LOG_PATH, line);
-  } catch {}
+  } catch (err) { console.warn('[tools/cron-daemon] Non-critical:', err); }
 }
 
 // ── Schedule I/O ─────────────────────────────────────────────────────────────
@@ -227,7 +227,7 @@ async function runApiJob(job) {
               log(`[${job.id}] agent error: ${evt.text}`);
               accumulated += `[Error: ${evt.text}]`;
             }
-          } catch {}
+          } catch (err) { console.warn('[tools/cron-daemon] Non-critical:', err); }
         }
       });
 
@@ -490,7 +490,7 @@ function checkJobs() {
         try {
           const errLogPath = path.join(HOME, 'mission-control', 'cron-errors.log');
           fs.appendFileSync(errLogPath, `${new Date().toISOString()} Job ${job.id} failed: ${e.message}\n`);
-        } catch { /* non-critical */ }
+        } catch (err) { console.warn('[tools/cron-daemon] Non-critical:', err); }
       });
       updated = true;
       const nextRunAtMs = computeNextRun(job, now);
@@ -537,7 +537,7 @@ function logRunToDb(jobId, status, message, startedAt) {
     ).run(jobId, jobId);
     // Also update automations table last_run if matching
     db.prepare(`UPDATE automations SET last_run = ?, updated_at = ? WHERE id = ?`).run(Date.now(), Date.now(), jobId);
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[tools/cron-daemon] Non-critical:', err); }
 }
 
 function postToRoom(roomId, content) {
@@ -585,7 +585,7 @@ async function checkStuckTasks() {
         database.prepare(
           `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
         ).run(t.id, 'cron', 'stuck_alert', `Task stuck in-progress for > 4 hours. Alert posted to #general.`, Date.now());
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[tools/cron-daemon] Non-critical:', err); }
     }
   } catch (e) {
     log(`Error in checkStuckTasks: ${e.message}`);
@@ -627,7 +627,7 @@ async function processScheduledItems() {
         if (type === 'tweet' || type === 'thread' || ((type === 'post' || type === 'social') && (item.platform === 'twitter' || item.platform === 'x'))) {
           // Post tweet directly to X API
           let tweetContent = content;
-          try { const parsed = JSON.parse(content); if (parsed.tweets) tweetContent = parsed.tweets[0]; } catch { /* use raw */ }
+          try { const parsed = JSON.parse(content); if (parsed.tweets) tweetContent = parsed.tweets[0]; } catch (err) { console.warn('[tools/cron-daemon] Non-critical: use raw:', err); }
 
           const tweetBody = JSON.stringify({ text: tweetContent });
           const postResult = await new Promise((resolve) => {
@@ -671,7 +671,7 @@ async function processScheduledItems() {
                 }
                 log(`[scheduled] Thread posted: ${parsed.tweets.length} tweets`);
               }
-            } catch { /* not a thread */ }
+            } catch (err) { console.warn('[tools/cron-daemon] Non-critical: not a thread:', err); }
             continue; // skip the generic status update below
           } else {
             log(`[scheduled] Tweet post failed: ${postResult.error || 'unknown'}`);
@@ -923,7 +923,7 @@ async function generateDailyCompetitorReport() {
 
 function shutdown() {
   log('Cron daemon shutting down.');
-  try { fs.unlinkSync(PID_PATH); } catch {}
+  try { fs.unlinkSync(PID_PATH); } catch (err) { console.warn('[tools/cron-daemon] Non-critical:', err); }
   process.exit(0);
 }
 process.on('SIGTERM', shutdown);

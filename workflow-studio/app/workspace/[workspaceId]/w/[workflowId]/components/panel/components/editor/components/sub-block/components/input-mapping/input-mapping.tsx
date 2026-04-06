@@ -96,7 +96,8 @@ export function InputMapping({
       if (typeof mapping === 'string') {
         return JSON.parse(mapping)
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/components/input-mapping/input-mappingx] Non-critical:', err);
       // Invalid JSON, return empty object
     }
     return {}

@@ -325,7 +325,7 @@ function ScenarioBuilderTab() {
         if (Array.isArray(balances)) {
           setAccounts(balances.map((a: any) => ({ id: a.id, name: a.name })));
         }
-      } catch { /* accounts not available */ }
+      } catch (err) { console.warn('[FinanceScenarioPanel] Non-critical: accounts not available:', err); }
     })();
   }, [loadScenarios]);
 

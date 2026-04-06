@@ -60,7 +60,8 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
       };
       tick();
       (startAudioAnalysis as any)._stopFn = () => { running = false; };
-    } catch {
+    } catch (err) {
+      console.warn('[VoiceButton] Non-critical:', err);
       // mic permission denied — no waveform, still functional
     }
   };
@@ -73,7 +74,7 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
     cancelAnimationFrame(animFrameRef.current);
     micStreamRef.current?.getTracks().forEach(t => t.stop());
     micStreamRef.current = null;
-    audioCtxRef.current?.close().catch(() => {});
+    audioCtxRef.current?.close().catch(err => console.warn('[VoiceButton] Non-critical:', err));
     audioCtxRef.current = null;
     analyserRef.current = null;
     setAudioLevel(0);
@@ -87,14 +88,17 @@ export default function VoiceButton({ onTranscript, disabled }: VoiceButtonProps
       return;
     }
 
+    // Stop any lingering audio analysis first to avoid double-getUserMedia
+    stopAudioAnalysis();
+
     const stt = new GeminiStt({
       deviceId: micDeviceId || undefined,
-      continuous: false,
-      chunkDurationMs: 8000,
+      continuous: true,
+      onPartialTranscript: (text) => {
+        onTranscript(text);
+      },
       onTranscript: (text) => {
         onTranscript(text);
-        setListening(false);
-        stopAudioAnalysis();
       },
       onError: () => {
         setListening(false);

@@ -75,7 +75,8 @@ export const XMentionsView: React.FC = () => {
         }
       }
       setLoading(false);
-    } catch {
+    } catch (err) {
+      console.warn('[XMentionsView] Non-critical:', err);
       setLoading(false);
     }
   };
@@ -103,12 +104,13 @@ export const XMentionsView: React.FC = () => {
                 reply_status: 'pending',
                 metadata: JSON.stringify(m.public_metrics || {}),
               });
-            } catch { /* duplicate or DB error — skip */ }
+            } catch (err) { console.warn('[XMentionsView] Non-critical: duplicate or DB error — skip:', err); }
           }
         }
       }
       await loadMentions();
-    } catch {
+    } catch (err) {
+      console.warn('[XMentionsView] Non-critical:', err);
       // Error fetching — just reload existing
       await loadMentions();
     } finally {
@@ -121,7 +123,8 @@ export const XMentionsView: React.FC = () => {
     setMentions(prev => prev.map(m => m.id === id ? { ...m, reply_status: status } : m));
     try {
       await inboxApi.update(Number(id), { reply_status: status });
-    } catch {
+    } catch (err) {
+      console.warn('[XMentionsView] Non-critical:', err);
       // Roll back on failure
       await loadMentions();
     }
@@ -131,7 +134,8 @@ export const XMentionsView: React.FC = () => {
     try {
       await inboxApi.update(Number(id), { notes: noteText });
       setNotes({ ...notes, [id]: noteText });
-    } catch {
+    } catch (err) {
+      console.warn('[XMentionsView] Non-critical:', err);
       // Keep note text in local state even if persist fails
     }
   };

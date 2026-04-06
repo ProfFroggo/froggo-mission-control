@@ -58,7 +58,9 @@ export class ApiBlockHandler implements BlockHandler {
             if (trimmedBody.startsWith('{') || trimmedBody.startsWith('[')) {
               processedInputs.body = JSON.parse(trimmedBody)
             }
-          } catch (e) {}
+          } catch (e) {
+            console.warn('[api-handler] Failed to parse request body as JSON:', e)
+          }
         } else if (processedInputs.body === null) {
           processedInputs.body = undefined
         }

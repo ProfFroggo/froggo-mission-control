@@ -431,7 +431,8 @@ export default function AutomationsPanel() {
         const data = await res.json();
         setAutomations(Array.isArray(data) ? data : []);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[AutomationsPanel] Non-critical:', err);
       // silently fail — show empty state
     } finally {
       setLoading(false);
@@ -451,7 +452,8 @@ export default function AutomationsPanel() {
       setAutomations(prev =>
         prev.map(a => a.id === id ? { ...a, status: newStatus } : a)
       );
-    } catch {
+    } catch (err) {
+      console.warn('[AutomationsPanel] Non-critical:', err);
       // silent fail
     }
   };
@@ -461,7 +463,8 @@ export default function AutomationsPanel() {
     try {
       await fetch(`/api/automations?id=${id}`, { method: 'DELETE' });
       setAutomations(prev => prev.filter(a => a.id !== id));
-    } catch {
+    } catch (err) {
+      console.warn('[AutomationsPanel] Non-critical:', err);
       // silent fail
     }
   };
@@ -470,7 +473,8 @@ export default function AutomationsPanel() {
     // Stub — would POST to a run endpoint in production
     try {
       await fetch(`/api/automations?id=${id}&action=run`, { method: 'POST' });
-    } catch {
+    } catch (err) {
+      console.warn('[AutomationsPanel] Non-critical:', err);
       // silent fail
     }
   };
@@ -540,7 +544,8 @@ export default function AutomationsPanel() {
           setAutomations(prev => [created, ...prev]);
         }
       }
-    } catch {
+    } catch (err) {
+      console.warn('[AutomationsPanel] Non-critical:', err);
       // silent fail
     }
     setBuilderOpen(false);

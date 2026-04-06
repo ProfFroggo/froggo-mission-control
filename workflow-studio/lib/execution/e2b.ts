@@ -94,7 +94,8 @@ export async function executeInE2B(req: E2BExecutionRequest): Promise<E2BExecuti
       const jsonPart = marker.slice(prefix.length)
       try {
         result = JSON.parse(jsonPart)
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/execution/e2b] Non-critical:', err);
         result = jsonPart
       }
       const filteredLines = lines.filter((l) => !l.startsWith(prefix))
@@ -119,6 +120,6 @@ export async function executeInE2B(req: E2BExecutionRequest): Promise<E2BExecuti
   } finally {
     try {
       await sandbox.kill()
-    } catch {}
+    } catch (err) { console.warn('[ws/lib/execution/e2b] Non-critical:', err); }
   }
 }

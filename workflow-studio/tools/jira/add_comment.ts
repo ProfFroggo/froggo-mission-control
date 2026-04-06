@@ -137,7 +137,7 @@ export const jiraAddCommentTool: ToolConfig<JiraAddCommentParams, JiraAddComment
         try {
           const err = await commentResponse.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/add_comment] Non-critical:', _e); }
         throw new Error(message)
       }
 
@@ -155,7 +155,7 @@ export const jiraAddCommentTool: ToolConfig<JiraAddCommentParams, JiraAddComment
         try {
           const err = await response.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/add_comment] Non-critical:', _e); }
         throw new Error(message)
       }
       data = await response.json()

@@ -71,7 +71,7 @@ async function validateMcpAuth(
           workspaceId = body.workspaceId
           ;(request as any)._parsedBody = body
         }
-      } catch {}
+      } catch (err) { console.warn('[ws/lib/mcp/middleware] Non-critical:', err); }
     }
 
     if (!workspaceId) {

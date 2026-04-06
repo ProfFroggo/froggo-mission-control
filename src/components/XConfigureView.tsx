@@ -30,7 +30,8 @@ function CredentialsPanel() {
             const data = await res.json();
             results[key] = !!data?.value;
           }
-        } catch {
+        } catch (err) {
+          console.warn('[XConfigureView] Non-critical:', err);
           results[key] = false;
         }
       }

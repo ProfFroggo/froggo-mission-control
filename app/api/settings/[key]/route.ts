@@ -60,7 +60,7 @@ export async function PUT(
 
     // Try keychain too (best-effort, non-blocking)
     if (KEYCHAIN_KEYS.has(key)) {
-      await keychainSet(key, value).catch(() => {});
+      await keychainSet(key, value).catch(err => console.warn('[settings/[key]] Non-critical:', err));
     }
 
     return NextResponse.json({ key, value });

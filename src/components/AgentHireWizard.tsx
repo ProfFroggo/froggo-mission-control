@@ -98,6 +98,10 @@ export default function AgentHireWizard({ agent, onClose, onHired }: AgentHireWi
                   src={`/api/agents/${agent.id}/avatar`}
                   alt={agent.name}
                   className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  width={40}
+                  height={40}
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).style.display = 'none';
                     if (e.currentTarget.parentElement) {

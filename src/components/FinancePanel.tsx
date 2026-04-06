@@ -115,7 +115,7 @@ export default function FinancePanel() {
       if (Array.isArray(result)) {
         setAccounts(result as AccountBalance[]);
       }
-    } catch { /* accounts not available yet */ }
+    } catch (err) { console.warn('[FinancePanel] Non-critical: accounts not available yet:', err); }
   }, []);
 
   const loadRecurring = useCallback(async () => {
@@ -156,7 +156,7 @@ export default function FinancePanel() {
           setFamilyBudget(family as Budget | null);
           setCryptoBudget(crypto as Budget | null);
         }
-      } catch { /* budgets not available */ }
+      } catch (err) { console.warn('[FinancePanel] Non-critical: budgets not available:', err); }
     } catch (error) {
       // Finance load error
     } finally {
@@ -262,7 +262,8 @@ export default function FinancePanel() {
       a.click();
       URL.revokeObjectURL(url);
       setExportResult('Export downloaded.');
-    } catch {
+    } catch (err) {
+      console.warn('[FinancePanel] Non-critical:', err);
       setExportResult('Export failed.');
     } finally {
       setExportLoading(false);

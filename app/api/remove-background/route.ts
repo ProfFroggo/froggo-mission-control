@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       db.prepare(
         `INSERT OR IGNORE INTO library_files (id, name, path, category, createdAt) VALUES (?, ?, ?, ?, ?)`
       ).run(fileId, outName, outputAbs, 'image', Date.now());
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[remove-background] Non-critical:', err); }
 
     // Build URL for embedding in chat
     const encodedId = Buffer.from(relPath).toString('base64url');

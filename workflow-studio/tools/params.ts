@@ -648,7 +648,8 @@ export function deepMergeInputMapping(
       if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
         parsedUserMapping = parsed
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ws/tools/params] Non-critical:', err);
       // Invalid JSON, treat as empty
     }
   } else if (

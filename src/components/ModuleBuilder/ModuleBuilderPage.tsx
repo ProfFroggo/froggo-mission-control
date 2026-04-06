@@ -74,7 +74,7 @@ export default function ModuleBuilderPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ wireframeHtml: flow.wireframe }),
         });
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[ModuleBuilderPage] Non-critical:', err); }
     }, 1000);
   }, [flow.wireframe, ensureModuleId]);
 
@@ -155,7 +155,8 @@ export default function ModuleBuilderPage() {
       setModuleId(resumeDraft.id);
       setResumeDraft(null);
       if (data.wireframeHtml) flow.setWireframe(data.wireframeHtml);
-    } catch {
+    } catch (err) {
+      console.warn('[ModuleBuilderPage] Non-critical:', err);
       setResumeDraft(null);
     }
   };

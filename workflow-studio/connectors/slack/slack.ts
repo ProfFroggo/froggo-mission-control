@@ -208,7 +208,8 @@ async function resolveChannel(
     try {
       const data = await slackApiGet('conversations.info', accessToken, { channel: trimmed })
       return data.channel as SlackChannel
-    } catch {
+    } catch (err) {
+      console.warn('[ws/connectors/slack/slack] Non-critical:', err);
       // Fall through to name-based search
     }
   }
@@ -332,7 +333,8 @@ export const slackConnector: ConnectorConfig = {
       if (teamId) {
         sourceUrl = `https://app.slack.com/client/${teamId}/${channel.id}`
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ws/connectors/slack/slack] Non-critical:', err);
       // Fall back to URL without team ID
     }
 
@@ -391,7 +393,8 @@ export const slackConnector: ConnectorConfig = {
         if (teamId) {
           sourceUrl = `https://app.slack.com/client/${teamId}/${channel.id}`
         }
-      } catch {
+      } catch (err) {
+        console.warn('[ws/connectors/slack/slack] Non-critical:', err);
         // Fall back to URL without team ID
       }
 

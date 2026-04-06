@@ -144,7 +144,8 @@ function convertBooleanValue(value: unknown): unknown {
 function tryParseJson(jsonString: string, fallback: unknown): unknown {
   try {
     return JSON.parse(jsonString)
-  } catch {
+  } catch (err) {
+    console.warn('[ws/executor/utils/builder-data] Non-critical:', err);
     return fallback
   }
 }

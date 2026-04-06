@@ -11,14 +11,16 @@ function parseAgent(row: Record<string, unknown>) {
   if (typeof parsed.capabilities === 'string') {
     try {
       parsed.capabilities = JSON.parse(parsed.capabilities as string);
-    } catch {
+    } catch (err) {
+      console.warn('[agents/[id]] Non-critical:', err);
       parsed.capabilities = [];
     }
   }
   if (typeof parsed.traits === 'string') {
     try {
       parsed.traits = JSON.parse(parsed.traits as string);
-    } catch {
+    } catch (err) {
+      console.warn('[agents/[id]] Non-critical:', err);
       parsed.traits = [];
     }
   }

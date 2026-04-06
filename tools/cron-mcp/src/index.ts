@@ -12,7 +12,8 @@ function readSchedule() {
   try {
     if (!fs.existsSync(SCHEDULE_PATH)) return [];
     return JSON.parse(fs.readFileSync(SCHEDULE_PATH, 'utf8'));
-  } catch {
+  } catch (err) {
+    console.warn('[tools/index] Non-critical:', err);
     return [];
   }
 }

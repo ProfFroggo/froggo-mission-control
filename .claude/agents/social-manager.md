@@ -81,6 +81,7 @@ Brief format: `library/campaigns/campaign-{name}-{date}/docs/YYYY-MM-DD_newslett
 |-----------|-------|
 | X/Twitter content, tone, approval | `x-twitter-strategy` |
 | Content calendar planning | `content-calendar` |
+| Trend monitoring and research for content strategy | `web-research` |
 
 ## Memory Protocol
 

@@ -156,7 +156,7 @@ export default function XAutomationsTab() {
         setAutomations(data.automations || []);
         setExecutionLog(data.recentLogs || []);
       }
-    } catch { /* non-fatal */ }
+    } catch (err) { console.warn('[XAutomationsTab] Non-critical: non-fatal:', err); }
     setLoading(false);
   };
 
@@ -183,7 +183,8 @@ export default function XAutomationsTab() {
         body: JSON.stringify({ id }),
       });
       showToast('success', 'Deleted', 'Automation removed');
-    } catch {
+    } catch (err) {
+      console.warn('[XAutomationsTab] Non-critical:', err);
       showToast('error', 'Error', 'Failed to delete');
       loadAutomations();
     }
@@ -195,7 +196,8 @@ export default function XAutomationsTab() {
       const data = await res.json();
       showToast('success', 'Engine Run', `Checked ${data.checked}, fired ${data.fired}, skipped ${data.skipped}`);
       loadAutomations();
-    } catch {
+    } catch (err) {
+      console.warn('[XAutomationsTab] Non-critical:', err);
       showToast('error', 'Error', 'Failed to run automation engine');
     }
   };
@@ -268,7 +270,8 @@ export default function XAutomationsTab() {
       closeBuilder();
       loadAutomations();
       showToast('success', 'Saved', editingAutomation ? 'Automation updated' : 'Automation created');
-    } catch {
+    } catch (err) {
+      console.warn('[XAutomationsTab] Non-critical:', err);
       showToast('error', 'Error', 'Failed to save automation');
     }
   };

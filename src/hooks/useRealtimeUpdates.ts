@@ -31,7 +31,9 @@ export function useRealtimeUpdates(
           lastTimestamp.current = Date.now();
           onUpdateRef.current(events);
         }
-      } catch {}
+      } catch (err) {
+        console.warn('[useRealtimeUpdates] Polling failed:', err);
+      }
     };
 
     const interval = setInterval(poll, intervalMs);

@@ -856,7 +856,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       status: 'active',
       userId: actorUserId,
       workflowId,
-    }).catch(() => {})
+    }).catch(err => console.warn('[workflows/[id]/execute] Non-critical:', err))
 
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
@@ -875,12 +875,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           if (!isStreamClosed) {
             try {
               controller.enqueue(encodeSSEEvent(event))
-            } catch {
+            } catch (err) {
+              console.warn('[workflows/[id]/execute] Non-critical:', err);
               isStreamClosed = true
             }
           }
           if (isBuffered) {
-            eventWriter.write(event).catch(() => {})
+            eventWriter.write(event).catch(err => console.warn('[workflows/[id]/execute] Non-critical:', err))
           }
         }
 
@@ -1057,8 +1058,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
               logger.error(`[${requestId}] Error streaming block content:`, error)
             } finally {
               try {
-                await reader.cancel().catch(() => {})
-              } catch {}
+                await reader.cancel().catch(err => console.warn('[workflows/[id]/execute] Non-critical:', err))
+              } catch (err) { console.warn('[workflows/[id]/execute] Non-critical:', err); }
             }
           }
 
@@ -1250,7 +1251,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             })
           }
           if (finalMetaStatus) {
-            setExecutionMeta(executionId, { status: finalMetaStatus }).catch(() => {})
+            setExecutionMeta(executionId, { status: finalMetaStatus }).catch(err => console.warn('[workflows/[id]/execute] Non-critical:', err))
           }
           timeoutController.cleanup()
           if (executionId) {
@@ -1260,7 +1261,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             try {
               controller.enqueue(encoder.encode('data: [DONE]\n\n'))
               controller.close()
-            } catch {}
+            } catch (err) { console.warn('[workflows/[id]/execute] Non-critical:', err); }
           }
         }
       },

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo, Component, type ReactNode, type ErrorInfo } from 'react';
 import { Button, TextField, Flex } from '@radix-ui/themes';
-import { Send, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquare, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle, ThumbsUp, ThumbsDown, UserCheck, PanelRight } from 'lucide-react';
+import { Send, Volume2, VolumeX, Loader2, Trash2, RefreshCw, WifiOff, Paperclip, X, FileText, Image, File, Search, Sparkles, Star, Copy, Users, MessageSquare, MessageSquarePlus, Phone, PhoneOff, UsersRound, MessageCircle, AlertTriangle, ThumbsUp, ThumbsDown, UserCheck, PanelRight, Clock } from 'lucide-react';
 import { AssistantRuntimeProvider } from '@assistant-ui/react';
 import { useMissionControlRuntime } from './chat/ChatRuntime';
 import { MissionControlThread, MissionControlComposer } from './chat/ThreadStyles';
@@ -120,7 +120,7 @@ function extractTextContent(content: string | ContentBlock[]): string {
       try {
         const parsed = JSON.parse(content);
         if (Array.isArray(parsed)) blocks = parsed;
-      } catch { /* not JSON — treat as plain text */ }
+      } catch (err) { console.warn('[ChatPanel] Non-critical: not JSON — treat as plain text:', err); }
     }
     if (!blocks) {
       // Plain text: strip library artifact URLs agents sometimes embed inline
@@ -204,14 +204,44 @@ export default function ChatPanel() {
   // streaming flag MUST be passed so the hook waits until the message is complete
   // before processing — otherwise partial content is processed, no artifact found,
   // and the message is permanently marked as processed before the path appears.
-  const artifactMessages = useMemo(() => messages.map(m => ({
-    id: m.id ?? '',
-    role: m.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
-    content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
-    timestamp: m.timestamp,
-    streaming: m.streaming,
-  })), [messages]);
-  useArtifactExtraction(artifactMessages, currentSessionId);
+  // When content is structured JSON blocks, extract plain text so code fences have real newlines.
+  const artifactMessages = useMemo(() => messages.map(m => {
+    let content: string;
+    if (typeof m.content !== 'string') {
+      // Content blocks array — extract text blocks directly
+      content = (m.content as any[])
+        .filter((b: any) => b.type === 'text' && b.text)
+        .map((b: any) => b.text)
+        .join('\n');
+    } else {
+      // String content — may be JSON-serialized blocks, try to extract text
+      try {
+        if (m.content.startsWith('[')) {
+          const blocks = JSON.parse(m.content);
+          if (Array.isArray(blocks) && blocks[0]?.type) {
+            content = blocks
+              .filter((b: any) => b.type === 'text' && b.text)
+              .map((b: any) => b.text)
+              .join('\n');
+          } else {
+            content = m.content;
+          }
+        } else {
+          content = m.content;
+        }
+      } catch {
+        content = m.content;
+      }
+    }
+    return {
+      id: m.id ?? '',
+      role: m.role === 'user' ? 'user' : 'assistant' as 'user' | 'assistant',
+      content,
+      timestamp: m.timestamp,
+      streaming: m.streaming,
+    };
+  }), [messages]);
+  useArtifactExtraction(artifactMessages, currentSessionId, { agentId: selectedAgent?.id });
 
   // Scope the artifact panel to the current agent's session; clear stale selection
   const { setFilterBySession, getSessionArtifacts, selectArtifact, toggleCollapse, isCollapsed } = useArtifactStore();
@@ -302,7 +332,8 @@ export default function ChatPanel() {
                 ? parsed.filter((b: any) => !(b.type === 'thinking' && !b.thinking?.trim() && !b.text?.trim()))
                 : parsed;
               return { ...msg, content: filtered };
-            } catch {
+            } catch (err) {
+              console.warn('[ChatPanel] Non-critical:', err);
               return msg; // Keep as string if parse fails
             }
           }
@@ -321,8 +352,9 @@ export default function ChatPanel() {
         setMessages([summaryMsg]);
         messageCacheRef.current.set(agent.id, [summaryMsg]);
       }
-    } catch (_err) {
-      // DB load failed — start with empty messages
+    } catch (err) {
+      logger.error('Failed to load messages for agent:', err);
+      setLoadError(err instanceof Error ? err.message : 'Failed to load chat history');
     } finally {
       setLoadingMessages(false);
     }
@@ -388,8 +420,9 @@ export default function ChatPanel() {
           setMessages([summaryMsg]);
           messageCacheRef.current.set(selectedAgent.id, [summaryMsg]);
         }
-      } catch (_err) {
-        // DB load failed — start with empty messages
+      } catch (err) {
+        logger.error('Failed to load messages from DB:', err);
+        setLoadError(err instanceof Error ? err.message : 'Failed to load chat history');
       } finally {
         setLoadingMessages(false);
       }
@@ -441,12 +474,13 @@ export default function ChatPanel() {
               text += ev.text;
               setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: text } : m));
             }
-          } catch { /* skip */ }
+          } catch (err) { console.warn('[ChatPanel] Non-critical: skip:', err); }
         }
       }
       // Mark done, clear old messages from UI (compact summary is now the only message)
       setMessages([{ id: assistantId, role: 'assistant', content: text || '✓ Context compacted.', timestamp: Date.now(), streaming: false }]);
-    } catch {
+    } catch (err) {
+      console.warn('[ChatPanel] Non-critical:', err);
       setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: 'Compact failed — try again.', streaming: false } : m));
     } finally {
       setLoading(false);
@@ -1030,7 +1064,8 @@ export default function ChatPanel() {
           const base64 = att.dataUrl.split(',')[1];
           const decoded = atob(base64);
           fileContents.push(`\n\n--- FILE: ${att.name} ---\n\`\`\`\n${decoded}\n\`\`\`\n--- END FILE ---`);
-        } catch {
+        } catch (err) {
+          console.warn('[ChatPanel] Non-critical:', err);
           fileContents.push(`\n\n[Attached text file: ${att.name} - could not decode]`);
         }
       } else if (isImage || isPdf) {
@@ -1050,7 +1085,8 @@ export default function ChatPanel() {
           } else {
             fileContents.push(`\n\n[${isImage ? 'Image' : 'PDF'} attached: ${att.name} (${(att.size / 1024).toFixed(1)}KB) — upload failed, cannot be read]`);
           }
-        } catch {
+        } catch (err) {
+          console.warn('[ChatPanel] Non-critical:', err);
           fileContents.push(`\n\n[${isImage ? 'Image' : 'PDF'} attached: ${att.name} — could not upload]`);
         }
       } else if (isAudio) {
@@ -1218,7 +1254,7 @@ export default function ChatPanel() {
               ));
               setLoading(false);
             }
-          } catch { /* skip malformed */ }
+          } catch (err) { console.warn('[ChatPanel] Non-critical: skip malformed:', err); }
         }
       }
 
@@ -1321,8 +1357,16 @@ export default function ChatPanel() {
 
   const handleRetry = () => {
     if (!lastUserMessageRef.current) return;
-    setInput(lastUserMessageRef.current);
     setStreamError(null);
+    // Remove the failed assistant error message before resending
+    setMessages(prev => {
+      const lastIdx = prev.length - 1;
+      if (lastIdx >= 0 && prev[lastIdx].isError) {
+        return prev.slice(0, lastIdx);
+      }
+      return prev;
+    });
+    sendMessage(lastUserMessageRef.current);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -2161,6 +2205,26 @@ export default function ChatPanel() {
               onChange={(e) => e.target.files && handleFiles(Array.from(e.target.files))}
             />
 
+            {/* Queued message indicator */}
+            {queuedMessage && (
+              <div className="flex items-center gap-2 px-3 py-2 mb-1 rounded-lg bg-mission-control-accent/8 border border-mission-control-accent/20">
+                <Clock size={13} className="text-mission-control-accent shrink-0" />
+                <span className="flex-1 text-xs text-mission-control-text truncate">
+                  <span className="text-mission-control-text-dim">Queued: </span>
+                  {queuedMessage}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setQueuedMessage(null)}
+                  aria-label="Cancel queued message"
+                  title="Cancel queued message"
+                  className="inline-flex items-center justify-center w-5 h-5 rounded text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors shrink-0"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            )}
+
             {/* Composer — attach + mic integrated inside */}
             <MissionControlComposer
               placeholder={`Message ${selectedAgent.name}…`}
@@ -2296,7 +2360,8 @@ function loadReactions(): Record<string, MessageReaction> {
   try {
     const raw = localStorage.getItem(REACTIONS_KEY);
     return raw ? JSON.parse(raw) : {};
-  } catch {
+  } catch (err) {
+    console.warn('[ChatPanel] Non-critical:', err);
     return {};
   }
 }
@@ -2304,7 +2369,7 @@ function loadReactions(): Record<string, MessageReaction> {
 function saveReactions(data: Record<string, MessageReaction>) {
   try {
     localStorage.setItem(REACTIONS_KEY, JSON.stringify(data));
-  } catch { /* quota exceeded */ }
+  } catch (err) { console.warn('[ChatPanel] Non-critical: quota exceeded:', err); }
 }
 
 function toggleReaction(msgId: string, reaction: ReactionType): MessageReaction {

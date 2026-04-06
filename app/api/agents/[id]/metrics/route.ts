@@ -55,7 +55,7 @@ export async function GET(
         memoryNotes = fs.readdirSync(agentMemDir)
           .filter(f => f.endsWith('.md') && !f.startsWith('_')).length;
       }
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[agents/[id]/metrics] Non-critical:', err); }
 
     // Recent activity count (last 7 days)
     const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -70,7 +70,7 @@ export async function GET(
         `SELECT AVG(completedAt - createdAt) as avg FROM tasks WHERE assignedTo = ? AND status = 'done' AND completedAt IS NOT NULL AND createdAt IS NOT NULL`
       ).get(id) as { avg: number | null };
       if (completionRow.avg) avgCompletionMs = Math.round(completionRow.avg);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[agents/[id]/metrics] Non-critical:', err); }
 
     // Last active (most recent task activity)
     const lastActivityRow = db.prepare(

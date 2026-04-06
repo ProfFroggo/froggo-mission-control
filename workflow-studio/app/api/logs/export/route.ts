@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
                   if (ed.message) message = ed.message
                   if (ed.traceSpans) traces = ed.traceSpans
                 }
-              } catch {}
+              } catch (err) { console.warn('[logs/export] Non-critical:', err); }
               const line = [
                 escapeCsv(r.startedAt?.toISOString?.() || r.startedAt),
                 escapeCsv(r.level),
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
           logger.error('Export stream error', { error: e?.message })
           try {
             controller.error(e)
-          } catch {}
+          } catch (err) { console.warn('[logs/export] Non-critical:', err); }
         }
       },
     })

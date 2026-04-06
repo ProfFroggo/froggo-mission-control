@@ -278,7 +278,7 @@ async function fetchNewRssItems(
     })
 
     if (!response.ok) {
-      await response.text().catch(() => {})
+      await response.text().catch(err => console.warn('[ws/lib/webhooks/rss-polling-service] Non-critical:', err))
       throw new Error(`Failed to fetch RSS feed: ${response.status} ${response.statusText}`)
     }
 

@@ -1,15 +1,12 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import type { ArtifactType, ArtifactMetadata } from '../store/artifactStore';
+import { MC_PATH_RE as LIBRARY_PATH_RE, IMAGE_EXTS, PREVIEWABLE_EXTS } from '../lib/missionControlPaths';
 
 export interface ExtractedArtifact {
   type: ArtifactType;
   content: string;
   metadata?: ArtifactMetadata;
 }
-
-// Library path pattern — matches paths inside the mission-control library directory
-// Includes document/media types only (not source code or config files)
-const LIBRARY_PATH_RE = /(?:~|\/Users\/[^/\s]+)\/mission-control\/library\/\S+\.(?:html|htm|svg|pdf|md|png|jpg|jpeg|webp|gif|mp4|webm|mov)/gi;
 
 // Languages that count as document/media output artifacts (NOT process/code)
 // Agents produce these as deliverables; bash/python/typescript/json etc. are processes.
@@ -192,12 +189,12 @@ export function extractAllArtifacts(content: string): ExtractedArtifact[] {
     const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
     const filename = filePath.split('/').pop() ?? filePath;
 
-    if (['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext)) {
+    if (IMAGE_EXTS.has(ext)) {
       artifacts.push({ type: 'image', content: filePath, metadata: { filename, filePath } });
-    } else if (['html', 'htm', 'svg', 'pdf', 'mp4', 'webm', 'mov'].includes(ext)) {
-      artifacts.push({ type: 'file', content: filePath, metadata: { filename, filePath, language: ext } });
     } else if (ext === 'md') {
       artifacts.push({ type: 'text', content: filePath, metadata: { filename, filePath, language: 'markdown' } });
+    } else {
+      artifacts.push({ type: 'file', content: filePath, metadata: { filename, filePath, language: ext } });
     }
   }
 
@@ -303,7 +300,7 @@ export function generateArtifactTitle(artifact: ExtractedArtifact): string {
           const firstKey = Object.keys(parsed)[0];
           if (firstKey) return `${firstKey} data`;
         }
-      } catch { /* not valid JSON */ }
+      } catch (err) { console.warn('[artifactExtractor] Non-critical: not valid JSON:', err); }
 
       // 2. Title hint from surrounding prose
       if (hint) return hint;

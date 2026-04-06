@@ -156,10 +156,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     if (content.toLowerCase().includes(query.toLowerCase())) {
                       allDocs.push({ relPath: path.relative(VAULT_PATH, fullPath), content });
                     }
-                  } catch {}
+                  } catch (err) { console.warn('[tools/index] Non-critical:', err); }
                 }
               }
-            } catch {}
+            } catch (err) { console.warn('[tools/index] Non-critical:', err); }
           }
           grepDir(VAULT_PATH);
 
@@ -228,10 +228,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                       results.push(`## ${relPath} (modified ${stat.mtime.toISOString().slice(0, 10)})\n${content.slice(0, 600)}...`);
                     }
                   }
-                } catch {}
+                } catch (err) { console.warn('[tools/index] Non-critical:', err); }
               }
             }
-          } catch {}
+          } catch (err) { console.warn('[tools/index] Non-critical:', err); }
         }
 
         findRecent(VAULT_PATH);
@@ -289,7 +289,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             if (!existing.includes(line)) {
               fs.appendFileSync(expertiseMapPath, line + '\n', 'utf-8');
             }
-          } catch { /* non-critical */ }
+          } catch (err) { console.warn('[tools/index] Non-critical:', err); }
         }
 
         return {
@@ -369,10 +369,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     modified: stat.mtime.toISOString().slice(0, 10),
                     size: stat.size,
                   });
-                } catch { /* skip */ }
+                } catch (err) { console.warn('[tools/index] Non-critical: skip:', err); }
               }
             }
-          } catch { /* skip unreadable */ }
+          } catch (err) { console.warn('[tools/index] Non-critical: skip unreadable:', err); }
         }
         listDir(baseDir);
 

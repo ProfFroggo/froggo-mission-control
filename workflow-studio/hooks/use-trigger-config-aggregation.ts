@@ -141,7 +141,8 @@ export function populateTriggerFieldsFromConfig(
           if (typeof configValue === 'string' && configValue.trim() !== '') {
             try {
               normalizedValue = JSON.parse(configValue)
-            } catch {
+            } catch (err) {
+              console.warn('[ws/hooks/use-trigger-config-aggregation] Non-critical:', err);
               normalizedValue = [configValue]
             }
           } else if (

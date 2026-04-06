@@ -154,7 +154,8 @@ export default function TourGuide({ tour, onComplete, onSkip }: TourGuideProps) 
         completed.push(tour.id);
         localStorage.setItem('mission-control-tours-completed', JSON.stringify(completed));
       }
-    } catch {
+    } catch (err) {
+      console.warn('[TourGuide] Non-critical:', err);
       // Ignore localStorage errors
     }
     onComplete();
@@ -537,7 +538,8 @@ export function useTour() {
     try {
       const completed = JSON.parse(localStorage.getItem('mission-control-tours-completed') || '[]');
       return completed.includes(tourId);
-    } catch {
+    } catch (err) {
+      console.warn('[TourGuide] Non-critical:', err);
       return false;
     }
   };

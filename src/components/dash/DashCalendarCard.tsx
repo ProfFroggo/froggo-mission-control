@@ -140,7 +140,8 @@ export default function DashCalendarCard({ onNavigate }: DashCalendarCardProps) 
         } else {
           setEvents([]);
         }
-      } catch {
+      } catch (err) {
+        console.warn('[DashCalendarCard] Non-critical:', err);
         if (!cancelled) setEvents([]);
       } finally {
         if (!cancelled) setLoading(false);

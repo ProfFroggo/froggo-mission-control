@@ -154,7 +154,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         userId: userId,
         keyName: name,
       })
-    } catch {
+    } catch (err) {
+      console.warn('[workspaces/[id]/api-keys] Non-critical:', err);
       // Telemetry should not fail the operation
     }
 
@@ -230,7 +231,8 @@ export async function DELETE(
           keyId: keyId,
         })
       }
-    } catch {
+    } catch (err) {
+      console.warn('[workspaces/[id]/api-keys] Non-critical:', err);
       // Telemetry should not fail the operation
     }
 

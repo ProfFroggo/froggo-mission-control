@@ -194,7 +194,8 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
       ]);
       const data = await res.json();
       if (data.response) reply = data.response;
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectCreationWizard] Non-critical:', err);
       await minDelay;
     }
     conversationRef.current.push({ role: 'assistant', content: reply });
@@ -241,7 +242,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
       setLoadingAgents(true);
       agentApi.getAll()
         .then((data: unknown[]) => setAgents((data as Agent[]).filter(a => a.status !== 'archived')))
-        .catch(() => {})
+        .catch(err => console.warn('[ProjectCreationWizard] Non-critical:', err))
         .finally(() => setLoadingAgents(false));
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -292,7 +293,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
         setDiscoveryReady(true);
         setDiscoveryStructuredData(data.structuredData);
       }
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[ProjectCreationWizard] Non-critical:', err); }
     finally { setDiscoveryLoading(false); }
   };
 
@@ -316,7 +317,7 @@ export default function ProjectCreationWizard({ onClose, onCreated }: Props) {
       setLoadingAgents(true);
       agentApi.getAll()
         .then((data: Agent[]) => setAgents(data.filter((a: Agent) => a.status !== 'archived')))
-        .catch(() => {})
+        .catch(err => console.warn('[ProjectCreationWizard] Non-critical:', err))
         .finally(() => setLoadingAgents(false));
     }
   }, [phase]);

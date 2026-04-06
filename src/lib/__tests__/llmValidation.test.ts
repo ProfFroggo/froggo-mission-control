@@ -40,7 +40,8 @@ function parseMeetingSummary(raw: string): z.infer<typeof MeetingSummarySchema> 
     const result = MeetingSummarySchema.safeParse(parsed);
     if (!result.success) return null;
     return result.data;
-  } catch {
+  } catch (err) {
+    console.warn('[llmValidation.test] Non-critical:', err);
     return null;
   }
 }
@@ -61,7 +62,8 @@ function parseMeetingSummarization(
     const result = MeetingSummarizationSchema.safeParse(parsed);
     if (!result.success) return fallback;
     return result.data;
-  } catch {
+  } catch (err) {
+    console.warn('[llmValidation.test] Non-critical:', err);
     return fallback;
   }
 }
@@ -75,7 +77,8 @@ function parseTaskProposals(
     const result = TaskProposalArraySchema.safeParse(parsed);
     if (!result.success) return [];
     return result.data;
-  } catch {
+  } catch (err) {
+    console.warn('[llmValidation.test] Non-critical:', err);
     return [];
   }
 }

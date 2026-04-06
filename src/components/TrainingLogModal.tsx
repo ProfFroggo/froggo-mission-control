@@ -39,7 +39,8 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
       if (logs.length > 0) {
         loadFileContent(logs[0]);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[TrainingLogModal] Non-critical:', err);
       // Failed to load training logs
     } finally {
       setLoading(false);
@@ -55,7 +56,8 @@ export default function TrainingLogModal({ onClose }: { onClose: () => void }) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setFileContent(data.content || '');
-    } catch {
+    } catch (err) {
+      console.warn('[TrainingLogModal] Non-critical:', err);
       setFileContent('');
     } finally {
       setLoadingContent(false);

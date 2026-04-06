@@ -214,7 +214,8 @@ export function convertToGeminiFormat(request: ProviderRequest): {
         try {
           const parsed = JSON.parse(message.content ?? '{}')
           responseData = ensureStructResponse(parsed)
-        } catch {
+        } catch (err) {
+          console.warn('[ws/providers/google/utils] Non-critical:', err);
           responseData = { output: message.content }
         }
         contents.push({

@@ -76,7 +76,8 @@ interface ModuleActivityEntry {
 function readActivityLog(): ModuleActivityEntry[] {
   try {
     return JSON.parse(localStorage.getItem(ACTIVITY_KEY) ?? '[]');
-  } catch {
+  } catch (err) {
+    console.warn('[ModulesPage] Non-critical:', err);
     return [];
   }
 }
@@ -91,9 +92,10 @@ function appendActivity(entry: Omit<ModuleActivityEntry, 'id' | 'timestamp'>) {
   const updated = [next, ...log].slice(0, 20);
   try {
     localStorage.setItem(ACTIVITY_KEY, JSON.stringify(updated));
-  } catch {
+  } catch (err) {
+    console.warn('[ModulesPage] Non-critical:', err);
     // localStorage full — clear and retry
-    try { localStorage.removeItem(ACTIVITY_KEY); localStorage.setItem(ACTIVITY_KEY, JSON.stringify([next])); } catch { /* skip */ }
+    try { localStorage.removeItem(ACTIVITY_KEY); localStorage.setItem(ACTIVITY_KEY, JSON.stringify([next])); } catch (err) { console.warn('[ModulesPage] Non-critical: skip:', err); }
   }
 }
 
@@ -518,7 +520,8 @@ export default function ModulesPage() {
                   integration = data.integration as IntegrationState;
                 }
               }
-            } catch {
+            } catch (err) {
+              console.warn('[ModulesPage] Non-critical:', err);
               // fallback: no integration state
             }
           }

@@ -622,7 +622,8 @@ async function handleLocalFile(
 
     try {
       await fsPromises.access(fullPath)
-    } catch {
+    } catch (err) {
+      console.warn('[files/parse] Non-critical:', err);
       throw new Error(`File not found: ${filename}`)
     }
 

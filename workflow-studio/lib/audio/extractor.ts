@@ -37,7 +37,8 @@ function ensureFfmpeg(): void {
       ffmpeg.setFfmpegPath(ffmpegPath)
       console.log('[FFmpeg] Using ffmpeg-static:', ffmpegPath)
       return
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/audio/extractor] Non-critical:', err);
       // Binary doesn't exist or not executable
     }
   }
@@ -51,7 +52,8 @@ function ensureFfmpeg(): void {
     ffmpeg.setFfmpegPath(ffmpegPath)
     console.log('[FFmpeg] Using system ffmpeg:', ffmpegPath)
     return
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/audio/extractor] Non-critical:', err);
     // System ffmpeg not found
   }
 
@@ -170,8 +172,8 @@ async function convertAudioWithFFmpeg(
   } finally {
     // Clean up temporary files
     try {
-      await fs.unlink(inputFile).catch(() => {})
-      await fs.unlink(outputFile).catch(() => {})
+      await fs.unlink(inputFile).catch(err => console.warn('[ws/lib/audio/extractor] Non-critical:', err))
+      await fs.unlink(outputFile).catch(err => console.warn('[ws/lib/audio/extractor] Non-critical:', err))
     } catch (error) {
       // Ignore cleanup errors
     }
@@ -196,7 +198,7 @@ export async function getAudioMetadata(buffer: Buffer, mimeType: string): Promis
   } finally {
     // Clean up temporary file
     try {
-      await fs.unlink(inputFile).catch(() => {})
+      await fs.unlink(inputFile).catch(err => console.warn('[ws/lib/audio/extractor] Non-critical:', err))
     } catch (error) {
       // Ignore cleanup errors
     }

@@ -36,7 +36,8 @@ export async function GET() {
            WHERE source = ? AND timestamp >= ? AND (action = 'error' OR message LIKE '%error%' OR message LIKE '%failed%')`
         ).get(mod.id, cutoff) as { c: number } | undefined;
         errorCount24h = errorRow?.c ?? 0;
-      } catch {
+      } catch (err) {
+        console.warn('[modules/health] Non-critical:', err);
         // task_activity.source column may not exist — fallback to errorCount field
         errorCount24h = mod.errorCount ?? 0;
       }

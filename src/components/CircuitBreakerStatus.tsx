@@ -42,7 +42,8 @@ export const CircuitBreakerStatus: React.FC = () => {
           const data = await res.json();
           setBreakers(data?.circuitBreakers || {});
         }
-      } catch {
+      } catch (err) {
+        console.warn('[CircuitBreakerStatus] Non-critical:', err);
         // Health check failed or aborted — leave breakers as-is
       }
     };

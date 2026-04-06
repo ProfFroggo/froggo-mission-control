@@ -141,7 +141,8 @@ export function parseJsonTagBody<T>(
   try {
     const parsed = JSON.parse(body) as unknown
     return isExpectedShape(parsed) ? parsed : null
-  } catch {
+  } catch (err) {
+    console.warn('[ws/app/workspace/[workspaceId]/home/components/message-content/components/special-tags/special-tagsx] Non-critical:', err);
     return null
   }
 }

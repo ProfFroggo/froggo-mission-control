@@ -64,14 +64,18 @@ function loadLayout(): DashboardLayout {
         return parsed as DashboardLayout;
       }
     }
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.warn('[dashboardStore/loadLayout] Failed to load layout from localStorage:', err);
+  }
   return { widgets: buildDefaultLayout(), version: LAYOUT_VERSION };
 }
 
 function saveLayout(layout: DashboardLayout) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.warn('[dashboardStore/saveLayout] Failed to save layout to localStorage:', err);
+  }
 }
 
 interface DashboardStore {

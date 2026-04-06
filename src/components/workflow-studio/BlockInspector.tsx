@@ -310,7 +310,8 @@ function SubtaskListField({
   try {
     const parsed = JSON.parse(value);
     subtasks = Array.isArray(parsed) ? parsed : [];
-  } catch {
+  } catch (err) {
+    console.warn('[BlockInspector] Non-critical:', err);
     subtasks = [];
   }
 

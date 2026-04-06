@@ -201,7 +201,8 @@ function CalendarSection({ onCreateTask }: CalendarSectionProps) {
         } else {
           setEvents([]);
         }
-      } catch {
+      } catch (err) {
+        console.warn('[DashMorningContext] Non-critical:', err);
         if (!cancelled) setError('Could not load calendar');
       } finally {
         if (!cancelled) setLoading(false);
@@ -380,7 +381,8 @@ function InboxSection({ onCreateTask }: InboxSectionProps) {
                 : null,
               loading: false,
             };
-          } catch {
+          } catch (err) {
+            console.warn('[DashMorningContext] Non-critical:', err);
             return { email: acc.email, label: acc.label, counts: null, loading: false };
           }
         }),

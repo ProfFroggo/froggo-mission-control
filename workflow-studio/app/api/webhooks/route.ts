@@ -746,7 +746,8 @@ export async function POST(request: NextRequest) {
           provider: provider || 'generic',
           workspaceId: workflowRecord.workspaceId || undefined,
         })
-      } catch {
+      } catch (err) {
+        console.warn('[webhooks] Non-critical:', err);
         // Telemetry should not fail the operation
       }
 

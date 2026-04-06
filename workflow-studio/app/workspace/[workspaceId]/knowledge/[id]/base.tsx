@@ -164,7 +164,8 @@ function getDocumentTags(doc: DocumentData, definitions: TagDefinition[]): TagVa
     if (fieldType === 'date') {
       try {
         value = format(new Date(raw as string), 'MMM d, yyyy')
-      } catch {
+      } catch (err) {
+        console.warn('[ws/app/workspace/[workspaceId]/knowledge/[id]/basex] Non-critical:', err);
         value = String(raw)
       }
     } else if (fieldType === 'boolean') {

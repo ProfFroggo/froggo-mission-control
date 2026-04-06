@@ -211,7 +211,8 @@ Provide a brief, actionable summary.`;
         text: s.text || '',
         tone: s.tone || 'professional',
       }));
-    } catch {
+    } catch (err) {
+      console.warn('[AIAssistancePanel] Non-critical:', err);
       // Parse error handled gracefully - return empty suggestions
       return [];
     }
@@ -233,7 +234,8 @@ Provide a brief, actionable summary.`;
         urgency: parsed.urgency || 'low',
         actionItems: parsed.actionItems || [],
       };
-    } catch {
+    } catch (err) {
+      console.warn('[AIAssistancePanel] Non-critical:', err);
       // Parse error handled gracefully - return null sentiment
       return null;
     }

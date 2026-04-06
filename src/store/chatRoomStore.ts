@@ -231,6 +231,8 @@ export const useChatRoomStore = create<ChatRoomState>()(
         rooms: state.rooms.filter(r => r.id !== roomId),
         activeRoomId: state.activeRoomId === roomId ? null : state.activeRoomId,
       }));
+      fetch(`/api/chat-rooms/${roomId}`, { method: 'DELETE' })
+        .catch(e => console.warn('[chatRoomStore] Failed to delete room from DB:', e));
     },
 
     setActiveRoom: (roomId: string | null) => {

@@ -245,7 +245,8 @@ export function validateRowAgainstSchema(data: RowData, schema: TableSchema): Va
       case 'json':
         try {
           JSON.stringify(value)
-        } catch {
+        } catch (err) {
+          console.warn('[ws/lib/table/validation] Non-critical:', err);
           errors.push(`${column.name} must be valid JSON`)
         }
         break

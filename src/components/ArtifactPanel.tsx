@@ -24,6 +24,8 @@ import {
 import { Button, TextField, Flex } from '@radix-ui/themes';
 import { useArtifactStore, type Artifact, type ArtifactType } from '../store/artifactStore';
 import MarkdownMessage, { CodeBlock } from './MarkdownMessage';
+import MermaidRenderer from './MermaidRenderer';
+import { isMCFilePath, PREVIEWABLE_EXTS } from '../lib/missionControlPaths';
 
 interface ArtifactPanelProps {
   sessionId?: string;
@@ -49,23 +51,21 @@ const ARTIFACT_COLORS: Record<ArtifactType, string> = {
 };
 
 function isPreviewable(artifact: Artifact): boolean {
+  if (artifact.type === 'diagram') return true;
   const lang = artifact.metadata?.language?.toLowerCase();
-  return lang === 'html' || lang === 'htm' || lang === 'svg';
+  return PREVIEWABLE_EXTS.has(lang ?? '');
 }
 
-/** True when the artifact content is a library file path (not actual file content) */
-function isFilePath(content: string): boolean {
-  return (
-    (content.startsWith('/') || content.startsWith('~')) &&
-    /\/mission-control\/library\//.test(content) &&
-    /\.(html|htm|svg|pdf|png|jpg|jpeg|webp|gif)$/i.test(content)
-  );
-}
+const isFilePath = isMCFilePath;
 
 /** Returns the preview iframe src — either API serve URL (for file paths) or undefined (for srcDoc) */
 function getPreviewSrc(artifact: Artifact): string | undefined {
-  if (artifact.type === 'file' && isFilePath(artifact.content)) {
+  if ((artifact.type === 'file' || artifact.type === 'text') && isFilePath(artifact.content)) {
     return `/api/library/serve?path=${encodeURIComponent(artifact.content)}`;
+  }
+  // Also handle filePath in metadata (text-type markdown artifacts from library/agents)
+  if (artifact.type === 'text' && typeof artifact.metadata?.filePath === 'string') {
+    return `/api/library/serve?path=${encodeURIComponent(artifact.metadata.filePath as string)}`;
   }
   return undefined;
 }
@@ -275,9 +275,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
               <Icon size={14} />
               <span>Diagram (Mermaid)</span>
             </Flex>
-            <div className="bg-mission-control-bg border border-mission-control-border rounded-lg p-4">
-              <MarkdownMessage content={`\`\`\`mermaid\n${artifact.content}\n\`\`\``} />
-            </div>
+            <CodeBlock code={artifact.content} language="mermaid" />
           </div>
         );
 
@@ -574,8 +572,16 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
                   <button
                     type="button"
                     onClick={() => {
-                      const win = window.open('', '_blank');
-                      if (win) { win.document.write(selectedArtifact.content); win.document.close(); }
+                      // Library-backed files: open via serve API (renders the actual file)
+                      const serveSrc = getPreviewSrc(selectedArtifact);
+                      if (serveSrc) {
+                        window.open(serveSrc, '_blank');
+                      } else {
+                        // Inline content: write directly
+                        const html = fileContent ?? selectedArtifact.content;
+                        const win = window.open('', '_blank');
+                        if (win) { win.document.write(html); win.document.close(); }
+                      }
                     }}
                     title="Open in new window"
                     aria-label="Open in new window"
@@ -592,6 +598,38 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
           {(isPreviewable(selectedArtifact) || (selectedArtifact.type === 'file' && isFilePath(selectedArtifact.content))) && viewTab === 'preview' ? (
             <div className="flex-1 overflow-hidden" style={{ minHeight: '400px' }}>
               {(() => {
+                const lang = selectedArtifact.metadata?.language?.toLowerCase();
+                const isMd = lang === 'markdown' || lang === 'md';
+
+                // Mermaid diagram preview: render on light background for visibility
+                if (selectedArtifact.type === 'diagram') {
+                  return (
+                    <div className="h-full overflow-y-auto p-4 rounded-b-lg" style={{ background: '#ffffff' }}>
+                      <MermaidRenderer key={`mermaid-${selectedArtifact.id}-${reloadKey}`} code={selectedArtifact.content} />
+                    </div>
+                  );
+                }
+
+                // Markdown preview: render with MarkdownMessage (not iframe)
+                if (isMd) {
+                  const mdContent = isFilePath(selectedArtifact.content) ? fileContent : selectedArtifact.content;
+                  return (
+                    <div className="h-full overflow-y-auto p-4 bg-mission-control-bg rounded-b-lg">
+                      {fileContentLoading ? (
+                        <div className="flex items-center justify-center py-8 text-mission-control-text-dim text-sm gap-2">
+                          <RefreshCw size={14} className="animate-spin" />
+                          <span>Loading file…</span>
+                        </div>
+                      ) : mdContent ? (
+                        <MarkdownMessage content={mdContent} />
+                      ) : (
+                        <p className="text-sm text-mission-control-text-dim">No content available</p>
+                      )}
+                    </div>
+                  );
+                }
+
+                // HTML/SVG preview: iframe
                 const src = getPreviewSrc(selectedArtifact);
                 return src ? (
                   <iframe

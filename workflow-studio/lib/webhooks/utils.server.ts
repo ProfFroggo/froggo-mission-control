@@ -311,7 +311,8 @@ async function formatTeamsGraphNotification(
                         continue
                       }
                     }
-                  } catch {
+                  } catch (err) {
+                    console.warn('[ws/lib/webhooks/utils.server] Non-critical:', err);
                     continue
                   }
                 } else if (
@@ -403,7 +404,8 @@ async function formatTeamsGraphNotification(
                         continue
                       }
                     }
-                  } catch {
+                  } catch (err) {
+                    console.warn('[ws/lib/webhooks/utils.server] Non-critical:', err);
                     continue
                   }
                 } else {
@@ -421,7 +423,8 @@ async function formatTeamsGraphNotification(
                         contentTypeHint ||
                         'application/octet-stream'
                     }
-                  } catch {
+                  } catch (err) {
+                    console.warn('[ws/lib/webhooks/utils.server] Non-critical:', err);
                     continue
                   }
                 }
@@ -437,7 +440,7 @@ async function formatTeamsGraphNotification(
                   contentType: mimeType,
                   size,
                 })
-              } catch {}
+              } catch (err) { console.warn('[ws/lib/webhooks/utils.server] Non-critical:', err); }
             }
           }
         }

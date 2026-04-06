@@ -137,7 +137,7 @@ function contentPreview(raw: string): string {
     } else if (typeof parsed === 'string') {
       text = parsed;
     }
-  } catch { /* use raw */ }
+  } catch (err) { console.warn('[XPipelineView] Non-critical: use raw:', err); }
   return text.slice(0, 120) + (text.length > 120 ? '...' : '');
 }
 
@@ -355,7 +355,8 @@ function PipelineDetailModal({ item, onClose, onAction }: {
       });
       showToast('success', 'Sent for approval');
       onClose();
-    } catch {
+    } catch (err) {
+      console.warn('[XPipelineView] Non-critical:', err);
       showToast('error', 'Failed to queue reply');
     } finally {
       setSending(false);
@@ -862,7 +863,8 @@ function PipelineListView({ items, onAction }: ListViewProps) {
       try {
         await approvalApi.respond(item.id, 'approve');
         approved++;
-      } catch {
+      } catch (err) {
+        console.warn('[XPipelineView] Non-critical:', err);
         // continue on individual failures
       }
     }
@@ -1148,7 +1150,7 @@ export default function XPipelineView() {
             platform: 'twitter',
           }));
         }
-      } catch { /* mentions are non-critical */ }
+      } catch (err) { console.warn('[XPipelineView] Non-critical: mentions are non-critical:', err); }
 
       const all = [...posts, ...mentionItems];
       const mapped: PipelineItem[] = all.map(item => ({
@@ -1177,7 +1179,7 @@ export default function XPipelineView() {
         if (a.payload?.scheduleId) ids.add(String(a.payload.scheduleId));
       }
       setPendingApprovalIds(ids);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[XPipelineView] Non-critical:', err); }
   }, []);
 
   useEffect(() => { loadApprovals(); }, [loadApprovals]);

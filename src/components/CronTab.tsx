@@ -92,7 +92,8 @@ export default function CronTab() {
       const res = await fetch('/api/cron');
       const data = await res.json();
       if (data?.jobs) setJobs(data.jobs as CronJob[]);
-    } catch {
+    } catch (err) {
+      console.warn('[CronTab] Non-critical:', err);
       // silently ignore
     } finally {
       setLoading(false);

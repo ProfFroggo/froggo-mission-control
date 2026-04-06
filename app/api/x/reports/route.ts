@@ -7,6 +7,8 @@ import { getDb } from '@/lib/database';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
+const INTERNAL_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
+
 const GEMINI_MODEL = 'gemini-3.1-flash-lite-preview';
 const GEMINI_FALLBACK = 'gemini-2.5-flash-preview-05-20';
 
@@ -15,7 +17,7 @@ async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val;
-  } catch {}
+  } catch (err) { console.warn('[x/reports] Non-critical:', err); }
   const db = getDb();
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get('gemini_api_key') as { value: string } | undefined;
   return row?.value || process.env.GEMINI_API_KEY || null;
@@ -86,7 +88,7 @@ export async function POST(req: NextRequest) {
       if (kbRows.length > 0) {
         brandContext = `\n\nBrand context:\n${kbRows.map(a => `- ${a.title}: ${(a.summary || '').slice(0, 200)}`).join('\n')}`;
       }
-    } catch {}
+    } catch (err) { console.warn('[x/reports] Non-critical:', err); }
 
     let prompt = '';
     let title = '';
@@ -98,7 +100,7 @@ export async function POST(req: NextRequest) {
         try {
           const row = db.prepare('SELECT value FROM settings WHERE key = ?').get('x-competitor-handles') as { value: string } | undefined;
           if (row?.value) handles = JSON.parse(row.value);
-        } catch {}
+        } catch (err) { console.warn('[x/reports] Non-critical:', err); }
       }
 
       // Fetch competitor tweets via X search
@@ -106,7 +108,7 @@ export async function POST(req: NextRequest) {
       if (handles.length > 0) {
         for (const handle of handles.slice(0, 5)) {
           try {
-            const searchRes = await fetch(`http://localhost:${process.env.PORT || 3000}/api/x/search?q=from:${handle}&max=10`);
+            const searchRes = await fetch(`${INTERNAL_BASE}/api/x/search?q=from:${handle}&max=10`);
             if (searchRes.ok) {
               const searchData = await searchRes.json();
               const tweets = searchData.tweets || [];
@@ -119,14 +121,14 @@ export async function POST(req: NextRequest) {
                 ).join('\n');
               }
             }
-          } catch {}
+          } catch (err) { console.warn('[x/reports] Non-critical:', err); }
         }
       }
 
       // Fetch our own recent performance
       let ourData = '';
       try {
-        const analyticsRes = await fetch(`http://localhost:${process.env.PORT || 3000}/api/x/analytics`);
+        const analyticsRes = await fetch(`${INTERNAL_BASE}/api/x/analytics`);
         if (analyticsRes.ok) {
           const analytics = await analyticsRes.json();
           const profile = analytics.profile?.public_metrics || {};
@@ -137,7 +139,7 @@ Recent tweets: ${tweets.length}
 Total recent likes: ${tweets.reduce((s: number, t: any) => s + (t.public_metrics?.like_count || 0), 0)}
 Total recent RTs: ${tweets.reduce((s: number, t: any) => s + (t.public_metrics?.retweet_count || 0), 0)}`;
         }
-      } catch {}
+      } catch (err) { console.warn('[x/reports] Non-critical:', err); }
 
       title = `Competitor Analysis — ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
       prompt = `You are a social media strategist. Generate a comprehensive competitor analysis report in markdown.
@@ -175,18 +177,18 @@ Be data-driven. Reference specific numbers. Be honest about our weaknesses.`;
 
       let analyticsData = '';
       try {
-        const res = await fetch(`http://localhost:${process.env.PORT || 3000}/api/x/analytics`);
+        const res = await fetch(`${INTERNAL_BASE}/api/x/analytics`);
         if (res.ok) {
           const data = await res.json();
           analyticsData = JSON.stringify({ profile: data.profile?.public_metrics, tweetCount: data.tweets?.length, tweets: data.tweets?.slice(0, 10).map((t: any) => ({ text: t.text?.slice(0, 80), metrics: t.public_metrics })) });
         }
-      } catch {}
+      } catch (err) { console.warn('[x/reports] Non-critical:', err); }
 
       let mentionData = '';
       try {
         const mentions = db.prepare('SELECT COUNT(*) as total, SUM(CASE WHEN reply_status = \'replied\' THEN 1 ELSE 0 END) as replied FROM x_mentions WHERE tweet_created_at > ?').get(Date.now() - 7 * 86400000) as any;
         mentionData = `Mentions this week: ${mentions?.total || 0}, Replied: ${mentions?.replied || 0}`;
-      } catch {}
+      } catch (err) { console.warn('[x/reports] Non-critical:', err); }
 
       prompt = `Generate a weekly social media performance report in markdown.
 ${brandContext}

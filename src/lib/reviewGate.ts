@@ -78,7 +78,9 @@ export function runReviewGate(taskId: string): ReviewGateResult {
           `INSERT INTO task_activity (taskId, agentId, action, message, timestamp)
            VALUES (?, ?, ?, ?, ?)`
         ).run(taskId, 'system', 'review_gate', failureMsg, Date.now());
-      } catch { /* non-critical */ }
+      } catch (err2) {
+        console.warn('[reviewGate] Non-critical: failed to log review gate activity:', err2);
+      }
     }
   } catch (err) {
     console.error('[reviewGate] Error:', err);

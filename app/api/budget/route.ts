@@ -214,7 +214,7 @@ export async function POST(req: NextRequest) {
         const rows = db.prepare(`SELECT file_path FROM budget_invoices WHERE id IN (${placeholders})`).all(...ids) as any[];
         for (const row of rows) {
           if (row?.file_path) {
-            try { require('fs').unlinkSync(row.file_path); } catch { /* non-fatal */ }
+            try { require('fs').unlinkSync(row.file_path); } catch (err) { console.warn('[budget] Non-critical: failed to delete invoice file:', err); }
           }
         }
         db.prepare(`DELETE FROM budget_invoices WHERE id IN (${placeholders})`).run(...ids);
@@ -311,7 +311,7 @@ export async function DELETE(req: NextRequest) {
     } else if (resource === 'invoice') {
       const inv = db.prepare(`SELECT file_path FROM budget_invoices WHERE id = ?`).get(id) as any;
       if (inv?.file_path) {
-        try { require('fs').unlinkSync(inv.file_path); } catch { /* non-fatal */ }
+        try { require('fs').unlinkSync(inv.file_path); } catch (err) { console.warn('[budget] Non-critical: failed to delete invoice file:', err); }
       }
       db.prepare(`DELETE FROM budget_invoices WHERE id = ?`).run(id);
     } else {

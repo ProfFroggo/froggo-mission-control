@@ -43,7 +43,8 @@ const getInjectionWarning = (item: InboxItem): InjectionWarning | null => {
   try {
     const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
     return meta.injectionWarning || null;
-  } catch {
+  } catch (err) {
+    console.warn('[InboxPanel] Non-critical:', err);
     return null;
   }
 };
@@ -150,7 +151,8 @@ export default function InboxPanel() {
       });
       showToast('success', 'All marked as read');
       loadInbox();
-    } catch {
+    } catch (err) {
+      console.warn('[InboxPanel] Non-critical:', err);
       showToast('error', 'Failed to mark all as read');
     } finally {
       setMarkingAllRead(false);
@@ -255,7 +257,7 @@ export default function InboxPanel() {
       try {
         const meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
         if (meta.isReview) return true;
-      } catch { /* ignore */ }
+      } catch (err) { console.warn('[InboxPanel] Non-critical:', err); }
     }
     
     // Everything else is an approval (blocking decision)
@@ -283,7 +285,7 @@ export default function InboxPanel() {
     if (item.priority_score === undefined || item.priority_score === null) {
       // Calculate on-the-fly if not in DB
       let metadata: Record<string, any> = {};
-      try { metadata = item.metadata ? JSON.parse(item.metadata) : {}; } catch { /* malformed JSON */ }
+      try { metadata = item.metadata ? JSON.parse(item.metadata) : {}; } catch (err) { console.warn('[InboxPanel] Non-critical: malformed JSON:', err); }
       const score = calculatePriorityScore({
         type: item.type,
         title: item.title,
@@ -615,7 +617,7 @@ export default function InboxPanel() {
       if (item.metadata) {
         try {
           metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
-        } catch { /* ignore */ }
+        } catch (err) { console.warn('[InboxPanel] Non-critical:', err); }
       }
       
       // Stage 2: Email is ready to send - show Send/Schedule modal
@@ -930,7 +932,7 @@ export default function InboxPanel() {
     if (isTaskItem && item.metadata) {
       // For task items, update the task status back to in-progress with feedback
       let meta: Record<string, any> = {};
-      try { meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata; } catch { /* malformed JSON */ }
+      try { meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata; } catch (err) { console.warn('[InboxPanel] Non-critical: malformed JSON:', err); }
       if (meta.taskId) {
         await taskApi.update(meta.taskId, { status: 'in-progress' });
         // Send feedback to agent
@@ -1452,7 +1454,8 @@ export default function InboxPanel() {
                                   )}
                                 </>
                               );
-                            } catch {
+                            } catch (err) {
+                              console.warn('[InboxPanel] Non-critical:', err);
                               return null;
                             }
                           })()}
@@ -1740,7 +1743,7 @@ export default function InboxPanel() {
                         if (item.metadata) {
                           try {
                             metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
-                          } catch { /* ignore */ }
+                          } catch (err) { console.warn('[InboxPanel] Non-critical:', err); }
                         }
 
                         const recipient = metadata.recipient || metadata.to;
@@ -1825,7 +1828,7 @@ export default function InboxPanel() {
                       if (item.metadata) {
                         try {
                           metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata;
-                        } catch { /* ignore */ }
+                        } catch (err) { console.warn('[InboxPanel] Non-critical:', err); }
                       }
 
                       // Add to schedule

@@ -12,7 +12,8 @@ export function isSameOrigin(url: string): boolean {
     const targetUrl = new URL(url)
     const appUrl = new URL(getBaseUrl())
     return targetUrl.origin === appUrl.origin
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/core/utils/validation] Non-critical:', err);
     return false
   }
 }

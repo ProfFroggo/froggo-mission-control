@@ -210,7 +210,8 @@ async function executeGoogleBlock(
         } else if (event.type === 'result' && event.result) {
           output = event.result;
         }
-      } catch {
+      } catch (err) {
+        console.warn('[local/workflows/[id]/execute] Non-critical:', err);
         output += line;
       }
     }
@@ -379,7 +380,8 @@ async function executeWorkflow(
         });
         try {
           results[blockId] = JSON.parse(response.replace(/```json?\n?/g, '').replace(/```/g, '').trim());
-        } catch {
+        } catch (err) {
+          console.warn('[local/workflows/[id]/execute] Non-critical:', err);
           results[blockId] = { score: 0, passed: false, feedback: response, parseError: true };
         }
 
@@ -403,7 +405,8 @@ async function executeWorkflow(
           } else {
             results[blockId] = { passed: parsed.passed, violations: parsed.violations, input: previousOutput, action: parsed.passed ? 'pass' : action };
           }
-        } catch {
+        } catch (err) {
+          console.warn('[local/workflows/[id]/execute] Non-critical:', err);
           results[blockId] = { passed: true, input: previousOutput, note: 'Guardrails returned non-JSON', raw: response };
         }
 
@@ -429,7 +432,7 @@ async function executeWorkflow(
         // Multi-way routing — evaluates expression, matches to route values
         const expr = params.condition || "''";
         let routes: { value: string; label: string }[] = [];
-        try { routes = JSON.parse(params.routes || '[]'); } catch { /* ignore */ }
+        try { routes = JSON.parse(params.routes || '[]'); } catch (err) { console.warn('[local/workflows/[id]/execute] Non-critical:', err); }
         const fn = new Function('$', `'use strict'; return (${expr});`);
         const value = String(fn({ input: previousOutput, results, vars: workflowVars }));
         const matched = routes.find((r) => r.value === value);
@@ -445,7 +448,7 @@ async function executeWorkflow(
         const url = R(params.url || '');
         if (!url) { results[blockId] = { error: 'API URL not specified.' }; continue; }
         let headers: Record<string, string> = {};
-        try { headers = JSON.parse(R(params.headers || '{}')); } catch { /* ignore */ }
+        try { headers = JSON.parse(R(params.headers || '{}')); } catch (err) { console.warn('[local/workflows/[id]/execute] Non-critical:', err); }
         const body = method !== 'GET' && method !== 'HEAD' ? R(params.body || '') : undefined;
         const res = await fetch(url, {
           method,
@@ -659,7 +662,8 @@ async function executeWorkflow(
             if (Array.isArray(parsed)) {
               subtasks = parsed.map((s: any) => ({ title: String(s.title || ''), assignedTo: s.assignedTo || undefined }));
             }
-          } catch {
+          } catch (err) {
+            console.warn('[local/workflows/[id]/execute] Non-critical:', err);
             subtasks = params.subtasks.split('\n').filter((l: string) => l.trim()).map((s: string) => ({ title: s.trim() }));
           }
         }
@@ -688,7 +692,7 @@ async function executeWorkflow(
                 body: JSON.stringify({ title: st.title, assignedTo: st.assignedTo || undefined }),
               });
               if (stRes.ok) subtasksCreated++;
-            } catch { /* skip failed subtask */ }
+            } catch (err) { console.warn('[local/workflows/[id]/execute] Non-critical: skip failed subtask:', err); }
           }
         }
         results[blockId] = { created: res.ok, taskId: data.id, title, subtasksCreated };
@@ -835,7 +839,8 @@ async function executeWorkflow(
             } else {
               results[blockId] = { error: `Knowledge API returned ${res.status}`, query };
             }
-          } catch {
+          } catch (err) {
+            console.warn('[local/workflows/[id]/execute] Non-critical:', err);
             results[blockId] = { error: 'Knowledge base API not available.', query };
           }
         } else if (operation === 'get') {
@@ -844,7 +849,8 @@ async function executeWorkflow(
           try {
             const res = await fetch(`${baseUrl}/api/knowledge/${encodeURIComponent(articleId)}`);
             results[blockId] = res.ok ? await res.json() : { error: `Article ${articleId} not found` };
-          } catch {
+          } catch (err) {
+            console.warn('[local/workflows/[id]/execute] Non-critical:', err);
             results[blockId] = { error: `Could not fetch article: ${articleId}` };
           }
         } else if (operation === 'create') {
@@ -859,7 +865,8 @@ async function executeWorkflow(
               body: JSON.stringify({ title, content, category: category || 'general', tags, scope: scope || 'all' }),
             });
             results[blockId] = res.ok ? await res.json() : { error: `Create failed: ${res.status}` };
-          } catch {
+          } catch (err) {
+            console.warn('[local/workflows/[id]/execute] Non-critical:', err);
             results[blockId] = { error: 'Could not create knowledge article.' };
           }
         } else if (operation === 'update') {
@@ -876,7 +883,8 @@ async function executeWorkflow(
               body: JSON.stringify(updates),
             });
             results[blockId] = res.ok ? await res.json() : { error: `Update failed: ${res.status}` };
-          } catch {
+          } catch (err) {
+            console.warn('[local/workflows/[id]/execute] Non-critical:', err);
             results[blockId] = { error: `Could not update article: ${articleId}` };
           }
         } else if (operation === 'delete') {
@@ -884,7 +892,8 @@ async function executeWorkflow(
           try {
             const res = await fetch(`${baseUrl}/api/knowledge/${encodeURIComponent(articleId)}`, { method: 'DELETE' });
             results[blockId] = { deleted: res.ok, articleId };
-          } catch {
+          } catch (err) {
+            console.warn('[local/workflows/[id]/execute] Non-critical:', err);
             results[blockId] = { error: `Could not delete article: ${articleId}` };
           }
         } else {
@@ -915,7 +924,8 @@ async function executeWorkflow(
               } else {
                 results[blockId] = { query, results: [], error: `Memory search returned ${res.status}` };
               }
-            } catch {
+            } catch (err) {
+              console.warn('[local/workflows/[id]/execute] Non-critical:', err);
               results[blockId] = { query, results: [], error: 'Memory vault search not available.' };
             }
           }
@@ -930,7 +940,7 @@ async function executeWorkflow(
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ action: 'append', path: `workflow-memories/${filename}.md`, content: `\n## ${new Date().toISOString()}\n${value}` }),
             });
-          } catch { /* local cache still works */ }
+          } catch (err) { console.warn('[local/workflows/[id]/execute] Non-critical: local cache still works:', err); }
           results[blockId] = { written: true, key: query, source: 'workflow-cache+vault' };
         } else if (action === 'delete' || action === 'clear') {
           delete workflowVars[`mem_${query}`];
@@ -947,7 +957,7 @@ async function executeWorkflow(
         // Parse input data — accept JSON string or pass-through objects
         let parsed: any = previousOutput;
         if (typeof parsed === 'string') {
-          try { parsed = JSON.parse(parsed); } catch { /* keep as string */ }
+          try { parsed = JSON.parse(parsed); } catch (err) { console.warn('[local/workflows/[id]/execute] Non-critical: keep as string:', err); }
         }
 
         if (action === 'read') {
@@ -955,7 +965,8 @@ async function executeWorkflow(
         } else if (action === 'write') {
           try {
             results[blockId] = JSON.parse(data);
-          } catch {
+          } catch (err) {
+            console.warn('[local/workflows/[id]/execute] Non-critical:', err);
             results[blockId] = { error: 'Invalid JSON data for table write.', raw: data };
           }
         } else if (action === 'query') {
@@ -1018,7 +1029,8 @@ async function executeWorkflow(
             } else {
               results[blockId] = { error: `File not found: ${filePath}` };
             }
-          } catch {
+          } catch (err) {
+            console.warn('[local/workflows/[id]/execute] Non-critical:', err);
             results[blockId] = { error: `Could not read file: ${filePath}` };
           }
         } else if (action === 'list') {
@@ -1036,7 +1048,8 @@ async function executeWorkflow(
             } else {
               results[blockId] = { files: [], error: `Library list failed: ${res.status}` };
             }
-          } catch {
+          } catch (err) {
+            console.warn('[local/workflows/[id]/execute] Non-critical:', err);
             results[blockId] = { files: [] };
           }
         } else if (action === 'list-folders') {
@@ -1045,7 +1058,8 @@ async function executeWorkflow(
             const qs = filePath ? `?path=${encodeURIComponent(filePath)}` : '';
             const res = await fetch(`${baseUrl}/api/library/fs${qs}`);
             results[blockId] = res.ok ? await res.json() : { dirs: [] };
-          } catch {
+          } catch (err) {
+            console.warn('[local/workflows/[id]/execute] Non-critical:', err);
             results[blockId] = { dirs: [] };
           }
         } else if (action === 'delete') {
@@ -1056,7 +1070,8 @@ async function executeWorkflow(
               body: JSON.stringify({ action: 'delete', id: filePath }),
             });
             results[blockId] = { deleted: res.ok, path: filePath };
-          } catch {
+          } catch (err) {
+            console.warn('[local/workflows/[id]/execute] Non-critical:', err);
             results[blockId] = { error: `Could not delete: ${filePath}` };
           }
         } else {
@@ -1102,7 +1117,8 @@ async function executeWorkflow(
           });
           const data = await res.json();
           results[blockId] = { pending: true, approvalId: data.id, prompt };
-        } catch {
+        } catch (err) {
+          console.warn('[local/workflows/[id]/execute] Non-critical:', err);
           results[blockId] = { pending: true, prompt, note: 'Approval API not available — workflow continued.' };
         }
 
@@ -1147,7 +1163,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     let state: { blocks: any[]; connections: any[] };
     try {
       state = typeof workflow.state === 'string' ? JSON.parse(workflow.state) : workflow.state;
-    } catch {
+    } catch (err) {
+      console.warn('[local/workflows/[id]/execute] Non-critical:', err);
       state = { blocks: [], connections: [] };
     }
 

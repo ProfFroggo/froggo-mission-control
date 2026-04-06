@@ -106,7 +106,8 @@ export function KnowledgeTagFilters({
         operator: f.operator || 'eq',
         collapsed: f.collapsed ?? false,
       }))
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/components/knowledge-tag-filters/knowledge-tag-filtersx] Non-critical:', err);
       return []
     }
   }

@@ -88,7 +88,7 @@ export const jiraAddWatcherTool: ToolConfig<JiraAddWatcherParams, JiraAddWatcher
         try {
           const err = await watcherResponse.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/add_watcher] Non-critical:', _e); }
         throw new Error(message)
       }
 
@@ -108,7 +108,7 @@ export const jiraAddWatcherTool: ToolConfig<JiraAddWatcherParams, JiraAddWatcher
       try {
         const err = await response.json()
         message = err?.errorMessages?.join(', ') || err?.message || message
-      } catch (_e) {}
+      } catch (_e) { console.warn('[ws/jira/add_watcher] Non-critical:', _e); }
       throw new Error(message)
     }
 

@@ -131,7 +131,8 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
 
       setAgentWired(true);
       showToast('Agent configured for social media', 'success');
-    } catch {
+    } catch (err) {
+      console.warn('[XSetupWizard] Non-critical:', err);
       showToast('Agent wiring failed — configure manually in Agents', 'warning');
       setAgentWired(true); // Don't block progress
     } finally {
@@ -430,7 +431,7 @@ export default function XSetupWizard({ onComplete }: XSetupWizardProps) {
                   method: 'PUT',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ value: 'true' }),
-                }).catch(() => {});
+                }).catch(err => console.warn('[XSetupWizard] Non-critical:', err));
                 onComplete();
               }}
               variant="solid"

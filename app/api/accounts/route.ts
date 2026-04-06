@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     const row = db.prepare("SELECT value FROM settings WHERE key = 'accounts_list'").get() as { value: string } | undefined;
     let accounts: unknown[] = [];
-    try { if (row?.value) accounts = JSON.parse(row.value); } catch { /* */ }
+    try { if (row?.value) accounts = JSON.parse(row.value); } catch (err) { console.warn('[accounts] Non-critical: failed to parse accounts list:', err); }
 
     const newAccount = { ...body, id: `acct-${Date.now()}`, createdAt: new Date().toISOString() };
     accounts.push(newAccount);

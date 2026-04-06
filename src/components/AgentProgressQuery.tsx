@@ -103,7 +103,8 @@ export default function AgentProgressQuery({ taskId, taskTitle, className = '' }
         } else {
           setError('Could not fetch agent response. Check Sessions panel.');
         }
-      } catch {
+      } catch (err) {
+        console.warn('[AgentProgressQuery] Non-critical:', err);
         setError('Could not fetch agent response. Check Sessions panel.');
       }
     } catch (err: unknown) {

@@ -153,7 +153,7 @@ export default function MeetingTranscribe() {
             keyTopics: data.keyTopics || [],
           });
         }
-      } catch { /* summarisation is optional */ }
+      } catch (err) { console.warn('[MeetingTranscribe] Non-critical: summarisation is optional:', err); }
       finally { setSummarising(false); }
     }
   }
@@ -185,7 +185,8 @@ export default function MeetingTranscribe() {
       a.download = `transcript-${meetingId}.txt`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch {
+    } catch (err) {
+      console.warn('[MeetingTranscribe] Non-critical:', err);
       showToast('error', 'Failed to export transcript');
     }
   }

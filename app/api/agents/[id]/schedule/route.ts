@@ -23,7 +23,8 @@ export async function GET(
     if (row?.schedule) {
       try {
         schedule = JSON.parse(row.schedule);
-      } catch {
+      } catch (err) {
+        console.warn('[agents/[id]/schedule] Non-critical:', err);
         schedule = {};
       }
     }

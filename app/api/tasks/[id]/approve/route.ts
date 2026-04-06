@@ -75,7 +75,7 @@ export async function POST(
         INSERT INTO clara_review_log (id, taskId, decision, reason, reviewedAt, timeInReviewMinutes)
         VALUES (?, ?, 'approved', 'All 3 gates passed.', datetime('now'), ?)
       `).run(logId, id, timeInReviewMinutes);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[tasks/[id]/approve] Non-critical:', err); }
 
     const updatedTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as Record<string, unknown>;
 
@@ -89,7 +89,7 @@ export async function POST(
     // Dispatch the agent
     try {
       dispatchTask(id);
-    } catch { /* non-critical — cron will pick it up */ }
+    } catch (err) { console.warn('[tasks/[id]/approve] Non-critical: cron will pick it up', err); }
 
     const activity = {
       id: logId,

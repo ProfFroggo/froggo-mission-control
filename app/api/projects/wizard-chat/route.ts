@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
           const gsdData = JSON.parse(afterMarker.slice(jsonStart, jsonEnd + 1));
           return NextResponse.json({ text: textBefore, gsdData, ready: true, isGsd: true });
         }
-      } catch { /* fall through */ }
+      } catch (err) { console.warn('[projects/wizard-chat] Non-critical: fall through:', err); }
     }
 
     // Parse CONTEXT_READY marker (quick mode)
@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
           const structuredData = JSON.parse(afterMarker.slice(jsonStart, jsonEnd + 1));
           return NextResponse.json({ text: textBefore, structuredData, ready: true });
         }
-      } catch { /* fall through */ }
+      } catch (err) { console.warn('[projects/wizard-chat] Non-critical: fall through:', err); }
     }
 
     // Parse WIDGET marker (last occurrence, may contain |JSON data)
@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
         const pipeIdx = widgetContent.indexOf('|');
         if (pipeIdx !== -1) {
           widget = widgetContent.slice(0, pipeIdx).trim();
-          try { widgetData = JSON.parse(widgetContent.slice(pipeIdx + 1)); } catch { /* ignore */ }
+          try { widgetData = JSON.parse(widgetContent.slice(pipeIdx + 1)); } catch (err) { console.warn('[projects/wizard-chat] Non-critical:', err); }
         } else {
           widget = widgetContent.trim();
         }

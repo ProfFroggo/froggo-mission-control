@@ -12,7 +12,8 @@ export function sanitizeUrlForLog(url: string, maxLength = 120): string {
     const sanitized = `${origin}${parsed.pathname}`
     const result = sanitized || parsed.pathname || trimmed
     return result.length > maxLength ? `${result.slice(0, maxLength)}...` : result
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/core/utils/logging] Non-critical:', err);
     const withoutQuery = trimmed.split('?')[0].split('#')[0]
     return withoutQuery.length > maxLength ? `${withoutQuery.slice(0, maxLength)}...` : withoutQuery
   }

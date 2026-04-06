@@ -44,7 +44,8 @@ interface UseTourReturn {
 function isTourCompleted(storageKey: string): boolean {
   try {
     return localStorage.getItem(storageKey) === 'true'
-  } catch {
+  } catch (err) {
+    console.warn('[ws/app/workspace/[workspaceId]/components/product-tour/use-tour] Non-critical:', err);
     return false
   }
 }
@@ -52,7 +53,8 @@ function isTourCompleted(storageKey: string): boolean {
 function markTourCompleted(storageKey: string): void {
   try {
     localStorage.setItem(storageKey, 'true')
-  } catch {
+  } catch (err) {
+    console.warn('[ws/app/workspace/[workspaceId]/components/product-tour/use-tour] Non-critical:', err);
     logger.warn('Failed to persist tour completion', { storageKey })
   }
 }
@@ -60,7 +62,8 @@ function markTourCompleted(storageKey: string): void {
 function clearTourCompletion(storageKey: string): void {
   try {
     localStorage.removeItem(storageKey)
-  } catch {
+  } catch (err) {
+    console.warn('[ws/app/workspace/[workspaceId]/components/product-tour/use-tour] Non-critical:', err);
     logger.warn('Failed to clear tour completion', { storageKey })
   }
 }

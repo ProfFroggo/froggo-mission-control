@@ -7,7 +7,8 @@ function isBlockStillPresent(blockId: string | undefined): boolean {
   try {
     const { useWorkflowStore } = require('@/stores/workflows/workflow/store')
     return Boolean(useWorkflowStore.getState().blocks[blockId])
-  } catch {
+  } catch (err) {
+    console.warn('[ws/stores/operation-queue/store] Non-critical:', err);
     return true
   }
 }

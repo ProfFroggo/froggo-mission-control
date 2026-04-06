@@ -118,7 +118,8 @@ export async function PATCH(request: NextRequest, { params }: RowRouteParams) {
     let body: unknown
     try {
       body = await request.json()
-    } catch {
+    } catch (err) {
+      console.warn('[v1/tables/[tableId]/rows/[rowId]] Non-critical:', err);
       return NextResponse.json({ error: 'Request body must be valid JSON' }, { status: 400 })
     }
 

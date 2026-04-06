@@ -339,7 +339,8 @@ export function Document({
       try {
         await saveRef.current()
         setSaveStatus('saved')
-      } catch {
+      } catch (err) {
+        console.warn('[ws/app/workspace/[workspaceId]/knowledge/[id]/[documentId]/documentx] Non-critical:', err);
         setSaveStatus('error')
         setTimeout(() => setSaveStatus('idle'), 2000)
       }

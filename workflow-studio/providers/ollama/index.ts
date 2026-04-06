@@ -37,7 +37,7 @@ export const ollamaProvider: ProviderConfig = {
     try {
       const response = await fetch(`${OLLAMA_HOST}/api/tags`)
       if (!response.ok) {
-        await response.text().catch(() => {})
+        await response.text().catch(err => console.warn('[ws/providers/ollama/index] Non-critical:', err))
         useProvidersStore.getState().setProviderModels('ollama', [])
         logger.warn('Ollama service is not available. The provider will be disabled.')
         return

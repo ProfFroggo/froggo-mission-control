@@ -69,7 +69,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
         setFiles(data.files ?? []);
         setContextNotes(data.contextNotes ?? '');
       }
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[ContextPanel] Non-critical:', err); }
     finally { setLoading(false); }
   }, [entityType, entityId]);
 
@@ -88,7 +88,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ entityType, entityId, notes: value }),
         });
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[ContextPanel] Non-critical:', err); }
       finally { setSavingNotes(false); }
     }, 1000);
   };
@@ -156,7 +156,7 @@ export default function ContextPanel({ entityType, entityId }: Props) {
     try {
       await fetch(`/api/context-files/${id}`, { method: 'DELETE' });
       setFiles(prev => prev.filter(f => f.id !== id));
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[ContextPanel] Non-critical:', err); }
   };
 
   return (

@@ -80,7 +80,8 @@ export default function XCampaignView() {
         created_at: c.created_at as number || Date.now(),
         start_date: c.start_date as string | undefined,
       })));
-    } catch {
+    } catch (err) {
+      console.warn('[XCampaignView] Non-critical:', err);
       setCampaigns([]);
     } finally {
       setLoading(false);

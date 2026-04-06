@@ -63,7 +63,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       // Attempt to add the column if it doesn't exist (idempotent)
       try {
         db.exec('ALTER TABLE library_files ADD COLUMN description TEXT');
-      } catch { /* column already exists */ }
+      } catch (err) { console.warn('[files/[id]] Non-critical: column already exists:', err); }
       updates.push(['description', body.description ?? null]);
     }
 
@@ -74,7 +74,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       }
       try {
         db.exec('ALTER TABLE library_files ADD COLUMN starred INTEGER DEFAULT 0');
-      } catch { /* column already exists */ }
+      } catch (err) { console.warn('[files/[id]] Non-critical: column already exists:', err); }
       updates.push(['starred', body.starred ? 1 : 0]);
     }
 

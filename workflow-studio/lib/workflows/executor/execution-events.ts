@@ -251,7 +251,8 @@ export function createSSECallbacks(options: SSECallbackOptions) {
     if (isStreamClosed()) return
     try {
       controller.enqueue(encodeSSEEvent(event))
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/workflows/executor/execution-events] Non-critical:', err);
       setStreamClosed()
     }
   }
@@ -404,7 +405,7 @@ export function createSSECallbacks(options: SSECallbackOptions) {
     } finally {
       try {
         reader.releaseLock()
-      } catch {}
+      } catch (err) { console.warn('[ws/lib/workflows/executor/execution-events] Non-critical:', err); }
     }
   }
 

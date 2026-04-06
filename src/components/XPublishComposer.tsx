@@ -228,7 +228,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
           localStorage.removeItem(DRAFT_KEY);
         }
       }
-    } catch { /* ignore parse errors */ }
+    } catch (err) { console.warn('[XPublishComposer] Non-critical: ignore parse errors:', err); }
 
     loadRateLimit();
     loadScheduledList();
@@ -274,7 +274,8 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
       setRateLimitLoading(true);
       // Rate limit tracking not available via web — show as unlimited
       setRateLimit(null);
-    } catch {
+    } catch (err) {
+      console.warn('[XPublishComposer] Non-critical:', err);
       setRateLimit(null);
     } finally {
       setRateLimitLoading(false);
@@ -296,7 +297,8 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
         media_id: Array.isArray(p.media_ids) && p.media_ids.length > 0 ? p.media_ids[0] : null,
         metadata: typeof p.metadata === 'object' ? JSON.stringify(p.metadata) : (p.metadata as string) || null,
       })));
-    } catch {
+    } catch (err) {
+      console.warn('[XPublishComposer] Non-critical:', err);
       setScheduled([]);
     } finally {
       setLoadingScheduled(false);
@@ -426,7 +428,8 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
       localStorage.removeItem(DRAFT_KEY);
       setTweets(['']);
       showToast('success', 'Idea saved to drafts');
-    } catch {
+    } catch (err) {
+      console.warn('[XPublishComposer] Non-critical:', err);
       showToast('error', 'Failed to save idea');
     }
   };
@@ -500,7 +503,8 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
     try {
       await fetch(`/api/x/posts?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
       await loadScheduledList();
-    } catch {
+    } catch (err) {
+      console.warn('[XPublishComposer] Non-critical:', err);
       await loadScheduledList();
     }
   };
@@ -516,7 +520,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
           postTweets = meta.tweets;
           postMode = 'thread';
         }
-      } catch { /* use defaults */ }
+      } catch (err) { console.warn('[XPublishComposer] Non-critical: using defaults:', err); }
     }
 
     setTweets(postTweets);
@@ -861,7 +865,7 @@ export default function XPublishComposer({ onPostSuccess }: XPublishComposerProp
                   if (meta.type === 'thread' && Array.isArray(meta.tweets)) {
                     displayContent = meta.tweets[0] || post.content;
                   }
-                } catch {}
+                } catch (err) { console.warn('[XPublishComposer] Non-critical:', err); }
                 return (
                   <Flex
                     key={post.id}

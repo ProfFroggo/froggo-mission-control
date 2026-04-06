@@ -18,7 +18,7 @@ export async function GET() {
       socket.on('connect', () => { running = true; socket.destroy(); resolve(); });
       socket.on('error', () => { reject(); });
       setTimeout(() => { socket.destroy(); reject(); }, 500);
-    }).catch(() => {});
+    }).catch(err => console.warn('[voice/status] Non-critical:', err));
 
     // Count agents with soul files in workspace
     const { readdirSync, existsSync: fsExists } = await import('fs');
@@ -30,7 +30,8 @@ export async function GET() {
         .filter(e => e.isDirectory() && fsExists(join(agentsDir, e.name, 'SOUL.md')))
         .length;
     }
-  } catch {
+  } catch (err) {
+    console.warn('[voice/status] Non-critical:', err);
     // ignore
   }
 

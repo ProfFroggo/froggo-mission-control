@@ -80,7 +80,9 @@ export async function loadCredentialsServer(): Promise<TwitterCredentials> {
     creds.bearerToken = get('twitter_bearer_token');
     creds.oauthClientId = get('twitter_oauth_client_id');
     creds.oauthClientSecret = get('twitter_oauth_client_secret');
-  } catch { /* DB not ready */ }
+  } catch (err) {
+    console.warn('[twitterApi] Non-critical: DB query for twitter credentials failed:', err);
+  }
 
   // 2. Try keychain for any missing
   try {
@@ -90,7 +92,9 @@ export async function loadCredentialsServer(): Promise<TwitterCredentials> {
     if (!creds.bearerToken) creds.bearerToken = await keychainGet('twitter_bearer_token') ?? undefined;
     if (!creds.oauthClientId) creds.oauthClientId = await keychainGet('twitter_oauth_client_id') ?? undefined;
     if (!creds.oauthClientSecret) creds.oauthClientSecret = await keychainGet('twitter_oauth_client_secret') ?? undefined;
-  } catch { /* fallback silently */ }
+  } catch (err) {
+    console.warn('[twitterApi] Non-critical: keychain lookup for twitter credentials failed:', err);
+  }
 
   // 3. Fallback to env vars
   if (!creds.bearerToken) creds.bearerToken = process.env.TWITTER_BEARER_TOKEN;

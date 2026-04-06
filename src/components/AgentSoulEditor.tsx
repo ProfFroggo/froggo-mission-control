@@ -103,7 +103,8 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
       setContent(text);
       setOriginalContent(text);
       setCharCount(text.length);
-    } catch {
+    } catch (err) {
+      console.warn('[AgentSoulEditor] Non-critical:', err);
       showToast('error', 'Failed to load soul file');
     } finally {
       setLoading(false);
@@ -128,7 +129,8 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
       } else if (data.role) {
         setSkills([data.role]);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[AgentSoulEditor] Non-critical:', err);
       // non-critical
     }
   };
@@ -145,7 +147,8 @@ export default function AgentSoulEditor({ agentId, agentName }: AgentSoulEditorP
         setRecentMessages(msgs);
       }
       // 404 = chat rooms API not available, silently skip
-    } catch {
+    } catch (err) {
+      console.warn('[AgentSoulEditor] Non-critical:', err);
       // non-critical — API may not exist
     } finally {
       setMessagesLoading(false);

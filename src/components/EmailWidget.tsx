@@ -37,7 +37,8 @@ export default function EmailWidget() {
               action: res?.action || 0,
               starred: res?.starred || 0,
             };
-          } catch {
+          } catch (err) {
+            console.warn('[EmailWidget] Non-critical:', err);
             return { ...acc, unread: 0, action: 0, starred: 0 };
           }
         })

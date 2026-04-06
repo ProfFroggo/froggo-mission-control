@@ -8,7 +8,7 @@ async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val;
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[meetings/diarize] Non-critical:', err); }
   return process.env.GEMINI_API_KEY ?? null;
 }
 

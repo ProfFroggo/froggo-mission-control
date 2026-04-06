@@ -225,7 +225,9 @@ export function streamMessage(
           }
           try {
             onChunk(JSON.parse(data));
-          } catch {}
+          } catch (err) {
+            console.warn('[api] Failed to parse SSE chunk as JSON:', err);
+          }
         }
       }
     }

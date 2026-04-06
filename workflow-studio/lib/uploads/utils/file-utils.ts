@@ -381,7 +381,8 @@ export function extractStorageKey(filePath: string): string {
       const url = new URL(pathWithoutQuery)
       pathWithoutQuery = url.pathname
     }
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/uploads/utils/file-utils] Non-critical:', err);
     // If URL parsing fails, use the original path
   }
 
@@ -710,7 +711,8 @@ export function extractCleanFilename(urlOrPath: string): string {
     const pathname = url.pathname
     const filename = pathname.split('/').pop() || 'unknown'
     return decodeURIComponent(filename)
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/uploads/utils/file-utils] Non-critical:', err);
     const filename = withoutQuery.split('/').pop() || 'unknown'
     return decodeURIComponent(filename)
   }

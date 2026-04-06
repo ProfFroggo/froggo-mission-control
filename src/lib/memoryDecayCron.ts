@@ -48,7 +48,7 @@ function countMdFiles(dir: string): number {
         count++;
       }
     }
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[memoryDecayCron] Non-critical:', err); }
   return count;
 }
 
@@ -103,9 +103,9 @@ export function runDecayCycle(): { archived: number } {
                   renameSync(agentFilePath, join(archiveDir, fname));
                   archived++;
                 }
-              } catch { /* skip locked or missing files */ }
+              } catch (err) { console.warn('[memoryDecayCron] Non-critical: skip locked or missing files:', err); }
             }
-          } catch { /* non-critical */ }
+          } catch (err) { console.warn('[memoryDecayCron] Non-critical:', err); }
           continue;
         }
 
@@ -120,9 +120,9 @@ export function runDecayCycle(): { archived: number } {
             renameSync(fullPath, join(archiveDir, entry.name));
             archived++;
           }
-        } catch { /* skip locked or missing files */ }
+        } catch (err) { console.warn('[memoryDecayCron] Non-critical: skip locked or missing files:', err); }
       }
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[memoryDecayCron] Non-critical:', err); }
   }
 
   lastDecayRun = now;

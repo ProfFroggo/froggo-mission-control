@@ -307,7 +307,8 @@ export async function readStreamEvents(
       .map((entry) => {
         try {
           return JSON.parse(entry) as StreamEventEntry
-        } catch {
+        } catch (err) {
+          console.warn('[ws/lib/copilot/orchestrator/stream/buffer] Non-critical:', err);
           return null
         }
       })

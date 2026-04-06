@@ -224,7 +224,8 @@ export function XEngagementChart({ days = 30 }: XEngagementChartProps) {
       const data = await res.json();
       setDaily(data.daily ?? []);
       setSummary(data.summary ?? null);
-    } catch {
+    } catch (err) {
+      console.warn('[XEngagementChart] Non-critical:', err);
       // non-fatal — keep previous data
     } finally {
       setLoading(false);

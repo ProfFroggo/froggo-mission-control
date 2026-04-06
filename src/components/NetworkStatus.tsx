@@ -11,10 +11,15 @@ import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useEventBus } from '../lib/useEventBus';
 
 export default function NetworkStatus() {
+  const [mounted, setMounted] = useState(false);
   const online = useOnlineStatus();
   const [dismissed, setDismissed] = useState(false);
   const [showOnlineBriefly, setShowOnlineBriefly] = useState(false);
   const [wasOffline, setWasOffline] = useState(false);
+
+  // Only render after client mount — prevents SSR hydration mismatch
+  // since navigator.onLine is only available on the client.
+  useEffect(() => setMounted(true), []);
 
   // Track SSE connection liveness: when SSE reconnects, reset any dismissed state
   useEventBus('connected', () => {
@@ -39,6 +44,8 @@ export default function NetworkStatus() {
       return () => clearTimeout(id);
     }
   }, [online, wasOffline]);
+
+  if (!mounted) return null;
 
   if (!online && !dismissed) {
     return (

@@ -7,7 +7,7 @@ import {
   ActionBarPrimitive,
   BranchPickerPrimitive,
   useMessage,
-  useComposer,
+  useComposerRuntime,
 } from "@assistant-ui/react";
 import {
   Send,
@@ -380,7 +380,7 @@ function AssistantStreamState() {
 function getToolDisplayName(name: string, inputStr?: string): string {
   let input: Record<string, any> = {};
   if (inputStr) {
-    try { input = JSON.parse(inputStr); } catch { /* not JSON */ }
+    try { input = JSON.parse(inputStr); } catch (err) { console.warn('[ThreadStyles] Non-critical: not JSON:', err); }
   }
 
   // ── MCP tools: "mcp_server_tool-name" ─────────────────────────
@@ -777,15 +777,16 @@ function AssistantActionBar() {
 }
 
 function UserActionBar() {
+  // ExternalStoreRuntime does not support message editing — only show copy.
   return (
     <div className="aui-action-bar flex items-center justify-end mt-1 min-h-[26px]">
-      <ActionBarPrimitive.Edit
+      <ActionBarPrimitive.Copy
         className="aui-action-btn"
-        title="Edit message"
-        aria-label="Edit message"
+        title="Copy message"
+        aria-label="Copy message"
       >
-        <Edit3 size={12} />
-      </ActionBarPrimitive.Edit>
+        <Copy size={12} />
+      </ActionBarPrimitive.Copy>
     </div>
   );
 }
@@ -847,7 +848,7 @@ export function parseMessageContent(text: string): { items: ParsedItem[]; isPars
         return { items, isParsed: true };
       }
     }
-  } catch { /* fall through */ }
+  } catch (err) { console.warn('[ThreadStyles] Non-critical: fall through:', err); }
 
   return { items: [{ kind: 'text', text }], isParsed: false };
 }
@@ -1118,6 +1119,7 @@ export function MissionControlComposer({
 }: ComposerProps) {
   ensureCSS();
   const isRunning = loading;
+  const composerRuntime = useComposerRuntime();
 
   return (
     <ComposerPrimitive.Root className={`aui-composer-root ${isListening ? 'aui-listening' : ''}`}>
@@ -1136,6 +1138,14 @@ export function MissionControlComposer({
         disabled={disabled && !isRunning}
         rows={1}
         autoFocus
+        onKeyDown={(e) => {
+          // ComposerPrimitive.Input blocks Enter submit during isRunning.
+          // Intercept Enter to manually trigger queue send.
+          if (isRunning && e.key === 'Enter' && !e.shiftKey && composerRuntime.getState().text.trim()) {
+            e.preventDefault();
+            composerRuntime.send();
+          }
+        }}
       />
 
       {/* Footer row with icons + send */}
@@ -1167,9 +1177,9 @@ export function MissionControlComposer({
           )}
         </div>
 
-        {/* Right: stop or send */}
+        {/* Right: stop + send/queue */}
         <div className="flex items-center gap-1.5">
-          {isRunning ? (
+          {isRunning && (
             <button
               type="button"
               onClick={onStop}
@@ -1178,6 +1188,20 @@ export function MissionControlComposer({
               className="aui-stop-btn"
             >
               <Square size={14} fill="currentColor" />
+            </button>
+          )}
+          {isRunning ? (
+            /* Manual queue button — ComposerPrimitive.Send disables itself during isRunning,
+               so we bypass it and call composerRuntime.send() directly to trigger the queue path. */
+            <button
+              type="button"
+              onClick={() => { if (composerRuntime.getState().text.trim()) composerRuntime.send(); }}
+              disabled={disabled}
+              aria-label="Queue message"
+              title="Queue (Enter)"
+              className="aui-send-btn"
+            >
+              <Send size={15} />
             </button>
           ) : (
             <ComposerPrimitive.Send asChild>

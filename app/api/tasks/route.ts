@@ -15,7 +15,8 @@ function parseTask(row: Record<string, unknown>) {
     if (typeof parsed[field] === 'string') {
       try {
         parsed[field] = JSON.parse(parsed[field] as string);
-      } catch {
+      } catch (err) {
+        console.warn('[tasks] Non-critical:', err);
         parsed[field] = field === 'recurrence' ? null : [];
       }
     }
@@ -260,7 +261,7 @@ export async function POST(request: NextRequest) {
         body: description ? String(description).slice(0, 120) : undefined,
         userId: String(assignedTo),
         metadata: { taskId: id, assignedTo },
-      }).catch(() => {});
+      }).catch(err => console.warn('[tasks] Non-critical:', err));
     }
 
     return NextResponse.json(parseTask(task), { status: 201 });

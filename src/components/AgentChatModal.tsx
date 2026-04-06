@@ -65,7 +65,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
           timestamp: m.timestamp ?? Date.now(),
         })));
       }
-    }).catch(() => {});
+    }).catch(err => console.warn('[AgentChatModal] Non-critical:', err));
   }, [sessionKey]);
 
   useEffect(() => {
@@ -91,7 +91,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
 
     const userMsg: Message = { role: 'user', content: userText, timestamp: Date.now() };
     setMessages(prev => [...prev, userMsg]);
-    chatApi.saveMessage(sessionKey, { role: 'user', content: userText, timestamp: Date.now() }).catch(() => {});
+    chatApi.saveMessage(sessionKey, { role: 'user', content: userText, timestamp: Date.now() }).catch(err => console.warn('[AgentChatModal] Non-critical:', err));
 
     abortRef.current?.abort();
     const ctrl = new AbortController();
@@ -144,7 +144,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
             } else if (chunk.type === 'done') {
               // Stream complete — handled below after loop
             }
-          } catch { /* non-JSON line, ignore */ }
+          } catch (err) { console.warn('[AgentChatModal] Non-critical: non-JSON line, ignore:', err); }
         }
       }
 
@@ -154,7 +154,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
         const msgTs = Date.now();
         const msgId = `modal-${agentId}-${msgTs}`;
         setMessages(prev => [...prev, { role: 'assistant', content: finalReply, timestamp: msgTs }]);
-        chatApi.saveMessage(sessionKey, { role: 'assistant', content: finalReply, timestamp: msgTs }).catch(() => {});
+        chatApi.saveMessage(sessionKey, { role: 'assistant', content: finalReply, timestamp: msgTs }).catch(err => console.warn('[AgentChatModal] Non-critical:', err));
         // Extract and store artifacts from this response
         extractAllArtifacts(finalReply).forEach(a => {
           useArtifactStore.getState().addArtifact({
@@ -237,6 +237,7 @@ export default function AgentChatModal({ agentId, onClose, existingSessionKey }:
               return theme.pic ? (
                 <div className={`relative flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden ring-2 ${theme.ring} bg-mission-control-bg`}>
                   <img src={`/api/agents/${agent.id}/avatar`} alt={agent.name} className="w-full h-full object-cover"
+                    loading="lazy" decoding="async" width={40} height={40}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';

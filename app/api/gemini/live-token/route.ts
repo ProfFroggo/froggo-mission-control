@@ -14,7 +14,7 @@ async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val;
-  } catch { /* keychain unavailable */ }
+  } catch (err) { console.warn('[gemini/live-token] Non-critical: keychain unavailable:', err); }
   return process.env.GEMINI_API_KEY ?? null;
 }
 

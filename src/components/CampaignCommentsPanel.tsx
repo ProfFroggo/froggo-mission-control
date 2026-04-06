@@ -28,7 +28,8 @@ function formatDate(dateStr: string): string {
       hour: '2-digit',
       minute: '2-digit',
     });
-  } catch {
+  } catch (err) {
+    console.warn('[CampaignCommentsPanel] Non-critical:', err);
     return dateStr;
   }
 }
@@ -118,7 +119,8 @@ function CommentComposer({
       if (!res.ok) throw new Error('Failed');
       setText('');
       onSubmit();
-    } catch {
+    } catch (err) {
+      console.warn('[CampaignCommentsPanel] Non-critical:', err);
       showToast('Failed to post comment', 'error');
     } finally {
       setSaving(false);
@@ -177,7 +179,8 @@ export default function CampaignCommentsPanel({ campaignId }: CampaignCommentsPa
       const res = await fetch(`/api/campaigns/${campaignId}/comments`);
       const data = await res.json();
       if (data.success) setComments(data.comments);
-    } catch {
+    } catch (err) {
+      console.warn('[CampaignCommentsPanel] Non-critical:', err);
       // silently ignore
     } finally {
       setLoading(false);
@@ -197,7 +200,8 @@ export default function CampaignCommentsPanel({ campaignId }: CampaignCommentsPa
         if (!res.ok) throw new Error('Failed');
         setComments(prev => prev.filter(c => c.id !== commentId));
         showToast('Comment deleted', 'success');
-      } catch {
+      } catch (err) {
+        console.warn('[CampaignCommentsPanel] Non-critical:', err);
         showToast('Failed to delete comment', 'error');
       }
     },

@@ -117,7 +117,8 @@ export async function parseJsonBody(
   try {
     const data = await request.json()
     return { success: true, data }
-  } catch {
+  } catch (err) {
+    console.warn('[v1/knowledge/utils] Non-critical:', err);
     return {
       success: false,
       response: NextResponse.json({ error: 'Request body must be valid JSON' }, { status: 400 }),
