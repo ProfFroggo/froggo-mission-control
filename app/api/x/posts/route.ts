@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
       metadata: row.metadata ? JSON.parse(row.metadata as string) : {},
     }));
 
-    return NextResponse.json({ ok: true, posts, total: posts.length });
+    return NextResponse.json({ success: true, posts, total: posts.length });
   } catch (error) {
     console.error('GET /api/x/posts error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       metadata: safeJson(created.metadata, {}),
     };
 
-    return NextResponse.json({ ok: true, post, approval_id: approvalId }, { status: 201 });
+    return NextResponse.json({ success: true, post, approval_id: approvalId }, { status: 201 });
   } catch (error) {
     console.error('POST /api/x/posts error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -162,7 +162,7 @@ export async function PATCH(req: NextRequest) {
       metadata: safeJson2(updated.metadata, {}),
     };
 
-    return NextResponse.json({ ok: true, post });
+    return NextResponse.json({ success: true, post });
   } catch (error) {
     console.error('PATCH /api/x/posts error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -182,12 +182,12 @@ export async function DELETE(req: NextRequest) {
       if (!bodyId) return NextResponse.json({ error: 'id is required' }, { status: 400 });
       const result = db.prepare('DELETE FROM x_posts WHERE id = ?').run(bodyId);
       if (result.changes === 0) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
-      return NextResponse.json({ ok: true, deleted: bodyId });
+      return NextResponse.json({ success: true, deleted: bodyId });
     }
 
     const result = db.prepare('DELETE FROM x_posts WHERE id = ?').run(id);
     if (result.changes === 0) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
-    return NextResponse.json({ ok: true, deleted: id });
+    return NextResponse.json({ success: true, deleted: id });
   } catch (error) {
     console.error('DELETE /api/x/posts error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
       is_spam: !!row.is_spam,
     }));
 
-    return NextResponse.json({ ok: true, mentions: parsed, total: parsed.length });
+    return NextResponse.json({ success: true, mentions: parsed, total: parsed.length });
   } catch (error) {
     console.error('GET /api/x/mentions/data error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -86,7 +86,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const updated = db.prepare('SELECT * FROM x_mentions WHERE id = ?').get(id);
-    return NextResponse.json({ ok: true, mention: updated });
+    return NextResponse.json({ success: true, mention: updated });
   } catch (error) {
     console.error('PATCH /api/x/mentions/data error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

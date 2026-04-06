@@ -28,7 +28,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   try {
     const { id } = await params;
     wsDb.deleteWorkflow(id);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

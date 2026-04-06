@@ -99,7 +99,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     db.prepare('DELETE FROM modules_builder WHERE id = ?').run(id);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('DELETE /api/modules/:id error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

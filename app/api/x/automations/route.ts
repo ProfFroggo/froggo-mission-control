@@ -128,7 +128,7 @@ export async function DELETE(req: NextRequest) {
     db.prepare('DELETE FROM x_automations WHERE id = ?').run(id);
     db.prepare('DELETE FROM x_automation_log WHERE automation_id = ?').run(id);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('DELETE /api/x/automations error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

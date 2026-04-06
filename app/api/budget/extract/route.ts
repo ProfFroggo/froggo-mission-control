@@ -79,7 +79,7 @@ Return ONLY the JSON object, no other text.`;
 
         try {
           const extracted = JSON.parse(match[0]);
-          return NextResponse.json({ ok: true, extracted });
+          return NextResponse.json({ success: true, extracted });
         } catch (err) {
           console.warn('[budget/extract] Non-critical:', err);
           return NextResponse.json({ extracted: null, raw: text });

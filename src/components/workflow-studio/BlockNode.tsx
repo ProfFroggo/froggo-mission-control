@@ -135,7 +135,7 @@ function BlockNode({ id, data, selected }: { id: string; data: SerializedBlock &
           style={{ background: 'var(--mission-control-surface)', border: '1px solid var(--mission-control-border)' }}
           title="Delete block"
         >
-          <Trash2 size={10} style={{ color: '#ef4444' }} />
+          <Trash2 size={10} style={{ color: 'var(--color-error)' }} />
         </button>
       </div>
 
@@ -147,14 +147,14 @@ function BlockNode({ id, data, selected }: { id: string; data: SerializedBlock &
             position={Position.Right}
             id="true"
             className="!w-3 !h-3 !border-2 !rounded-full"
-            style={{ background: 'var(--mission-control-surface)', borderColor: '#22c55e', top: '35%' }}
+            style={{ background: 'var(--mission-control-surface)', borderColor: 'var(--color-success)', top: '35%' }}
           />
           <Handle
             type="source"
             position={Position.Right}
             id="false"
             className="!w-3 !h-3 !border-2 !rounded-full"
-            style={{ background: 'var(--mission-control-surface)', borderColor: '#ef4444', top: '65%' }}
+            style={{ background: 'var(--mission-control-surface)', borderColor: 'var(--color-error)', top: '65%' }}
           />
         </>
       ) : (

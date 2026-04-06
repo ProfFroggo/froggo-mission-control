@@ -121,7 +121,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
 
     db.prepare('DELETE FROM project_milestones WHERE id = ?').run(milestoneId);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('DELETE /api/projects/:id/milestones error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

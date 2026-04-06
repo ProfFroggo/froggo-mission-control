@@ -56,6 +56,8 @@ const CLAUDE_BIN = process.env.CLAUDE_BIN || (() => {
 })();
 const DB_PATH = process.env.DB_PATH || path.join(HOME, 'mission-control/data/mission-control.db');
 const PID_PATH = path.join(HOME, 'mission-control/logs/cron-daemon.pid');
+const API_HOST = process.env.API_HOST || '127.0.0.1';
+const API_PORT = parseInt(process.env.PORT || '3000', 10);
 const CHECK_INTERVAL = 60_000;        // 1 minute — schedule job check
 
 // ── Single-instance lock ──────────────────────────────────────────────────────
@@ -195,8 +197,8 @@ async function runApiJob(job) {
   return new Promise((resolve) => {
     const body = JSON.stringify({ message, model, sessionKey });
     const req = http.request({
-      host: '127.0.0.1',
-      port: 3000,
+      host: API_HOST,
+      port: API_PORT,
       path: `/api/agents/${agentId}/stream`,
       method: 'POST',
       headers: {
@@ -300,8 +302,8 @@ async function runTaskJob(job) {
   return new Promise((resolve) => {
     const body = JSON.stringify(taskBody);
     const req = http.request({
-      host: '127.0.0.1',
-      port: 3000,
+      host: API_HOST,
+      port: API_PORT,
       path: '/api/tasks',
       method: 'POST',
       headers: {
@@ -327,8 +329,8 @@ async function runTaskJob(job) {
                   assignedTo: typeof st === 'string' ? null : (st.assignedTo || null),
                 });
                 const stReq = http.request({
-                  host: '127.0.0.1',
-                  port: 3000,
+                  host: API_HOST,
+                  port: API_PORT,
                   path: `/api/tasks/${task.id}/subtasks`,
                   method: 'POST',
                   headers: {
@@ -358,8 +360,8 @@ async function runTaskJob(job) {
               message: `Cron job "${job.name}" created task: ${title}`,
             });
             const actReq = http.request({
-              host: '127.0.0.1',
-              port: 3000,
+              host: API_HOST,
+              port: API_PORT,
               path: `/api/tasks/${task.id}/activity`,
               method: 'POST',
               headers: {
@@ -397,16 +399,9 @@ async function runTaskJob(job) {
 }
 
 function runLegacyJob(job) {
-  log(`Running legacy job ${job.id}: ${job.command}`);
-  const proc = spawn('bash', ['-c', job.command], {
-    detached: true,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    cwd: path.join(HOME, 'git/mission-control-nextjs'),
-  });
-  proc.stdout.on('data', d => log(`[${job.id}] ${d.toString().trim()}`));
-  proc.stderr.on('data', d => log(`[${job.id}] ERR: ${d.toString().trim()}`));
-  proc.on('close', code => log(`[${job.id}] exited ${code}`));
-  proc.unref();
+  // Legacy format deprecated — raw shell execution removed for security (command injection risk).
+  // Legacy jobs are logged and skipped. Migrate to API format with schedule + taskTemplate.
+  log(`[${job.id}] SKIPPED — legacy command format is deprecated. Migrate to API format. Command was: ${(job.command || '').slice(0, 80)}`);
 }
 
 // ── Scheduling logic ──────────────────────────────────────────────────────────
@@ -545,7 +540,7 @@ function postToRoom(roomId, content) {
   return new Promise((resolve) => {
     const body = JSON.stringify({ agentId: 'mission-control', content, role: 'system' });
     const req = http.request({
-      host: '127.0.0.1', port: 3000,
+      host: API_HOST, port: API_PORT,
       path: `/api/chat-rooms/${roomId}/messages`,
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
@@ -633,7 +628,7 @@ async function processScheduledItems() {
           const tweetBody = JSON.stringify({ text: tweetContent });
           const postResult = await new Promise((resolve) => {
             const req = http.request({
-              host: '127.0.0.1', port: 3000,
+              host: API_HOST, port: API_PORT,
               path: '/api/x/tweet', method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(tweetBody) },
             }, (res) => {
@@ -660,7 +655,7 @@ async function processScheduledItems() {
                   const replyBody = JSON.stringify({ text: parsed.tweets[i], reply_to: replyTo });
                   const replyResult = await new Promise((resolve) => {
                     const req = http.request({
-                      host: '127.0.0.1', port: 3000,
+                      host: API_HOST, port: API_PORT,
                       path: '/api/x/tweet', method: 'POST',
                       headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(replyBody) },
                     }, (res) => { let d = ''; res.on('data', c => { d += c; }); res.on('end', () => { try { resolve(JSON.parse(d)); } catch { resolve({}); } }); });
@@ -691,7 +686,7 @@ async function processScheduledItems() {
             tags: ['scheduled', 'social'],
           });
           const req = http.request({
-            host: '127.0.0.1', port: 3000,
+            host: API_HOST, port: API_PORT,
             path: '/api/tasks', method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(taskBody) },
           }, (res) => { res.resume(); });
@@ -787,7 +782,7 @@ async function processMentions() {
   try {
     // Check if X is configured first
     const flagResult = await new Promise((resolve) => {
-      http.get({ host: '127.0.0.1', port: 3000, path: '/api/settings/twitter_setup_complete' }, (res) => {
+      http.get({ host: API_HOST, port: API_PORT, path: '/api/settings/twitter_setup_complete' }, (res) => {
         let data = '';
         res.on('data', c => { data += c; });
         res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve(null); } });
@@ -798,7 +793,7 @@ async function processMentions() {
     log('[social] Processing mentions...');
     const result = await new Promise((resolve) => {
       const req = http.request({
-        host: '127.0.0.1', port: 3000,
+        host: API_HOST, port: API_PORT,
         path: '/api/x/mentions/process',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -840,7 +835,7 @@ const AUTOMATION_INTERVAL = 5 * 60_000; // every 5 minutes
 async function executeAutomations() {
   try {
     const flagResult = await new Promise((resolve) => {
-      http.get({ host: '127.0.0.1', port: 3000, path: '/api/settings/twitter_setup_complete' }, (res) => {
+      http.get({ host: API_HOST, port: API_PORT, path: '/api/settings/twitter_setup_complete' }, (res) => {
         let data = '';
         res.on('data', c => { data += c; });
         res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve(null); } });
@@ -850,7 +845,7 @@ async function executeAutomations() {
 
     const result = await new Promise((resolve) => {
       const req = http.request({
-        host: '127.0.0.1', port: 3000,
+        host: API_HOST, port: API_PORT,
         path: '/api/x/automations/execute',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -882,7 +877,7 @@ const DAILY_REPORT_INTERVAL = 24 * 60 * 60_000; // every 24 hours
 async function generateDailyCompetitorReport() {
   try {
     const flagResult = await new Promise((resolve) => {
-      http.get({ host: '127.0.0.1', port: 3000, path: '/api/settings/twitter_setup_complete' }, (res) => {
+      http.get({ host: API_HOST, port: API_PORT, path: '/api/settings/twitter_setup_complete' }, (res) => {
         let data = '';
         res.on('data', c => { data += c; });
         res.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve(null); } });
@@ -894,7 +889,7 @@ async function generateDailyCompetitorReport() {
     const result = await new Promise((resolve) => {
       const body = JSON.stringify({ type: 'competitor-analysis' });
       const req = http.request({
-        host: '127.0.0.1', port: 3000,
+        host: API_HOST, port: API_PORT,
         path: '/api/x/reports',
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },

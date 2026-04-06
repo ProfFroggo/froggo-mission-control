@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'content is required' }, { status: 400 });
     }
     const prediction = scoreContent(content);
-    return NextResponse.json({ ok: true, prediction });
+    return NextResponse.json({ success: true, prediction });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: msg }, { status: 500 });

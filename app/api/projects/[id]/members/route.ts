@@ -63,7 +63,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     } catch (err) { console.warn('[projects/[id]/members] Non-critical:', err); }
 
     db.prepare('UPDATE projects SET updatedAt = ? WHERE id = ?').run(Date.now(), id);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('POST /api/projects/:id/members error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

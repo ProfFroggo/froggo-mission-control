@@ -41,7 +41,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     const result = db.prepare('DELETE FROM notes WHERE id = ?').run(id);
     if (result.changes === 0) return NextResponse.json({ error: 'Note not found' }, { status: 404 });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (err: unknown) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

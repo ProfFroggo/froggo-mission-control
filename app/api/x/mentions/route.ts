@@ -78,7 +78,7 @@ export async function GET() {
     });
 
     return NextResponse.json({
-      ok: true,
+      success: true,
       mentions: enriched,
       meta: mentions.data?.meta,
       our_user_id: myId,

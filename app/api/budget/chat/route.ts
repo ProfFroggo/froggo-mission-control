@@ -112,7 +112,7 @@ export async function GET() {
     const messages = db.prepare(
       `SELECT id, role, content, created_at FROM budget_chat_messages ORDER BY created_at ASC LIMIT 200`
     ).all();
-    return NextResponse.json({ ok: true, messages });
+    return NextResponse.json({ success: true, messages });
   } catch (err) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
     db.prepare(`INSERT INTO budget_chat_messages (role, content, created_at) VALUES (?, ?, ?)`).run('user', message, now);
     db.prepare(`INSERT INTO budget_chat_messages (role, content, created_at) VALUES (?, ?, ?)`).run('assistant', reply, now + 1);
 
-    return NextResponse.json({ ok: true, reply });
+    return NextResponse.json({ success: true, reply });
   } catch (err) {
     console.error('[budget/chat]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -185,7 +185,7 @@ export async function DELETE() {
   try {
     const db = getDb();
     db.prepare(`DELETE FROM budget_chat_messages`).run();
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

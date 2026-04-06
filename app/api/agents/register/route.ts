@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({
-      ok: true,
+      success: true,
       message: `Agent ${id} registered in catalog. Call POST /api/agents/hire to install workspace.`,
       nextStep: `POST /api/agents/hire with body { "agentId": "${id}" }`,
     });

@@ -56,7 +56,7 @@ export default function DashXMetrics({ range, onNavigate }: DashXMetricsProps) {
 
   const rangeMs = range === '24h' ? 24 * 60 * 60 * 1000 : 48 * 60 * 60 * 1000;
 
-  const isConfigured = data?.ok && data.profile;
+  const isConfigured = data?.success && data.profile;
 
   // Filter tweets to selected range
   const cutoff = Date.now() - rangeMs;

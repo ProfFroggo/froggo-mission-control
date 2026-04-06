@@ -93,7 +93,7 @@ export async function POST() {
     }
 
     return NextResponse.json({
-      ok: true,
+      success: true,
       agents: results.length,
       results,
     });

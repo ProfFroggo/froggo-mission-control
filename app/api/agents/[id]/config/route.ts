@@ -92,7 +92,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       }
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('PATCH /api/agents/:id/config error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

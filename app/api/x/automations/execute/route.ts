@@ -103,10 +103,10 @@ export async function POST() {
       }
     }
 
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({ success: true, ...result });
   } catch (error) {
     console.error('[x/automations/execute]', error);
-    return NextResponse.json({ ok: false, ...result, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, ...result, error: String(error) }, { status: 500 });
   }
 }
 
@@ -346,7 +346,7 @@ async function executeAction(
           body: JSON.stringify({ type: reportType }),
         });
         const data = await res.json().catch(() => ({}));
-        return { type: 'report', report_type: reportType, status: data.ok ? 'generated' : 'failed', title: data.report?.title };
+        return { type: 'report', report_type: reportType, status: data.success ? 'generated' : 'failed', title: data.report?.title };
       } catch (err: any) {
         return { type: 'report', status: 'error', error: err.message };
       }
@@ -363,7 +363,7 @@ async function executeAction(
           body: JSON.stringify({ content, type: 'tweet', status: 'draft', proposed_by: `automation:${automation.id}` }),
         });
         const data = await res.json().catch(() => ({}));
-        return { type: 'post_content', status: data.ok ? 'draft created' : 'failed', post_id: data.post?.id };
+        return { type: 'post_content', status: data.success ? 'draft created' : 'failed', post_id: data.post?.id };
       } catch (err: any) {
         return { type: 'post_content', status: 'error', error: err.message };
       }

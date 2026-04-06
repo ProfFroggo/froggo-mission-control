@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       const db = getDb();
       const now = Date.now();
       db.prepare('UPDATE automations SET last_run = ?, updated_at = ? WHERE id = ?').run(now, now, id);
-      return NextResponse.json({ ok: true, lastRun: now });
+      return NextResponse.json({ success: true, lastRun: now });
     }
 
     // Create automation
@@ -191,7 +191,7 @@ export async function DELETE(request: NextRequest) {
     if (result.changes === 0) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[automations DELETE]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

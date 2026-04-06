@@ -455,9 +455,9 @@ Return ONLY JSON:
       }
     }
 
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({ success: true, ...result });
   } catch (err) {
     console.error('[x/mentions/process]', err);
-    return NextResponse.json({ ok: false, ...result, error: String(err) }, { status: 500 });
+    return NextResponse.json({ success: false, ...result, error: String(err) }, { status: 500 });
   }
 }

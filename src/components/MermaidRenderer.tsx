@@ -68,7 +68,7 @@ export default function MermaidRenderer({ code, className }: MermaidRendererProp
 
   if (loading) {
     return (
-      <div className={`flex items-center justify-center py-12 text-sm gap-2 ${className ?? ''}`} style={{ color: '#64748b' }}>
+      <div className={`flex items-center justify-center py-12 text-sm gap-2 ${className ?? ''}`} style={{ color: 'var(--mission-control-text-dim)' }}>
         <RefreshCw size={14} className="animate-spin" />
         <span>Rendering diagram…</span>
       </div>
@@ -78,9 +78,9 @@ export default function MermaidRenderer({ code, className }: MermaidRendererProp
   if (error) {
     return (
       <div className={`flex flex-col items-center justify-center py-8 gap-2 text-center ${className ?? ''}`}>
-        <AlertTriangle size={20} style={{ color: '#ef4444' }} />
-        <p className="text-sm font-medium" style={{ color: '#1e293b' }}>Diagram render failed</p>
-        <p className="text-xs max-w-sm" style={{ color: '#64748b' }}>{error}</p>
+        <AlertTriangle size={20} style={{ color: 'var(--color-error)' }} />
+        <p className="text-sm font-medium" style={{ color: 'var(--mission-control-text)' }}>Diagram render failed</p>
+        <p className="text-xs max-w-sm" style={{ color: 'var(--mission-control-text-dim)' }}>{error}</p>
       </div>
     );
   }

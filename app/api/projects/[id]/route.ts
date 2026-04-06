@@ -149,7 +149,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       // non-critical — summary write failure should not fail the archive
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('DELETE /api/projects/:id error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

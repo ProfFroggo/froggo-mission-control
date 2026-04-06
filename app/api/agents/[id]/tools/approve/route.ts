@@ -59,7 +59,7 @@ export async function POST(
       .run(JSON.stringify(meta), approvalId);
 
     emitSSEEvent('tool.granted', { agentId: id, toolName, scope: action === 'grant' ? 'permanent' : 'session', approvalId });
-    return NextResponse.json({ ok: true, granted: true, scope: action === 'grant' ? 'permanent' : 'session' });
+    return NextResponse.json({ success: true, granted: true, scope: action === 'grant' ? 'permanent' : 'session' });
   }
 
   if (action === 'reject' || action === 'reject_reason') {
@@ -71,7 +71,7 @@ export async function POST(
       .run(JSON.stringify(rejMeta), approvalId);
 
     emitSSEEvent('tool.rejected', { agentId: id, toolName, approvalId, reason: reason ?? null });
-    return NextResponse.json({ ok: true, granted: false });
+    return NextResponse.json({ success: true, granted: false });
   }
 
   return NextResponse.json({ error: 'Unknown action' }, { status: 400 });

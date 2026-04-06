@@ -125,7 +125,7 @@ Return ONLY the JSON object.`;
       ],
     };
 
-    return NextResponse.json({ ok: true, preview });
+    return NextResponse.json({ success: true, preview });
   } catch (err) {
     console.error('[budget/import]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

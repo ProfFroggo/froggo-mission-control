@@ -1033,7 +1033,7 @@ export default function BudgetPanel() {
       fd.append('file', file);
       const res = await fetch('/api/budget/import', { method: 'POST', body: fd });
       const data = await res.json();
-      if (data.ok && data.preview) {
+      if (data.success && data.preview) {
         setImportPreview(data.preview);
         setImportStatus(null);
       } else {

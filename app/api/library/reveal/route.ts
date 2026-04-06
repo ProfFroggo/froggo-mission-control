@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       if (err) {
         resolve(NextResponse.json({ error: 'Failed to reveal file' }, { status: 500 }));
       } else {
-        resolve(NextResponse.json({ ok: true }));
+        resolve(NextResponse.json({ success: true }));
       }
     });
   });

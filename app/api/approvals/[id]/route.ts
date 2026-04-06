@@ -228,7 +228,7 @@ export async function PATCH(
         });
         const firstData = await firstRes.json().catch(() => ({}));
 
-        if (firstData.ok || firstData.id) {
+        if (firstData.success || firstData.id) {
           // Post thread replies if multiple tweets
           let replyTo = firstData.id;
           for (let i = 1; i < tweets.length; i++) {
@@ -264,7 +264,7 @@ export async function PATCH(
           });
           const replyData = await replyRes.json().catch(() => ({}));
 
-          if (replyData.ok || replyData.id) {
+          if (replyData.success || replyData.id) {
             console.log(`[approvals] Reply posted to tweet ${tweetId}: ${replyData.id}`);
             // Update x_mentions status to 'replied'
             if (meta.mentionId) {

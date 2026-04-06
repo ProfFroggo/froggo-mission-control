@@ -223,7 +223,7 @@ Mentions, replies, sentiment breakdown.
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(id, reportType, title, summary, content, JSON.stringify({ handles: body.handles, generated_by: 'gemini' }), Date.now());
 
-    return NextResponse.json({ ok: true, report: { id, type: reportType, title, summary, content } });
+    return NextResponse.json({ success: true, report: { id, type: reportType, title, summary, content } });
   } catch (error) {
     console.error('POST /api/x/reports error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
