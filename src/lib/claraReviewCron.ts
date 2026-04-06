@@ -28,6 +28,7 @@ const CLAUDE_SCRIPT = ENV.CLAUDE_SCRIPT;
 const NODE_BIN      = process.execPath;
 const IS_NATIVE_BIN = !CLAUDE_SCRIPT.endsWith('.js');
 const REVIEW_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
+const MAX_CONCURRENT_PER_AGENT = 2; // Allow agents to run up to 2 tasks concurrently
 
 // Track tasks currently being reviewed to avoid duplicates
 const inReview    = new Set<string>(); // post-work review
@@ -295,15 +296,17 @@ export function spawnClaraPreReview(task: Record<string, unknown>): void {
             `SELECT COUNT(*) as cnt FROM tasks WHERE assignedTo = ? AND status = 'in-progress' AND id != ?`
           ).get(agentName, task.id) as { cnt: number } | undefined)?.cnt ?? 0;
 
-          if (otherInProgress >= 1) {
+          if (otherInProgress >= MAX_CONCURRENT_PER_AGENT) {
             // Agent is busy — hold task in internal-review until slot opens
             console.log(`[clara-review-cron] Pre-review approved task ${task.id} but agent ${agentName} already has ${otherInProgress} in-progress task(s) — holding in internal-review`);
-            db.prepare('UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?').run('internal-review', Date.now(), task.id);
+            db.prepare(`UPDATE tasks SET status = 'internal-review', reviewStatus = 'pre-approved', updatedAt = ? WHERE id = ?`).run(Date.now(), task.id);
             db.prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
               .run(task.id, 'clara', 'pre-review-queued',
-                `Pre-review passed but agent ${agentName} is busy (${otherInProgress} in-progress task). Holding in queue — will auto-dispatch when agent has capacity.`,
+                `Pre-review passed but agent ${agentName} is busy (${otherInProgress} in-progress task${otherInProgress !== 1 ? 's' : ''}). Holding in queue — will auto-dispatch when agent has capacity.`,
                 Date.now());
-            db.prepare('UPDATE tasks SET claraReviewCount = COALESCE(claraReviewCount, 0) + 1 WHERE id = ?').run(task.id);
+            // NOTE: Do NOT increment claraReviewCount here — the review passed,
+            // the agent is just at capacity. Incrementing causes false escalation
+            // to human-review after 5 busy holds.
           } else {
             // Agent is free — dispatch now
             const approvalMsg = `Pre-review passed: agent assigned (${agentName}), planning notes present, ${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''} defined. Dispatching to ${agentName}.`;
@@ -757,7 +760,7 @@ export function runReviewCycle(): { queued: number } {
         `SELECT COUNT(*) as cnt FROM tasks WHERE assignedTo = ? AND status = 'in-progress' AND id != ?`
       ).get(stuck.assignedTo, stuck.id) as { cnt: number } | undefined)?.cnt ?? 0;
 
-      if (otherInProgress >= 1) {
+      if (otherInProgress >= MAX_CONCURRENT_PER_AGENT) {
         const now = Date.now();
         console.log(`[clara-review-cron] Task ${stuck.id} stuck because agent ${stuck.assignedTo} has ${otherInProgress} other in-progress task(s) — returning to internal-review queue`);
         getDb().prepare(`UPDATE tasks SET status = 'internal-review', reviewStatus = 'pre-approved', updatedAt = ? WHERE id = ?`).run(now, stuck.id);
@@ -860,8 +863,12 @@ export function runReviewCycle(): { queued: number } {
     }
   } catch (err) { console.warn('[clara-review-cron] Non-critical: P2 high-redispatch check failed:', err); }
 
-  // ── Stale human-review alert: tasks in human-review >24h → chat reminder ────
+  // ── Stale human-review: auto-resolve escalation-caused tasks after 48h ───────
+  // Tasks that ended up in human-review due to retry exhaustion or Clara loop
+  // protection (not genuine blockers from approval_create) are auto-resolved back
+  // to todo with reset counters so they can be re-processed.
   try {
+    const fortyEightHoursAgo = Date.now() - 48 * 60 * 60_000;
     const twentyFourHoursAgo = Date.now() - 24 * 60 * 60_000;
     const staleHumanReview = getDb()
       .prepare(`SELECT t.id, t.title, t.assignedTo FROM tasks t
@@ -869,13 +876,36 @@ export function runReviewCycle(): { queued: number } {
       .all(twentyFourHoursAgo) as { id: string; title: string; assignedTo: string | null }[];
 
     for (const stale of staleHumanReview) {
-      // Only alert once per 24h — check if we already sent a reminder recently
+      const now = Date.now();
+
+      // Check if this was a genuine blocker (has pending approval_create)
+      const hasPendingApproval = (getDb().prepare(
+        `SELECT COUNT(*) as cnt FROM task_activity WHERE taskId = ? AND action = 'approval_create' AND timestamp > ?`
+      ).get(stale.id, fortyEightHoursAgo) as { cnt: number } | undefined)?.cnt ?? 0;
+
+      // Auto-resolve after 48h if it was escalation-caused (not a genuine blocker)
+      if (!hasPendingApproval && (getDb().prepare('SELECT updatedAt FROM tasks WHERE id = ?').get(stale.id) as { updatedAt: number } | undefined)?.updatedAt! < fortyEightHoursAgo) {
+        console.log(`[clara-review-cron] Auto-resolving stale human-review task ${stale.id} — resetting to todo after 48h`);
+        getDb().prepare(
+          `UPDATE tasks SET status = 'todo', reviewStatus = NULL, claraReviewCount = 0, updatedAt = ? WHERE id = ?`
+        ).run(now, stale.id);
+        // Clear auto_redispatch history so it doesn't immediately re-escalate
+        getDb().prepare(
+          `DELETE FROM task_activity WHERE taskId = ? AND action IN ('auto_redispatch', 'auto_redispatch_exhausted', 'startup_redispatch')`
+        ).run(stale.id);
+        getDb().prepare(
+          `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+        ).run(stale.id, 'system', 'human-review-auto-resolved',
+          `Auto-resolved after 48h in human-review. Reset to todo with fresh counters for re-processing.`, now);
+        continue;
+      }
+
+      // 24h reminder for tasks not yet at 48h or with genuine blockers
       const recentAlert = (getDb().prepare(
         `SELECT COUNT(*) as cnt FROM task_activity WHERE taskId = ? AND action = 'stale-human-review-alert' AND timestamp > ?`
       ).get(stale.id, twentyFourHoursAgo) as { cnt: number } | undefined)?.cnt ?? 0;
 
       if (recentAlert === 0) {
-        const now = Date.now();
         getDb().prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
           .run(stale.id, 'system', 'stale-human-review-alert',
             `Task has been in human-review for >24h — needs attention`, now);
@@ -908,9 +938,9 @@ export function runReviewCycle(): { queued: number } {
         `SELECT COUNT(*) as cnt FROM tasks WHERE assignedTo = ? AND status = 'in-progress'`
       ).get(q.assignedTo) as { cnt: number } | undefined)?.cnt ?? 0;
 
-      if (busyCount === 0) {
+      if (busyCount < MAX_CONCURRENT_PER_AGENT) {
         const now = Date.now();
-        console.log(`[clara-review-cron] Agent ${q.assignedTo} is free — dispatching queued task ${q.id}`);
+        console.log(`[clara-review-cron] Agent ${q.assignedTo} has capacity (${busyCount}/${MAX_CONCURRENT_PER_AGENT}) — dispatching queued task ${q.id}`);
         getDb().prepare(`UPDATE tasks SET status = 'in-progress', reviewStatus = 'pre-approved', updatedAt = ? WHERE id = ?`).run(now, q.id);
         getDb().prepare(`INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`)
           .run(q.id, 'system', 'queue-dispatch',

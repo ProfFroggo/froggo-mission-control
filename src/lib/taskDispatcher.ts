@@ -19,6 +19,7 @@ const CLAUDE_SCRIPT = ENV.CLAUDE_SCRIPT;
 const NODE_BIN      = process.execPath;
 const HOME = homedir();
 const SCRATCHPAD_DIR = join(HOME, 'mission-control', 'scratchpad');
+const MAX_CONCURRENT_PER_AGENT = 2; // Allow agents to run up to 2 tasks concurrently
 
 // Ensure scratchpad directory exists on module load
 try { mkdirSync(SCRATCHPAD_DIR, { recursive: true }); } catch (err) { console.warn('[taskDispatcher] Non-critical: failed to create scratchpad directory:', err); }
@@ -921,12 +922,17 @@ function buildTaskSystemPrompt(
     trackEvent('memory.injected', { agentId, taskId: task.id as string, noteCount: (relevantMemory.match(/###/g) || []).length });
   }
 
-  // Log auto-assigned skills to task activity (non-critical)
+  // Log auto-assigned skills to task activity (non-critical, skip if already logged)
   if (autoSkillSlugs.length > 0 && task?.id) {
     try {
-      getDb().prepare(
-        `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
-      ).run(task.id as string, 'system', 'skill_auto_assigned', `Auto-skills: ${autoSkillSlugs.join(', ')}`, Date.now());
+      const alreadyLogged = (getDb().prepare(
+        `SELECT COUNT(*) as cnt FROM task_activity WHERE taskId = ? AND action = 'skill_auto_assigned'`
+      ).get(task.id as string) as { cnt: number } | undefined)?.cnt ?? 0;
+      if (alreadyLogged === 0) {
+        getDb().prepare(
+          `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
+        ).run(task.id as string, 'system', 'skill_auto_assigned', `Auto-skills: ${autoSkillSlugs.join(', ')}`, Date.now());
+      }
     } catch (err) {
       console.warn('[taskDispatcher] Non-critical: failed to log auto-skill assignment:', err);
     }
@@ -1693,8 +1699,8 @@ export function dispatchTask(taskId: string): boolean {
         `SELECT COUNT(*) as cnt FROM tasks WHERE assignedTo = ? AND status = 'in-progress' AND id != ?`
       ).get(agentId, taskId) as { cnt: number } | undefined)?.cnt ?? 0;
 
-      if (otherInProgress >= 1) {
-        console.log(`[taskDispatcher] Agent ${agentId} already has ${otherInProgress} other in-progress task(s) — skipping ${taskId} until slot opens`);
+      if (otherInProgress >= MAX_CONCURRENT_PER_AGENT) {
+        console.log(`[taskDispatcher] Agent ${agentId} already has ${otherInProgress} other in-progress task(s) (limit ${MAX_CONCURRENT_PER_AGENT}) — skipping ${taskId} until slot opens`);
         return false;
       }
     } catch (err) {
@@ -2263,25 +2269,25 @@ export function recoverStuckInProgressTasks(): void {
       // Skip if already queued for re-dispatch (prevents double-dispatch on concurrent callers)
       if (_redispatchTimeouts.has(task.id)) continue;
 
-      // Cap total auto_redispatch attempts — escalate to human-review if exhausted
-      const priorAttempts = (db.prepare(
-        `SELECT COUNT(*) as cnt FROM task_activity WHERE taskId = ? AND action = 'auto_redispatch'`
+      // Cap startup-specific re-dispatch attempts (separate from in-flight auto_redispatch)
+      const priorStartupAttempts = (db.prepare(
+        `SELECT COUNT(*) as cnt FROM task_activity WHERE taskId = ? AND action = 'startup_redispatch'`
       ).get(task.id) as { cnt: number } | undefined)?.cnt ?? 0;
 
-      if (priorAttempts >= MAX_STARTUP_REDISPATCHES) {
-        console.warn(`[taskDispatcher] Task ${task.id} has ${priorAttempts} prior auto_redispatch attempts — escalating to human-review`);
+      if (priorStartupAttempts >= MAX_STARTUP_REDISPATCHES) {
+        console.warn(`[taskDispatcher] Task ${task.id} has ${priorStartupAttempts} prior startup re-dispatch attempts — escalating to human-review`);
         db.prepare(`UPDATE tasks SET status = 'human-review', updatedAt = ? WHERE id = ?`).run(Date.now(), task.id);
         db.prepare(
           `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
         ).run(task.id, 'system', 'auto_redispatch_exhausted',
-          `Escalated to human-review: ${priorAttempts} startup re-dispatch attempts with no progress.`, Date.now());
+          `Escalated to human-review: ${priorStartupAttempts} startup re-dispatch attempts with no progress.`, Date.now());
         continue;
       }
 
       db.prepare(
         `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
-      ).run(task.id, 'system', 'auto_redispatch',
-        `Task was in-progress at server startup — re-dispatching to resume work (attempt ${priorAttempts + 1}/${MAX_STARTUP_REDISPATCHES})`, Date.now());
+      ).run(task.id, 'system', 'startup_redispatch',
+        `Task was in-progress at server startup — re-dispatching to resume work (attempt ${priorStartupAttempts + 1}/${MAX_STARTUP_REDISPATCHES})`, Date.now());
 
       // Exponential backoff stagger: 5s, 15s, 30s, 60s, then 60s for any beyond 4
       const backoffMs = [5_000, 15_000, 30_000, 60_000];
