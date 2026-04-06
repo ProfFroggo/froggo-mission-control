@@ -59,7 +59,8 @@ export const ToolUIRenderer = memo(function ToolUIRenderer({ jsonString }: ToolU
   let parsed: unknown;
   try {
     parsed = JSON.parse(jsonString);
-  } catch {
+  } catch (err) {
+    console.warn('[ToolUIRenderer] Non-critical:', err);
     return null; // Not JSON — fall through to regular code block
   }
 
@@ -1728,7 +1729,7 @@ function AudioPlayer({ title, artist, duration, src, coverUrl, genre, album, wav
       audioRef.current.onended = () => setPlaying(false);
     }
     if (playing) { audioRef.current.pause(); setPlaying(false); }
-    else { audioRef.current.play().catch(() => {}); setPlaying(true); }
+    else { audioRef.current.play().catch(err => console.warn('[ToolUIRenderer] Non-critical:', err)); setPlaying(true); }
   }, [playing, src]);
 
   const seek = (e: React.MouseEvent<HTMLDivElement>) => {

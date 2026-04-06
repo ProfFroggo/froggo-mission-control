@@ -265,7 +265,7 @@ export const jiraRetrieveTool: ToolConfig<JiraRetrieveParams, JiraRetrieveRespon
         try {
           const err = await issueResponse.json()
           message = err?.message || err?.errorMessages?.[0] || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/retrieve] Non-critical:', _e); }
         throw new Error(message)
       }
 
@@ -291,7 +291,8 @@ export const jiraRetrieveTool: ToolConfig<JiraRetrieveParams, JiraRetrieveRespon
           const commentsData = await commentsResp.json()
           if (data?.fields) data.fields.comment = commentsData?.comments || data.fields.comment
         }
-      } catch {
+      } catch (err) {
+        console.warn('[ws/tools/jira/retrieve] Non-critical:', err);
         logger.debug?.('Failed to fetch comments')
       }
 
@@ -300,7 +301,8 @@ export const jiraRetrieveTool: ToolConfig<JiraRetrieveParams, JiraRetrieveRespon
           const worklogData = await worklogResp.json()
           if (data?.fields) data.fields.worklog = worklogData || data.fields.worklog
         }
-      } catch {
+      } catch (err) {
+        console.warn('[ws/tools/jira/retrieve] Non-critical:', err);
         logger.debug?.('Failed to fetch worklog')
       }
 
@@ -311,7 +313,8 @@ export const jiraRetrieveTool: ToolConfig<JiraRetrieveParams, JiraRetrieveRespon
             data.fields.watches = watchersData
           }
         }
-      } catch {
+      } catch (err) {
+        console.warn('[ws/tools/jira/retrieve] Non-critical:', err);
         logger.debug?.('Failed to fetch watchers')
       }
     }
@@ -328,7 +331,7 @@ export const jiraRetrieveTool: ToolConfig<JiraRetrieveParams, JiraRetrieveRespon
         try {
           const err = await response.json()
           message = err?.message || err?.errorMessages?.[0] || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/retrieve] Non-critical:', _e); }
         throw new Error(message)
       }
       data = await response.json()

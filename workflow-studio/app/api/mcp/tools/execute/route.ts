@@ -134,7 +134,8 @@ export const POST = withMcpAuth('read')(
                   } else {
                     args[paramName] = [parsed]
                   }
-                } catch {
+                } catch (err) {
+                  console.warn('[mcp/tools/execute] Non-critical:', err);
                   if (stringValue.includes(',')) {
                     args[paramName] = stringValue
                       .split(',')
@@ -213,7 +214,8 @@ export const POST = withMcpAuth('read')(
           status: 'success',
           workspaceId,
         })
-      } catch {
+      } catch (err) {
+        console.warn('[mcp/tools/execute] Non-critical:', err);
         // Telemetry failure is non-critical
       }
 

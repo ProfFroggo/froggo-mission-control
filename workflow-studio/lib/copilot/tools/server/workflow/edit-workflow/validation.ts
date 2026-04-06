@@ -251,7 +251,8 @@ export function validateValueForSubBlockType(
           ? (() => {
               try {
                 return JSON.parse(value)
-              } catch {
+              } catch (err) {
+                console.warn('[ws/lib/copilot/tools/server/workflow/edit-workflow/validation] Non-critical:', err);
                 return null
               }
             })()
@@ -321,7 +322,8 @@ export function validateValueForSubBlockType(
         try {
           JSON.parse(value)
           return { valid: true, value }
-        } catch {
+        } catch (err) {
+          console.warn('[ws/lib/copilot/tools/server/workflow/edit-workflow/validation] Non-critical:', err);
           return {
             valid: false,
             error: {
@@ -490,7 +492,8 @@ export function validateConditionHandle(
   if (typeof conditionsValue === 'string') {
     try {
       conditions = JSON.parse(conditionsValue)
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/copilot/tools/server/workflow/edit-workflow/validation] Non-critical:', err);
       return {
         valid: false,
         error: `Cannot validate condition handle "${sourceHandle}" - conditions is not valid JSON`,
@@ -596,7 +599,8 @@ export function validateRouterHandle(
   if (typeof routesValue === 'string') {
     try {
       routes = JSON.parse(routesValue)
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/copilot/tools/server/workflow/edit-workflow/validation] Non-critical:', err);
       return {
         valid: false,
         error: `Cannot validate router handle "${sourceHandle}" - routes is not valid JSON`,

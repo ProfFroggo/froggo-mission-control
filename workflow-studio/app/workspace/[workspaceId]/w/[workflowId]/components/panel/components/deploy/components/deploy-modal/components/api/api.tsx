@@ -89,7 +89,8 @@ export function ApiDeploy({
     if (match) {
       try {
         return JSON.parse(match[1]) as Record<string, unknown>
-      } catch {
+      } catch (err) {
+        console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/deploy/components/deploy-modal/components/api/apix] Non-critical:', err);
         return { input: 'your data here' }
       }
     }

@@ -18,7 +18,9 @@ async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val;
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.warn('[budget/import] Keychain lookup for gemini_api_key failed:', err);
+  }
   const db = getDb();
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get('gemini_api_key') as { value: string } | undefined;
   return row?.value || process.env.GEMINI_API_KEY || null;
@@ -123,9 +125,9 @@ Return ONLY the JSON object.`;
       ],
     };
 
-    return NextResponse.json({ ok: true, preview });
+    return NextResponse.json({ success: true, preview });
   } catch (err) {
     console.error('[budget/import]', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

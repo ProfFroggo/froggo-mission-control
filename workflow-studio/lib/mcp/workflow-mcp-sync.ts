@@ -34,7 +34,8 @@ export async function generateParameterSchemaForWorkflow(
     const deployed = await loadDeployedWorkflowState(workflowId)
     if (!deployed?.blocks) return EMPTY_SCHEMA
     return generateSchemaFromBlocks(deployed.blocks as Record<string, unknown>)
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/mcp/workflow-mcp-sync] Non-critical:', err);
     return EMPTY_SCHEMA
   }
 }

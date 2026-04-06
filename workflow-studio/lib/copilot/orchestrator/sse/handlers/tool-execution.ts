@@ -591,13 +591,13 @@ export async function executeToolAndReport(
       status: 'cancelled',
       result: { cancelled: true },
       error: 'Request aborted before tool execution',
-    }).catch(() => {})
+    }).catch(err => console.warn('[ws/lib/copilot/orchestrator/sse/handlers/tool-execution] Non-critical:', err))
     reportCancelledTool(toolCall, 'Request aborted before tool execution', context.messageId)
     return cancelledCompletion('Request aborted before tool execution')
   }
 
   toolCall.status = 'executing'
-  await markAsyncToolRunning(toolCall.id, 'sim-stream').catch(() => {})
+  await markAsyncToolRunning(toolCall.id, 'sim-stream').catch(err => console.warn('[ws/lib/copilot/orchestrator/sse/handlers/tool-execution] Non-critical:', err))
 
   logger.error(
     appendCopilotLogContext('Tool execution started', { messageId: context.messageId }),
@@ -622,7 +622,7 @@ export async function executeToolAndReport(
         status: 'cancelled',
         result: { cancelled: true },
         error: 'Request aborted during tool execution',
-      }).catch(() => {})
+      }).catch(err => console.warn('[ws/lib/copilot/orchestrator/sse/handlers/tool-execution] Non-critical:', err))
       reportCancelledTool(toolCall, 'Request aborted during tool execution', context.messageId)
       return cancelledCompletion('Request aborted during tool execution')
     }
@@ -636,7 +636,7 @@ export async function executeToolAndReport(
         status: 'cancelled',
         result: { cancelled: true },
         error: 'Request aborted during tool post-processing',
-      }).catch(() => {})
+      }).catch(err => console.warn('[ws/lib/copilot/orchestrator/sse/handlers/tool-execution] Non-critical:', err))
       reportCancelledTool(
         toolCall,
         'Request aborted during tool post-processing',
@@ -654,7 +654,7 @@ export async function executeToolAndReport(
         status: 'cancelled',
         result: { cancelled: true },
         error: 'Request aborted during tool post-processing',
-      }).catch(() => {})
+      }).catch(err => console.warn('[ws/lib/copilot/orchestrator/sse/handlers/tool-execution] Non-critical:', err))
       reportCancelledTool(
         toolCall,
         'Request aborted during tool post-processing',
@@ -672,7 +672,7 @@ export async function executeToolAndReport(
         status: 'cancelled',
         result: { cancelled: true },
         error: 'Request aborted during tool post-processing',
-      }).catch(() => {})
+      }).catch(err => console.warn('[ws/lib/copilot/orchestrator/sse/handlers/tool-execution] Non-critical:', err))
       reportCancelledTool(
         toolCall,
         'Request aborted during tool post-processing',
@@ -734,7 +734,7 @@ export async function executeToolAndReport(
       status: result.success ? 'completed' : 'failed',
       result: result.success ? asRecord(result.output) : { error: result.error || 'Tool failed' },
       error: result.success ? null : result.error || 'Tool failed',
-    }).catch(() => {})
+    }).catch(err => console.warn('[ws/lib/copilot/orchestrator/sse/handlers/tool-execution] Non-critical:', err))
 
     if (abortRequested(context, execContext, options)) {
       toolCall.status = 'cancelled'
@@ -871,7 +871,7 @@ export async function executeToolAndReport(
         status: 'cancelled',
         result: { cancelled: true },
         error: 'Request aborted during tool execution',
-      }).catch(() => {})
+      }).catch(err => console.warn('[ws/lib/copilot/orchestrator/sse/handlers/tool-execution] Non-critical:', err))
       reportCancelledTool(toolCall, 'Request aborted during tool execution', context.messageId)
       return cancelledCompletion('Request aborted during tool execution')
     }
@@ -895,7 +895,7 @@ export async function executeToolAndReport(
       status: 'failed',
       result: { error: toolCall.error },
       error: toolCall.error,
-    }).catch(() => {})
+    }).catch(err => console.warn('[ws/lib/copilot/orchestrator/sse/handlers/tool-execution] Non-critical:', err))
 
     // Fire-and-forget (same reasoning as above).
     // Pass error as structured data so the Go side can surface it to the LLM.

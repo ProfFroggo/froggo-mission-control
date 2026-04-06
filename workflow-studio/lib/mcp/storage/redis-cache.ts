@@ -25,7 +25,8 @@ export class RedisMcpCache implements McpCacheStorageAdapter {
 
       try {
         return JSON.parse(data) as McpCacheEntry
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/mcp/storage/redis-cache] Non-critical:', err);
         // Corrupted data - delete and treat as miss
         logger.warn('Corrupted cache entry, deleting:', redisKey)
         await this.redis.del(redisKey)

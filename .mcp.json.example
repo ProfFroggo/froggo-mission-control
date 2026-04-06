@@ -28,6 +28,15 @@
         "GEMINI_CLI_WORKSPACE_FORCE_FILE_STORAGE": "true",
         "HOME": "<HOME>"
       }
+    },
+    "mixpanel": {
+      "command": "node",
+      "args": ["<PROJECT_ROOT>/tools/mixpanel-mcp/dist/index.js"],
+      "env": {
+        "MIXPANEL_PROJECT_ID": "<YOUR_PROJECT_ID>",
+        "MIXPANEL_SERVICE_ACCOUNT_USERNAME": "<YOUR_SERVICE_ACCOUNT>",
+        "MIXPANEL_SERVICE_ACCOUNT_SECRET": "<YOUR_SERVICE_ACCOUNT_SECRET>"
+      }
     }
   }
 }

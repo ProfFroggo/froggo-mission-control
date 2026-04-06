@@ -340,7 +340,7 @@ export default function ClaraReviewDashboard() {
               const sd = await sr.json() as unknown[];
               subtaskCount = Array.isArray(sd) ? sd.length : 0;
             }
-          } catch { /* non-critical */ }
+          } catch (err) { console.warn('[ClaraReviewDashboard] Non-critical:', err); }
           return {
             id: t.id as string,
             title: t.title as string,
@@ -357,7 +357,7 @@ export default function ClaraReviewDashboard() {
       // Sort by createdAt ascending — oldest review requests surface first
       enriched.sort((a, b) => a.createdAt - b.createdAt);
       setTasks(enriched);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[ClaraReviewDashboard] Non-critical:', err); }
   }, []);
 
   const fetchInsights = useCallback(async () => {
@@ -366,7 +366,7 @@ export default function ClaraReviewDashboard() {
       if (!res.ok) return;
       const data = await res.json() as Insights;
       setInsights(data);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[ClaraReviewDashboard] Non-critical:', err); }
   }, []);
 
   const refresh = useCallback(async (showSpinner = false) => {

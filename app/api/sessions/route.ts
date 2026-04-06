@@ -11,6 +11,7 @@ export async function GET() {
       FROM agent_sessions s
       LEFT JOIN agents a ON s.agentId = a.id
       ORDER BY s.lastActivity DESC
+      LIMIT 200
     `).all();
     return NextResponse.json(sessions);
   } catch (error) {

@@ -50,7 +50,8 @@ const ToolPermissionCard = memo(function ToolPermissionCard({ request, onResolve
       const granted = action === 'grant' || action === 'grant_session';
       setResolved(action === 'grant' ? 'granted' : action === 'grant_session' ? 'granted_session' : 'rejected');
       onResolved(request.approvalId, granted);
-    } catch {
+    } catch (err) {
+      console.warn('[ToolPermissionCard] Non-critical:', err);
       // non-critical
     } finally {
       setLoading(false);

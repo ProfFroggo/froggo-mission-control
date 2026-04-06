@@ -208,20 +208,25 @@ export default function DashInterventionQueue({ onNavigate }: DashInterventionQu
     }
   }
 
-  if (totalCount === 0) return null;
-
   return (
     <div className="space-y-1">
-      {/* Section header */}
+      {/* Section header — always rendered to prevent CLS from the section
+          appearing / disappearing as WebSocket data arrives. */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-bold text-mission-control-text flex items-center gap-2">
-          <AlertTriangle size={16} className="text-warning-DEFAULT" />
+          <AlertTriangle size={16} className={totalCount > 0 ? 'text-warning-DEFAULT' : 'text-mission-control-text-dim'} />
           Needs Attention
         </h2>
-        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-error-subtle text-error-DEFAULT border border-error-border tabular-nums">
-          {totalCount}
-        </span>
+        {totalCount > 0 && (
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-error-subtle text-error-DEFAULT border border-error-border tabular-nums">
+            {totalCount}
+          </span>
+        )}
       </div>
+
+      {totalCount === 0 ? (
+        <p className="text-xs text-mission-control-text-dim px-1 py-1">All clear</p>
+      ) : null}
 
       {/* Priority 1: Pending approvals */}
       {pendingApprovals.length > 0 && (

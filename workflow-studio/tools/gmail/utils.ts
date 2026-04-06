@@ -239,7 +239,7 @@ export async function downloadAttachments(
       )
 
       if (!attachmentResponse.ok) {
-        await attachmentResponse.body?.cancel().catch(() => {})
+        await attachmentResponse.body?.cancel().catch(err => console.warn('[ws/tools/gmail/utils] Non-critical:', err))
         continue
       }
 

@@ -120,7 +120,7 @@ function loadState(): ToolbarState {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) return { ...DEFAULT_STATE, ...JSON.parse(saved) };
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[QuickActions] Non-critical:', err); }
   return DEFAULT_STATE;
 }
 
@@ -198,7 +198,7 @@ function AgentCallModal({ isOpen, onClose, onSelect, activeCall, panelPos }: {
         setSelectedMic('default');
         localStorage.removeItem(MIC_STORAGE_KEY);
       }
-    }).catch(() => {});
+    }).catch(err => console.warn('[QuickActions] Non-critical:', err));
   }, [isOpen, selectedMic]);
 
   const handleMicChange = (deviceId: string) => {
@@ -451,7 +451,8 @@ function TaskShortcutsModal({ isOpen, onClose, panelPos }: {
       } else {
         showToast('error', 'Failed', 'Could not update task status');
       }
-    } catch {
+    } catch (err) {
+      console.warn('[QuickActions] Non-critical:', err);
       showToast('error', 'Error', 'Network error updating task');
     }
   };
@@ -622,7 +623,8 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       } else {
         showToast('error', 'Failed', 'Could not save note');
       }
-    } catch {
+    } catch (err) {
+      console.warn('[QuickActions] Non-critical:', err);
       showToast('error', 'Error', 'Network error saving note');
     }
     setQuickNoteSaving(false);
@@ -748,7 +750,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
       try {
         const res = await fetch('/api/gemini/live-token', { headers: { ...authHeaders() } });
         if (res.ok) { const data = await res.json(); apiKey = data.apiKey || ''; }
-      } catch { /* ignore */ }
+      } catch (err) { console.warn('[QuickActions] Non-critical:', err); }
       if (!apiKey) {
         showToast('error', 'No API Key', 'Set Gemini API key in Settings');
         return;
@@ -768,7 +770,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         const ctx = new AudioContext();
         ringCtxRef.current = ctx;
         ringRef.current = playRingTone(ctx);
-      } catch { /* ignore */ }
+      } catch (err) { console.warn('[QuickActions] Non-critical:', err); }
 
       try {
         // Load full agent context (SOUL.md, memory, tasks, etc.) + chat history
@@ -941,7 +943,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
     const sessionKey = `toolbar:chat:${chatAgent.id}`;
     chatApi.saveMessage(sessionKey, {
       role: 'user', content: msg, timestamp: Date.now(),
-    }).catch(() => {});
+    }).catch(err => console.warn('[QuickActions] Non-critical:', err));
 
     setChatLoading(true);
     try {
@@ -973,7 +975,7 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
         setChatMessages(prev => [...prev, { role: 'assistant', content: reply }]);
         chatApi.saveMessage(sessionKey, {
           role: 'assistant', content: reply, timestamp: Date.now(),
-        }).catch(() => {});
+        }).catch(err => console.warn('[QuickActions] Non-critical:', err));
       } else {
         setChatMessages(prev => [...prev, { role: 'assistant', content: 'No response from agent' }]);
       }
@@ -1221,6 +1223,10 @@ const QuickActions = forwardRef<QuickActionsRef, QuickActionsProps>(({
                     : callListening ? 'border-info scale-105 shadow-lg'
                     : 'border-mission-control-border'
                   }`}
+                  loading="lazy"
+                  decoding="async"
+                  width={128}
+                  height={128}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
               </Flex>

@@ -197,6 +197,12 @@ interface BlockedHint {
 }
 
 const BLOCKED_HINTS: Record<string, BlockedHint> = {
+  'in-progress→review': {
+    reason: 'All subtasks must be completed before submitting for review.',
+    hint: 'Call task_get to see which subtasks are still incomplete.',
+    recovery:
+      'Mark each incomplete subtask complete with subtask_update({ id: "<sub-id>", completed: true }), then retry task_update({ status: "review", progress: 100, lastAgentUpdate: "Completed: ..." }).',
+  },
   'todo→in-progress': {
     reason:
       "Tasks must pass Clara's Pre-review gate before work begins. The system automatically moves tasks to internal-review when an agent is assigned — Clara then dispatches the agent.",

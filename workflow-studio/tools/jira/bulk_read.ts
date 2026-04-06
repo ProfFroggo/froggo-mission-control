@@ -111,7 +111,7 @@ export const jiraBulkRetrieveTool: ToolConfig<JiraRetrieveBulkParams, JiraRetrie
         try {
           const err = await pageResponse.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/bulk_read] Non-critical:', _e); }
         throw new Error(message)
       }
 

@@ -350,7 +350,8 @@ function extractResourceFromReadResult(
       const parsed = JSON.parse(obj.content)
       id = parsed?.id as string | undefined
       name = parsed?.name as string | undefined
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/home/hooks/use-chat] Non-critical:', err);
       // content is not JSON
     }
   }
@@ -829,7 +830,7 @@ export function useChat(
             resourceType: 'file',
             resourceId: 'streaming-file',
           }),
-        }).catch(() => {})
+        }).catch(err => console.warn('[ws/app/workspace/[workspaceId]/home/hooks/use-chat] Non-critical:', err))
       }
 
       const persistedResources = history.resources.filter((r) => r.id !== 'streaming-file')
@@ -903,7 +904,8 @@ export function useChat(
         if (!succeeded && streamGenRef.current === gen) {
           try {
             finalizeRef.current({ error: true })
-          } catch {
+          } catch (err) {
+            console.warn('[ws/app/workspace/[workspaceId]/home/hooks/use-chat] Non-critical:', err);
             sendingRef.current = false
             setIsSending(false)
             setIsReconnecting(false)
@@ -1052,7 +1054,8 @@ export function useChat(
             let parsed: SSEPayload
             try {
               parsed = JSON.parse(raw)
-            } catch {
+            } catch (err) {
+              console.warn('[ws/app/workspace/[workspaceId]/home/hooks/use-chat] Non-critical:', err);
               continue
             }
 
@@ -2113,7 +2116,7 @@ export function useChat(
       undefined
 
     streamGenRef.current++
-    streamReaderRef.current?.cancel().catch(() => {})
+    streamReaderRef.current?.cancel().catch(err => console.warn('[ws/app/workspace/[workspaceId]/home/hooks/use-chat] Non-critical:', err))
     streamReaderRef.current = null
     abortControllerRef.current?.abort()
     abortControllerRef.current = null
@@ -2148,7 +2151,7 @@ export function useChat(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ streamId: sid }),
-      }).catch(() => {})
+      }).catch(err => console.warn('[ws/app/workspace/[workspaceId]/home/hooks/use-chat] Non-critical:', err))
     }
 
     if (wasSending && !chatIdRef.current) {
@@ -2179,7 +2182,7 @@ export function useChat(
         execState.setCurrentExecutionId(workflowId, null)
         fetch(`/api/workflows/${workflowId}/executions/${executionId}/cancel`, {
           method: 'POST',
-        }).catch(() => {})
+        }).catch(err => console.warn('[ws/app/workspace/[workspaceId]/home/hooks/use-chat] Non-critical:', err))
       }
 
       consoleStore.cancelRunningEntries(workflowId)
@@ -2206,7 +2209,7 @@ export function useChat(
       execState.setIsDebugging(workflowId, false)
       execState.setActiveBlocks(workflowId, new Set())
 
-      reportManualRunToolStop(workflowId, toolCallId).catch(() => {})
+      reportManualRunToolStop(workflowId, toolCallId).catch(err => console.warn('[ws/app/workspace/[workspaceId]/home/hooks/use-chat] Non-critical:', err))
     }
   }, [invalidateChatQueries, persistPartialResponse, executionStream])
 

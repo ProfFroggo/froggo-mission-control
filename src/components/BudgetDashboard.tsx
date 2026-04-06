@@ -111,7 +111,7 @@ function SpendBarChart({ budgetId }: { budgetId: string }) {
       .then((d: { byDay?: DayUsage[] }) => {
         if (d.byDay) setDays(d.byDay);
       })
-      .catch(() => {});
+      .catch(err => console.warn('[BudgetDashboard] Non-critical:', err));
   }, [budgetId]);
 
   if (days.length === 0) {
@@ -427,7 +427,8 @@ export default function BudgetDashboard() {
         const data = await res.json() as Budget[];
         setBudgets(data);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[BudgetDashboard] Non-critical:', err);
       // silent
     } finally {
       setLoading(false);
@@ -441,7 +442,8 @@ export default function BudgetDashboard() {
         const d = await res.json() as { totalCost: number };
         setMonthlyTotal(d.totalCost ?? 0);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[BudgetDashboard] Non-critical:', err);
       // silent
     }
   }, []);
@@ -457,7 +459,8 @@ export default function BudgetDashboard() {
       if (res.ok) {
         setBudgets(b => b.filter(x => x.id !== id));
       }
-    } catch {
+    } catch (err) {
+      console.warn('[BudgetDashboard] Non-critical:', err);
       // silent
     }
   };

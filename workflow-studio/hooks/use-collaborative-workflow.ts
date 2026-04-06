@@ -1272,7 +1272,8 @@ export function useCollaborativeWorkflow() {
             collaborativeSetSubblockValue(blockId, dep.id, '', { _visited: visited })
           }
         }
-      } catch {
+      } catch (err) {
+        console.warn('[ws/hooks/use-collaborative-workflow] Non-critical:', err);
         // Best-effort; do not block on clearing
       }
     },

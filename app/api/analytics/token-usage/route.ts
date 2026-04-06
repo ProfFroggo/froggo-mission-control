@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     }
 
     const where = `WHERE ${conditions.join(' AND ')}`;
-    const rows = db.prepare(`SELECT * FROM analytics_events ${where} ORDER BY timestamp DESC`).all(...values) as Record<string, unknown>[];
+    const rows = db.prepare(`SELECT * FROM analytics_events ${where} ORDER BY timestamp DESC LIMIT 1000`).all(...values) as Record<string, unknown>[];
 
     const parsed = rows.map((row) => {
       const r = { ...row };

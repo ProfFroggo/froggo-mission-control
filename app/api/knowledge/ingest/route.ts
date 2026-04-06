@@ -62,7 +62,8 @@ async function extractOfficeText(buffer: Buffer, mimeType: string): Promise<stri
     }
 
     return textParts.join('\n\n') || extractLegacyDocText(buffer);
-  } catch {
+  } catch (err) {
+    console.warn('[knowledge/ingest] Non-critical:', err);
     // Fallback: try binary string extraction
     return extractLegacyDocText(buffer);
   }
@@ -106,7 +107,7 @@ async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val;
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[knowledge/ingest] Non-critical:', err); }
   return process.env.GEMINI_API_KEY ?? null;
 }
 
@@ -340,7 +341,7 @@ export async function POST(req: NextRequest) {
             parts.push({ fileData: { mimeType, fileUri } });
           }
         }
-      } catch { /* fall through to text-only */ }
+      } catch (err) { console.warn('[knowledge/ingest] Non-critical: fall through to text-only:', err); }
 
       if (parts.length === 0) {
         return NextResponse.json({ success: false, error: `Unsupported file type: ${mimeType}` }, { status: 400 });

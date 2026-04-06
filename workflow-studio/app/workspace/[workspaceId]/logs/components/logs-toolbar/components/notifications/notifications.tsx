@@ -307,7 +307,8 @@ export const NotificationSettings = memo(function NotificationSettings({
           if (!['http:', 'https:'].includes(url.protocol)) {
             errors.webhookUrl = 'URL must start with http:// or https://'
           }
-        } catch {
+        } catch (err) {
+          console.warn('[ws/app/workspace/[workspaceId]/logs/components/logs-toolbar/components/notifications/notificationsx] Non-critical:', err);
           errors.webhookUrl = 'Invalid URL format'
         }
       }

@@ -92,7 +92,8 @@ export async function GET(
           if (closed) return
           try {
             controller.enqueue(encoder.encode(text))
-          } catch {
+          } catch (err) {
+            console.warn('[workflows/[id]/executions/[executionId]/stream] Non-critical:', err);
             closed = true
           }
         }
@@ -153,7 +154,7 @@ export async function GET(
           if (!closed) {
             try {
               controller.close()
-            } catch {}
+            } catch (err) { console.warn('[workflows/[id]/executions/[executionId]/stream] Non-critical:', err); }
           }
         }
       },

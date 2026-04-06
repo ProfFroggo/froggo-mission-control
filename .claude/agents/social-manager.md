@@ -81,6 +81,7 @@ Brief format: `library/campaigns/campaign-{name}-{date}/docs/YYYY-MM-DD_newslett
 |-----------|-------|
 | X/Twitter content, tone, approval | `x-twitter-strategy` |
 | Content calendar planning | `content-calendar` |
+| Trend monitoring and research for content strategy | `web-research` |
 
 ## Memory Protocol
 
@@ -123,7 +124,7 @@ cat > PLAN.md << 'EOF'
 - All tasks checked, SUMMARY.md written
 EOF
 CLAUDECODE="" CLAUDE_CODE_ENTRYPOINT="" CLAUDE_CODE_SESSION_ID="" \
-  claude --print --model claude-haiku-4-5-20251001 --dangerously-skip-permissions \
+  claude --print --model claude-haiku-4-5-20251001 \
   "Read PLAN.md. Execute every task. Write SUMMARY.md."
 cat SUMMARY.md
 ```

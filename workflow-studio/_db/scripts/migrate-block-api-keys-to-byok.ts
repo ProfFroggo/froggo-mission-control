@@ -257,7 +257,7 @@ function parseToolInputValue(value: unknown): any[] {
     try {
       const parsed = JSON.parse(value)
       if (Array.isArray(parsed)) return parsed
-    } catch {}
+    } catch (err) { console.warn('[ws/_db/scripts/migrate-block-api-keys-to-byok] Non-critical:', err); }
   }
   return []
 }
@@ -750,7 +750,7 @@ async function run() {
   } finally {
     try {
       await postgresClient.end({ timeout: 5 })
-    } catch {}
+    } catch (err) { console.warn('[ws/_db/scripts/migrate-block-api-keys-to-byok] Non-critical:', err); }
   }
 }
 

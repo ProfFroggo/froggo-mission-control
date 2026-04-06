@@ -6,6 +6,7 @@ import { runReviewGate } from '@/lib/reviewGate';
 import { emitSSEEvent } from '@/lib/sseEmitter';
 import { trackEvent } from '@/lib/telemetry';
 import { createNotification } from '@/lib/notificationWriter';
+import { validateTransition, VALID_STATUSES } from '@/lib/taskStateMachine';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -47,7 +48,8 @@ function parseTask(row: Record<string, unknown>) {
     if (typeof parsed[field] === 'string') {
       try {
         parsed[field] = JSON.parse(parsed[field] as string);
-      } catch {
+      } catch (err) {
+        console.warn('[tasks/[id]] Non-critical:', err);
         parsed[field] = field === 'recurrence' ? null : [];
       }
     }
@@ -91,39 +93,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'description must be 5000 characters or fewer' }, { status: 400 });
     }
 
-    const VALID_STATUSES = ['todo', 'internal-review', 'in-progress', 'review', 'human-review', 'done', 'failed', 'cancelled'];
     const VALID_PRIORITIES = ['p0', 'p1', 'p2', 'p3', ''];
     if (body.status !== undefined && !VALID_STATUSES.includes(body.status as string)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
     if (body.priority !== undefined && !VALID_PRIORITIES.includes(body.priority as string)) {
       return NextResponse.json({ error: 'Invalid priority' }, { status: 400 });
-    }
-
-    // Capture previous status before update (for transition-based triggers)
-    const previousStatus = body.status
-      ? (db.prepare('SELECT status FROM tasks WHERE id = ?').get(id) as { status: string } | undefined)?.status
-      : undefined;
-
-    // Validate status transitions — prevent illegal jumps
-    if (body.status && previousStatus && body.status !== previousStatus) {
-      const VALID_TRANSITIONS: Record<string, string[]> = {
-        'todo':            ['internal-review', 'human-review', 'cancelled'],
-        'internal-review': ['in-progress', 'todo'],
-        'in-progress':     ['review', 'human-review', 'failed', 'cancelled'],
-        'review':          ['done', 'in-progress', 'human-review'],
-        'human-review':    ['in-progress', 'todo', 'review', 'done', 'cancelled'],
-        'done':            ['in-progress'],  // reopen
-        'failed':          ['todo', 'in-progress'],
-        'cancelled':       ['todo'],
-      };
-      const allowed = VALID_TRANSITIONS[previousStatus] ?? [];
-      if (!allowed.includes(body.status as string)) {
-        return NextResponse.json(
-          { error: `Invalid transition: ${previousStatus} → ${body.status}` },
-          { status: 400 }
-        );
-      }
     }
 
     const setClauses: string[] = [];
@@ -147,46 +122,68 @@ export async function PATCH(
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
-    // Auto-clear pre-rejected state when the user fixes the blocking fields.
-    // Clara rejected because planningNotes/description/assignedTo was missing — once fixed, re-queue.
-    if (!('reviewStatus' in body) && !('status' in body)) {
-      const current = db.prepare('SELECT reviewStatus, planningNotes, description, assignedTo FROM tasks WHERE id = ?').get(id) as {
-        reviewStatus: string | null; planningNotes: string | null; description: string | null; assignedTo: string | null;
-      } | undefined;
-      if (current?.reviewStatus === 'pre-rejected') {
-        const fixingPlanningNotes = 'planningNotes' in body && body.planningNotes;
-        const fixingDescription = 'description' in body && body.description;
-        const fixingAssignee = 'assignedTo' in body && body.assignedTo;
-        if (fixingPlanningNotes || fixingDescription || fixingAssignee) {
-          // One of Clara's rejection reasons was just resolved — clear rejection state so auto-advance re-queues it
-          setClauses.push('reviewStatus = ?', 'reviewNotes = ?');
-          values.push(null, null);
-        }
-      }
-    }
-
-    // Auto-advance status based on reviewStatus.
-    // Only fires when reviewStatus is being set AND body does NOT already contain an explicit status.
-    if ('reviewStatus' in body && !('status' in body)) {
-      const current = db.prepare('SELECT status FROM tasks WHERE id = ?').get(id) as { status: string } | undefined;
-      const effectiveStatus = current?.status;
-      if (effectiveStatus === 'review') {
-        if (body.reviewStatus === 'approved') {
-          setClauses.push('status = ?');
-          values.push('done');
-        } else if (body.reviewStatus === 'rejected' || body.reviewStatus === 'needs-changes') {
-          setClauses.push('status = ?');
-          values.push('in-progress');
-        }
-      }
-    }
-
+    // Wrap read+validate+update in a transaction to prevent TOCTOU race conditions.
+    // Without this, concurrent requests (API + agent MCP) could both read the same status,
+    // both validate the same transition, and both succeed — but only the first was valid.
+    let previousStatus: string | undefined;
     const now = Date.now();
-    setClauses.push('updatedAt = ?');
-    values.push(now);
-    values.push(id);
+    const updateResult = db.transaction(() => {
+      // Capture previous status before update (for transition-based triggers)
+      previousStatus = body.status
+        ? (db.prepare('SELECT status FROM tasks WHERE id = ?').get(id) as { status: string } | undefined)?.status
+        : undefined;
 
-    db.prepare(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = ?`).run(...values);
+      // Validate status transitions — prevent illegal jumps
+      if (body.status && previousStatus && body.status !== previousStatus) {
+        const transitionError = validateTransition(previousStatus, body.status as string);
+        if (transitionError) {
+          return { error: transitionError };
+        }
+      }
+
+      // Auto-clear pre-rejected state when the user fixes the blocking fields.
+      // Clara rejected because planningNotes/description/assignedTo was missing — once fixed, re-queue.
+      if (!('reviewStatus' in body) && !('status' in body)) {
+        const current = db.prepare('SELECT reviewStatus, planningNotes, description, assignedTo FROM tasks WHERE id = ?').get(id) as {
+          reviewStatus: string | null; planningNotes: string | null; description: string | null; assignedTo: string | null;
+        } | undefined;
+        if (current?.reviewStatus === 'pre-rejected') {
+          const fixingPlanningNotes = 'planningNotes' in body && body.planningNotes;
+          const fixingDescription = 'description' in body && body.description;
+          const fixingAssignee = 'assignedTo' in body && body.assignedTo;
+          if (fixingPlanningNotes || fixingDescription || fixingAssignee) {
+            setClauses.push('reviewStatus = ?', 'reviewNotes = ?');
+            values.push(null, null);
+          }
+        }
+      }
+
+      // Auto-advance status based on reviewStatus.
+      if ('reviewStatus' in body && !('status' in body)) {
+        const current = db.prepare('SELECT status FROM tasks WHERE id = ?').get(id) as { status: string } | undefined;
+        const effectiveStatus = current?.status;
+        if (effectiveStatus === 'review') {
+          if (body.reviewStatus === 'approved') {
+            setClauses.push('status = ?');
+            values.push('done');
+          } else if (body.reviewStatus === 'rejected' || body.reviewStatus === 'needs-changes') {
+            setClauses.push('status = ?');
+            values.push('in-progress');
+          }
+        }
+      }
+
+      setClauses.push('updatedAt = ?');
+      values.push(now);
+      values.push(id);
+
+      db.prepare(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = ?`).run(...values);
+      return null;
+    })();
+
+    if (updateResult?.error) {
+      return NextResponse.json({ error: updateResult.error }, { status: 400 });
+    }
 
     // Always ensure Clara is reviewer — set whenever reviewerId isn't already populated
     if (!body.reviewerId) {
@@ -221,7 +218,7 @@ export async function PATCH(
           const titles = incompleteSubs.map(s => `"${s.title}"`).join(', ');
           incompleteSubtaskWarning = `${incompleteSubs.length} subtask(s) still incomplete: ${titles}. Clara will review these.`;
         }
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[tasks/[id]] Non-critical:', err); }
     }
 
     // Handoff note: write when assignedTo changes (task is handed off to a new agent)
@@ -256,7 +253,7 @@ export async function PATCH(
           writeFileSync(handoffPath, handoffContent, 'utf-8');
           trackEvent('task.handoff', { taskId: id, from: previousAgent, to: body.assignedTo as string });
         }
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[tasks/[id]] Non-critical:', err); }
     }
 
     // Auto-dispatch triggers:
@@ -287,7 +284,7 @@ export async function PATCH(
           `New task assigned to you: "${taskTitle}" [${priority}]. Task is now in Pre-review — Clara will check the plan and dispatch you when approved.`,
           Date.now()
         );
-      } catch { /* non-critical — chat table may not be ready */ }
+      } catch (err) { console.warn('[tasks/[id]] Non-critical: chat table may not be ready', err); }
     }
 
     // 2. Task rejected by Clara (reviewStatus=rejected/needs-changes → status=in-progress)
@@ -304,7 +301,7 @@ export async function PATCH(
           `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
         ).run(id, 'system', 'human-review-resolved',
           `Human resolved blocker — re-dispatching agent ${updated.assignedTo}`, Date.now());
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[tasks/[id]] Non-critical:', err); }
       dispatchTask(id);
     }
 
@@ -334,7 +331,7 @@ export async function PATCH(
             );
           }
         }
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[tasks/[id]] Non-critical:', err); }
     }
 
     // Review gate: when task moves to 'review', validate it
@@ -407,7 +404,7 @@ export async function PATCH(
             }
           }
         }
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[tasks/[id]] Non-critical:', err); }
     }
 
     // Auto-generate task template when a task is done and 5+ similar completed tasks exist
@@ -451,7 +448,7 @@ export async function PATCH(
             trackEvent('template.generated', { taskId: id, slug, similarCount: similarCount + 1 });
           }
         }
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[tasks/[id]] Non-critical:', err); }
     }
 
     // Emit notifications on status transitions
@@ -463,14 +460,14 @@ export async function PATCH(
         title: `Task completed: ${String((updated as Record<string, unknown>).title ?? id)}`,
         userId: String((updated as Record<string, unknown>).assignedTo ?? 'system'),
         metadata: { taskId: id },
-      }).catch(() => {});
+      }).catch(err => console.warn('[tasks/[id]] Non-critical:', err));
     } else if (taskId && body.status === 'review') {
       createNotification({
         type: 'approval_needed',
         title: `Review requested: ${String((updated as Record<string, unknown>).title ?? id)}`,
         userId: String((updated as Record<string, unknown>).reviewerId ?? 'clara'),
         metadata: { taskId: id, requestedBy: (updated as Record<string, unknown>).assignedTo },
-      }).catch(() => {});
+      }).catch(err => console.warn('[tasks/[id]] Non-critical:', err));
     }
 
     // Notify SSE clients of task update
@@ -496,9 +493,9 @@ export async function PATCH(
                 emitSSEEvent('task.unblocked', { id: t.id, unblockedBy: taskId });
               }
             }
-          } catch { /* skip malformed */ }
+          } catch (err) { console.warn('[tasks/[id]] Non-critical: skip malformed:', err); }
         }
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[tasks/[id]] Non-critical:', err); }
     }
 
     const finalResponse = parseTask(updated) as Record<string, unknown>;
@@ -521,7 +518,7 @@ export async function DELETE(
     // Cascade cleanup — non-critical, run before main delete
     try {
       db.prepare('DELETE FROM task_activity WHERE taskId = ?').run(id);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[tasks/[id]] Non-critical:', err); }
     try {
       const approvalIds = db.prepare(
         `SELECT id FROM approvals WHERE json_extract(metadata, '$.taskId') = ?`
@@ -529,7 +526,7 @@ export async function DELETE(
       for (const { id: approvalId } of approvalIds) {
         db.prepare('DELETE FROM approvals WHERE id = ?').run(approvalId);
       }
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[tasks/[id]] Non-critical:', err); }
 
     const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
 

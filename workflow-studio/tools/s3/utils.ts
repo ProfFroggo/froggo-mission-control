@@ -68,7 +68,8 @@ export function parseS3Uri(
     const objectKey = (() => {
       try {
         return decodeURIComponent(rawObjectKey)
-      } catch {
+      } catch (err) {
+        console.warn('[ws/tools/s3/utils] Non-critical:', err);
         return rawObjectKey
       }
     })()

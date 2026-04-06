@@ -151,14 +151,15 @@ body {
 }
 
 /* Modal backdrop - theme-aware with enhanced blur */
+/* Applies to all Radix Dialog/AlertDialog overlays globally */
+.rt-BaseDialogOverlay::before,
 .modal-backdrop {
-  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
+:root.light .rt-BaseDialogOverlay::before,
 :root.light .modal-backdrop {
-  background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }

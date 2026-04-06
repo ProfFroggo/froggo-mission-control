@@ -70,32 +70,46 @@ function loadFromStorage(): PanelConfig[] {
         return merged;
       }
     }
-  } catch { /* ignore error */ }
+  } catch (err) {
+    console.warn('[panelConfig/loadFromStorage] Failed to load panel config from localStorage:', err);
+  }
   return DEFAULT_PANELS.map(p => ({ ...p }));
 }
 
 function saveToStorage(panels: PanelConfig[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(panels));
-  } catch { /* ignore error */ }
+  } catch (err) {
+    console.warn('[panelConfig/saveToStorage] Failed to save panel config to localStorage:', err);
+  }
 }
 
 interface PanelConfigStore {
   panels: PanelConfig[];
+  _hydrated: boolean;
   editModalOpen: boolean;
   openEditModal: () => void;
   closeEditModal: () => void;
   savePanels: (panels: PanelConfig[]) => void;
   resetPanels: () => void;
+  /** Load persisted panel config from localStorage — call once after mount */
+  hydrateFromStorage: () => void;
   /** Sync with ViewRegistry — auto-discover module views not yet in panelConfig */
   syncWithViewRegistry: () => void;
 }
 
 export const usePanelConfigStore = create<PanelConfigStore>((set) => ({
-  panels: loadFromStorage(),
+  // Always start with defaults (SSR-safe); client hydrates via hydrateFromStorage after mount
+  panels: DEFAULT_PANELS.map(p => ({ ...p })),
+  _hydrated: false,
   editModalOpen: false,
   openEditModal: () => set({ editModalOpen: true }),
   closeEditModal: () => set({ editModalOpen: false }),
+  hydrateFromStorage: () => {
+    if (typeof window === 'undefined') return;
+    const stored = loadFromStorage();
+    set({ panels: stored, _hydrated: true });
+  },
   savePanels: (panels: PanelConfig[]) => {
     // Detect visibility changes for module-owned panels and call lifecycle methods
     const prevPanels = usePanelConfigStore.getState().panels;

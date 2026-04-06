@@ -93,7 +93,8 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
             inProgressTasks: data?.inProgressTasks ?? 0,
           } as unknown as SystemStatus);
         }
-      } catch {
+      } catch (err) {
+        console.warn('[TopBar] Non-critical:', err);
         // Status check failed
       }
     };
@@ -120,7 +121,8 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
         } else {
           setPlatformStatus('ok');
         }
-      } catch {
+      } catch (err) {
+        console.warn('[TopBar] Non-critical:', err);
         setPlatformStatus('error');
       }
     };
@@ -137,7 +139,7 @@ export default function TopBar({ sidebarWidth = 208 }: TopBarProps) {
         const data = await res.json();
         setUnreadNotifCount(data.unreadCount ?? 0);
       }
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[TopBar] Non-critical:', err); }
   }, []);
 
   useEffect(() => { fetchUnreadCount(); }, [fetchUnreadCount]);

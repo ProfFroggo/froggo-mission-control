@@ -56,6 +56,7 @@ export default function TabNav({ tabs, activeTab, onTabChange, paddingX = 'px-6'
         return (
           <button
             key={id}
+            id={`tab-${id}`}
             type="button"
             role="tab"
             aria-selected={isActive}

@@ -14,7 +14,7 @@ const COLLAPSE_KEY = 'writing-collapsed';
 const DEFAULT_LAYOUT: Layout = { chapters: 15, chat: 30, editor: 55 };
 
 // Clean up old key on load
-try { localStorage.removeItem('writing-layout'); } catch { /* ignore */ }
+try { localStorage.removeItem('writing-layout'); } catch (err) { console.warn('[ProjectEditor] Non-critical: failed to remove old layout key:', err); }
 
 function getPersistedLayout(): Layout | undefined {
   try {
@@ -28,7 +28,8 @@ function getPersistedLayout(): Layout | undefined {
       return undefined;
     }
     return parsed as Layout;
-  } catch {
+  } catch (err) {
+    console.warn('[ProjectEditor] Non-critical:', err);
     localStorage.removeItem(LAYOUT_KEY);
     return undefined;
   }
@@ -39,7 +40,8 @@ function getPersistedCollapse(): { chapters: boolean; chat: boolean } {
     const saved = localStorage.getItem(COLLAPSE_KEY);
     if (!saved) return { chapters: false, chat: false };
     return JSON.parse(saved);
-  } catch {
+  } catch (err) {
+    console.warn('[ProjectEditor] Non-critical:', err);
     return { chapters: false, chat: false };
   }
 }

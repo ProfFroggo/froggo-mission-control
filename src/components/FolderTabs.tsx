@@ -157,7 +157,8 @@ export default function FolderTabs({ selectedFolder, onSelectFolder, onRefresh, 
             body: JSON.stringify({ action: 'folder-update', id: reorderedFolders[i].id, sort_order: i }),
           });
         }
-      } catch {
+      } catch (err) {
+        console.warn('[FolderTabs] Non-critical:', err);
         // Reload on error to restore previous order
         loadFolders();
       }

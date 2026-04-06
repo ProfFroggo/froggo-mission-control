@@ -290,7 +290,8 @@ export function normalizeArrayWithIds(value: unknown): any[] {
       const parsed = JSON.parse(value)
       if (!Array.isArray(parsed)) return []
       arr = parsed
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/copilot/tools/server/workflow/edit-workflow/builders] Non-critical:', err);
       return []
     }
   } else {
@@ -331,7 +332,8 @@ export function normalizeConditionRouterIds(blockId: string, key: string, value:
     try {
       parsed = JSON.parse(value)
       if (!Array.isArray(parsed)) return value
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/copilot/tools/server/workflow/edit-workflow/builders] Non-critical:', err);
       return value
     }
   } else if (Array.isArray(value)) {
@@ -406,7 +408,8 @@ export function normalizeResponseFormat(value: any): string {
     }
 
     return String(value)
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/copilot/tools/server/workflow/edit-workflow/builders] Non-critical:', err);
     // If parsing fails, return the original value as string
     return String(value)
   }

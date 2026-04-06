@@ -80,7 +80,7 @@ export default function DashSnapshotKPI({ range, onNavigate }: DashSnapshotKPIPr
 
   // Derive impressions and tweet count from shared analytics data
   const { xImpressions, xTweetCount } = useMemo(() => {
-    if (!xData?.ok || !Array.isArray(xData.tweets)) {
+    if (!xData?.success || !Array.isArray(xData.tweets)) {
       return { xImpressions: null as number | null, xTweetCount: null as number | null };
     }
     const inRange = xData.tweets.filter(

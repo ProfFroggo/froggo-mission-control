@@ -20,7 +20,8 @@ function checkNodeAvailable(): boolean {
   try {
     execSync('node --version', { stdio: 'ignore' })
     nodeAvailable = true
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/execution/isolated-vm] Non-critical:', err);
     nodeAvailable = false
   }
   return nodeAvailable
@@ -575,7 +576,8 @@ function handleWorkerMessage(workerId: number, message: unknown) {
     if (optionsJson) {
       try {
         options = JSON.parse(optionsJson)
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/execution/isolated-vm] Non-critical:', err);
         workerInfo?.process.send({
           type: 'fetchResponse',
           fetchId,
@@ -864,7 +866,8 @@ function dispatchToWorker(
 
   try {
     workerInfo.process.send({ type: 'execute', executionId: execId, request: req })
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/execution/isolated-vm] Non-critical:', err);
     clearTimeout(timeout)
     workerInfo.pendingExecutions.delete(execId)
     workerInfo.activeExecutions--

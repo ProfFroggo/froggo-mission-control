@@ -523,8 +523,8 @@ async function handleMcpRequestWithSdk(
     await responseCapture.waitForEnd(ORCHESTRATION_TIMEOUT_MS + 60_000)
     return responseCapture.toNextResponse()
   } finally {
-    await server.close().catch(() => {})
-    await transport.close().catch(() => {})
+    await server.close().catch(err => console.warn('[mcp/copilot] Non-critical:', err))
+    await transport.close().catch(err => console.warn('[mcp/copilot] Non-critical:', err))
   }
 }
 
@@ -555,7 +555,8 @@ export async function POST(request: NextRequest) {
 
     try {
       parsedBody = await request.json()
-    } catch {
+    } catch (err) {
+      console.warn('[mcp/copilot] Non-critical:', err);
       return NextResponse.json(createError(0, ErrorCode.ParseError, 'Invalid JSON body'), {
         status: 400,
       })

@@ -254,7 +254,7 @@ export async function POST(request: NextRequest) {
         },
       })
     } catch (insertError) {
-      await deleteTable(table.id, requestId).catch(() => {})
+      await deleteTable(table.id, requestId).catch(err => console.warn('[table/import-csv] Non-critical:', err))
       throw insertError
     }
   } catch (error) {

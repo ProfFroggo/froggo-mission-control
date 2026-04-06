@@ -2,8 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 import { emitSSEEvent } from '@/lib/sseEmitter';
+import { validateTransition, VALID_STATUSES } from '@/lib/taskStateMachine';
 
-const VALID_STATUSES = ['todo', 'internal-review', 'in-progress', 'review', 'human-review', 'done'];
 const VALID_PRIORITIES = ['p0', 'p1', 'p2', 'p3'];
 
 /**
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       if (action === 'delete') {
         for (const id of idList) {
           try {
-            try { db.prepare('DELETE FROM task_activity WHERE taskId = ?').run(id); } catch { /* non-critical */ }
+            try { db.prepare('DELETE FROM task_activity WHERE taskId = ?').run(id); } catch (err) { console.warn('[tasks/bulk] Non-critical:', err); }
             try {
               const approvalIds = db.prepare(
                 `SELECT id FROM approvals WHERE json_extract(metadata, '$.taskId') = ?`
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
               for (const { id: approvalId } of approvalIds) {
                 db.prepare('DELETE FROM approvals WHERE id = ?').run(approvalId);
               }
-            } catch { /* non-critical */ }
+            } catch (err) { console.warn('[tasks/bulk] Non-critical:', err); }
 
             const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
             if (result.changes > 0) {
@@ -88,7 +88,8 @@ export async function POST(request: NextRequest) {
             } else {
               failed.push(id);
             }
-          } catch {
+          } catch (err) {
+            console.warn('[tasks/bulk] Non-critical:', err);
             failed.push(id);
           }
         }
@@ -99,6 +100,20 @@ export async function POST(request: NextRequest) {
         const newStatus = value as string;
         for (const id of idList) {
           try {
+            // Fetch current status to validate the transition
+            const current = db.prepare('SELECT status FROM tasks WHERE id = ?').get(id) as { status: string } | undefined;
+            if (!current) {
+              failed.push(id);
+              continue;
+            }
+
+            // Validate state machine transition
+            const transitionError = validateTransition(current.status, newStatus);
+            if (transitionError) {
+              failed.push(id);
+              continue;
+            }
+
             const result = db.prepare(
               'UPDATE tasks SET status = ?, updatedAt = ? WHERE id = ?'
             ).run(newStatus, now, id);
@@ -106,11 +121,12 @@ export async function POST(request: NextRequest) {
               updated.push(id);
               db.prepare(
                 'INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)'
-              ).run(id, null, 'status_change', `Bulk status update → ${newStatus}`, now);
+              ).run(id, null, 'status_change', `Bulk status update \u2192 ${newStatus}`, now);
             } else {
               failed.push(id);
             }
-          } catch {
+          } catch (err) {
+            console.warn('[tasks/bulk] Non-critical:', err);
             failed.push(id);
           }
         }
@@ -132,7 +148,8 @@ export async function POST(request: NextRequest) {
             } else {
               failed.push(id);
             }
-          } catch {
+          } catch (err) {
+            console.warn('[tasks/bulk] Non-critical:', err);
             failed.push(id);
           }
         }
@@ -154,7 +171,8 @@ export async function POST(request: NextRequest) {
             } else {
               failed.push(id);
             }
-          } catch {
+          } catch (err) {
+            console.warn('[tasks/bulk] Non-critical:', err);
             failed.push(id);
           }
         }
@@ -167,20 +185,20 @@ export async function POST(request: NextRequest) {
     // Emit SSE events outside the transaction
     if (action === 'delete') {
       for (const id of updated) {
-        try { emitSSEEvent('task.deleted', { id }); } catch { /* non-critical */ }
+        try { emitSSEEvent('task.deleted', { id }); } catch (err) { console.warn('[tasks/bulk] Non-critical:', err); }
       }
       return NextResponse.json({ updated: updated.length, failed });
     }
     if (action === 'status') {
-      try { emitSSEEvent('task.updated', { ids: updated, status: value }); } catch { /* non-critical */ }
+      try { emitSSEEvent('task.updated', { ids: updated, status: value }); } catch (err) { console.warn('[tasks/bulk] Non-critical:', err); }
       return NextResponse.json({ updated: updated.length, failed });
     }
     if (action === 'assign') {
-      try { emitSSEEvent('task.updated', { ids: updated, assignedTo: value ?? null }); } catch { /* non-critical */ }
+      try { emitSSEEvent('task.updated', { ids: updated, assignedTo: value ?? null }); } catch (err) { console.warn('[tasks/bulk] Non-critical:', err); }
       return NextResponse.json({ updated: updated.length, failed });
     }
     if (action === 'priority') {
-      try { emitSSEEvent('task.updated', { ids: updated, priority: value }); } catch { /* non-critical */ }
+      try { emitSSEEvent('task.updated', { ids: updated, priority: value }); } catch (err) { console.warn('[tasks/bulk] Non-critical:', err); }
       return NextResponse.json({ updated: updated.length, failed });
     }
 

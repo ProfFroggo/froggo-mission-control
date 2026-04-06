@@ -223,7 +223,7 @@ function useCalEvents() {
     fetch(`/api/calendar/events?date=${today}&limit=5`)
       .then(r => r.ok ? r.json() : null)
       .then(d => d?.events && setEvents(d.events))
-      .catch(() => {});
+      .catch(err => console.warn('[Dashboard] Non-critical:', err));
   }, []);
   return events;
 }

@@ -316,7 +316,8 @@ function extractSortOrder(content: string): number | undefined {
   try {
     const parsed = JSON.parse(content)
     return parsed.state?.metadata?.sortOrder ?? parsed.metadata?.sortOrder
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/workflows/operations/import-export] Non-critical:', err);
     return undefined
   }
 }
@@ -399,7 +400,8 @@ export function extractWorkflowName(content: string, filename: string): string {
     if (parsed.state?.metadata?.name && typeof parsed.state.metadata.name === 'string') {
       return parsed.state.metadata.name.trim()
     }
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/workflows/operations/import-export] Non-critical:', err);
     // JSON parse failed, fall through to filename
   }
 

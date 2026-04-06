@@ -211,7 +211,8 @@ export function TemplateProfile() {
     try {
       new URL(normalizeUrl(value))
       return null
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/settings/components/template-profile/template-profilex] Non-critical:', err);
       return 'Please enter a valid URL'
     }
   }

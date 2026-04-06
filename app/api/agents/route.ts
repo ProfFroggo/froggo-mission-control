@@ -8,7 +8,8 @@ function parseAgent(row: Record<string, unknown>) {
   if (typeof parsed.capabilities === 'string') {
     try {
       parsed.capabilities = JSON.parse(parsed.capabilities as string);
-    } catch {
+    } catch (err) {
+      console.warn('[agents] Non-critical:', err);
       parsed.capabilities = [];
     }
   }

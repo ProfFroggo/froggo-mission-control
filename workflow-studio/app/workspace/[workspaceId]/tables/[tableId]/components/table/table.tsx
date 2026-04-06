@@ -387,7 +387,8 @@ export function Table({
       await deleteTableMutation.mutateAsync(tableId)
       setShowDeleteTableConfirm(false)
       router.push(`/workspace/${workspaceId}/tables`)
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/tables/[tableId]/components/table/tablex] Non-critical:', err);
       setShowDeleteTableConfirm(false)
     }
   }, [deleteTableMutation, tableId, router, workspaceId])
@@ -1165,7 +1166,8 @@ export function Table({
               pasteRows[r][c],
               currentCols[targetCol]
             )
-          } catch {
+          } catch (err) {
+            console.warn('[ws/app/workspace/[workspaceId]/tables/[tableId]/components/table/tablex] Non-critical:', err);
             /* skip invalid values */
           }
         }
@@ -2476,7 +2478,8 @@ function InlineTextEditor({
     doneRef.current = true
     try {
       onSave(cleanCellValue(draft, column), reason)
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/tables/[tableId]/components/table/tablex] Non-critical:', err);
       onCancel()
     }
   }

@@ -15,7 +15,8 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     rawPath = body.path;
-  } catch {
+  } catch (err) {
+    console.warn('[library/reveal] Non-critical:', err);
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
       if (err) {
         resolve(NextResponse.json({ error: 'Failed to reveal file' }, { status: 500 }));
       } else {
-        resolve(NextResponse.json({ ok: true }));
+        resolve(NextResponse.json({ success: true }));
       }
     });
   });

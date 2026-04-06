@@ -222,17 +222,18 @@ export async function loadExecutionPointer(workflowId: string): Promise<Executio
     const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
     if (!parsed?.executionId) return null
     return parsed as ExecutionPointer
-  } catch {
+  } catch (err) {
+    console.warn('[ws/stores/terminal/console/storage] Non-critical:', err);
     return null
   }
 }
 
 export function saveExecutionPointer(pointer: ExecutionPointer): void {
   if (typeof window === 'undefined') return
-  set(`${EXEC_POINTER_PREFIX}${pointer.workflowId}`, JSON.stringify(pointer)).catch(() => {})
+  set(`${EXEC_POINTER_PREFIX}${pointer.workflowId}`, JSON.stringify(pointer)).catch(err => console.warn('[ws/stores/terminal/console/storage] Non-critical:', err))
 }
 
 export function clearExecutionPointer(workflowId: string): void {
   if (typeof window === 'undefined') return
-  set(`${EXEC_POINTER_PREFIX}${workflowId}`, '').catch(() => {})
+  set(`${EXEC_POINTER_PREFIX}${workflowId}`, '').catch(err => console.warn('[ws/stores/terminal/console/storage] Non-critical:', err))
 }

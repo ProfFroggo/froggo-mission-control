@@ -48,6 +48,8 @@ Escalate to Senior Coder when ANY of these conditions is met:
 | T3 | Blocked after > 2 genuine attempts on the same problem |
 | T4 | Requires a technology not covered by any existing platform skill file |
 
+> **Cross-dispatch T3 rule**: When you receive a task, check its workContext (via `task_get`) for prior dispatch entries. If the workContext shows 2 or more prior dispatch cycles that ended without completion, treat this as T3 already triggered — escalate to Senior Coder immediately without attempting further implementation.
+
 **Handoff format** — post a task activity note with:
 - Task ID
 - Which trigger fired (T1–T4)
@@ -126,7 +128,7 @@ cat > PLAN.md << 'EOF'
 - All tasks checked, SUMMARY.md written
 EOF
 CLAUDECODE="" CLAUDE_CODE_ENTRYPOINT="" CLAUDE_CODE_SESSION_ID="" \
-  claude --print --model claude-haiku-4-5-20251001 --dangerously-skip-permissions \
+  claude --print --model claude-haiku-4-5-20251001 \
   "Read PLAN.md. Execute every task. Write SUMMARY.md."
 cat SUMMARY.md
 ```

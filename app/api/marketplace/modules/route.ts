@@ -25,7 +25,8 @@ export async function GET() {
     }));
 
     return NextResponse.json({ modules });
-  } catch {
+  } catch (err) {
+    console.warn('[marketplace/modules] Non-critical:', err);
     return NextResponse.json({ modules: BUILTIN_MODULES.map(m => ({ ...m, builtin: true, installed: false })) });
   }
 }

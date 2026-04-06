@@ -207,7 +207,7 @@ export async function archiveWorkflow(
       workflowId,
       workspaceId: existingWorkflow.workspaceId || undefined,
     })
-  } catch {}
+  } catch (err) { console.warn('[ws/lib/workflows/lifecycle] Non-critical:', err); }
 
   if (options.notifySocket !== false) {
     await notifyWorkflowArchived(workflowId, options.requestId)

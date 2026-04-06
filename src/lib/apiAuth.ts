@@ -51,7 +51,8 @@ export function resolveLibraryId(id: string): string | null {
   let decoded: string;
   try {
     decoded = Buffer.from(id, 'base64url').toString('utf8');
-  } catch {
+  } catch (err) {
+    console.warn('[apiAuth] Non-critical:', err);
     return null;
   }
 
@@ -72,7 +73,8 @@ export function resolveLibraryId(id: string): string | null {
     const real = realpathSync(joined);
     if (!real.startsWith(LIBRARY_REAL + path.sep) && real !== LIBRARY_REAL) return null;
     return real;
-  } catch {
+  } catch (err) {
+    console.warn('[apiAuth] Non-critical:', err);
     return null;
   }
 }

@@ -16,7 +16,8 @@ function parseStructuredValue(value: unknown): unknown[] | null {
     try {
       const parsed = JSON.parse(value)
       return Array.isArray(parsed) ? parsed : null
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/workflows/dynamic-handle-topology] Non-critical:', err);
       return null
     }
   }

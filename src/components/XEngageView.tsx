@@ -120,7 +120,9 @@ async function loadFromSetting(key: string, fallback: any): Promise<any> {
       const data = await res.json();
       if (data?.value) return JSON.parse(data.value);
     }
-  } catch { /* fallback to localStorage */ }
+  } catch (err) {
+    console.warn('[XEngageView/loadFromSetting] Settings API failed, falling back to localStorage:', err);
+  }
   try {
     const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : fallback;
@@ -130,12 +132,12 @@ async function loadFromSetting(key: string, fallback: any): Promise<any> {
 function saveToSetting(key: string, value: any): void {
   const json = JSON.stringify(value);
   // Settings API is the real persistence, localStorage is just a fast cache
-  try { localStorage.setItem(key, json); } catch { /* quota exceeded — API is the backup */ }
+  try { localStorage.setItem(key, json); } catch (err) { console.warn('[XEngageView/saveToSetting] localStorage write failed (quota exceeded):', err); }
   fetch(`/api/settings/${key}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ value: json }),
-  }).catch(() => { /* non-critical */ });
+  }).catch(err => console.warn('[XEngageView/saveToSetting] Non-critical: settings API write failed:', err));
 }
 
 function loadPriority(): string[] {
@@ -225,7 +227,9 @@ function parseMetrics(item: any): { like_count: number; retweet_count: number; r
   let meta: any = {};
   try {
     meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : (item.metadata || {});
-  } catch { /* noop */ }
+  } catch (err) {
+    console.warn('[XEngageView/parseMetrics] Failed to parse item metadata:', err);
+  }
   const metrics = meta.public_metrics || meta || {};
   return {
     like_count: metrics.like_count ?? 0,
@@ -242,7 +246,9 @@ function normalizeMention(item: any): Mention {
   let meta: any = {};
   try {
     meta = typeof item.metadata === 'string' ? JSON.parse(item.metadata) : (item.metadata || {});
-  } catch { /* noop */ }
+  } catch (err) {
+    console.warn('[XEngageView/normalizeMention] Failed to parse item metadata:', err);
+  }
 
   // Determine mention type from API data or stored metadata
   const mentionType: 'reply' | 'quote' | 'mention' =
@@ -384,7 +390,8 @@ export const XEngageView: React.FC = () => {
         setAiReplies(prev => ({ ...prev, ...preGenerated }));
       }
       setLoading(false);
-    } catch {
+    } catch (err) {
+      console.warn('[XEngageView] Non-critical:', err);
       setLoading(false);
     }
   }, []);
@@ -402,7 +409,7 @@ export const XEngageView: React.FC = () => {
       try {
         await fetch('/api/x/mentions/process', { method: 'POST' });
         await loadMentions();
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[XEngageView] Non-critical:', err); }
     }, X_FETCH_INTERVAL);
     return () => clearInterval(xFetchInterval);
   }, [loadMentions]);
@@ -430,7 +437,7 @@ export const XEngageView: React.FC = () => {
         }
       }
       setPendingReplies(replyMap);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[XEngageView] Non-critical:', err); }
   }, []);
 
   useEffect(() => {
@@ -456,7 +463,8 @@ export const XEngageView: React.FC = () => {
     try {
       await fetch('/api/x/mentions/process', { method: 'POST' });
       await loadMentions();
-    } catch {
+    } catch (err) {
+      console.warn('[XEngageView] Non-critical:', err);
       await loadMentions();
     } finally {
       setFetching(false);
@@ -473,7 +481,8 @@ export const XEngageView: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, reply_status: status }),
       });
-    } catch {
+    } catch (err) {
+      console.warn('[XEngageView] Non-critical:', err);
       await loadMentions();
     }
   };
@@ -489,7 +498,8 @@ export const XEngageView: React.FC = () => {
       });
       setNotes(prev => ({ ...prev, [id]: noteText }));
       showToast('success', 'Note saved');
-    } catch {
+    } catch (err) {
+      console.warn('[XEngageView] Non-critical:', err);
       // Keep note text in local state even if persist fails
     }
   };
@@ -531,7 +541,7 @@ export const XEngageView: React.FC = () => {
               brandContext = `\n\nBrand context from knowledge base:\n${articles.slice(0, 3).map((a: any) => `- ${a.title}: ${(a.summary || a.content || '').slice(0, 150)}`).join('\n')}`;
             }
           }
-        } catch { /* non-critical */ }
+        } catch (err) { console.warn('[XEngageView] Non-critical:', err); }
 
         const prompt = `Generate exactly 3 reply options for this X/Twitter mention. Each reply must be under 200 characters, on-brand, engaging, and contextually appropriate.
 
@@ -578,14 +588,14 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                   recommended: typeof parsed.recommended === 'number' ? parsed.recommended : 0,
                 };
               }
-            } catch { /* parse failed, try array fallback */ }
+            } catch (err) { console.warn('[XEngageView] Non-critical: parse failed, try array fallback:', err); }
           } else if (arrMatch) {
             try {
               const options = JSON.parse(arrMatch[0]) as string[];
               if (Array.isArray(options) && options.length > 0) {
                 aiResult = { replies: options.slice(0, 3), recommended: 0 };
               }
-            } catch { /* parse failed, skip */ }
+            } catch (err) { console.warn('[XEngageView] Non-critical: parse failed, skip:', err); }
           }
 
           if (aiResult) {
@@ -603,10 +613,10 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
                   ai_processed_at: Date.now(),
                 }),
               });
-            } catch { /* non-critical */ }
+            } catch (err) { console.warn('[XEngageView] Non-critical:', err); }
           }
         }
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[XEngageView] Non-critical:', err); }
 
       setAiLoading(prev => {
         const next = new Set(prev);
@@ -837,7 +847,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
     try {
       const meta = typeof mention.metadata === 'string' ? JSON.parse(mention.metadata) : (mention.metadata || {});
       existingNotes = meta.notes || '';
-    } catch { /* noop */ }
+    } catch (err) { console.warn('[XEngageView] Non-critical: noop:', err); }
 
     // Track which reply option is selected for this card (defaults to BEST)
     const aiData = aiReplies[mention.id];
@@ -846,7 +856,7 @@ Return ONLY a JSON object with "replies" (array of 3 strings) and "recommended" 
 
     // Parse metadata once
     let mentionMeta: any = {};
-    try { mentionMeta = typeof mention.metadata === 'string' ? JSON.parse(mention.metadata) : (mention.metadata || {}); } catch { /* noop */ }
+    try { mentionMeta = typeof mention.metadata === 'string' ? JSON.parse(mention.metadata) : (mention.metadata || {}); } catch (err) { console.warn('[XEngageView] Non-critical: noop:', err); }
     const lang = mentionMeta.ai_replies?.detected_language || aiData?.detected_language;
     const mentionTranslation = mentionMeta.ai_replies?.mention_translation;
     const judgment = mentionMeta.ai_judgment;

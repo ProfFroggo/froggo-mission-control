@@ -169,14 +169,16 @@ function filterForDisplayInternal(data: any, seen: Set<object>, depth: number): 
     for (const key of Object.keys(data)) {
       try {
         result[key] = filterForDisplayInternal(data[key], seen, depth + 1)
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/core/utils/display-filters] Non-critical:', err);
         result[key] = '[Error accessing property]'
       }
     }
     // Remove from current path after processing children
     seen.delete(data)
     return result
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/core/utils/display-filters] Non-critical:', err);
     return '[Unserializable]'
   }
 }

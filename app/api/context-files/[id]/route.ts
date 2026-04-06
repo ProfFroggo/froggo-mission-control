@@ -38,7 +38,7 @@ export async function DELETE(
       if (fs.existsSync(file.filePath)) {
         fs.unlinkSync(file.filePath);
       }
-    } catch { /* non-critical — file may have been moved */ }
+    } catch (err) { console.warn('[context-files/[id]] Non-critical: file may have been moved', err); }
 
     db.prepare('DELETE FROM context_files WHERE id = ?').run(id);
     return NextResponse.json({ success: true });

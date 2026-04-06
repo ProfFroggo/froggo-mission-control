@@ -533,7 +533,8 @@ export function useGenerateVersionDescription() {
       if (version > 1) {
         try {
           previousState = await fetchDeploymentVersionState(workflowId, version - 1)
-        } catch {
+        } catch (err) {
+          console.warn('[ws/hooks/queries/deployments] Non-critical:', err);
           // Previous version may not exist, continue without it
         }
       }

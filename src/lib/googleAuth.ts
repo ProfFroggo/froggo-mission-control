@@ -79,7 +79,8 @@ function loadCodeVerifier(): string | null {
     // Expire after 10 minutes
     if (Date.now() - ts > 10 * 60 * 1000) return null;
     return verifier ?? null;
-  } catch {
+  } catch (err) {
+    console.warn('[googleAuth] Non-critical:', err);
     return null;
   }
 }
@@ -107,7 +108,9 @@ export function loadTokens(): StoredTokens | null {
   try {
     const stored = JSON.parse(readFileSync(TOKENS_PATH, 'utf-8')) as StoredTokens;
     if (stored.refresh_token || stored.access_token) return stored;
-  } catch { /* fall through */ }
+  } catch (err) {
+    console.warn('[googleAuth] Non-critical: failed to read stored tokens:', err);
+  }
   return null;
 }
 
@@ -183,7 +186,9 @@ async function _doTokenExchange(client: OAuth2Client, code: string, codeVerifier
     const oauth2 = google.oauth2({ version: 'v2', auth: client });
     const info = await oauth2.userinfo.get();
     email = info.data.email ?? undefined;
-  } catch { /* non-critical */ }
+  } catch (err) {
+    console.warn('[googleAuth] Non-critical: failed to fetch user email:', err);
+  }
 
   const toStore: StoredTokens = {
     access_token: tokens.access_token ?? undefined,

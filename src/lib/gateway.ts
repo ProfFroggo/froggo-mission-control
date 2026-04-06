@@ -88,7 +88,8 @@ class Gateway {
       });
       if (!res.ok) return {} as T;
       return res.json();
-    } catch {
+    } catch (err) {
+      console.warn('[gateway] Non-critical:', err);
       return {} as T;
     }
   }
@@ -183,7 +184,8 @@ class Gateway {
               fullContent += delta;
               callbacks.onDelta?.(delta, parsed);
             }
-          } catch {
+          } catch (err) {
+            console.warn('[gateway] Non-critical:', err);
             // Non-JSON chunk — treat as raw text delta if non-empty
             if (data) {
               fullContent += data;
@@ -306,7 +308,8 @@ class Gateway {
         raw:    JSON.stringify(config, null, 2),
         issues: [] as any[],
       };
-    } catch {
+    } catch (err) {
+      console.warn('[gateway] Non-critical:', err);
       return { exists: false, valid: false, hash: '', config: {} as Record<string, unknown>, raw: '', issues: [] as any[] };
     }
   }
@@ -337,7 +340,8 @@ class Gateway {
       const res = await fetch(`/api/logs?${params}`);
       if (!res.ok) return { file: '', cursor: 0, size: 0, lines: [], truncated: false };
       return res.json();
-    } catch {
+    } catch (err) {
+      console.warn('[gateway] Non-critical:', err);
       return { file: '', cursor: 0, size: 0, lines: [] as string[], truncated: false };
     }
   }

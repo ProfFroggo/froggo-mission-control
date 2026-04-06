@@ -80,8 +80,8 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     db.prepare('UPDATE library_folders SET parentId = ? WHERE parentId = ?').run(parentId, id);
 
     // Remove associated folder data (rules, assignments)
-    try { db.prepare('DELETE FROM library_folder_rules WHERE folder_id = ?').run(id); } catch { /* table may not exist */ }
-    try { db.prepare('DELETE FROM library_folder_assignments WHERE folder_id = ?').run(id); } catch { /* table may not exist */ }
+    try { db.prepare('DELETE FROM library_folder_rules WHERE folder_id = ?').run(id); } catch (err) { console.warn('[library/folders/[id]] Non-critical: table may not exist:', err); }
+    try { db.prepare('DELETE FROM library_folder_assignments WHERE folder_id = ?').run(id); } catch (err) { console.warn('[library/folders/[id]] Non-critical: table may not exist:', err); }
 
     db.prepare('DELETE FROM library_folders WHERE id = ?').run(id);
 

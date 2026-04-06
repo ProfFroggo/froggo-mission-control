@@ -36,7 +36,8 @@ async function resolveOAuthMessage(ctx: OAuthReturnContext): Promise<string> {
 
     const existing = forProvider[0]
     return `This account is already connected as "${existing?.displayName || ctx.displayName}".`
-  } catch {
+  } catch (err) {
+    console.warn('[ws/hooks/use-oauth-return] Non-critical:', err);
     return `"${ctx.displayName}" credential connected successfully.`
   }
 }
@@ -89,7 +90,7 @@ export function useOAuthReturnRouter() {
     if (ctx.origin === 'workflow') {
       try {
         sessionStorage.removeItem(SETTINGS_RETURN_URL_KEY)
-      } catch {}
+      } catch (err) { console.warn('[ws/hooks/use-oauth-return] Non-critical:', err); }
       router.replace(`/workspace/${workspaceId}/w/${ctx.workflowId}`)
       return
     }
@@ -97,7 +98,7 @@ export function useOAuthReturnRouter() {
     if (ctx.origin === 'kb-connectors') {
       try {
         sessionStorage.removeItem(SETTINGS_RETURN_URL_KEY)
-      } catch {}
+      } catch (err) { console.warn('[ws/hooks/use-oauth-return] Non-critical:', err); }
       router.replace(`/workspace/${workspaceId}/knowledge/${ctx.knowledgeBaseId}`)
       return
     }

@@ -689,7 +689,8 @@ export function validateExternalUrl(
   let parsedUrl: URL
   try {
     parsedUrl = new URL(url)
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/core/security/input-validation] Non-critical:', err);
     return {
       isValid: false,
       error: `${paramName} must be a valid URL`,
@@ -802,7 +803,8 @@ function isPrivateOrReservedIP(ip: string): boolean {
     const range = addr.range()
 
     return range !== 'unicast'
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/core/security/input-validation] Non-critical:', err);
     return true
   }
 }

@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
           INSERT OR IGNORE INTO chat_rooms (id, name, topic, agents, project_id, createdAt, updatedAt)
           VALUES (?, ?, ?, ?, ?, ?, ?)
         `).run(roomId, `${emoji || '📁'} ${name.trim()}`, `Project chat for ${name.trim()}`, JSON.stringify(roomAgents), id, now, now);
-      } catch { /* project_id column might not exist on old DBs */ }
+      } catch (err) { console.warn('[projects] Non-critical: project_id column might not exist on old DBs:', err); }
     })();
 
     // Auto-create project directory structure (non-transactional — filesystem, not DB)
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       if (!existsSync(join(projDir, 'CONTEXT.md'))) {
         writeFileSync(join(projDir, 'CONTEXT.md'), `# Context\n\n${description || 'No additional context yet.'}\n`, 'utf-8');
       }
-    } catch { /* non-critical — directory creation failure doesn't block project creation */ }
+    } catch (err) { console.warn('[projects] Non-critical: directory creation failure:', err); }
 
     const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
     return NextResponse.json(project, { status: 201 });

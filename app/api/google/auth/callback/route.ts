@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     console.error('[google/auth/callback] Error:', err);
-    const msg = err instanceof Error ? err.message : 'Internal server error';
+    const msg = 'Internal server error';
     return new NextResponse(closePageHtml(false, msg), {
       headers: { 'Content-Type': 'text/html' },
     });
@@ -86,7 +86,7 @@ function closePageHtml(success: boolean, detail: string): string {
           window.location.origin
         );
       }
-    } catch (_) {}
+    } catch (_) { console.warn('[route] Non-critical:', _); }
     setTimeout(() => window.close(), 1500);
   </script>
 </body>

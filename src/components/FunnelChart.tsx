@@ -78,7 +78,8 @@ export default function FunnelChart() {
       await navigator.clipboard.writeText(buildBomCsv(STAGES, counts));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } catch (err) {
+      console.warn('[FunnelChart] Non-critical:', err);
       // ignore
     }
   }

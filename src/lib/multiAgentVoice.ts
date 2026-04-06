@@ -500,10 +500,10 @@ export class MultiAgentVoiceSystem {
     }
 
     if (this.inputAudioContext && this.inputAudioContext.state !== 'closed') {
-      try { await this.inputAudioContext.close(); } catch { /* ignore cleanup errors */ }
+      try { await this.inputAudioContext.close(); } catch (err) { console.warn('[multiAgentVoice] Non-critical: ignore cleanup errors:', err); }
     }
     if (this.outputAudioContext && this.outputAudioContext.state !== 'closed') {
-      try { await this.outputAudioContext.close(); } catch { /* ignore cleanup errors */ }
+      try { await this.outputAudioContext.close(); } catch (err) { console.warn('[multiAgentVoice] Non-critical: ignore cleanup errors:', err); }
     }
 
     this.inputAudioContext = null;
@@ -582,7 +582,8 @@ Respond in this exact JSON format:
       const text = response.text || '{}';
       const cleaned = text.replace(/```json\n?|\n?```/g, '').trim();
       return JSON.parse(cleaned);
-    } catch {
+    } catch (err) {
+      console.warn('[multiAgentVoice] Non-critical:', err);
       return {
         summary: response.text || 'Failed to generate summary',
         actionItems: [],

@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       try {
         const meta = await drive.files.get({ fileId: folderId, fields: 'id,name,parents' });
         folderName = meta.data.name ?? folderId;
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[drive/files] Non-critical:', err); }
     }
 
     return NextResponse.json({

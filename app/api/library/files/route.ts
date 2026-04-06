@@ -77,7 +77,7 @@ export async function GET() {
 
     // Build a map of filePath → task attachment metadata
     const attachments = db.prepare(
-      'SELECT filePath, taskId, uploadedBy, category, createdAt FROM task_attachments'
+      'SELECT filePath, taskId, uploadedBy, category, createdAt FROM task_attachments LIMIT 5000'
     ).all() as { filePath: string; taskId: string; uploadedBy: string; category: string; createdAt: number }[];
     const attachMap = new Map<string, typeof attachments[0]>();
     for (const a of attachments) {

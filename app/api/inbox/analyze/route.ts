@@ -66,7 +66,8 @@ function extractJson(text: string): Record<string, unknown> | null {
   const jsonStr = jsonMatch ? jsonMatch[1] : text.trim();
   try {
     return JSON.parse(jsonStr);
-  } catch {
+  } catch (err) {
+    console.warn('[inbox/analyze] Non-critical:', err);
     return null;
   }
 }
@@ -94,7 +95,8 @@ async function fetchMessageContent(id: string): Promise<MessageInput | null> {
     traverse(msg.data.payload);
 
     return { id, subject, from, body: body.slice(0, 1000) };
-  } catch {
+  } catch (err) {
+    console.warn('[inbox/analyze] Non-critical:', err);
     return null;
   }
 }

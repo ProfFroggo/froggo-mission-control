@@ -313,7 +313,7 @@ export default function MeetingScribe() {
       setIsRecording(false);
       // Clean up any partially-created resources
       if (animFrameRef.current) { cancelAnimationFrame(animFrameRef.current); animFrameRef.current = null; }
-      if (audioCtxRef.current) { audioCtxRef.current.close().catch(() => {}); audioCtxRef.current = null; }
+      if (audioCtxRef.current) { audioCtxRef.current.close().catch(err => console.warn('[MeetingScribe] Non-critical:', err)); audioCtxRef.current = null; }
       if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
     }
   }, [setMeetingActive, addActivity, processAudioChunk]);
@@ -434,7 +434,8 @@ export default function MeetingScribe() {
       a.click();
       URL.revokeObjectURL(url);
       result.savedPath = filename;
-    } catch {
+    } catch (err) {
+      console.warn('[MeetingScribe] Non-critical:', err);
       // Save error — non-critical
     }
 

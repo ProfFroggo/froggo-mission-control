@@ -261,7 +261,8 @@ const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(
             const values = extractValues(text)
             values.forEach((value) => onAdd(value))
           }
-        } catch {
+        } catch (err) {
+          console.warn('[ws/components/emcn/components/tag-input/tag-inputx] Non-critical:', err);
           // Silently handle file read errors
         }
       },

@@ -53,38 +53,41 @@ const LS_HISTORY_KEY = 'x-hashtag-search-history';
 function loadSaved(): string[] {
   try {
     return JSON.parse(localStorage.getItem(LS_SAVED_KEY) ?? '[]');
-  } catch {
+  } catch (err) {
+    console.warn('[XHashtagIntelligence] Non-critical:', err);
     return [];
   }
 }
 function saveSavedToLS(tags: string[]): void {
   const json = JSON.stringify(tags);
   localStorage.setItem(LS_SAVED_KEY, json);
-  fetch(`/api/settings/${LS_SAVED_KEY}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: json }) }).catch(() => {});
+  fetch(`/api/settings/${LS_SAVED_KEY}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: json }) }).catch(err => console.warn('[XHashtagIntelligence] Non-critical:', err));
 }
 function loadSets(): HashtagSet[] {
   try {
     return JSON.parse(localStorage.getItem(LS_SETS_KEY) ?? '[]');
-  } catch {
+  } catch (err) {
+    console.warn('[XHashtagIntelligence] Non-critical:', err);
     return [];
   }
 }
 function saveSetsToLS(sets: HashtagSet[]): void {
   const json = JSON.stringify(sets);
   localStorage.setItem(LS_SETS_KEY, json);
-  fetch(`/api/settings/${LS_SETS_KEY}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: json }) }).catch(() => {});
+  fetch(`/api/settings/${LS_SETS_KEY}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: json }) }).catch(err => console.warn('[XHashtagIntelligence] Non-critical:', err));
 }
 function loadHistory(): SearchHistoryEntry[] {
   try {
     return JSON.parse(localStorage.getItem(LS_HISTORY_KEY) ?? '[]');
-  } catch {
+  } catch (err) {
+    console.warn('[XHashtagIntelligence] Non-critical:', err);
     return [];
   }
 }
 function saveHistoryToLS(history: SearchHistoryEntry[]): void {
   const json = JSON.stringify(history);
   localStorage.setItem(LS_HISTORY_KEY, json);
-  fetch(`/api/settings/${LS_HISTORY_KEY}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: json }) }).catch(() => {});
+  fetch(`/api/settings/${LS_HISTORY_KEY}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: json }) }).catch(err => console.warn('[XHashtagIntelligence] Non-critical:', err));
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────

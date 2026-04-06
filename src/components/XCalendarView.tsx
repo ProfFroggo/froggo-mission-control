@@ -48,7 +48,8 @@ function mapDraftsToEvents(drafts: any[]): CalendarEvent[] {
     try {
       const parsed = typeof draft.content === 'string' ? JSON.parse(draft.content) : draft.content;
       title = parsed?.tweets?.[0]?.text?.slice(0, 60) || draft.content?.slice?.(0, 60) || title;
-    } catch {
+    } catch (err) {
+      console.warn('[XCalendarView] Non-critical:', err);
       title = typeof draft.content === 'string' ? draft.content.slice(0, 60) : title;
     }
     return {
@@ -69,7 +70,7 @@ function mapDirectScheduledToEvents(posts: any[]): CalendarEvent[] {
     .map((p: any) => {
       const startDate = new Date(p.scheduled_time);
       let meta: any = {};
-      try { meta = JSON.parse(p.metadata || '{}'); } catch {}
+      try { meta = JSON.parse(p.metadata || '{}'); } catch (err) { console.warn('[XCalendarView] Non-critical:', err); }
       const content = meta.type === 'thread' && meta.tweets
         ? meta.tweets[0]
         : p.content;
@@ -93,7 +94,8 @@ function mapScheduledToEvents(scheduled: any[]): CalendarEvent[] {
     try {
       const parsed = typeof s.draft_content === 'string' ? JSON.parse(s.draft_content) : s.draft_content;
       title = parsed?.tweets?.[0]?.text?.slice(0, 60) || s.draft_content?.slice?.(0, 60) || title;
-    } catch {
+    } catch (err) {
+      console.warn('[XCalendarView] Non-critical:', err);
       title = typeof s.draft_content === 'string' ? s.draft_content.slice(0, 60) : title;
     }
     return {
@@ -162,7 +164,8 @@ export function XCalendarView() {
       // Schedule update not available via REST — refresh events
       await loadPipelineAsEvents();
       return false;
-    } catch {
+    } catch (err) {
+      console.warn('[XCalendarView] Non-critical:', err);
       return false;
     }
   }, [loadPipelineAsEvents]);

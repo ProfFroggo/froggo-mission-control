@@ -74,7 +74,8 @@ export const agentTool: ToolConfig<AgentParams, AgentResponse> = {
           try {
             const parsed = JSON.parse(params.urls)
             body.urls = Array.isArray(parsed) ? parsed : [parsed]
-          } catch {
+          } catch (err) {
+            console.warn('[ws/tools/firecrawl/agent] Non-critical:', err);
             body.urls = [params.urls]
           }
         }

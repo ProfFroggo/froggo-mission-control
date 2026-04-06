@@ -339,7 +339,7 @@ function PlatformUpdateTab() {
       const res = await fetch(force ? '/api/update?force=1' : '/api/update');
       const data = await res.json();
       setVersionInfo(data);
-    } catch { /* network error */ }
+    } catch (err) { console.warn('[EnhancedSettingsPanel] Non-critical: network error:', err); }
     setChecking(false);
   };
 
@@ -368,7 +368,7 @@ function PlatformUpdateTab() {
               setUpdateResult({ success: payload.success, message: payload.message });
               if (payload.success) setReloadCountdown(10);
             }
-          } catch { /* ignore malformed */ }
+          } catch (err) { console.warn('[EnhancedSettingsPanel] Non-critical: ignore malformed:', err); }
         }
       }
     } catch (err) {
@@ -546,7 +546,7 @@ function SessionsManagementSection() {
         setSessions(data.sessions || []);
         setSummary(data.summary || null);
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.warn('[EnhancedSettingsPanel] Non-critical:', err); }
     setLoading(false);
   }, []);
 
@@ -562,7 +562,8 @@ function SessionsManagementSection() {
         showToast('Session deleted', 'success');
         fetchSessions(); // refresh summary
       }
-    } catch {
+    } catch (err) {
+      console.warn('[EnhancedSettingsPanel] Non-critical:', err);
       showToast('Failed to delete session', 'error');
     }
     setDeletingKey(null);
@@ -591,7 +592,8 @@ function SessionsManagementSection() {
           showToast('Session exported', 'success');
         }
       }
-    } catch {
+    } catch (err) {
+      console.warn('[EnhancedSettingsPanel] Non-critical:', err);
       showToast('Failed to export session', 'error');
     }
     setExportingKey(null);
@@ -752,7 +754,7 @@ function PlatformInfoSection() {
             modulesTotal: data.modulesTotal ?? 0,
           });
         }
-      } catch { /* silent */ }
+      } catch (err) { console.warn('[EnhancedSettingsPanel] Non-critical: silent:', err); }
       setLoading(false);
     })();
   }, []);
@@ -833,7 +835,7 @@ function AgentPlatformSection() {
           if (data['clara.reviewStrictness']) setClaraStrictness(data['clara.reviewStrictness'] as 'lenient' | 'standard' | 'strict');
           if (data['clara.autoDispatch'] !== undefined) setClaraAutoDispatch(data['clara.autoDispatch'] !== 'false');
         }
-      } catch { /* silent */ }
+      } catch (err) { console.warn('[EnhancedSettingsPanel] Non-critical: silent:', err); }
       setLoaded(true);
     })();
   }, []);
@@ -856,7 +858,8 @@ function AgentPlatformSection() {
         }),
       });
       showToast('success', 'Platform settings saved');
-    } catch {
+    } catch (err) {
+      console.warn('[EnhancedSettingsPanel] Non-critical:', err);
       showToast('error', 'Failed to save platform settings');
     }
     setPlatformSaving(false);
@@ -985,7 +988,7 @@ function TokenBudgetSection() {
           const usage = await usageRes.json() as { totalCost?: number };
           if (typeof usage.totalCost === 'number') setCurrentCost(usage.totalCost);
         }
-      } catch { /* silent */ }
+      } catch (err) { console.warn('[EnhancedSettingsPanel] Non-critical: silent:', err); }
       setLoaded(true);
     })();
   }, []);
@@ -1000,7 +1003,8 @@ function TokenBudgetSection() {
       });
       if (res.ok) showToast('success', 'Token budget saved');
       else showToast('error', 'Failed to save budget');
-    } catch {
+    } catch (err) {
+      console.warn('[EnhancedSettingsPanel] Non-critical:', err);
       showToast('error', 'Failed to save budget');
     }
     setSaving(false);
@@ -1141,7 +1145,8 @@ function ApiKeysSection() {
         body: JSON.stringify({ value: values[id] }),
       });
       showToast('success', 'API key saved to keychain');
-    } catch {
+    } catch (err) {
+      console.warn('[EnhancedSettingsPanel] Non-critical:', err);
       showToast('error', 'Failed to save key');
     }
     setSaving(p => ({ ...p, [id]: false }));
@@ -1152,7 +1157,8 @@ function ApiKeysSection() {
       await fetch(`/api/settings/${id}`, { method: 'DELETE' });
       setValues(p => { const n = { ...p }; delete n[id]; return n; });
       showToast('success', 'Key removed');
-    } catch {
+    } catch (err) {
+      console.warn('[EnhancedSettingsPanel] Non-critical:', err);
       showToast('error', 'Failed to remove key');
     }
   };
@@ -1242,7 +1248,8 @@ function DangerZoneSection() {
       const tasks = await res.json() as { id: string }[];
       await Promise.allSettled(tasks.map(t => fetch(`/api/tasks/${t.id}`, { method: 'DELETE' })));
       showToast('success', `Cleared ${tasks.length} completed tasks`);
-    } catch {
+    } catch (err) {
+      console.warn('[EnhancedSettingsPanel] Non-critical:', err);
       showToast('error', 'Failed to clear tasks');
     }
     setClearing(false);
@@ -1254,7 +1261,8 @@ function DangerZoneSection() {
       const res = await fetch('/api/settings/reset-circuits', { method: 'POST' });
       const data = await res.json();
       showToast('success', data.message || 'Circuit breakers reset');
-    } catch {
+    } catch (err) {
+      console.warn('[EnhancedSettingsPanel] Non-critical:', err);
       showToast('error', 'Failed to reset circuits');
     }
     setResetting(false);
@@ -1276,7 +1284,8 @@ function DangerZoneSection() {
       anchor.click();
       URL.revokeObjectURL(url);
       showToast('success', 'Data exported');
-    } catch {
+    } catch (err) {
+      console.warn('[EnhancedSettingsPanel] Non-critical:', err);
       showToast('error', 'Export failed');
     }
     setExporting(false);
@@ -1361,7 +1370,7 @@ function AutomationExecutionSection() {
           if (data['automation.enabled'] !== undefined) setAutomationEnabled(data['automation.enabled'] !== 'false');
           if (data['automation.maxConcurrent']) setMaxConcurrentAutomations(parseInt(data['automation.maxConcurrent']) || 3);
         }
-      } catch { /* silent */ }
+      } catch (err) { console.warn('[EnhancedSettingsPanel] Non-critical: silent:', err); }
       setLoaded(true);
     })();
   }, []);
@@ -1378,7 +1387,8 @@ function AutomationExecutionSection() {
         }),
       });
       showToast('success', 'Automation settings saved');
-    } catch {
+    } catch (err) {
+      console.warn('[EnhancedSettingsPanel] Non-critical:', err);
       showToast('error', 'Failed to save automation settings');
     }
     setSaving(false);

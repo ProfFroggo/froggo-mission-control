@@ -278,9 +278,9 @@ export default function BlockInspector() {
           onClick={() => { removeBlock(selectedBlockId!); selectBlock(null); }}
           className="flex-1 text-xs font-medium py-2 rounded-lg transition-colors"
           style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            color: '#ef4444',
-            border: '1px solid rgba(239, 68, 68, 0.2)',
+            background: 'var(--color-error-bg)',
+            color: 'var(--color-error)',
+            border: '1px solid var(--color-error-border)',
           }}
         >
           Delete Block
@@ -310,7 +310,8 @@ function SubtaskListField({
   try {
     const parsed = JSON.parse(value);
     subtasks = Array.isArray(parsed) ? parsed : [];
-  } catch {
+  } catch (err) {
+    console.warn('[BlockInspector] Non-critical:', err);
     subtasks = [];
   }
 

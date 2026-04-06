@@ -92,7 +92,8 @@ export async function GET(request: NextRequest) {
       try {
         const content = readFileSync(filePath, 'utf8');
         return NextResponse.json({ success: true, content, mimeType: mime });
-      } catch {
+      } catch (err) {
+        console.warn('[library] Non-critical:', err);
         return NextResponse.json({ success: false, error: 'Could not read file' }, { status: 500 });
       }
     }
@@ -171,7 +172,7 @@ export async function GET(request: NextRequest) {
           try {
             const raw = file.tags as string | undefined;
             if (raw) fileTags = (JSON.parse(raw) as string[]).map(t => t.toLowerCase());
-          } catch { /* malformed tags — skip */ }
+          } catch (err) { console.warn('[library] Non-critical: malformed tags — skip:', err); }
           return filterTags.some(ft => fileTags.includes(ft));
         });
       }

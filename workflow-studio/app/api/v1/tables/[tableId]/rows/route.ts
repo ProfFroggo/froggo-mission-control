@@ -206,7 +206,8 @@ export async function GET(request: NextRequest, { params }: TableRowsRouteParams
       if (sortParam) {
         sort = JSON.parse(sortParam) as Sort
       }
-    } catch {
+    } catch (err) {
+      console.warn('[v1/tables/[tableId]/rows] Non-critical:', err);
       return NextResponse.json({ error: 'Invalid filter or sort JSON' }, { status: 400 })
     }
 
@@ -321,7 +322,8 @@ export async function POST(request: NextRequest, { params }: TableRowsRouteParam
     let body: unknown
     try {
       body = await request.json()
-    } catch {
+    } catch (err) {
+      console.warn('[v1/tables/[tableId]/rows] Non-critical:', err);
       return NextResponse.json({ error: 'Request body must be valid JSON' }, { status: 400 })
     }
 
@@ -425,7 +427,8 @@ export async function PUT(request: NextRequest, { params }: TableRowsRouteParams
     let body: unknown
     try {
       body = await request.json()
-    } catch {
+    } catch (err) {
+      console.warn('[v1/tables/[tableId]/rows] Non-critical:', err);
       return NextResponse.json({ error: 'Request body must be valid JSON' }, { status: 400 })
     }
 
@@ -523,7 +526,8 @@ export async function DELETE(request: NextRequest, { params }: TableRowsRoutePar
     let body: unknown
     try {
       body = await request.json()
-    } catch {
+    } catch (err) {
+      console.warn('[v1/tables/[tableId]/rows] Non-critical:', err);
       return NextResponse.json({ error: 'Request body must be valid JSON' }, { status: 400 })
     }
 

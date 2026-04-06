@@ -63,7 +63,8 @@ export async function GET(req: NextRequest) {
             LIMIT 20
           `).all(safeQuery, ...filterParams) as Record<string, unknown>[];
         }
-      } catch {
+      } catch (err) {
+        console.warn('[knowledge] Non-critical:', err);
         // FTS unavailable or query still failed — fall back to LIKE with filters
         const likeClauses: string[] = ['(title LIKE ? OR content LIKE ? OR tags LIKE ?)'];
         const likeParams: unknown[] = [`%${search}%`, `%${search}%`, `%${search}%`];

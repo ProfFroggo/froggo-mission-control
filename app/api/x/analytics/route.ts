@@ -22,7 +22,7 @@ export async function GET() {
     });
 
     return NextResponse.json({
-      ok: true,
+      success: true,
       profile: me.data,
       tweets: timeline.data.data ?? [],
     });

@@ -437,7 +437,8 @@ export function XContentCalendar() {
       if (!res.ok) throw new Error('Failed to load');
       const data = await res.json();
       setPosts(data.posts ?? []);
-    } catch {
+    } catch (err) {
+      console.warn('[XContentCalendar] Non-critical:', err);
       showToast('error', 'Error', 'Failed to load scheduled posts');
     } finally {
       setLoading(false);
@@ -477,7 +478,8 @@ export function XContentCalendar() {
       if (!res.ok) throw new Error('Failed to create');
       showToast('success', 'Scheduled', 'Post added to calendar');
       await loadPosts();
-    } catch {
+    } catch (err) {
+      console.warn('[XContentCalendar] Non-critical:', err);
       showToast('error', 'Error', 'Failed to schedule post');
       throw new Error('failed');
     }
@@ -490,7 +492,8 @@ export function XContentCalendar() {
       setPosts((prev) => prev.filter((p) => p.id !== id));
       setSelectedPost(null);
       showToast('success', 'Deleted', 'Post removed from calendar');
-    } catch {
+    } catch (err) {
+      console.warn('[XContentCalendar] Non-critical:', err);
       showToast('error', 'Error', 'Failed to delete post');
     }
   };
@@ -507,7 +510,8 @@ export function XContentCalendar() {
       setPosts((prev) => prev.map((p) => (p.id === id ? data.post : p)));
       if (selectedPost?.id === id) setSelectedPost(data.post);
       showToast('success', 'Updated', `Status changed to ${status}`);
-    } catch {
+    } catch (err) {
+      console.warn('[XContentCalendar] Non-critical:', err);
       showToast('error', 'Error', 'Failed to update status');
     }
   };
@@ -538,7 +542,8 @@ export function XContentCalendar() {
       const data = await res.json();
       setPosts((prev) => prev.map((p) => (p.id === post.id ? data.post : p)));
       showToast('success', 'Rescheduled', `Moved to ${day.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}`);
-    } catch {
+    } catch (err) {
+      console.warn('[XContentCalendar] Non-critical:', err);
       showToast('error', 'Error', 'Failed to reschedule post');
     }
   };

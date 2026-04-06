@@ -237,7 +237,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     try {
       const saved = localStorage.getItem('kanban.sort');
       if (saved) return saved as GlobalSortOption;
-    } catch { /* ignore */ }
+    } catch (err) { console.warn('[Kanban] Non-critical:', err); }
     return 'newest';
   });
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -249,7 +249,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     try {
       const raw = localStorage.getItem('kanban.saved-views');
       if (raw) return JSON.parse(raw) as SavedView[];
-    } catch { /* ignore */ }
+    } catch (err) { console.warn('[Kanban] Non-critical:', err); }
     return [];
   });
   const [showSaveViewDialog, setShowSaveViewDialog] = useState(false);
@@ -300,7 +300,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
 
   // Persist global sort to localStorage
   useEffect(() => {
-    try { localStorage.setItem('kanban.sort', globalSort); } catch { /* ignore */ }
+    try { localStorage.setItem('kanban.sort', globalSort); } catch (err) { console.warn('[Kanban] Non-critical:', err); }
   }, [globalSort]);
 
   // Focus the currently selected (or first) menu item when the sort menu opens
@@ -524,7 +524,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     const view: SavedView = { name, filters, globalSort, savedAt: Date.now() };
     const updated = [...savedViews.filter(v => v.name !== name), view];
     setSavedViews(updated);
-    try { localStorage.setItem('kanban.saved-views', JSON.stringify(updated)); } catch { /* ignore */ }
+    try { localStorage.setItem('kanban.saved-views', JSON.stringify(updated)); } catch (err) { console.warn('[Kanban] Non-critical:', err); }
     setNewViewName('');
     setShowSaveViewDialog(false);
   };
@@ -532,7 +532,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
   const deleteSavedView = (name: string) => {
     const updated = savedViews.filter(v => v.name !== name);
     setSavedViews(updated);
-    try { localStorage.setItem('kanban.saved-views', JSON.stringify(updated)); } catch { /* ignore */ }
+    try { localStorage.setItem('kanban.saved-views', JSON.stringify(updated)); } catch (err) { console.warn('[Kanban] Non-critical:', err); }
   };
 
   const applySavedView = (view: SavedView) => {
@@ -760,7 +760,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
         try {
           await taskApi.update(t.id, { status: 'archived' });
           archivedCount++;
-        } catch { /* skip failed */ }
+        } catch (err) { console.warn('[Kanban] Non-critical: skip failed:', err); }
       }
       showToast('success', `Archived ${archivedCount} done tasks`);
       await loadTasksFromDB();
@@ -792,7 +792,8 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
     try {
       await taskApi.update(taskId, { title: newTitle.trim() });
       updateTask(taskId, { title: newTitle.trim() });
-    } catch {
+    } catch (err) {
+      console.warn('[Kanban] Non-critical:', err);
       showToast('error', 'Failed to update title');
     }
   }, [updateTask]);
@@ -847,7 +848,8 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
       setSelectedIds(new Set());
       setLastSelectedId(null);
       showToast('success', `Marked ${result.updated} task${result.updated !== 1 ? 's' : ''} as done`);
-    } catch {
+    } catch (err) {
+      console.warn('[Kanban] Non-critical:', err);
       showToast('error', 'Bulk update failed');
     } finally {
       setIsBulkUpdating(false);
@@ -864,7 +866,8 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
       setSelectedIds(new Set());
       setLastSelectedId(null);
       showToast('success', `Assigned ${result.updated} task${result.updated !== 1 ? 's' : ''}`);
-    } catch {
+    } catch (err) {
+      console.warn('[Kanban] Non-critical:', err);
       showToast('error', 'Bulk assign failed');
     } finally {
       setIsBulkUpdating(false);
@@ -881,7 +884,8 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
       setSelectedIds(new Set());
       setLastSelectedId(null);
       showToast('success', `Deleted ${result.updated} task${result.updated !== 1 ? 's' : ''}`);
-    } catch {
+    } catch (err) {
+      console.warn('[Kanban] Non-critical:', err);
       showToast('error', 'Bulk delete failed');
     } finally {
       setIsBulkDeleting(false);
@@ -1675,7 +1679,7 @@ export default function Kanban({ projectId, projectName, onNewTask }: KanbanProp
               try {
                 await taskApi.update(t.id, { status: 'archived' });
                 archivedCount++;
-              } catch { /* skip failed */ }
+              } catch (err) { console.warn('[Kanban] Non-critical: skip failed:', err); }
             }
             showToast('success', `Archived ${archivedCount} done tasks`);
             await loadTasksFromDB();

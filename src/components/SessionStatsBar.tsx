@@ -45,7 +45,7 @@ export default function SessionStatsBar({
     try {
       const res = await fetch(`/api/sessions/stats?key=${encodeURIComponent(sessionKey)}`);
       if (res.ok) setStats(await res.json());
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[SessionStatsBar] Non-critical:', err); }
   }, [sessionKey]);
 
   useEffect(() => {

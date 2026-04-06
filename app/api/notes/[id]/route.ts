@@ -29,7 +29,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const updated = db.prepare('SELECT * FROM notes WHERE id = ?').get(id);
     return NextResponse.json(updated);
   } catch (err: unknown) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -41,8 +41,8 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     const result = db.prepare('DELETE FROM notes WHERE id = ?').run(id);
     if (result.changes === 0) return NextResponse.json({ error: 'Note not found' }, { status: 404 });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (err: unknown) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

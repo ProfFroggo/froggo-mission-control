@@ -27,7 +27,7 @@ function parseRgJson(ndjson: string, limit: number): Array<{ file: string; excer
       seen.add(file);
       const excerpt = (obj.data?.lines?.text ?? '').slice(0, 500);
       results.push({ file, excerpt });
-    } catch { /* malformed line */ }
+    } catch (err) { console.warn('[memory/search] Non-critical: malformed line:', err); }
   }
   return results;
 }
@@ -55,10 +55,10 @@ function grepVault(query: string, limit: number): Array<{ file: string; excerpt:
                 excerpt: content.slice(0, 500),
               });
             }
-          } catch { /* skip unreadable */ }
+          } catch (err) { console.warn('[memory/search] Non-critical: skip unreadable:', err); }
         }
       }
-    } catch { /* skip unreadable directory */ }
+    } catch (err) { console.warn('[memory/search] Non-critical: skip unreadable directory:', err); }
   }
 
   walk(VAULT_PATH);

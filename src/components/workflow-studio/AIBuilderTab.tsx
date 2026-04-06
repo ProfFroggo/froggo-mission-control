@@ -46,7 +46,9 @@ export default function AIBuilderTab({ onSwitchToCanvas }: AIBuilderTabProps) {
     try {
       const parsed = JSON.parse(match[1]);
       if (parsed.version && Array.isArray(parsed.blocks)) return parsed;
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[AIBuilderTab] Failed to parse workflow JSON from response:', err);
+    }
     return null;
   }, []);
 

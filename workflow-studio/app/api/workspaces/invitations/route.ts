@@ -210,7 +210,8 @@ export async function POST(req: NextRequest) {
         inviteeEmail: email,
         role: permission,
       })
-    } catch {
+    } catch (err) {
+      console.warn('[workspaces/invitations] Non-critical:', err);
       // Telemetry should not fail the operation
     }
 

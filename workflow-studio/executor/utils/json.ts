@@ -53,7 +53,8 @@ export function parseObjectStrings(data: unknown): unknown {
         return parseObjectStrings(parsed)
       }
       return parsed
-    } catch {
+    } catch (err) {
+      console.warn('[ws/executor/utils/json] Non-critical:', err);
       return data
     }
   } else if (Array.isArray(data)) {

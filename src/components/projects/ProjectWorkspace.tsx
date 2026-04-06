@@ -151,13 +151,13 @@ function OverviewTab({
                   activityResults.push({ ...a, taskTitle: t.title });
                 }
               }
-            } catch { /* non-critical */ }
+            } catch (err) { console.warn('[ProjectWorkspace] Non-critical:', err); }
           })
         );
         activityResults.sort((a, b) => b.timestamp - a.timestamp);
         setActivity(activityResults.slice(0, 5));
       })
-      .catch(() => {})
+      .catch(err => console.warn('[ProjectWorkspace] Non-critical:', err))
       .finally(() => setActivityLoading(false));
   }, [project.id]);
 
@@ -261,7 +261,8 @@ function MilestonesSection({ project }: { project: Project }) {
     try {
       const data = await projectsApi.getMilestones(project.id);
       setMilestones(data);
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectWorkspace] Non-critical:', err);
       setMilestones([]);
     } finally {
       setLoading(false);
@@ -283,7 +284,8 @@ function MilestonesSection({ project }: { project: Project }) {
       setAdding(false);
       await load();
       showToast('Milestone added', 'success');
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectWorkspace] Non-critical:', err);
       showToast('Failed to add milestone', 'error');
     } finally {
       setSaving(false);
@@ -296,7 +298,8 @@ function MilestonesSection({ project }: { project: Project }) {
       setMilestones(prev => prev.map(m =>
         m.id === ms.id ? { ...m, completed: ms.completed ? 0 : 1, completedAt: ms.completed ? undefined : Date.now() } : m
       ));
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectWorkspace] Non-critical:', err);
       showToast('Failed to update milestone', 'error');
     }
   };
@@ -305,7 +308,8 @@ function MilestonesSection({ project }: { project: Project }) {
     try {
       await projectsApi.deleteMilestone(project.id, ms.id);
       setMilestones(prev => prev.filter(m => m.id !== ms.id));
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectWorkspace] Non-critical:', err);
       showToast('Failed to delete milestone', 'error');
     }
   };
@@ -454,7 +458,8 @@ function ContextEditor({ project }: { project: Project }) {
     try {
       await projectsApi.uploadFile(project.id, 'CONTEXT.md', value);
       setLastSaved(Date.now());
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectWorkspace] Non-critical:', err);
       showToast('Failed to save CONTEXT.md', 'error');
     } finally {
       setSaving(false);
@@ -590,7 +595,8 @@ function AutomationsTab({ project }: { project: Project }) {
         } catch { return false; }
       });
       setItems(filtered);
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectWorkspace] Non-critical:', err);
       setItems([]);
     } finally {
       setLoading(false);
@@ -618,7 +624,8 @@ function AutomationsTab({ project }: { project: Project }) {
       setShowForm(false);
       await load();
       showToast('Automation added', 'success');
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectWorkspace] Non-critical:', err);
       showToast('Failed to add automation', 'error');
     } finally {
       setSaving(false);
@@ -747,7 +754,7 @@ function ApprovalsTab({ project }: { project: Project }) {
         return meta.projectId === project.id || taskIds.has(meta.taskId as string);
       });
       setApprovals(filtered);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[ProjectWorkspace] Non-critical:', err); }
     finally { setLoading(false); }
   }, [project.id]);
 
@@ -763,7 +770,7 @@ function ApprovalsTab({ project }: { project: Project }) {
       });
       setApprovals(prev => prev.filter(a => a.id !== id));
       setFeedback(prev => { const n = { ...prev }; delete n[id]; return n; });
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[ProjectWorkspace] Non-critical:', err); }
     finally { setResponding(prev => { const n = new Set(prev); n.delete(id); return n; }); }
   };
 
@@ -903,7 +910,7 @@ function FileArtifactDashboard({ files, loading, projectId, onRefresh }: {
                     const css = await cssRes.text();
                     text = text.replace(tag, `<style>${css}</style>`);
                   }
-                } catch { /* keep original link */ }
+                } catch (err) { console.warn('[ProjectWorkspace] Non-critical: keep original link:', err); }
               }
             }
 
@@ -921,7 +928,8 @@ function FileArtifactDashboard({ files, loading, projectId, onRefresh }: {
       } else {
         setPreviewContent('Unable to load preview — file may not exist on disk');
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectWorkspace] Non-critical:', err);
       setPreviewContent('Unable to load preview');
     } finally {
       setPreviewLoading(false);
@@ -1052,7 +1060,8 @@ function FilesTab({ project }: { project: Project }) {
     try {
       const data = await projectsApi.getFiles(project.id);
       setFiles(data);
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectWorkspace] Non-critical:', err);
       setFiles([]);
     } finally {
       setLoading(false);
@@ -1076,7 +1085,8 @@ function FilesTab({ project }: { project: Project }) {
       await projectsApi.uploadFile(project.id, file.name, text, 'utf-8');
       await load();
       showToast(`${file.name} uploaded`, 'success');
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectWorkspace] Non-critical:', err);
       showToast('Upload failed', 'error');
     } finally {
       setUploading(false);
@@ -1107,7 +1117,8 @@ function FilesTab({ project }: { project: Project }) {
           setMemoryResults([]);
         }
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectWorkspace] Non-critical:', err);
       setMemoryResults([]);
     } finally {
       setMemoryLoading(false);
@@ -1234,7 +1245,8 @@ function ProjectSettings({
       onUpdated(updated as Project);
       setEditing(false);
       showToast('Project updated', 'success');
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectWorkspace] Non-critical:', err);
       showToast('Update failed', 'error');
     } finally {
       setSaving(false);
@@ -1247,7 +1259,8 @@ function ProjectSettings({
       await projectsApi.archive(project.id);
       onArchived();
       showToast('Project archived', 'success');
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectWorkspace] Non-critical:', err);
       showToast('Archive failed', 'error');
     }
   };
@@ -1395,8 +1408,8 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
       const loadedMembers = (data as any).members ?? [];
       setMembers(loadedMembers);
       updateRoomAgents(projectRoomId, loadedMembers.map((m: ProjectMember) => m.agentId));
-    }).catch(() => {});
-    agentApi.getAll().then(setAgents).catch(() => {});
+    }).catch(err => console.warn('[ProjectWorkspace] Non-critical:', err));
+    agentApi.getAll().then(setAgents).catch(err => console.warn('[ProjectWorkspace] Non-critical:', err));
   }, [project.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddMember = async (agentId: string) => {
@@ -1408,7 +1421,8 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
       setMembers(newMembers);
       updateRoomAgents(projectRoomId, newMembers.map((m: ProjectMember) => m.agentId));
       showToast('Agent added to project', 'success');
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectWorkspace] Non-critical:', err);
       showToast('Failed to add agent', 'error');
     } finally {
       setAddingAgent(null);
@@ -1423,7 +1437,8 @@ export default function ProjectWorkspace({ project: initialProject, onBack, onUp
         updateRoomAgents(projectRoomId, next.map(m => m.agentId));
         return next;
       });
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectWorkspace] Non-critical:', err);
       showToast('Failed to remove agent', 'error');
     }
   };

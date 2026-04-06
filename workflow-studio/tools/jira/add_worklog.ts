@@ -153,7 +153,7 @@ export const jiraAddWorklogTool: ToolConfig<JiraAddWorklogParams, JiraAddWorklog
         try {
           const err = await worklogResponse.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/add_worklog] Non-critical:', _e); }
         throw new Error(message)
       }
 
@@ -171,7 +171,7 @@ export const jiraAddWorklogTool: ToolConfig<JiraAddWorklogParams, JiraAddWorklog
         try {
           const err = await response.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/add_worklog] Non-critical:', _e); }
         throw new Error(message)
       }
       data = await response.json()

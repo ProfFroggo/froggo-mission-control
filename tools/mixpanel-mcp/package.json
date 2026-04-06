@@ -1,0 +1,17 @@
+{
+  "name": "mixpanel-mcp",
+  "version": "1.0.0",
+  "description": "Mission Control Mixpanel MCP server — service-account auth, no OAuth",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "@types/node": "latest"
+  }
+}

@@ -274,35 +274,39 @@ export async function POST(request: NextRequest) {
     try {
       db.prepare(`UPDATE catalog_agents SET installed = 1, avatar = COALESCE(?, avatar), updatedAt = ? WHERE id = ?`)
         .run(avatarPath, Date.now(), id);
-    } catch {
+    } catch (err) {
+      console.warn('[agents/hire] Non-critical:', err);
       try {
         db.prepare(`UPDATE catalog_agents SET installed = 1, avatar = COALESCE(?, avatar), updated_at = ? WHERE id = ?`)
           .run(avatarPath, Date.now(), id);
-      } catch { /* non-critical — catalog will sync on next restart */ }
+      } catch (err) { console.warn('[agents/hire] Non-critical: catalog will sync on next restart', err); }
     }
 
     // Seed presets from catalog JSON (model, trust_tier, skills, tools, apiKeys)
     // Uses ON CONFLICT DO NOTHING so re-hires never overwrite user customizations
     try {
-      const catalogJsonPath = join(CATALOG_DIR, 'agents', `${id}.json`);
-      if (existsSync(catalogJsonPath)) {
+      const catalogFlatPath = join(CATALOG_DIR, 'agents', `${id}.json`);
+      const catalogPkgPath = join(CATALOG_DIR, 'agents', id, 'manifest.json');
+      const catalogJsonPath = existsSync(catalogFlatPath) ? catalogFlatPath : existsSync(catalogPkgPath) ? catalogPkgPath : null;
+      if (catalogJsonPath) {
         const catalogJson = JSON.parse(readFileSync(catalogJsonPath, 'utf-8'));
-        const { requiredSkills, requiredTools, requiredApis, model: catalogModel, permissionMode } = catalogJson;
+        const { requiredSkills, requiredTools, requiredApis, model: catalogModel, permissionMode, trust_tier: explicitTier } = catalogJson;
 
-        // Set model from catalog if not already set
+        // Set model from catalog — override default 'sonnet' if catalog specifies a different model
         if (catalogModel) {
-          db.prepare(`UPDATE agents SET model = ? WHERE id = ? AND (model IS NULL OR model = '')`)
+          db.prepare(`UPDATE agents SET model = ? WHERE id = ? AND (model IS NULL OR model = '' OR model = 'sonnet')`)
             .run(catalogModel, id);
         }
 
-        // Map permissionMode → trust_tier
+        // Prefer explicit trust_tier from manifest over permissionMode mapping
+        // Override default 'apprentice' if catalog specifies a different tier
         const tierMap: Record<string, string> = {
           bypassPermissions: 'worker',
           acceptEdits: 'apprentice',
           default: 'apprentice',
         };
-        const trustTier = tierMap[permissionMode as string] ?? 'apprentice';
-        db.prepare(`UPDATE agents SET trust_tier = ? WHERE id = ? AND (trust_tier IS NULL OR trust_tier = '')`)
+        const trustTier = explicitTier ?? tierMap[permissionMode as string] ?? 'apprentice';
+        db.prepare(`UPDATE agents SET trust_tier = ? WHERE id = ? AND (trust_tier IS NULL OR trust_tier = '' OR trust_tier = 'apprentice')`)
           .run(trustTier, id);
 
         // Seed skills, tools, apiKeys into settings — never overwrite existing
@@ -328,7 +332,7 @@ export async function POST(request: NextRequest) {
           seedSetting.run(`agent.${id}.apiKeys`, JSON.stringify(requiredApis));
         }
       }
-    } catch { /* non-critical — presets can always be set manually in manage modal */ }
+    } catch (err) { console.warn('[agents/hire] Non-critical: presets can always be set manually in manage modal', err); }
 
     // Post-hire onboarding: create welcome inbox message
     try {
@@ -338,7 +342,7 @@ export async function POST(request: NextRequest) {
         INSERT INTO inbox (type, title, content, context, status, createdAt, metadata)
         VALUES ('system', ?, ?, ?, 'unread', ?, '{}')
       `).run('Welcome to the team', welcomeBody, null, now);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[agents/hire] Non-critical:', err); }
 
     // Emit SSE events
     emitSSEEvent('agent.hired', { agentId: id, name, role: role || 'Agent' });

@@ -144,7 +144,7 @@ async function deregisterSSOProvider(): Promise<boolean> {
   } finally {
     try {
       await postgresClient.end({ timeout: 5 })
-    } catch {}
+    } catch (err) { console.warn('[ws/_db/scripts/deregister-sso-provider] Non-critical:', err); }
   }
 }
 

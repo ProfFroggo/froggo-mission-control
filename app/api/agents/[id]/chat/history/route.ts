@@ -26,7 +26,8 @@ export async function GET(
     `).all(sessionKey, limit) as { role: string; content: string; timestamp: number }[];
 
     return NextResponse.json({ messages, sessionKey });
-  } catch {
+  } catch (err) {
+    console.warn('[agents/[id]/chat/history] Non-critical:', err);
     return NextResponse.json({ messages: [], sessionKey });
   }
 }

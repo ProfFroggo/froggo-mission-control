@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Button, IconButton, TextField, TextArea, Flex } from '@radix-ui/themes';
-import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, Image, File, Search, Settings, Pin, Reply, ChevronDown, MessageCircle, PanelRight } from 'lucide-react';
+import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, FileCode2, Image, File, Search, Settings, Pin, Reply, ChevronDown, MessageCircle, PanelRight, Network, Database } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import MentionText from './MentionText';
@@ -23,7 +23,6 @@ import {
   groupParsedItems,
   ThinkingBlock,
   ToolGroupBlock,
-  MarkdownText,
 } from './chat/ThreadStyles';
 
 interface AttachedFile {
@@ -58,6 +57,22 @@ function formatToolName(name: string): string {
   return last.replace(/_/g, ' ');
 }
 
+/** Extract plain text from JSON-serialized content blocks so artifact detection sees real newlines */
+function extractTextForArtifacts(content: string): string {
+  try {
+    if (content.startsWith('[')) {
+      const blocks = JSON.parse(content);
+      if (Array.isArray(blocks) && blocks[0]?.type) {
+        return blocks
+          .filter((b: any) => b.type === 'text' && b.text)
+          .map((b: any) => b.text)
+          .join('\n');
+      }
+    }
+  } catch { /* not JSON, use as-is */ }
+  return content;
+}
+
 /** Renders structured agent messages with collapsible thinking/tool blocks — same as main chat */
 function RoomStructuredMessage({ content, streaming, onArtifactOpen }: { content: string; streaming: boolean; onArtifactOpen?: (lang: string, code: string) => void }) {
   ensureCSS();
@@ -73,7 +88,58 @@ function RoomStructuredMessage({ content, streaming, onArtifactOpen }: { content
       {grouped.map((g, i) => {
         if (g.kind === 'thinking') return <ThinkingBlock key={i} text={g.text} />;
         if (g.kind === 'tools') return <ToolGroupBlock key={i} tools={g.tools} hasRunning={g.hasRunning} />;
-        return <MarkdownText key={i} text={g.text} />;
+        return <MarkdownMessage key={i} content={g.text} onArtifactOpen={onArtifactOpen} />;
+      })}
+    </div>
+  );
+}
+
+const ARTIFACT_TYPE_ICONS: Record<string, typeof FileText> = {
+  file: FileCode2, text: FileText, diagram: Network, image: Image, data: Database, code: FileCode2,
+};
+
+/** Shows extracted artifact cards below a room message — matches main chat design */
+function RoomMessageArtifactCards({ messageId }: { messageId: string }) {
+  const allArtifacts = useArtifactStore(s => s.artifacts);
+  const { selectArtifact, setCollapsed } = useArtifactStore();
+  const messageArtifacts = useMemo(
+    () => allArtifacts.filter(a => a.messageId === messageId),
+    [allArtifacts, messageId]
+  );
+
+  if (messageArtifacts.length === 0) return null;
+
+  return (
+    <div className="mt-1.5 space-y-1">
+      {messageArtifacts.map(artifact => {
+        const Icon = ARTIFACT_TYPE_ICONS[artifact.type] ?? FileText;
+        const lang = artifact.metadata?.language?.toUpperCase();
+        const typeLabel = [artifact.type.charAt(0).toUpperCase() + artifact.type.slice(1), lang].filter(Boolean).join(' \u00b7 ');
+        return (
+          <div
+            key={artifact.id}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-mission-control-border bg-mission-control-surface hover:border-mission-control-accent/30 transition-colors cursor-pointer select-none"
+            onClick={() => { setCollapsed(false); selectArtifact(artifact.id); }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { setCollapsed(false); selectArtifact(artifact.id); } }}
+          >
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border border-mission-control-border bg-mission-control-bg">
+              <Icon size={16} className="text-mission-control-accent" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-semibold leading-snug truncate text-mission-control-text">{artifact.title}</div>
+              <div className="text-[11px] text-mission-control-text-dim">{typeLabel}</div>
+            </div>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setCollapsed(false); selectArtifact(artifact.id); }}
+              className="px-3 py-1.5 rounded-lg text-[12px] font-medium bg-mission-control-accent/10 text-mission-control-accent border border-mission-control-accent/20 hover:bg-mission-control-accent/20 transition-colors flex-shrink-0"
+            >
+              Open
+            </button>
+          </div>
+        );
       })}
     </div>
   );
@@ -88,13 +154,13 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
   const [loading, setLoading] = useState(false);
   const [queuedMessage, setQueuedMessage] = useState<string | null>(null);
   const { open, config, onConfirm, showConfirm, closeConfirm } = useConfirmDialog();
-  // Auto-extract artifacts from messages
+  // Auto-extract artifacts from messages — pre-process JSON blocks so code fences have real newlines
   const projectId = roomId.startsWith('project-') ? roomId.slice('project-'.length) : undefined;
   useArtifactExtraction(
     room?.messages.map(m => ({
       id: m.id,
       role: m.role === 'user' ? 'user' : 'assistant',
-      content: m.content,
+      content: extractTextForArtifacts(m.content),
       timestamp: m.timestamp,
       streaming: m.streaming,
     })) || [],
@@ -163,13 +229,13 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'join', roomId, userId: 'user', name: 'You' }),
-    }).then(r => r.json()).then(d => setPresenceUsers(d.users ?? [])).catch(() => {});
+    }).then(r => r.json()).then(d => setPresenceUsers(d.users ?? [])).catch(err => console.warn('[ChatRoomView] Non-critical:', err));
     return () => {
       fetch('/api/chat/presence', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'leave', roomId, userId: 'user' }),
-      }).catch(() => {});
+      }).catch(err => console.warn('[ChatRoomView] Non-critical:', err));
     };
   }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -221,7 +287,7 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
           }
         }
         setAgentTaskStatus(map);
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[ChatRoomView] Non-critical:', err); }
     };
 
     fetchStatuses();
@@ -244,7 +310,7 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
             return next;
           });
         }
-      } catch { /* ignore parse errors */ }
+      } catch (err) { console.warn('[ChatRoomView] Non-critical: ignore parse errors:', err); }
     });
     return () => es.close();
   }, [roomId, room?.agents?.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -309,7 +375,8 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
           const base64 = att.dataUrl.split(',')[1];
           const decoded = atob(base64);
           parts.push(`\n\n--- FILE: ${att.name} ---\n\`\`\`\n${decoded}\n\`\`\`\n--- END FILE ---`);
-        } catch {
+        } catch (err) {
+          console.warn('[ChatRoomView] Non-critical:', err);
           parts.push(`\n\n[Attached text file: ${att.name} - could not decode]`);
         }
       } else if (att.type.startsWith('image/')) {
@@ -344,13 +411,14 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
 
   /** Resume agents — re-send the last user message to all room agents */
   const resumeAgents = async () => {
-    if (!room) return;
-    const lastUserMsg = [...room.messages].reverse().find(m => m.role === 'user');
+    const freshRoom = useChatRoomStore.getState().rooms.find(r => r.id === roomId);
+    if (!freshRoom) return;
+    const lastUserMsg = [...freshRoom.messages].reverse().find(m => m.role === 'user');
     if (!lastUserMsg) return;
     setStopped(false);
     setLoading(true);
-    const mentioned = extractMentions(lastUserMsg.content, room.agents);
-    const targets = mentioned.length > 0 ? mentioned : (room.agents.includes('mission-control') ? ['mission-control'] : room.agents);
+    const mentioned = extractMentions(lastUserMsg.content, freshRoom.agents);
+    const targets = mentioned.length > 0 ? mentioned : (freshRoom.agents.includes('mission-control') ? ['mission-control'] : freshRoom.agents);
     await routeToAgents(targets, lastUserMsg.content);
   };
 
@@ -383,19 +451,25 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
     return mentioned;
   };
 
-  /** Build context from recent room messages for an agent */
+  /** Build context from recent room messages for an agent.
+   *  CRITICAL: reads live store state, NOT the stale `room` closure — ensures
+   *  the second agent in a sequential queue sees the first agent's response. */
   const buildContext = (forAgent: string, triggerContent: string, fromAgent?: string): string => {
-    if (!room) return triggerContent;
+    // Read fresh room state from store — the closure-captured `room` is stale during async routeToAgents
+    const currentRoom = useChatRoomStore.getState().rooms.find(r => r.id === roomId);
+    if (!currentRoom) return triggerContent;
     // Include last 15 messages as context
-    const recent = room.messages.slice(-15);
+    const recent = currentRoom.messages.slice(-15);
     const lines = recent.map(m => {
       const sender = m.role === 'user' ? 'Kevin' : (m.agentId ? agentName(m.agentId) : 'Unknown');
-      return `[${sender}]: ${m.content}`;
+      // Extract readable text from structured JSON blocks
+      const text = extractTextForArtifacts(m.content);
+      return `[${sender}]: ${text}`;
     });
     const fromName = fromAgent ? (agentName(fromAgent)) : 'Kevin';
     lines.push(`[${fromName}]: ${triggerContent}`);
 
-    const otherAgents = room.agents.filter(a => a !== forAgent).map(a => agentName(a));
+    const otherAgents = currentRoom.agents.filter(a => a !== forAgent).map(a => agentName(a));
 
     // All agents can use tools in group chats
     const allowTools = true;
@@ -405,12 +479,12 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
       : "1. Respond with a SHORT text message only (1-3 sentences). No tools, no files, no commands.";
 
     const coordinatorRule = forAgent === 'mission-control'
-      ? `\n6. You are the COORDINATOR. You can @tag any agent to pull them into conversation or assign work.
-7. To END a conversation thread, respond WITHOUT any @tags — this signals the discussion is done.
-8. If agents are going back and forth unproductively, rein them in with a final statement (no @tags).`
+      ? `\n7. You are the COORDINATOR. You can @tag any agent to pull them into conversation or assign work.
+8. To END a conversation thread, respond WITHOUT any @tags — this signals the discussion is done.
+9. If agents are going back and forth unproductively, rein them in with a final statement (no @tags).`
       : '';
 
-    return `You are ${agentName(forAgent)} in a multi-agent chat room called "${room.name}".
+    return `You are ${agentName(forAgent)} in a multi-agent chat room called "${currentRoom.name}".
 Other participants: Kevin (human), ${otherAgents.join(', ')}.
 
 IMPORTANT RULES:
@@ -418,8 +492,10 @@ ${toolRule}
 2. Do NOT repeat, echo, or paraphrase what other agents said. Add YOUR OWN unique perspective only.
 3. If you have nothing new to add, just say so briefly.
 4. Do NOT copy another agent's message structure or content.
-5. Only @tag another agent if you have a QUESTION for them. Do NOT @tag when making statements or acknowledgments — untagged responses end the thread.
-6. ARTIFACTS: For any code, files, scripts, or structured data — wrap them in fenced code blocks (\`\`\`language ... \`\`\`). They will be automatically extracted to the Artifact Canvas for the user to view, copy, and download. Use \`\`\`mermaid for diagrams and \`\`\`json for data.${coordinatorRule}
+5. BEFORE building anything, check the conversation history above. If another agent has ALREADY built or is building the same thing, do NOT duplicate their work. Instead, review their output and offer improvements, critique, or complementary work.
+6. Only @tag another agent if you have a QUESTION for them. Do NOT @tag when making statements or acknowledgments — untagged responses end the thread.
+7. ARTIFACTS: For any code, files, scripts, or structured data — wrap them in fenced code blocks (\`\`\`language ... \`\`\`). They will be automatically extracted to the Artifact Canvas for the user to view, copy, and download. Use \`\`\`mermaid for diagrams and \`\`\`json for data.
+8. SAVE DELIVERABLES: When you produce a substantial deliverable (HTML page, script, document, etc.), ALSO save it to the library using the Write tool: \`~/mission-control/library/{descriptive-name}.{ext}\`. This ensures the work is persisted and accessible later. Always save first, then share the content in your message.${coordinatorRule}
 
 ## Conversation so far:
 ${lines.join('\n')}
@@ -553,7 +629,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                   settle();
                   return;
                 }
-              } catch { /* ignore parse errors */ }
+              } catch (err) { console.warn('[ChatRoomView] Non-critical: ignore parse errors:', err); }
             }
           }
           clearTimeout(timer);
@@ -578,9 +654,13 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     });
   };
 
-  /** Route message to specified agents, then forward @mentions between agents */
+  /** Route message to specified agents, then forward @mentions between agents.
+   *  Agents respond SEQUENTIALLY — each sees the previous agent's response in context
+   *  (buildContext reads fresh store state). */
   const routeToAgents = async (initialTargets: string[], content: string, fromAgent?: string) => {
-    if (!room) return;
+    // Read fresh room state for agent list (closure `room` may be stale)
+    const currentRoom = useChatRoomStore.getState().rooms.find(r => r.id === roomId);
+    if (!currentRoom) return;
     const queue: Array<{ agentId: string; content: string; fromAgent?: string }> =
       initialTargets.map(id => ({ agentId: id, content, fromAgent }));
 
@@ -596,7 +676,9 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
 
       // Forward @mentions from agent responses to mentioned agents
       if (responseContent?.trim()) {
-        const mentioned = extractMentions(responseContent, room.agents);
+        const freshRoom = useChatRoomStore.getState().rooms.find(r => r.id === roomId);
+        const roomAgents = freshRoom?.agents ?? currentRoom.agents;
+        const mentioned = extractMentions(responseContent, roomAgents);
         const targets = mentioned.filter(id => id !== next.agentId);
         
         for (const target of targets) {
@@ -1168,6 +1250,8 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                       </div>
                     )}
                   </div>
+                  {/* Artifact cards below message — matches main chat pattern */}
+                  {!isUser && !msg.streaming && <RoomMessageArtifactCards messageId={msg.id} />}
                   <span className="text-[11px] tabular-nums text-mission-control-text-dim/70 mt-1 px-1">{time}</span>
                   {/* Hover action buttons */}
                   <Flex align="center" gap="1" className={`mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'justify-end' : 'justify-start'}`}>

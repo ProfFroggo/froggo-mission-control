@@ -83,7 +83,8 @@ export default function VelocityChart({ weeks = 8 }: Props) {
       await navigator.clipboard.writeText(csv);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } catch (err) {
+      console.warn('[VelocityChart] Non-critical:', err);
       // fallback: do nothing
     }
   }

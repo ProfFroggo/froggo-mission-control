@@ -38,7 +38,8 @@ export function useSettingsNavigation(): UseSettingsNavigationReturn {
       const url = sessionStorage.getItem(SETTINGS_RETURN_URL_KEY)
       sessionStorage.removeItem(SETTINGS_RETURN_URL_KEY)
       return url ?? fallback
-    } catch {
+    } catch (err) {
+      console.warn('[ws/hooks/use-settings-navigation] Non-critical:', err);
       return fallback
     }
   }, [])
@@ -51,7 +52,8 @@ export function useSettingsNavigation(): UseSettingsNavigationReturn {
       } else {
         try {
           sessionStorage.setItem(SETTINGS_RETURN_URL_KEY, currentPath)
-        } catch {
+        } catch (err) {
+          console.warn('[ws/hooks/use-settings-navigation] Non-critical:', err);
           // Ignore storage errors
         }
         router.push(getSettingsHref(options))

@@ -18,7 +18,8 @@ export const sseEmitter: EventEmitter =
 export function emitSSEEvent(event: string, data: Record<string, unknown>): void {
   try {
     sseEmitter.emit('event', { event, data });
-  } catch {
+  } catch (err) {
+    console.warn('[sseEmitter] Non-critical:', err);
     // Non-fatal
   }
 }

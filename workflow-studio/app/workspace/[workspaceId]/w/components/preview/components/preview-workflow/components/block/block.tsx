@@ -369,7 +369,8 @@ function WorkflowPreviewBlockInner({ data }: NodeProps<WorkflowPreviewBlockData>
           })
         }
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/w/components/preview/components/preview-workflow/components/block/blockx] Non-critical:', err);
       /* empty */
     }
 
@@ -404,7 +405,8 @@ function WorkflowPreviewBlockInner({ data }: NodeProps<WorkflowPreviewBlockData>
           })
         }
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/w/components/preview/components/preview-workflow/components/block/blockx] Non-critical:', err);
       /* empty */
     }
 

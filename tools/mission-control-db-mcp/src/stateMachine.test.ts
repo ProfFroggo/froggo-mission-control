@@ -263,6 +263,18 @@ describe('InvalidTransition error shape', () => {
     }
   });
 
+  it('in-progress→review guard failure includes hint and recovery', () => {
+    const result = evaluateTransition(
+      ctx('in-progress', 'review', {}, { totalSubtaskCount: 2, incompleteSubtaskCount: 1 })
+    );
+    expect(result.allowed).toBe(false);
+    if (!result.allowed) {
+      expect(result.guardsFailed).toContain('allSubtasksComplete');
+      expect(result.hint).toMatch(/task_get/i);
+      expect(result.recovery).toMatch(/subtask_update/i);
+    }
+  });
+
   it('allowed result includes guardsPassed array', () => {
     const result = evaluateTransition(ctx('review', 'done', { reviewStatus: 'approved' }));
     expect(result.allowed).toBe(true);

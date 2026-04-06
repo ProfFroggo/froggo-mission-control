@@ -94,7 +94,8 @@ function getDbSize(): string {
     const db = getDb();
     const row = db.prepare("SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()").get() as { size: number } | undefined;
     return formatBytes(row?.size ?? 0);
-  } catch {
+  } catch (err) {
+    console.warn('[health/metrics] Non-critical:', err);
     return 'unknown';
   }
 }
@@ -106,7 +107,8 @@ function measureDbQuery(): { status: 'ok' | 'error'; queryTimeMs: number; size: 
     db.prepare('SELECT 1').get();
     const queryTimeMs = Math.round((performance.now() - start) * 10) / 10;
     return { status: 'ok', queryTimeMs, size: getDbSize() };
-  } catch {
+  } catch (err) {
+    console.warn('[health/metrics] Non-critical:', err);
     return { status: 'error', queryTimeMs: -1, size: 'unknown' };
   }
 }
@@ -124,7 +126,8 @@ function getAgentStats(): { total: number; active: number; idle: number; error: 
     ).get() as { cnt: number })?.cnt ?? 0;
     const idle = Math.max(0, total - active - errorCount);
     return { total, active, idle, error: errorCount };
-  } catch {
+  } catch (err) {
+    console.warn('[health/metrics] Non-critical:', err);
     return { total: 0, active: 0, idle: 0, error: 0 };
   }
 }
@@ -152,7 +155,8 @@ function getTaskStats(): { total: number; completedToday: number; failedToday: n
     const avgDurationMs = Math.round(avgRow?.avg ?? 0);
 
     return { total, completedToday, failedToday, avgDurationMs };
-  } catch {
+  } catch (err) {
+    console.warn('[health/metrics] Non-critical:', err);
     return { total: 0, completedToday: 0, failedToday: 0, avgDurationMs: 0 };
   }
 }
@@ -162,7 +166,8 @@ function getSseClientCount(): { connected: boolean; clientCount: number } {
     // sseEmitter is an EventEmitter — count listeners on the 'event' channel
     const clientCount = sseEmitter.listenerCount('event');
     return { connected: clientCount > 0, clientCount };
-  } catch {
+  } catch (err) {
+    console.warn('[health/metrics] Non-critical:', err);
     return { connected: false, clientCount: 0 };
   }
 }

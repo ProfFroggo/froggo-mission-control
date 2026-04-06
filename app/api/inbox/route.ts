@@ -130,9 +130,9 @@ export async function POST(request: NextRequest) {
         proc.on('error', cleanup);
         // Kill runaway processes after 5 minutes
         const killTimer = setTimeout(() => {
-          try { proc.kill('SIGTERM'); } catch { /* already exited */ }
+          try { proc.kill('SIGTERM'); } catch (err) { console.warn('[inbox] Non-critical: process already exited:', err); }
           setTimeout(() => {
-            try { proc.kill('SIGKILL'); } catch { /* already exited */ }
+            try { proc.kill('SIGKILL'); } catch (err) { console.warn('[inbox] Non-critical: process already exited:', err); }
           }, 5000);
         }, INBOX_SPAWN_TIMEOUT_MS);
         killTimer.unref();

@@ -25,7 +25,7 @@ function getDb() {
         )
       );
       db = new Database(DB_PATH, { fileMustExist: true });
-    } catch { return null; }
+    } catch (err) { console.warn('[task-completed] Non-critical: DB init failed:', err); return null; }
   }
   return db;
 }
@@ -70,17 +70,21 @@ async function main() {
             database.prepare(
               `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
             ).run(taskId, agentId, 'teammate_completed', `Teammate ${agentId} completed task`, Date.now());
-          } catch { /* non-critical */ }
+          } catch (err) {
+            console.warn('[task-completed] Non-critical: failed to log teammate completion activity:', err);
+          }
         }
 
         // Check if P0 or P1 — auto-trigger Clara review
         const task = database.prepare('SELECT priority, status FROM tasks WHERE id = ?').get(taskId);
         if (task && (task.priority === 'p0' || task.priority === 'p1')) {
-          triggerClaraReview(taskId).catch(() => {});
+          triggerClaraReview(taskId).catch(err => console.warn('[task-completed] Non-critical: Clara review trigger failed:', err));
         }
       }
     }
-  } catch { /* ignore parse errors */ }
+  } catch (err) {
+    console.warn('[task-completed] Failed to parse task completion data:', err);
+  }
 
   process.stdout.write(JSON.stringify({ decision: 'approve' }));
 }

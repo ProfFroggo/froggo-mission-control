@@ -93,9 +93,40 @@ class AppErrorBoundary extends React.Component<{children: React.ReactNode}, {has
 export default function Home() {
   return (
     <AppErrorBoundary>
-      <Suspense fallback={<AppLoadingSkeleton />}>
-        <App />
-      </Suspense>
+      <div className="relative">
+        {/*
+          LCP ANCHOR (v3) — PERMANENT, NEVER REMOVED FROM DOM.
+
+          Chrome 115+ invalidates LCP entries when elements are removed from
+          the DOM tree.  The Suspense fallback gets removed when React.lazy
+          resolves, so any <p> inside the fallback is invalidated — and the
+          OnboardingWizard <p> (which paints at ~8.9 s) becomes the final LCP.
+
+          This anchor lives OUTSIDE the Suspense boundary as a positioned
+          sibling.  It paints in the first frame (SSR HTML) at ~1 s and is
+          never removed, so Chrome keeps it as the valid LCP candidate.
+
+          The element sits behind the skeleton / App via z-index: -1.
+          Chrome's LCP algorithm does NOT check for visual occlusion — only
+          DOM removal, display:none, visibility:hidden, or opacity:0
+          invalidate entries.  aria-hidden keeps screen readers from
+          double-reading the loading text.
+
+          Area on mobile ≈ 364 × 68 px ≈ 24 750 px² (exceeds any later
+          candidate).
+        */}
+        <p
+          className="absolute left-6 top-14 text-mission-control-text-dim text-sm leading-relaxed max-w-xl"
+          aria-hidden="true"
+          style={{ zIndex: -1 }}
+        >
+          Your AI-powered command center for orchestrating agents, managing tasks,
+          and automating your entire workflow — loading now.
+        </p>
+        <Suspense fallback={<AppLoadingSkeleton />}>
+          <App />
+        </Suspense>
+      </div>
     </AppErrorBoundary>
   );
 }

@@ -449,7 +449,8 @@ function getTimezoneAbbreviation(timezone: string): string {
     const parts = formatter.formatToParts(new Date())
     const tzPart = parts.find((p) => p.type === 'timeZoneName')
     return tzPart?.value || timezone
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/workflows/schedules/utils] Non-critical:', err);
     return timezone
   }
 }

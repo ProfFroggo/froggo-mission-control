@@ -120,7 +120,8 @@ export default function XAutomationsPanel() {
   const parseJSON = (json: string) => {
     try {
       return JSON.parse(json);
-    } catch {
+    } catch (err) {
+      console.warn('[XAutomationsPanel] Non-critical:', err);
       return {};
     }
   };
@@ -331,14 +332,16 @@ function AutomationBuilder({ automation, onClose, onSave }: AutomationBuilderPro
   const [triggerConfig, setTriggerConfig] = useState(() => {
     try {
       return automation?.trigger_config ? JSON.parse(automation.trigger_config) : {};
-    } catch {
+    } catch (err) {
+      console.warn('[XAutomationsPanel] Non-critical:', err);
       return {};
     }
   });
   const [actions, setActions] = useState<XAutomationAction[]>(() => {
     try {
       return automation?.actions ? JSON.parse(automation.actions) : [];
-    } catch {
+    } catch (err) {
+      console.warn('[XAutomationsPanel] Non-critical:', err);
       return [];
     }
   });

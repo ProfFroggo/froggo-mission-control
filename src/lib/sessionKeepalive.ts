@@ -111,7 +111,9 @@ function writeMemoryCheckpoint(sessionKey: string): void {
     writeFileSync(filePath, lines.join('\n'), 'utf-8');
 
     checkpointWritten.add(sessionKey);
-  } catch { /* non-critical — never block the keepalive */ }
+  } catch (err) {
+    console.warn('[sessionKeepalive] Non-critical: failed to write session checkpoint:', err);
+  }
 }
 
 function pingSession(sessionKey: string, sessionId: string): void {
@@ -144,7 +146,9 @@ function pingSession(sessionKey: string, sessionId: string): void {
       getDb()
         .prepare('UPDATE agent_sessions SET lastActivity = ? WHERE agentId = ?')
         .run(Date.now(), sessionKey);
-    } catch { /* non-critical */ }
+    } catch (err) {
+      console.warn('[sessionKeepalive] Non-critical: failed to update session lastActivity:', err);
+    }
   });
 
   proc.on('error', () => {

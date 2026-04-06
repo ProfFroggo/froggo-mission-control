@@ -46,7 +46,8 @@ export async function POST(request: NextRequest) {
     let data: PresignedUrlRequest
     try {
       data = await request.json()
-    } catch {
+    } catch (err) {
+      console.warn('[files/presigned] Non-critical:', err);
       throw new ValidationError('Invalid JSON in request body')
     }
 

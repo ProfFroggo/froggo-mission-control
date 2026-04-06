@@ -53,7 +53,8 @@ export default function TaskTrendsChart({ days = 30 }: { days?: number }) {
     try {
       const trends = await getTaskCompletionTrends(days);
       setData(trends);
-    } catch {
+    } catch (err) {
+      console.warn('[TaskTrendsChart] Non-critical:', err);
       // non-critical
     } finally {
       setLoading(false);

@@ -281,7 +281,8 @@ export default function ProjectKanban({ project, onNewTask }: ProjectKanbanProps
       await deleteTask(taskId);
       showToast('success', 'Task deleted');
       if (selectedTask?.id === taskId) setSelectedTask(null);
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectKanban] Non-critical:', err);
       showToast('error', 'Failed to delete task');
     } finally {
       setDeletingIds(prev => { const n = new Set(prev); n.delete(taskId); return n; });
@@ -293,7 +294,8 @@ export default function ProjectKanban({ project, onNewTask }: ProjectKanbanProps
     try {
       await spawnAgentForTask(taskId);
       showToast('success', 'Agent started');
-    } catch {
+    } catch (err) {
+      console.warn('[ProjectKanban] Non-critical:', err);
       showToast('error', 'Failed to start agent');
     } finally {
       setSpawningIds(prev => { const n = new Set(prev); n.delete(taskId); return n; });

@@ -34,7 +34,8 @@ export default function GoogleOAuthSetup({ onAuthenticated }: Props) {
       } else {
         setError(data.error ?? 'Authentication failed');
       }
-    } catch {
+    } catch (err) {
+      console.warn('[GoogleOAuthSetup] Non-critical:', err);
       setError('Failed to complete authentication');
     }
     setConnecting(false);
@@ -50,7 +51,8 @@ export default function GoogleOAuthSetup({ onAuthenticated }: Props) {
     setError(null);
     try {
       window.location.href = '/api/google/auth';
-    } catch {
+    } catch (err) {
+      console.warn('[GoogleOAuthSetup] Non-critical:', err);
       setError('Failed to start authentication');
       setConnecting(false);
     }

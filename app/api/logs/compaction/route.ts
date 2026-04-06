@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         const entry = JSON.parse(line) as CompactionEntry;
         if (agentId && entry.agentId !== agentId) continue;
         entries.push(entry);
-      } catch { /* skip malformed lines */ }
+      } catch (err) { console.warn('[logs/compaction] Non-critical: skip malformed lines:', err); }
     }
 
     // Most recent first

@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     let sql = 'SELECT * FROM approvals';
     if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');
-    sql += ' ORDER BY createdAt DESC';
+    sql += ' ORDER BY createdAt DESC LIMIT 500';
 
     const rows = db.prepare(sql).all(...values) as Record<string, unknown>[];
     return NextResponse.json(rows.map(parseApproval));
@@ -86,9 +86,9 @@ export async function PATCH(request: NextRequest) {
           title: `Approval ${status}: ${row.title}`,
           userId: row.requester ?? undefined,
           metadata: { approvalId: row.id, action, status },
-        }).catch(() => {});
+        }).catch(err => console.warn('[approvals] Non-critical:', err));
       }
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[approvals] Non-critical:', err); }
 
     emitSSEEvent('approval.updated', { ids: validIds, action, status: action === 'approve' ? 'approved' : 'rejected' });
     return NextResponse.json({ updated: validIds.length });

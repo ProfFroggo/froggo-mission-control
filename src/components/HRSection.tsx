@@ -53,7 +53,8 @@ export default function HRSection() {
         recentTrainings,
         agentsNeedingTraining,
       });
-    } catch {
+    } catch (err) {
+      console.warn('[HRSection] Non-critical:', err);
       setTeamHealth({ totalAgents: 6, avgProficiency: 7.0, skillGaps: [], recentTrainings: 0, agentsNeedingTraining: [] });
     } finally {
       setLoading(false);
@@ -81,7 +82,8 @@ export default function HRSection() {
       if (hasNewReport) { setIndicator('new-report'); return; }
 
       setIndicator(null);
-    } catch {
+    } catch (err) {
+      console.warn('[HRSection] Non-critical:', err);
       // non-critical
     }
   }, []);

@@ -245,7 +245,8 @@ export const Code = memo(function Code({
     try {
       JSON.parse(trimmedCode)
       return true
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/components/code/codex] Non-critical:', err);
       return false
     }
   }, [shouldValidateJson, trimmedCode])

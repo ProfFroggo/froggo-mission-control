@@ -73,7 +73,8 @@ const CHAINS = [
 function fmt(amount: number, currency = 'USD') {
   try {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
-  } catch {
+  } catch (err) {
+    console.warn('[BudgetPanel] Non-critical:', err);
     return `${currency} ${amount.toLocaleString()}`;
   }
 }
@@ -914,7 +915,7 @@ export default function BudgetPanel() {
 
   async function handleDeleteInvoice(id: string) {
     await fetch(`/api/budget?resource=invoice&id=${id}`, { method: 'DELETE' });
-    await fetch(`/api/budget/upload?id=${id}`, { method: 'DELETE' }).catch(() => {});
+    await fetch(`/api/budget/upload?id=${id}`, { method: 'DELETE' }).catch(err => console.warn('[BudgetPanel] Non-critical:', err));
     await Promise.all([loadQuarterData(activeQuarterId), load()]);
     setConfirmDelete(null);
     showToast('success', 'Invoice deleted');
@@ -1032,13 +1033,14 @@ export default function BudgetPanel() {
       fd.append('file', file);
       const res = await fetch('/api/budget/import', { method: 'POST', body: fd });
       const data = await res.json();
-      if (data.ok && data.preview) {
+      if (data.success && data.preview) {
         setImportPreview(data.preview);
         setImportStatus(null);
       } else {
         setImportStatus(data.error || 'AI analysis failed. Please try again.');
       }
-    } catch {
+    } catch (err) {
+      console.warn('[BudgetPanel] Non-critical:', err);
       setImportStatus('Error reading file. Please try again.');
     }
     setIsImporting(false);
@@ -1087,7 +1089,8 @@ export default function BudgetPanel() {
       await load();
       showToast('success', `Imported ${qs.length} quarter${qs.length > 1 ? 's' : ''} with ${totalCats} categories`);
       setTimeout(() => { setImportModal(false); setImportPreview(null); setImportStatus(null); setTab('dashboard'); }, 800);
-    } catch {
+    } catch (err) {
+      console.warn('[BudgetPanel] Non-critical:', err);
       setImportStatus('Error creating quarters. Please try again.');
     }
     setIsImporting(false);

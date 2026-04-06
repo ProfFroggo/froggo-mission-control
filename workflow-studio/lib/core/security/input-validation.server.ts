@@ -34,7 +34,8 @@ export function isPrivateOrReservedIP(ip: string): boolean {
     const range = addr.range()
 
     return range !== 'unicast'
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/core/security/input-validation.server] Non-critical:', err);
     return true
   }
 }
@@ -238,7 +239,8 @@ function isRedirectStatus(status: number): boolean {
 function resolveRedirectUrl(baseUrl: string, location: string): string {
   try {
     return new URL(location, baseUrl).toString()
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/core/security/input-validation.server] Non-critical:', err);
     throw new Error(`Invalid redirect location: ${location}`)
   }
 }

@@ -94,7 +94,8 @@ export function grep(
   let regex: RegExp
   try {
     regex = new RegExp(pattern, flags)
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/copilot/vfs/operations] Non-critical:', err);
     return []
   }
 

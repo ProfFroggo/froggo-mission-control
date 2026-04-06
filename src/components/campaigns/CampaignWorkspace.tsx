@@ -100,7 +100,7 @@ function AssetsTab({ campaign }: { campaign: Campaign }) {
     try {
       const data = await campaignsApi.get(campaign.id) as { campaign: Campaign };
       setAssets(data.campaign.assets ?? []);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[CampaignWorkspace] Non-critical:', err); }
     finally { setLoading(false); }
   }, [campaign.id]);
 
@@ -451,7 +451,7 @@ function TimelineTab({ campaign }: { campaign: Campaign }) {
     import('../../lib/api').then(({ taskApi }) =>
       taskApi.getAll({ project: campaign.id })
         .then((d: { tasks?: typeof tasks }) => setTasks(d.tasks ?? []))
-        .catch(() => {})
+        .catch(err => console.warn('[CampaignWorkspace] Non-critical:', err))
         .finally(() => setLoading(false))
     );
   }, [campaign.id]);
@@ -610,7 +610,7 @@ function BudgetTracker({ campaign }: { campaign: Campaign }) {
     import('../../lib/api').then(({ taskApi }) =>
       taskApi.getAll({ project: campaign.id })
         .then((d: { tasks?: typeof tasks }) => setTasks(d.tasks ?? []))
-        .catch(() => {})
+        .catch(err => console.warn('[CampaignWorkspace] Non-critical:', err))
     );
   }, [campaign.id]);
 
@@ -979,7 +979,7 @@ function LinkAutomationModal({ campaignId, onClose }: { campaignId: string; onCl
     ]).then(([autoRes, linkRes]) => {
       setAllAutomations((autoRes.automations ?? []).filter((a: { status: string }) => a.status !== 'draft'));
       setLinked(linkRes.automations ?? []);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(err => console.warn('[CampaignWorkspace] Non-critical:', err)).finally(() => setLoading(false));
   }, [campaignId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLink = async () => {
@@ -1171,7 +1171,7 @@ function ChecklistTab({ campaign }: { campaign: Campaign }) {
       const res = await fetch(`/api/campaigns/${campaign.id}/checklist`);
       const data = await res.json();
       if (data.success) setItems(data.items);
-    } catch { /* non-critical */ } finally {
+    } catch (err) { console.warn('[CampaignWorkspace] Non-critical:', err); } finally {
       setLoading(false);
     }
   }, [campaign.id]);
@@ -1188,7 +1188,8 @@ function ChecklistTab({ campaign }: { campaign: Campaign }) {
         body: JSON.stringify({ id: item.id, checked: optimistic }),
       });
       if (!res.ok) throw new Error('Failed');
-    } catch {
+    } catch (err) {
+      console.warn('[CampaignWorkspace] Non-critical:', err);
       setItems(prev => prev.map(i => i.id === item.id ? { ...i, checked: item.checked } : i));
       showToast('Failed to update checklist', 'error');
     }
@@ -1200,7 +1201,8 @@ function ChecklistTab({ campaign }: { campaign: Campaign }) {
       const res = await fetch(`/api/campaigns/${campaign.id}/checklist/reset`, { method: 'POST' });
       const data = await res.json();
       if (data.success) setItems(data.items);
-    } catch {
+    } catch (err) {
+      console.warn('[CampaignWorkspace] Non-critical:', err);
       showToast('Failed to reset checklist', 'error');
     } finally {
       setResetting(false);
@@ -1316,12 +1318,12 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
       const newMembers = data.campaign.members ?? [];
       setMembers(newMembers);
       updateRoomAgents(campaignRoomId, newMembers.map(m => m.agentId));
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[CampaignWorkspace] Non-critical:', err); }
   }, [campaign.id, campaignRoomId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     reload();
-    agentApi.getAll().then(setAgents).catch(() => {});
+    agentApi.getAll().then(setAgents).catch(err => console.warn('[CampaignWorkspace] Non-critical:', err));
   }, [campaign.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddMember = async (agentId: string) => {

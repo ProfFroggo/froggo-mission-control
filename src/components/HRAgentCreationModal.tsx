@@ -172,7 +172,8 @@ export default function HRAgentCreationModal({ onClose, onAgentCreated }: HRAgen
 
           conversationRef.current.push({ role: 'hr', content: visibleReply || reply });
           return;
-        } catch {
+        } catch (err) {
+          console.warn('[HRAgentCreationModal] Non-critical:', err);
           // Config parse failed — treat as normal reply
         }
       }

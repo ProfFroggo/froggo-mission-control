@@ -331,7 +331,8 @@ Example 2 - Product Data:
                 try {
                   const parsed = JSON.parse(formats)
                   result.formats = Array.isArray(parsed) ? parsed : ['markdown']
-                } catch {
+                } catch (err) {
+                  console.warn('[ws/blocks/blocks/firecrawl] Non-critical:', err);
                   result.formats = ['markdown']
                 }
               }
@@ -367,7 +368,8 @@ Example 2 - Product Data:
                 try {
                   const parsed = JSON.parse(urls)
                   result.urls = Array.isArray(parsed) ? parsed : [parsed]
-                } catch {
+                } catch (err) {
+                  console.warn('[ws/blocks/blocks/firecrawl] Non-critical:', err);
                   result.urls = [urls]
                 }
               }
@@ -384,7 +386,8 @@ Example 2 - Product Data:
                 try {
                   const parsed = JSON.parse(agentUrls)
                   result.urls = Array.isArray(parsed) ? parsed : [parsed]
-                } catch {
+                } catch (err) {
+                  console.warn('[ws/blocks/blocks/firecrawl] Non-critical:', err);
                   result.urls = [agentUrls]
                 }
               }
@@ -395,7 +398,8 @@ Example 2 - Product Data:
               } else if (typeof schema === 'string') {
                 try {
                   result.schema = JSON.parse(schema)
-                } catch {
+                } catch (err) {
+                  console.warn('[ws/blocks/blocks/firecrawl] Non-critical:', err);
                   // Skip invalid schema
                 }
               }

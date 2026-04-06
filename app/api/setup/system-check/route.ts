@@ -20,7 +20,8 @@ function checkCliInstalled(): boolean {
   try {
     execSync('which claude', { stdio: 'pipe', env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:${homedir()}/.npm-global/bin:${process.env.PATH}` } });
     return true;
-  } catch {
+  } catch (err) {
+    console.warn('[setup/system-check] Non-critical:', err);
     return false;
   }
 }
@@ -32,7 +33,8 @@ function checkDatabase(): boolean {
   try {
     getDb(); // creates the file, runs migrations, seeds core agents
     return existsSync(dbPath);
-  } catch {
+  } catch (err) {
+    console.warn('[setup/system-check] Non-critical:', err);
     return false;
   }
 }
@@ -50,7 +52,8 @@ function checkMcpServers(): { ok: boolean; missing: string[] } {
     );
     const mcpOk = missingServers.length === 0;
     return { ok: mcpOk, missing: missingServers };
-  } catch {
+  } catch (err) {
+    console.warn('[setup/system-check] Non-critical:', err);
     return { ok: false, missing: ['mission-control_db', 'memory'] };
   }
 }
@@ -64,7 +67,8 @@ function checkAgentsOnDisk(): { count: number; ok: boolean } {
     const entries = readdirSync(agentsDir);
     const count = entries.length;
     return { count, ok: count > 0 };
-  } catch {
+  } catch (err) {
+    console.warn('[setup/system-check] Non-critical:', err);
     return { count: 0, ok: false };
   }
 }

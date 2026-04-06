@@ -110,7 +110,9 @@ export function syncCatalogAgents(db: Database.Database): void {
 
     // Always mark core agents as installed
     db.prepare(`UPDATE catalog_agents SET installed = 1 WHERE core = 1`).run();
-  } catch { /* agents table may not exist in tests */ }
+  } catch (err) {
+    console.warn('[catalogSync] Non-critical: failed to sync core agents (table may not exist):', err);
+  }
 
   // Auto-mark non-core agents as installed if they exist in the agents table
   // (agents table is the source of truth for "hired" status)
@@ -122,7 +124,9 @@ export function syncCatalogAgents(db: Database.Database): void {
         AND id IN (SELECT id FROM agents WHERE status != 'archived')
         AND installed = 0
     `).run();
-  } catch { /* agents table may not exist in tests */ }
+  } catch (err) {
+    console.warn('[catalogSync] Non-critical: failed to mark non-core agents as installed (table may not exist):', err);
+  }
 
   // Seed presets (model, trust_tier, skills, tools, apiKeys) for all installed agents
   // that are missing them. Runs every startup — ON CONFLICT DO NOTHING ensures
@@ -151,16 +155,17 @@ export function syncCatalogAgents(db: Database.Database): void {
       let manifest: Record<string, unknown>;
       try { manifest = JSON.parse(readFileSync(jsonPath, 'utf-8')); } catch { continue; }
 
-      const { requiredSkills, requiredTools, requiredApis, model: catalogModel, permissionMode } = manifest as {
+      const { requiredSkills, requiredTools, requiredApis, model: catalogModel, permissionMode, trust_tier: explicitTier } = manifest as {
         requiredSkills?: string[]; requiredTools?: string[]; requiredApis?: string[];
-        model?: string; permissionMode?: string;
+        model?: string; permissionMode?: string; trust_tier?: string;
       };
 
       if (catalogModel) {
         db.prepare(`UPDATE agents SET model = ? WHERE id = ? AND (model IS NULL OR model = '')`)
           .run(catalogModel, id);
       }
-      const trustTier = tierMap[permissionMode ?? ''] ?? 'apprentice';
+      // Prefer explicit trust_tier from manifest over permissionMode mapping
+      const trustTier = explicitTier ?? tierMap[permissionMode ?? ''] ?? 'apprentice';
       db.prepare(`UPDATE agents SET trust_tier = ? WHERE id = ? AND (trust_tier IS NULL OR trust_tier = '')`)
         .run(trustTier, id);
 
@@ -171,7 +176,9 @@ export function syncCatalogAgents(db: Database.Database): void {
       if (Array.isArray(requiredApis) && requiredApis.length > 0)
         seedSetting.run(`agent.${id}.apiKeys`, JSON.stringify(requiredApis));
     }
-  } catch { /* non-critical — presets can be set manually */ }
+  } catch (err) {
+    console.warn('[catalogSync] Non-critical: failed to seed agent presets:', err);
+  }
 }
 
 export function syncCatalogModules(db: Database.Database): void {

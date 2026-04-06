@@ -126,7 +126,8 @@ export default function DashRecentFiles({ onNavigate }: DashRecentFilesProps) {
       const data = (await res.json()) as { files: FileItem[] };
       setFiles(data.files.slice(0, 6));
       setError(false);
-    } catch {
+    } catch (err) {
+      console.warn('[DashRecentFiles] Non-critical:', err);
       setError(true);
     } finally {
       setLoading(false);

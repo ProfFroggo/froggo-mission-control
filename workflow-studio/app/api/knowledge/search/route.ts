@@ -371,7 +371,8 @@ export async function POST(request: NextRequest) {
           resultsCount: results.length,
           workspaceId: workspaceId || undefined,
         })
-      } catch {
+      } catch (err) {
+        console.warn('[knowledge/search] Non-critical:', err);
         // Telemetry should not fail the operation
       }
 

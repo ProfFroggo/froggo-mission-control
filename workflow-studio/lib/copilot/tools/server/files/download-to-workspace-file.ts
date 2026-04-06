@@ -48,7 +48,8 @@ function extractFileNameFromUrl(url: string): string | undefined {
     if (!lastSegment) return undefined
     const decoded = decodeURIComponent(lastSegment)
     return decoded && decoded !== '/' ? decoded : undefined
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/copilot/tools/server/files/download-to-workspace-file] Non-critical:', err);
     return undefined
   }
 }
@@ -60,7 +61,8 @@ function extractFileNameFromContentDisposition(header: string | null): string | 
   if (utf8Match?.[1]) {
     try {
       return decodeURIComponent(utf8Match[1].trim())
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/copilot/tools/server/files/download-to-workspace-file] Non-critical:', err);
       return utf8Match[1].trim()
     }
   }

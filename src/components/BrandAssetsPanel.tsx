@@ -523,7 +523,7 @@ export default function BrandAssetsPanel() {
     try {
       const res = await fetch(`/api/brand-assets/${id}`, { method: 'DELETE' });
       if (!res.ok) console.error(`[BrandAssets] Delete failed: ${res.status}`);
-    } catch { /* network error */ }
+    } catch (err) { console.warn('[BrandAssetsPanel] Non-critical: network error:', err); }
     setSelected(null);
     load();
   };

@@ -13,7 +13,8 @@ export async function POST() {
           await client.revokeToken(creds.access_token);
         }
       }
-    } catch {
+    } catch (err) {
+      console.warn('[google/auth/revoke] Non-critical:', err);
       // Best-effort revocation
     }
 

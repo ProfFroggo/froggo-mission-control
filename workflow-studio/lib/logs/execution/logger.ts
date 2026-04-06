@@ -506,7 +506,7 @@ export class ExecutionLogger implements IExecutionLoggerService {
           executionId,
           billingUserId
         )
-      } catch {}
+      } catch (err) { console.warn('[ws/lib/logs/execution/logger] Non-critical:', err); }
       logger.warn('Usage threshold notification check failed (non-fatal)', { error: e })
     }
 

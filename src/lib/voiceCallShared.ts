@@ -129,10 +129,14 @@ export async function loadRecentChatHistory(agentId: string, limit = 20): Promis
               sections.push(`### Chat: ${label}\n${lines.join('\n')}`);
             }
           }
-        } catch { /* ignore error */ }
+        } catch (err) {
+          console.warn('[voiceCallShared] Non-critical: failed to load chat session for voice context:', err);
+        }
       }
     }
-  } catch { /* ignore error */ }
+  } catch (err) {
+    console.warn('[voiceCallShared] Non-critical: failed to build voice context:', err);
+  }
 
   // 2. Memory notes not available without filesystem access
   // console.warn('Not implemented: memory file loading for voice context');

@@ -85,7 +85,9 @@ export default function TaskChatTab({ taskId, agentId, agentName }: TaskChatTabP
             .filter((m: Message) => m.content?.trim())
         );
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('[TaskChatTab] Failed to load chat history:', err);
+    }
     setLoading(false);
   }, [sessionKey]);
 

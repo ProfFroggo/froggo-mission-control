@@ -120,7 +120,8 @@ export async function createTeamsSubscription(
         )
         return existingSubscriptionId
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/webhooks/provider-subscriptions] Non-critical:', err);
       teamsLogger.debug(`[${requestId}] Existing subscription check failed, will create new one`)
     }
   }
@@ -522,7 +523,8 @@ export async function deleteAirtableWebhook(
       let responseBody: any = null
       try {
         responseBody = await airtableResponse.json()
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/webhooks/provider-subscriptions] Non-critical:', err);
         // Ignore parse errors
       }
 

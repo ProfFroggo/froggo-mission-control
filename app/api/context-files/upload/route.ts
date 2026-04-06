@@ -33,13 +33,13 @@ async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val;
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[context-files/upload] Non-critical:', err); }
   if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
   try {
     const db = getDb();
     const row = db.prepare("SELECT value FROM settings WHERE key = 'gemini_api_key'").get() as { value: string } | undefined;
     if (row?.value) return row.value;
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[context-files/upload] Non-critical:', err); }
   return null;
 }
 
@@ -69,7 +69,8 @@ async function extractOfficeText(buffer: Buffer, mimeType: string): Promise<stri
       }
     }
     return textParts.join('\n\n') || extractLegacyDocText(buffer);
-  } catch {
+  } catch (err) {
+    console.warn('[context-files/upload] Non-critical:', err);
     return extractLegacyDocText(buffer);
   }
 }
@@ -178,7 +179,8 @@ export async function POST(req: NextRequest) {
     let formData: FormData;
     try {
       formData = await req.formData();
-    } catch {
+    } catch (err) {
+      console.warn('[context-files/upload] Non-critical:', err);
       return NextResponse.json({ success: false, error: 'Failed to read upload — ensure file is sent as multipart/form-data' }, { status: 400 });
     }
     const file = formData.get('file') as File | null;

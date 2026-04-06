@@ -238,7 +238,7 @@ export function General() {
               action: 'enable_from_settings',
               timestamp: new Date().toISOString(),
             }),
-          }).catch(() => {})
+          }).catch(err => console.warn('[ws/app/workspace/[workspaceId]/settings/components/general/generalx] Non-critical:', err))
         }
       }
     }

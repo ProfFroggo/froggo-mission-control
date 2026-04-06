@@ -101,7 +101,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     }
 
     // Add brief column if it doesn't exist (safe migration)
-    try { db.exec('ALTER TABLE campaigns ADD COLUMN brief TEXT'); } catch { /* already exists */ }
+    try { db.exec('ALTER TABLE campaigns ADD COLUMN brief TEXT'); } catch (err) { console.warn('[campaigns/[id]/brief] Non-critical: already exists:', err); }
 
     db.prepare('UPDATE campaigns SET brief = ?, updatedAt = ? WHERE id = ?').run(brief, Date.now(), id);
     return NextResponse.json({ success: true, brief });

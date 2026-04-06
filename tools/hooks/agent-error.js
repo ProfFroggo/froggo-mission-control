@@ -21,7 +21,7 @@ function getDb() {
         path.join(path.dirname(path.dirname(path.dirname(__filename))), 'node_modules', 'better-sqlite3')
       );
       db = new Database(DB_PATH, { fileMustExist: true });
-    } catch { return null; }
+    } catch (err) { console.warn('[agent-error] Non-critical: DB init failed:', err); return null; }
   }
   return db;
 }
@@ -54,11 +54,11 @@ async function main() {
             database.prepare(
               `UPDATE tasks SET status = 'human-review', lastAgentUpdate = ? WHERE id = ?`
             ).run(`Agent error: ${errorMsg}`, task.id);
-          } catch { /* non-critical */ }
+          } catch (err) { console.warn('[tools/agent-error] Non-critical:', err); }
         }
       }
     }
-  } catch { /* ignore parse errors */ }
+  } catch (err) { console.warn('[tools/agent-error] Non-critical: ignore parse errors:', err); }
 
   process.stdout.write(JSON.stringify({ decision: 'approve' }));
 }

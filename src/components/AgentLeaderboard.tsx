@@ -84,6 +84,10 @@ function LeaderboardAvatar({ agentId, agentName }: { agentId: string; agentName:
           src={`/api/agents/${agentId}/avatar`}
           alt={agentName}
           className="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
+          width={36}
+          height={36}
           onError={() => setImgFailed(true)}
         />
       ) : (

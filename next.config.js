@@ -36,10 +36,10 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: data: https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://generativelanguage.googleapis.com wss://generativelanguage.googleapis.com ws://127.0.0.1:* https://unpkg.com https://cdn.tailwindcss.com",
+              "connect-src 'self' https://generativelanguage.googleapis.com wss://generativelanguage.googleapis.com wss://api.elevenlabs.io https://api.elevenlabs.io ws://127.0.0.1:* https://unpkg.com https://cdn.tailwindcss.com",
               "img-src 'self' data: blob: https:",
               "media-src 'self' blob:",
               "worker-src 'self' blob:",

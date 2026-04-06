@@ -72,7 +72,8 @@ export function useIdentifierValidation(
           setError(null)
           setIsValid(true)
         }
-      } catch {
+      } catch (err) {
+        console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/deploy/components/deploy-modal/components/form/hooks/use-identifier-validation] Non-critical:', err);
         setError('Error checking identifier availability')
         setIsValid(false)
       } finally {

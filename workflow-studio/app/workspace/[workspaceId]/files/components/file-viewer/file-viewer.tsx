@@ -520,7 +520,8 @@ async function getPptxRenderSize(
       width: Math.round(baseLongEdge * aspectRatio),
       height: Math.round(baseLongEdge),
     }
-  } catch {
+  } catch (err) {
+    console.warn('[ws/app/workspace/[workspaceId]/files/components/file-viewer/file-viewerx] Non-critical:', err);
     return fallback
   }
 }

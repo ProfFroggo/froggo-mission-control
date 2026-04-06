@@ -9,13 +9,13 @@ export const dynamic = 'force-dynamic';
 function ensureColumns(db: ReturnType<typeof getDb>) {
   try {
     db.exec(`ALTER TABLE automation_runs ADD COLUMN stepResults TEXT DEFAULT '[]'`);
-  } catch { /* column already exists */ }
+  } catch (err) { console.warn('[automations/[id]/runs] Non-critical: column already exists:', err); }
   try {
     db.exec(`ALTER TABLE automation_runs ADD COLUMN duration INTEGER`);
-  } catch { /* column already exists */ }
+  } catch (err) { console.warn('[automations/[id]/runs] Non-critical: column already exists:', err); }
   try {
     db.exec(`ALTER TABLE automation_runs ADD COLUMN triggeredBy TEXT DEFAULT 'manual'`);
-  } catch { /* column already exists */ }
+  } catch (err) { console.warn('[automations/[id]/runs] Non-critical: column already exists:', err); }
 }
 
 // GET /api/automations/[id]/runs?limit=20
@@ -52,7 +52,8 @@ export async function GET(
       stepResults: (() => {
         try {
           return JSON.parse((row.stepResults as string) ?? '[]');
-        } catch {
+        } catch (err) {
+          console.warn('[automations/[id]/runs] Non-critical:', err);
           return [];
         }
       })(),

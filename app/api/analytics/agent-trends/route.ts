@@ -73,7 +73,8 @@ export async function GET(request: NextRequest) {
         for (const m of metas) {
           if (m.name) metaMap.set(m.id, m.name);
         }
-      } catch {
+      } catch (err) {
+        console.warn('[analytics/agent-trends] Non-critical:', err);
         // agents table may not exist in all deployments — silently ignore
       }
     }

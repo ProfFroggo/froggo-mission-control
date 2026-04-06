@@ -17,7 +17,7 @@ async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val;
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[x/mentions/process] Non-critical:', err); }
   return process.env.GEMINI_API_KEY ?? null;
 }
 
@@ -41,7 +41,8 @@ async function geminiGenerate(prompt: string, apiKey: string): Promise<string | 
       }
       const data = await res.json();
       return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
-    } catch {
+    } catch (err) {
+      console.warn('[x/mentions/process] Non-critical:', err);
       if (model === GEMINI_MODEL) continue;
       return null;
     }
@@ -153,7 +154,8 @@ export async function POST() {
           Date.now(),
         );
         result.newMentions++;
-      } catch {
+      } catch (err) {
+        console.warn('[x/mentions/process] Non-critical:', err);
         // Duplicate or DB error — skip
       }
     }
@@ -211,7 +213,7 @@ export async function POST() {
           `- ${a.title}: ${(a.summary || a.content || '').slice(0, 300)}`
         ).join('\n')}`;
       }
-    } catch { /* KB might not exist */ }
+    } catch (err) { console.warn('[x/mentions/process] Non-critical: KB might not exist:', err); }
 
     // Get recent approved replies to learn from past decisions
     let replyHistory = '';
@@ -230,7 +232,7 @@ export async function POST() {
           } catch { return ''; }
         }).filter(Boolean).join('\n')}`;
       }
-    } catch { /* approvals table might not have these */ }
+    } catch (err) { console.warn('[x/mentions/process] Non-critical: approvals table might not have these:', err); }
 
     for (const row of pendingMentions) {
       const parentContext = row.parent_tweet_text
@@ -313,12 +315,12 @@ Return ONLY JSON:
 
           let aiResult: any = null;
           if (objMatch) {
-            try { aiResult = JSON.parse(objMatch[0]); } catch { /* skip */ }
+            try { aiResult = JSON.parse(objMatch[0]); } catch (err) { console.warn('[x/mentions/process] Non-critical: skip:', err); }
           } else if (arrMatch) {
             try {
               const arr = JSON.parse(arrMatch[0]);
               if (Array.isArray(arr)) aiResult = { triage: 'reply', replies: arr.slice(0, 3), recommended: 0 };
-            } catch { /* skip */ }
+            } catch (err) { console.warn('[x/mentions/process] Non-critical: skip:', err); }
           }
 
           if (!aiResult) continue;
@@ -439,7 +441,7 @@ Return ONLY JSON:
                         Date.now(),
                         Date.now(),
                       );
-                    } catch { /* schedule table might differ — non-fatal */ }
+                    } catch (err) { console.warn('[x/mentions/process] Non-critical: schedule table might differ — non-fatal:', err); }
                   }
                 } catch (e) {
                   result.errors.push(`Approval for mention ${row.id}: ${e instanceof Error ? e.message : String(e)}`);
@@ -453,9 +455,9 @@ Return ONLY JSON:
       }
     }
 
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({ success: true, ...result });
   } catch (err) {
     console.error('[x/mentions/process]', err);
-    return NextResponse.json({ ok: false, ...result, error: String(err) }, { status: 500 });
+    return NextResponse.json({ success: false, ...result, error: String(err) }, { status: 500 });
   }
 }

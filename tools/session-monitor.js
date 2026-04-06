@@ -19,6 +19,7 @@ console.log('[session-monitor] Starting. DB:', DB_PATH);
 setInterval(() => {
   try {
     const db = new Database(DB_PATH);
+    db.pragma('busy_timeout = 5000');
     const now = Date.now();
 
     // Sessions that have been active recently (lastActivity < 5 min ago)

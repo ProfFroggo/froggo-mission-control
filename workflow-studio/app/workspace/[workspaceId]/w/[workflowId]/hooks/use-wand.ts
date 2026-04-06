@@ -52,7 +52,8 @@ function buildWandContextInfo({
           const parsed = JSON.parse(currentValue)
           const keys = Object.keys(parsed)
           contextInfo += `\n\nJSON analysis: Valid JSON with ${keys.length} top-level keys: ${keys.join(', ')}`
-        } catch {
+        } catch (err) {
+          console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-wand] Non-critical:', err);
           contextInfo += `\n\nJSON analysis: Invalid JSON - needs fixing`
         }
         break

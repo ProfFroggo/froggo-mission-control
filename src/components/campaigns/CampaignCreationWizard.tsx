@@ -149,7 +149,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
         setDiscoveryStructuredData(data.structuredData);
       }
       setDiscoveryMsgs(prev => [...prev, { role: 'model' as const, text: data.text || '', widget: data.widget }]);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[CampaignCreationWizard] Non-critical:', err); }
     finally { setDiscoveryLoading(false); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [discoveryMsgs]);
@@ -226,7 +226,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
       setLoadingAgents(true);
       agentApi.getAll()
         .then((data: unknown[]) => setAgents((data as AgentInfo[]).filter(a => a.status !== 'archived')))
-        .catch(() => {})
+        .catch(err => console.warn('[CampaignCreationWizard] Non-critical:', err))
         .finally(() => setLoadingAgents(false));
     }
   }, [sendAgentMessage, agents.length]);
@@ -303,7 +303,8 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
         setBrief(data.brief);
         setMessages(prev => [...prev, userMsg('Draft generated')]);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[CampaignCreationWizard] Non-critical:', err);
       // non-critical — leave brief empty
     } finally {
       setDraftingBrief(false);
@@ -343,7 +344,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           formData.append('file', file);
           formData.append('entityType', 'campaign');
           formData.append('entityId', campaignId);
-          fetch('/api/context-files/upload', { method: 'POST', body: formData }).catch(() => {});
+          fetch('/api/context-files/upload', { method: 'POST', body: formData }).catch(err => console.warn('[CampaignCreationWizard] Non-critical:', err));
         }
         // Give it a moment then close and call onCreated
         setTimeout(() => {

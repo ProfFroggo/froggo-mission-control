@@ -210,7 +210,8 @@ export async function DELETE(
       PlatformEvents.knowledgeBaseDeleted({
         knowledgeBaseId: id,
       })
-    } catch {
+    } catch (err) {
+      console.warn('[knowledge/[id]] Non-critical:', err);
       // Telemetry should not fail the operation
     }
 

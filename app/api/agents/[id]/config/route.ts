@@ -34,11 +34,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
     if (!agent) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     let capabilities: string[] = [];
-    try { capabilities = JSON.parse(agent.capabilities || '[]'); } catch { /* */ }
+    try { capabilities = JSON.parse(agent.capabilities || '[]'); } catch (err) { console.warn('[agent-config] Non-critical: failed to parse capabilities:', err); }
 
     const mcpRaw = db.prepare('SELECT value FROM settings WHERE key = ?').get(settingKey(id, 'mcpServers')) as { value: string } | undefined;
     let mcpServers: unknown[] = [];
-    try { if (mcpRaw?.value) { const p = JSON.parse(mcpRaw.value); if (Array.isArray(p)) mcpServers = p; } } catch { /* */ }
+    try { if (mcpRaw?.value) { const p = JSON.parse(mcpRaw.value); if (Array.isArray(p)) mcpServers = p; } } catch (err) { console.warn('[agent-config] Non-critical: failed to parse mcpServers:', err); }
 
     return NextResponse.json({
       model: agent.model || 'sonnet',
@@ -92,7 +92,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       }
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('PATCH /api/agents/:id/config error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

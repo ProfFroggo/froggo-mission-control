@@ -8,7 +8,6 @@ import {
 import EmptyState from './EmptyState';
 import ArticleRevisionHistory from './ArticleRevisionHistory';
 import KnowledgeGraphPanel from './KnowledgeGraphPanel';
-import BrandAssetsPanel from './BrandAssetsPanel';
 import MarkdownMessage from './MarkdownMessage';
 // eslint-disable-next-line import/order
 import { Button, Flex, TextField, Select, TextArea, Checkbox } from '@radix-ui/themes';
@@ -192,7 +191,8 @@ function getStarred(): Set<string> {
   try {
     const raw = localStorage.getItem(STARRED_KEY);
     return new Set(raw ? JSON.parse(raw) : []);
-  } catch {
+  } catch (err) {
+    console.warn('[KnowledgeBase] Non-critical:', err);
     return new Set();
   }
 }
@@ -200,7 +200,8 @@ function getStarred(): Set<string> {
 function saveStarred(ids: Set<string>): void {
   try {
     localStorage.setItem(STARRED_KEY, JSON.stringify([...ids]));
-  } catch {
+  } catch (err) {
+    console.warn('[KnowledgeBase] Non-critical:', err);
     // ignore
   }
 }
@@ -560,7 +561,7 @@ export default function KnowledgeBase() {
           const freshRes = await fetch(`/api/knowledge?${params}`);
           const freshData = await freshRes.json();
           if (freshData.success) setArticles(freshData.articles);
-        } catch { /* fall back to normal load */ }
+        } catch (err) { console.warn('[KnowledgeBase] Non-critical: fall back to normal load:', err); }
         setCategory(data.analysis.category || 'all');
       } else {
         setIngestError(data.error || 'Processing failed');
@@ -583,7 +584,7 @@ export default function KnowledgeBase() {
     fetch('/api/knowledge/templates')
       .then(r => r.ok ? r.json() : { templates: [] })
       .then(d => setApiTemplates((d.templates ?? []).map((t: Record<string, unknown>) => ({ id: t.id as string, label: t.title as string }))))
-      .catch(() => {});
+      .catch(err => console.warn('[KnowledgeBase] Non-critical:', err));
   }, []);
 
   // Close template dropdown on outside click
@@ -610,7 +611,7 @@ export default function KnowledgeBase() {
         setArticles(prev => [data.article, ...prev]);
         setViewing(data.article);
       }
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[KnowledgeBase] Non-critical:', err); }
   };
 
   // Debounce search input
@@ -625,7 +626,6 @@ export default function KnowledgeBase() {
 
   // Always fetch ALL articles — filter client-side so category counts stay accurate
   const load = useCallback(async () => {
-    if (category === 'brand-assets') return;
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -1082,24 +1082,6 @@ export default function KnowledgeBase() {
 
   // ── Main list view ────────────────────────────────────────────────────────
 
-  // When Brand Assets category is selected, render the dedicated panel
-  if (category === 'brand-assets') {
-    return (
-      <div className="flex h-full">
-        <CategorySidebar
-          categories={allCategories}
-          counts={categoryCounts}
-          selected={category}
-          total={articles.length}
-          onSelect={setCategory}
-        />
-        <div className="flex flex-col flex-1 min-w-0 h-full">
-          <BrandAssetsPanel />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
       className={`flex h-full relative ${isDragOver ? 'ring-4 ring-inset ring-mission-control-accent bg-mission-control-accent/5' : ''}`}
@@ -1485,20 +1467,6 @@ function CategorySidebar({ categories, counts, selected, total, onSelect, onAddC
         </button>
       )}
 
-      {/* Brand Assets section — separator */}
-      <div className="border-t border-mission-control-border my-1.5 pt-1.5">
-        <button
-          type="button"
-          onClick={() => onSelect('brand-assets')}
-          className={`flex items-center justify-between w-full px-2 py-1.5 rounded text-xs font-medium transition-colors ${
-            selected === 'brand-assets'
-              ? 'bg-mission-control-accent/10 text-mission-control-accent'
-              : 'text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/50'
-          }`}
-        >
-          <span className="truncate">Brand Assets</span>
-        </button>
-      </div>
     </nav>
   );
 }

@@ -38,7 +38,8 @@ function checkMcpDomain(url: string): string | null {
   try {
     const hostname = new URL(url).hostname.toLowerCase()
     return allowedDomains.includes(hostname) ? null : hostname
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/mcp/domain-check] Non-critical:', err);
     return url
   }
 }
@@ -60,7 +61,8 @@ function hasEnvVarInHostname(url: string): boolean {
     const authorityEnd = afterProtocol.search(/[/?#]/)
     const authority = authorityEnd === -1 ? afterProtocol : afterProtocol.substring(0, authorityEnd)
     return createEnvVarPattern().test(authority)
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/mcp/domain-check] Non-critical:', err);
     return createEnvVarPattern().test(url)
   }
 }
@@ -104,7 +106,8 @@ function isLoopbackIP(ip: string): boolean {
   try {
     if (!ipaddr.isValid(ip)) return false
     return ipaddr.process(ip).range() === 'loopback'
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/mcp/domain-check] Non-critical:', err);
     return false
   }
 }
@@ -146,7 +149,8 @@ export async function validateMcpServerSsrf(url: string | undefined): Promise<vo
   let hostname: string
   try {
     hostname = new URL(url).hostname
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/mcp/domain-check] Non-critical:', err);
     throw new McpSsrfError('MCP server URL is not a valid URL')
   }
 

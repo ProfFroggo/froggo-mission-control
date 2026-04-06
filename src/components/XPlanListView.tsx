@@ -31,7 +31,8 @@ export default function XPlanListView() {
       const plans = (Array.isArray(allItems) ? allItems : [])
         .filter((item: any) => item.type === 'plan');
       setPlans(plans as ContentPlan[]);
-    } catch {
+    } catch (err) {
+      console.warn('[XPlanListView] Non-critical:', err);
       setPlans([]);
     } finally {
       setLoading(false);

@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     `).run(filePath, safeName, file.type, Date.now(), invoiceId);
 
     return NextResponse.json({
-      ok: true,
+      success: true,
       file_path: filePath,
       file_name: safeName,
       file_mime: file.type,
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error('[budget/upload]', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -101,8 +101,8 @@ export async function DELETE(req: NextRequest) {
     db.prepare(`UPDATE budget_invoices SET file_path = NULL, file_name = NULL, file_mime = NULL, updated_at = ? WHERE id = ?`)
       .run(Date.now(), invoiceId);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

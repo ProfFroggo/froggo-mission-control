@@ -59,7 +59,8 @@ function cleanRowData(
     const value = rowData[col.name]
     try {
       cleanData[col.name] = cleanCellValue(value, col)
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/tables/[tableId]/components/row-modal/row-modalx] Non-critical:', err);
       throw new Error(`Invalid JSON for field: ${col.name}`)
     }
   })

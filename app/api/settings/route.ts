@@ -119,7 +119,8 @@ export async function PATCH(request: NextRequest) {
         upsert.run(key, serialized, now);
         try {
           auditStmt.run(key, oldRow?.value ?? null, serialized, now);
-        } catch {
+        } catch (err) {
+          console.warn('[settings] Non-critical:', err);
           // audit is best-effort — do not fail the write
         }
       }
@@ -137,7 +138,8 @@ export async function PATCH(request: NextRequest) {
 function tryParseJson(raw: string): unknown {
   try {
     return JSON.parse(raw);
-  } catch {
+  } catch (err) {
+    console.warn('[settings] Non-critical:', err);
     return raw;
   }
 }

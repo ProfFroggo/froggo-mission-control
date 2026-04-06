@@ -252,7 +252,7 @@ export const Panel = memo(function Panel() {
         }
         copilotInitialLoadDoneRef.current = true
       })
-      .catch(() => {})
+      .catch(err => console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/panelx] Non-critical:', err))
   }, [activeWorkflowId])
 
   useEffect(() => {
@@ -280,7 +280,7 @@ export const Panel = memo(function Panel() {
           }
           loadCopilotChats()
         })
-        .catch(() => {})
+        .catch(err => console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/panelx] Non-critical:', err))
     },
     [copilotChatId, loadCopilotChats]
   )

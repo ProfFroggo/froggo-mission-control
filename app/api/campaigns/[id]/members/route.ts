@@ -56,10 +56,10 @@ export async function POST(request: NextRequest, { params }: Params) {
         }
         db.prepare('UPDATE chat_rooms SET agents = ?, updatedAt = ? WHERE id = ?').run(JSON.stringify(agents), Date.now(), roomId);
       }
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[campaigns/[id]/members] Non-critical:', err); }
 
     db.prepare('UPDATE campaigns SET updatedAt = ? WHERE id = ?').run(Date.now(), id);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('POST /api/campaigns/:id/members error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

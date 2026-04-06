@@ -68,11 +68,13 @@ export function checkBudgetAlerts(
             exceeded: pct >= 100,
           });
         }
-      } catch {
+      } catch (err) {
+        console.warn('[budgetAlerts] Non-critical:', err);
         // Per-budget errors are non-fatal
       }
     }
-  } catch {
+  } catch (err) {
+    console.warn('[budgetAlerts] Non-critical:', err);
     // Non-fatal — budget alerts must never break token logging
   }
 }

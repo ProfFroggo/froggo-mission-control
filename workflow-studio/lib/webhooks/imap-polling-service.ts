@@ -303,7 +303,8 @@ async function fetchNewEmails(config: ImapWebhookConfig, requestId: string) {
           } else if (typeof config.searchCriteria === 'string') {
             try {
               searchCriteria = JSON.parse(config.searchCriteria)
-            } catch {
+            } catch (err) {
+              console.warn('[ws/lib/webhooks/imap-polling-service] Non-critical:', err);
               logger.warn(`[${requestId}] Invalid search criteria JSON, using default`)
             }
           }
@@ -381,7 +382,8 @@ async function fetchNewEmails(config: ImapWebhookConfig, requestId: string) {
   } catch (error) {
     try {
       await client.logout()
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/webhooks/imap-polling-service] Non-critical:', err);
       // Ignore logout errors
     }
     throw error
@@ -436,7 +438,8 @@ function extractTextFromSource(source: Buffer): { text: string; html: string } {
         if (lowerPart.includes('base64')) {
           try {
             text = Buffer.from(text.replace(/\s/g, ''), 'base64').toString('utf-8')
-          } catch {
+          } catch (err) {
+            console.warn('[ws/lib/webhooks/imap-polling-service] Non-critical:', err);
             // Keep as-is if base64 decode fails
           }
         }
@@ -453,7 +456,8 @@ function extractTextFromSource(source: Buffer): { text: string; html: string } {
         if (lowerPart.includes('base64')) {
           try {
             html = Buffer.from(html.replace(/\s/g, ''), 'base64').toString('utf-8')
-          } catch {
+          } catch (err) {
+            console.warn('[ws/lib/webhooks/imap-polling-service] Non-critical:', err);
             // Keep as-is if base64 decode fails
           }
         }
@@ -511,7 +515,8 @@ function extractAttachmentsFromSource(
               mimeType,
               size: buffer.length,
             })
-          } catch {
+          } catch (err) {
+            console.warn('[ws/lib/webhooks/imap-polling-service] Non-critical:', err);
             // Skip if decode fails
           }
         }
@@ -695,7 +700,8 @@ async function processEmails(
           lockState.lock.release()
         }
         await client.logout()
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/webhooks/imap-polling-service] Non-critical:', err);
         // Ignore logout errors
       }
     }

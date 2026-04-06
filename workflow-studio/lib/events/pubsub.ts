@@ -14,7 +14,7 @@ export function createPubSubChannel<T = any>(): PubSubChannel<T> {
       for (const fn of listeners) {
         try {
           fn(event)
-        } catch {}
+        } catch (err) { console.warn('[ws/lib/events/pubsub] Non-critical:', err); }
       }
     },
     subscribe(handler: (event: T) => void) {

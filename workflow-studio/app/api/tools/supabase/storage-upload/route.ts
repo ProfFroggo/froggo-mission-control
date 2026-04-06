@@ -191,7 +191,8 @@ export async function POST(request: NextRequest) {
       let errorData
       try {
         errorData = JSON.parse(errorText)
-      } catch {
+      } catch (err) {
+        console.warn('[tools/supabase/storage-upload] Non-critical:', err);
         errorData = { message: errorText }
       }
 

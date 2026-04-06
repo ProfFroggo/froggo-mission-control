@@ -162,7 +162,8 @@ export const ComboBox = memo(function ComboBox({
         try {
           const providerId = getProviderFromModel(modelId)
           return isProviderAllowed(providerId)
-        } catch {
+        } catch (err) {
+          console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/components/combobox/comboboxx] Non-critical:', err);
           return true
         }
       })
@@ -187,7 +188,8 @@ export const ComboBox = memo(function ComboBox({
         try {
           const providerId = getProviderFromModel(modelId)
           return isProviderAllowed(providerId)
-        } catch {
+        } catch (err) {
+          console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/components/combobox/comboboxx] Non-critical:', err);
           return true
         }
       })

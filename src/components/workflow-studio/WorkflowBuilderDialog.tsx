@@ -767,7 +767,8 @@ export default function WorkflowBuilderDialog({ open, onClose, onCreated }: Work
         setMode('steps');
         setNlError('AI parse unavailable — review and complete the form manually.');
       }
-    } catch {
+    } catch (err) {
+      console.warn('[WorkflowBuilderDialog] Non-critical:', err);
       setName(nlDescription.slice(0, 60));
       setDescription(nlDescription);
       setMode('steps');

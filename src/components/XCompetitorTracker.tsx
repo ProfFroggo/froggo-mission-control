@@ -70,7 +70,8 @@ function loadHandles(): string[] {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return [];
     return JSON.parse(raw) as string[];
-  } catch {
+  } catch (err) {
+    console.warn('[XCompetitorTracker] Non-critical:', err);
     return [];
   }
 }
@@ -358,7 +359,7 @@ export function XCompetitorTracker() {
       .then(data => {
         if (data?.reports?.[0]) setLatestReport(data.reports[0]);
       })
-      .catch(() => {});
+      .catch(err => console.warn('[XCompetitorTracker] Non-critical:', err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

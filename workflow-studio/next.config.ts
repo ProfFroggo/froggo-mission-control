@@ -49,7 +49,8 @@ const nextConfig: NextConfig = {
                   hostname: new URL(getEnv('NEXT_PUBLIC_BRAND_LOGO_URL')!).hostname,
                 },
               ]
-            } catch {
+            } catch (err) {
+              console.warn('[ws/next.config] Non-critical:', err);
               return []
             }
           })()
@@ -64,7 +65,8 @@ const nextConfig: NextConfig = {
                   hostname: new URL(getEnv('NEXT_PUBLIC_BRAND_FAVICON_URL')!).hostname,
                 },
               ]
-            } catch {
+            } catch (err) {
+              console.warn('[ws/next.config] Non-critical:', err);
               return []
             }
           })()
@@ -124,7 +126,8 @@ const nextConfig: NextConfig = {
         ? (() => {
             try {
               return [new URL(env.NEXT_PUBLIC_APP_URL).host]
-            } catch {
+            } catch (err) {
+              console.warn('[ws/next.config] Non-critical:', err);
               return []
             }
           })()

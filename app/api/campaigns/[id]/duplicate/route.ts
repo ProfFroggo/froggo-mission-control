@@ -90,7 +90,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       const roomAgents = members.map(m => m.agentId);
       db.prepare('INSERT OR IGNORE INTO chat_rooms (id, name, agents, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)')
         .run(`campaign-${newId}`, `Campaign: ${newName}`, JSON.stringify(roomAgents), now, now);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[campaigns/[id]/duplicate] Non-critical:', err); }
 
     const newCampaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(newId);
     return NextResponse.json({ success: true, id: newId, campaign: newCampaign }, { status: 201 });

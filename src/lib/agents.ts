@@ -108,7 +108,8 @@ export async function getAgentStatus(sessionKey: string): Promise<{
       status: 'running', // Would check actual status
       lastMessage: history.messages?.[0]?.content,
     };
-  } catch {
+  } catch (err) {
+    console.warn('[agents] Non-critical:', err);
     return { status: 'error' };
   }
 }

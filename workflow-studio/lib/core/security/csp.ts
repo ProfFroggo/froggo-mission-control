@@ -9,7 +9,8 @@ function getHostnameFromUrl(url: string | undefined): string[] {
   if (!url) return []
   try {
     return [`https://${new URL(url).hostname}`]
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/core/security/csp] Non-critical:', err);
     return []
   }
 }

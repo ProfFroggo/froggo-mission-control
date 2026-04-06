@@ -6,6 +6,8 @@ import { emitSSEEvent } from '@/lib/sseEmitter';
 import { spawnSync } from 'child_process';
 import path from 'path';
 
+const INTERNAL_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
+
 export const runtime = 'nodejs';
 
 type ApprovalRow = {
@@ -36,7 +38,8 @@ async function fireExecutor(action: ActionRow, overriddenPayload?: Record<string
 
   const success = result.status === 0 && !result.error;
   let resultData: unknown;
-  try { resultData = JSON.parse(result.stdout || '{}'); } catch {
+  try { resultData = JSON.parse(result.stdout || '{}'); } catch (err) {
+    console.warn('[approvals/[id]] Non-critical:', err);
     resultData = { ok: success, output: result.stdout, error: result.stderr };
   }
 
@@ -114,14 +117,14 @@ export async function PATCH(
                     now
                   );
                 }
-              } catch { /* non-critical */ }
+              } catch (err) { console.warn('[approvals/[id]] Non-critical:', err); }
             }
           }
           db.prepare(
             `INSERT INTO task_activity (taskId, agentId, action, message, timestamp) VALUES (?, ?, ?, ?, ?)`
           ).run(taskId, 'human', 'approval_' + action, `Human ${action}: ${notes || '(no notes)'}`, respondedAt);
         }
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[approvals/[id]] Non-critical:', err); }
     }
 
     // ── Downstream: executable actions ────────────────────────────────────────
@@ -198,7 +201,7 @@ export async function PATCH(
             }
           }
         }
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[approvals/[id]] Non-critical:', err); }
     }
 
     const updated = db.prepare('SELECT * FROM approvals WHERE id = ?').get(id) as Record<string, unknown>;
@@ -218,18 +221,18 @@ export async function PATCH(
         } catch { tweets = [tweetContent]; }
 
         // Post first tweet
-        const firstRes = await fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/x/tweet`, {
+        const firstRes = await fetch(`${INTERNAL_BASE}/api/x/tweet`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: tweets[0] }),
         });
         const firstData = await firstRes.json().catch(() => ({}));
 
-        if (firstData.ok || firstData.id) {
+        if (firstData.success || firstData.id) {
           // Post thread replies if multiple tweets
           let replyTo = firstData.id;
           for (let i = 1; i < tweets.length; i++) {
-            const replyRes = await fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/x/tweet`, {
+            const replyRes = await fetch(`${INTERNAL_BASE}/api/x/tweet`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ text: tweets[i], reply_to: replyTo }),
@@ -254,21 +257,21 @@ export async function PATCH(
         const tweetId = meta.tweetId;
 
         if (replyText && tweetId) {
-          const replyRes = await fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/x/tweet`, {
+          const replyRes = await fetch(`${INTERNAL_BASE}/api/x/tweet`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: replyText, reply_to: tweetId }),
           });
           const replyData = await replyRes.json().catch(() => ({}));
 
-          if (replyData.ok || replyData.id) {
+          if (replyData.success || replyData.id) {
             console.log(`[approvals] Reply posted to tweet ${tweetId}: ${replyData.id}`);
             // Update x_mentions status to 'replied'
             if (meta.mentionId) {
               try {
                 db.prepare(`UPDATE x_mentions SET reply_status = 'replied', replied_at = ?, replied_with_id = ?, updated_at = ? WHERE id = ?`)
                   .run(Date.now(), replyData.id, Date.now(), meta.mentionId);
-              } catch { /* non-critical */ }
+              } catch (err) { console.warn('[approvals/[id]] Non-critical:', err); }
             }
           } else {
             console.error(`[approvals] Reply post failed:`, replyData.error);
@@ -285,7 +288,7 @@ export async function PATCH(
         "SELECT COUNT(*) as c FROM approvals WHERE status = 'pending'"
       ).get() as { c: number }).c;
       emitSSEEvent('inbox.count', { count: pendingCount });
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[approvals/[id]] Non-critical:', err); }
 
     return NextResponse.json(updated);
   } catch (error) {

@@ -125,7 +125,7 @@ function TranscriptPreview({ meetingId }: { meetingId?: string }) {
       const rows = await res.json();
       const match = rows.find((r: Record<string, unknown>) => r.id === meetingId);
       if (match?.content) setContent(match.content as string);
-    } catch { /* ignore */ }
+    } catch (err) { console.warn('[MeetingsPanel] Non-critical:', err); }
     finally { setLoading(false); }
   }, [meetingId, content, loading]);
 
@@ -298,7 +298,7 @@ export default function MeetingsPanel() {
   useEffect(() => {
     navigator.mediaDevices.enumerateDevices()
       .then(devices => setAudioDevices(devices.filter(d => d.kind === 'audioinput')))
-      .catch(() => {});
+      .catch(err => console.warn('[MeetingsPanel] Non-critical:', err));
   }, []);
 
   // Refs
@@ -343,13 +343,13 @@ export default function MeetingsPanel() {
           setDriveFolderInput(data.value);
         }
       })
-      .catch(() => {});
+      .catch(err => console.warn('[MeetingsPanel] Non-critical:', err));
   }, []);
 
   useEffect(() => {
     return () => {
-      if (wsRef.current) { try { wsRef.current.close(); } catch { /* ignore */ } }
-      if (streamRef.current) { try { streamRef.current.getTracks().forEach(t => t.stop()); } catch { /* ignore */ } }
+      if (wsRef.current) { try { wsRef.current.close(); } catch (err) { console.warn('[MeetingsPanel] Non-critical:', err); } }
+      if (streamRef.current) { try { streamRef.current.getTracks().forEach(t => t.stop()); } catch (err) { console.warn('[MeetingsPanel] Non-critical:', err); } }
       if (audioContextRef.current) { audioContextRef.current.close().catch((err) => { logger.error('Failed to close audio context:', err); }); }
     };
   }, []);
@@ -379,8 +379,8 @@ export default function MeetingsPanel() {
       agenda TEXT DEFAULT '', notes TEXT DEFAULT ''
     )`);
     // Add columns to existing tables that lack them
-    await dbExec(`ALTER TABLE meetings ADD COLUMN agenda TEXT DEFAULT ''`).catch(() => {});
-    await dbExec(`ALTER TABLE meetings ADD COLUMN notes TEXT DEFAULT ''`).catch(() => {});
+    await dbExec(`ALTER TABLE meetings ADD COLUMN agenda TEXT DEFAULT ''`).catch(err => console.warn('[MeetingsPanel] Non-critical:', err));
+    await dbExec(`ALTER TABLE meetings ADD COLUMN notes TEXT DEFAULT ''`).catch(err => console.warn('[MeetingsPanel] Non-critical:', err));
     await dbExec(`CREATE TABLE IF NOT EXISTS meeting_transcripts (
       id INTEGER PRIMARY KEY AUTOINCREMENT, meeting_id TEXT NOT NULL,
       speaker TEXT NOT NULL, text TEXT NOT NULL, cleaned_text TEXT,
@@ -409,7 +409,8 @@ export default function MeetingsPanel() {
       if (!res.ok) return '';
       const data = await res.json();
       return data.id || '';
-    } catch {
+    } catch (err) {
+      console.warn('[MeetingsPanel] Non-critical:', err);
       return '';
     }
   }, []);
@@ -434,7 +435,7 @@ export default function MeetingsPanel() {
           description: summary || undefined,
         }),
       });
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[MeetingsPanel] Non-critical:', err); }
   }, []);
 
   const loadDbMeetings = useCallback(async (): Promise<PastMeeting[]> => {
@@ -445,7 +446,7 @@ export default function MeetingsPanel() {
       const rows = await res.json() as Array<Record<string, unknown>>;
       return rows.map((row) => {
         let meta: Record<string, unknown> = {};
-        try { meta = typeof row.metadata === 'string' ? JSON.parse(row.metadata as string) : (row.metadata || {}); } catch { /* */ }
+        try { meta = typeof row.metadata === 'string' ? JSON.parse(row.metadata as string) : (row.metadata || {}); } catch (err) { console.warn('[MeetingsPanel] Non-critical: failed to parse meeting metadata:', err); }
         const scheduledAt = (row.scheduledAt as number) || Date.now();
         return {
           id: row.id as string,
@@ -470,7 +471,8 @@ export default function MeetingsPanel() {
             : undefined,
         };
       });
-    } catch {
+    } catch (err) {
+      console.warn('[MeetingsPanel] Non-critical:', err);
       return [];
     }
   }, []);
@@ -664,7 +666,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       a.click();
       URL.revokeObjectURL(url);
       return filename;
-    } catch {
+    } catch (err) {
+      console.warn('[MeetingsPanel] Non-critical:', err);
       // Save error — non-critical
     }
     return null;
@@ -891,7 +894,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ 'meetings.driveFolder.id': folderId }),
-    }).catch(() => {});
+    }).catch(err => console.warn('[MeetingsPanel] Non-critical:', err));
     setDriveFolderSaved(folderId);
   }, []);
 
@@ -963,7 +966,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
             description: `Extracted from meeting transcript on ${new Date().toLocaleDateString()}`,
           });
           created++;
-        } catch { /* continue on individual failure */ }
+        } catch (err) { console.warn('[MeetingsPanel] Non-critical: continue on individual failure:', err); }
       }
       setTasksCreatedCount(created);
       addActivity({ type: 'task', message: `Created ${created} task(s) from transcript`, timestamp: Date.now() });
@@ -1064,7 +1067,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
           description: `From meeting on ${new Date().toLocaleDateString()}`,
         });
         created++;
-      } catch { /* ignore */ }
+      } catch (err) { console.warn('[MeetingsPanel] Non-critical:', err); }
     }
     return created;
   }, [meetingActionItems]);
@@ -1084,7 +1087,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
           return updated;
         });
       }
-    } catch {
+    } catch (err) {
+      console.warn('[MeetingsPanel] Non-critical:', err);
       // '[Gemini] Cleanup error'
     }
   }, []);
@@ -1100,7 +1104,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
         transcriptBufferRef.current = '';
         setMeetingTranscript(prev => [...prev, text]);
         setMeetingTranscriptLines(prev => [...prev, { text, timestamp: Date.now() }]);
-        if (meetingDbId) saveTranscriptToDb(meetingDbId, text).catch(() => {});
+        if (meetingDbId) saveTranscriptToDb(meetingDbId, text).catch(err => console.warn('[MeetingsPanel] Non-critical:', err));
         cleanupWithGemini(text);
         setStatusMessage('Listening...');
       },
@@ -1170,7 +1174,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
           requestAnimationFrame(pollLevel);
         };
         pollLevel();
-      } catch { /* audio level metering is non-critical */ }
+      } catch (err) { console.warn('[MeetingsPanel] Non-critical: audio level metering is non-critical:', err); }
 
       // Record audio — full recording for post-meeting + chunks for live transcription
       audioChunksRef.current = [];
@@ -1193,7 +1197,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       // Start Web Speech API for live transcription (Chrome/Edge)
       try {
         startSpeechRecognition(dbId);
-      } catch {
+      } catch (err) {
+        console.warn('[MeetingsPanel] Non-critical:', err);
         setStatusMessage('Speech recognition unavailable — audio is still being recorded for post-meeting processing');
       }
 
@@ -1228,11 +1233,11 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       }
       if (recognitionRef.current) {
         recognitionRef.current.onend = null; // prevent auto-restart
-        try { recognitionRef.current.stop(); } catch { /* ignore */ }
+        try { recognitionRef.current.stop(); } catch (err) { console.warn('[MeetingsPanel] Non-critical:', err); }
         recognitionRef.current = null;
       }
       if (wsRef.current) {
-        try { wsRef.current.close(); } catch { /* ignore */ }
+        try { wsRef.current.close(); } catch (err) { console.warn('[MeetingsPanel] Non-critical:', err); }
         wsRef.current = null;
       }
       if (transcriptionIntervalRef.current) {
@@ -1259,7 +1264,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       setMeetingStartTime(null);
       await new Promise(resolve => setTimeout(resolve, 100));
       if (meetingDbId) {
-        try { await endMeetingInDb(meetingDbId, duration); } catch { /* ignore */ }
+        try { await endMeetingInDb(meetingDbId, duration); } catch (err) { console.warn('[MeetingsPanel] Non-critical:', err); }
       }
     } catch (err) {
       // '[Meeting] Error ending:', err;
@@ -1293,7 +1298,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
         setMeetingEndSummary({ savedPath: null, tasksCreated: 0, extractedTasks: [] });
         setStatusMessage('Meeting ended — no audio captured');
         if (meetingDbId) {
-          try { await endMeetingInDb(meetingDbId, elapsedTime); } catch { /* ignore */ }
+          try { await endMeetingInDb(meetingDbId, elapsedTime); } catch (err) { console.warn('[MeetingsPanel] Non-critical:', err); }
         }
         addActivity({ type: 'system', message: 'Meeting ended', timestamp: Date.now() });
         loadPastMeetings();
@@ -1324,7 +1329,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
             finalTranscript = diarData.diarizedTranscript;
           }
         }
-      } catch { /* diarization failed — use raw transcript */ }
+      } catch (err) { console.warn('[MeetingsPanel] Non-critical: diarization failed — use raw transcript:', err); }
       audioChunksRef.current = []; // free memory
 
       // Step 2: Send diarized transcript for summary + task extraction
@@ -1346,20 +1351,21 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
           setMeetingEndSummary({ savedPath: result.savedPath, tasksCreated: 0, extractedTasks: [] });
 
           if (meetingDbId) {
-            try { await endMeetingInDb(meetingDbId, elapsedTime, result.summary || undefined); } catch { /* ignore */ }
+            try { await endMeetingInDb(meetingDbId, elapsedTime, result.summary || undefined); } catch (err) { console.warn('[MeetingsPanel] Non-critical:', err); }
           }
 
           setStatusMessage(finalTranscript.trim() ? 'Meeting processed — review below' : 'Meeting saved — no transcript available');
         } else {
           if (meetingDbId) {
-            try { await endMeetingInDb(meetingDbId, elapsedTime); } catch { /* ignore */ }
+            try { await endMeetingInDb(meetingDbId, elapsedTime); } catch (err) { console.warn('[MeetingsPanel] Non-critical:', err); }
           }
           setMeetingEndSummary({ savedPath: null, tasksCreated: 0, extractedTasks: [] });
           setStatusMessage('Meeting ended');
         }
-      } catch {
+      } catch (err) {
+        console.warn('[MeetingsPanel] Non-critical:', err);
         if (meetingDbId) {
-          try { await endMeetingInDb(meetingDbId, elapsedTime); } catch { /* ignore */ }
+          try { await endMeetingInDb(meetingDbId, elapsedTime); } catch (err) { console.warn('[MeetingsPanel] Non-critical:', err); }
         }
         setMeetingEndSummary({ savedPath: null, tasksCreated: 0, extractedTasks: [] });
         setStatusMessage('Meeting ended');
@@ -1387,7 +1393,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
       ...approved.map(a => `- [${a.type}] ${a.editedText || a.text}`), '',
       'Please confirm any action items.',
     ].filter(Boolean).join('\n');
-    try { await gateway.sendChat(summary); } catch { /* ignore */ }
+    try { await gateway.sendChat(summary); } catch (err) { console.warn('[MeetingsPanel] Non-critical:', err); }
     setMeetingTranscript([]);
     setMeetingActionItems([]);
   }, [meetingTranscript, meetingActionItems]);
@@ -2283,7 +2289,8 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                                             }
                                           }
                                           showToast('success', 'Task created', `"${proposal.title}" assigned to ${proposal.assignedTo}`);
-                                        } catch {
+                                        } catch (err) {
+                                          console.warn('[MeetingsPanel] Non-critical:', err);
                                           showToast('error', 'Failed to create task');
                                         }
                                       }}
@@ -2756,7 +2763,7 @@ Only include tasks that are clearly mentioned or implied. Assign appropriate age
                               )[0];
                               if (latest) {
                                 let meta: Record<string, unknown> = {};
-                                try { meta = typeof latest.metadata === 'string' ? JSON.parse(latest.metadata as string) : (latest.metadata || {}); } catch { /* */ }
+                                try { meta = typeof latest.metadata === 'string' ? JSON.parse(latest.metadata as string) : (latest.metadata || {}); } catch (err) { console.warn('[MeetingsPanel] Non-critical: failed to parse latest meeting metadata:', err); }
                                 const scheduledAt = (latest.scheduledAt as number) || Date.now();
                                 setSelectedMeeting({
                                   id: latest.id as string,

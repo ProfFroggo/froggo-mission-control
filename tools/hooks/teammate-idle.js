@@ -24,7 +24,7 @@ function getDb() {
         )
       );
       db = new Database(DB_PATH, { fileMustExist: true });
-    } catch { return null; }
+    } catch (err) { console.warn('[teammate-idle] Non-critical: DB init failed:', err); return null; }
   }
   return db;
 }
@@ -59,11 +59,11 @@ async function main() {
               `Teammate ${agentId} went idle with task still in-progress (team: ${teamId || 'unknown'})`,
               Date.now()
             );
-          } catch { /* non-critical */ }
+          } catch (err) { console.warn('[tools/teammate-idle] Non-critical:', err); }
         }
       }
     }
-  } catch { /* ignore parse errors */ }
+  } catch (err) { console.warn('[tools/teammate-idle] Non-critical: ignore parse errors:', err); }
 
   process.stdout.write(JSON.stringify({ decision: 'approve' }));
 }

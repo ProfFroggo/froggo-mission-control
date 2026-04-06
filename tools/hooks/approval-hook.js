@@ -45,7 +45,7 @@ function getTrustTierForSession(sessionId) {
       LIMIT 1
     `).get(sessionId);
     return row?.trust_tier || 'apprentice';
-  } catch { return 'apprentice'; }
+  } catch (err) { console.warn('[approval-hook] Non-critical: failed to get agent trust tier:', err); return 'apprentice'; }
 }
 
 function logAnalytics(toolName, tier, decision, agentTrustTier) {

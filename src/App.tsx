@@ -63,21 +63,8 @@ function App() {
   // Radix Theme scaling — user-configurable in settings
   const [radixScaling, setRadixScaling] = useState<'90%' | '95%' | '100%' | '105%' | '110%'>('95%');
 
-  const [currentView, setCurrentViewState] = useState<View>(() => {
-    // Restore from URL hash first (survives refresh), then localStorage default
-    const hash = typeof window !== 'undefined' ? window.location.hash.slice(1) : '';
-    if (hash) return hash;
-    const saved = safeStorage.getItem('mission-control-settings');
-    if (saved) {
-      try {
-        const settings = JSON.parse(saved);
-        return (settings.defaultPanel as View) || 'dashboard';
-      } catch {
-        return 'dashboard';
-      }
-    }
-    return 'dashboard';
-  });
+  // Always start with 'dashboard' (SSR-safe); hydrate from hash/localStorage after mount
+  const [currentView, setCurrentViewState] = useState<View>('dashboard');
 
   const setCurrentView = (view: View) => {
     setCurrentViewState(view);
@@ -105,6 +92,25 @@ function App() {
   const fetchAgents = useStore(s => s.fetchAgents);
   const loadTasksFromDB = useStore(s => s.loadTasksFromDB);
   const toolbarVisible = usePanelConfigStore(s => s.panels.find(p => p.id === 'toolbar')?.visible ?? true);
+
+  // Hydrate client-side state after mount (avoids SSR hydration mismatch)
+  useEffect(() => {
+    // Restore currentView from URL hash or localStorage
+    const hash = window.location.hash.slice(1);
+    if (hash) { setCurrentViewState(hash); }
+    else {
+      const saved = safeStorage.getItem('mission-control-settings');
+      if (saved) {
+        try {
+          const settings = JSON.parse(saved);
+          const panel = (settings.defaultPanel as View) || 'dashboard';
+          if (panel !== 'dashboard') setCurrentViewState(panel);
+        } catch { /* ignore */ }
+      }
+    }
+    // Restore panel config from localStorage
+    usePanelConfigStore.getState().hydrateFromStorage();
+  }, []);
 
   // Load core data on app launch so all views (Dashboard, etc.) have real stats
   useEffect(() => {

@@ -72,7 +72,8 @@ export async function generatePptxFromCode(
       try {
         proc?.removeAllListeners()
         proc?.kill()
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/execution/pptx-vm] Non-critical:', err);
         // Ignore — process may have already exited
       }
       if (err) reject(err)
@@ -163,7 +164,8 @@ export async function generatePptxFromCode(
                 fileReqId: msg.fileReqId,
                 error: err instanceof Error ? err.message : 'File fetch failed',
               })
-            } catch {
+            } catch (err) {
+              console.warn('[ws/lib/execution/pptx-vm] Non-critical:', err);
               // Ignore — process may have died
             }
           }

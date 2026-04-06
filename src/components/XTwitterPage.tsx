@@ -43,7 +43,8 @@ export default function XTwitterPage() {
         // Only check the setup flag — don't hit keychain for individual keys (slow)
         const flagRes = await fetch('/api/settings/twitter_setup_complete').then(r => r.ok ? r.json() : null).catch(() => null);
         setSetupComplete(flagRes?.value === 'true');
-      } catch {
+      } catch (err) {
+        console.warn('[XTwitterPage] Non-critical:', err);
         setSetupComplete(false);
       }
     })();
@@ -87,7 +88,7 @@ export default function XTwitterPage() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value: '' }),
-    }).catch(() => {});
+    }).catch(err => console.warn('[XTwitterPage] Non-critical:', err));
     setSetupComplete(false);
   }, []);
 

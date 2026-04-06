@@ -30,7 +30,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     let body: unknown
     try {
       body = await req.json()
-    } catch {
+    } catch (err) {
+      console.warn('[workspaces/[id]/pptx/preview] Non-critical:', err);
       return NextResponse.json({ error: 'Invalid or missing JSON body' }, { status: 400 })
     }
     const { code } = body as { code?: string }

@@ -16,11 +16,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'id required' }, { status: 400 });
     }
 
-    // Validate catalog entry exists
-    const manifestPath = join(CATALOG_DIR, `${id}.json`);
-    if (!existsSync(manifestPath)) {
+    // Validate catalog entry exists — support both flat ({id}.json) and package ({id}/manifest.json) formats
+    const flatPath = join(CATALOG_DIR, `${id}.json`);
+    const packagePath = join(CATALOG_DIR, id, 'manifest.json');
+    const manifestPath = existsSync(flatPath) ? flatPath : existsSync(packagePath) ? packagePath : null;
+    if (!manifestPath) {
       return NextResponse.json(
-        { error: `No catalog manifest found at catalog/agents/${id}.json` },
+        { error: `No catalog manifest found at catalog/agents/${id}.json or catalog/agents/${id}/manifest.json` },
         { status: 404 }
       );
     }
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({
-      ok: true,
+      success: true,
       message: `Agent ${id} registered in catalog. Call POST /api/agents/hire to install workspace.`,
       nextStep: `POST /api/agents/hire with body { "agentId": "${id}" }`,
     });

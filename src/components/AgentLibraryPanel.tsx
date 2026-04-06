@@ -88,6 +88,10 @@ function LibraryAvatar({ agentId, agentName }: { agentId: string; agentName: str
           src={`/api/agents/${agentId}/avatar`}
           alt={agentName}
           className="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
+          width={48}
+          height={48}
           onError={() => setImgFailed(true)}
         />
       ) : (

@@ -269,7 +269,8 @@ async function resolveLabelNames(
         }
         syncContext[cacheKey] = labelMap
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ws/connectors/gmail/gmail] Non-critical:', err);
       syncContext[cacheKey] = {}
     }
   }

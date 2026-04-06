@@ -31,7 +31,9 @@ import { existsSync, realpathSync, readFileSync } from 'fs';
         const val = trimmed.slice(eq + 1).trim();
         if (!(key in process.env)) process.env[key] = val; // don't override LaunchAgent-injected vars
       }
-    } catch { /* non-fatal */ }
+    } catch (err) {
+      console.warn('[env] Non-critical: failed to load .env file:', err);
+    }
     break; // use first file found
   }
 })();
@@ -45,7 +47,9 @@ function resolveSearchBackend(qmdBin: string): 'qmd' | 'ripgrep' | 'none' {
   try {
     const found = execSync('which rg 2>/dev/null', { encoding: 'utf-8', timeout: 2000 }).trim();
     if (found) return 'ripgrep';
-  } catch { /* not on PATH */ }
+  } catch (err) {
+    console.warn('[env] Non-critical: ripgrep not found on PATH:', err);
+  }
 
   const rgCandidates = [
     '/opt/homebrew/bin/rg',
@@ -69,7 +73,9 @@ function resolveClaudeBin(): string {
   try {
     const found = execSync('which claude 2>/dev/null', { encoding: 'utf-8', timeout: 2000 }).trim();
     if (found) return found;
-  } catch { /* not on PATH */ }
+  } catch (err) {
+    console.warn('[env] Non-critical: claude not found on PATH:', err);
+  }
   const candidates = [
     '/usr/local/bin/claude',
     path.join(os.homedir(), '.npm-global', 'bin', 'claude'),
@@ -90,7 +96,9 @@ function resolveClaudeScript(): string {
   try {
     const real = realpathSync(bin);
     if (real.endsWith('.js')) return real;
-  } catch { /* fallback */ }
+  } catch (err) {
+    console.warn('[env] Non-critical: failed to resolve claude symlink:', err);
+  }
   return bin;
 }
 

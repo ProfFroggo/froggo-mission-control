@@ -28,7 +28,8 @@ export default function ConnectedAccountsPanel() {
       const res = await fetch('/api/google/auth?action=status');
       const data = await res.json();
       setStatus(data);
-    } catch {
+    } catch (err) {
+      console.warn('[ConnectedAccountsPanel] Non-critical:', err);
       setStatus(null);
     } finally {
       setLoading(false);
@@ -40,7 +41,8 @@ export default function ConnectedAccountsPanel() {
   const handleConnect = async () => {
     try {
       window.location.href = '/api/google/auth';
-    } catch {
+    } catch (err) {
+      console.warn('[ConnectedAccountsPanel] Non-critical:', err);
       showToast('error', 'Failed to connect', 'Could not reach auth endpoint');
     }
   };
@@ -55,7 +57,8 @@ export default function ConnectedAccountsPanel() {
       } else {
         showToast('error', 'Failed to revoke', 'Could not revoke access');
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ConnectedAccountsPanel] Non-critical:', err);
       showToast('error', 'Failed to revoke', 'Could not reach revoke endpoint');
     } finally {
       setRevoking(false);

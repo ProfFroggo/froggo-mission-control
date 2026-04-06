@@ -61,7 +61,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     try {
       const body = await req.json().catch(() => ({}));
       payload = Object.keys(body).length > 0 ? body : JSON.parse(row.payload || '{}');
-    } catch {
+    } catch (err) {
+      console.warn('[actions/[id]] Non-critical:', err);
       payload = JSON.parse(row.payload || '{}');
     }
 
@@ -90,7 +91,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     let resultData: unknown;
     try {
       resultData = JSON.parse(result.stdout || '{}');
-    } catch {
+    } catch (err) {
+      console.warn('[actions/[id]] Non-critical:', err);
       resultData = { ok: success, output: result.stdout, error: result.stderr };
     }
 
@@ -112,7 +114,7 @@ export async function POST(req: NextRequest, { params }: Params) {
            VALUES (?, ?, ?, ?, ?)`
         ).run('system', row.agentId, `action_${finalStatus}`,
           `${row.type} action ${finalStatus}: ${row.description || row.id}`, Date.now());
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[actions/[id]] Non-critical:', err); }
     }
 
     const updated = db.prepare('SELECT * FROM pending_actions WHERE id = ?').get(id) as ActionRow;

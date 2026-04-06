@@ -242,7 +242,8 @@ const tryParseJson = (value: unknown): unknown => {
     ) {
       return JSON.parse(trimmed)
     }
-  } catch {
+  } catch (err) {
+    console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/workflow-block/workflow-blockx] Non-critical:', err);
     // Not valid JSON, return original
   }
   return value
@@ -407,7 +408,8 @@ export const getDisplayValue = (value: unknown): string => {
       const json = JSON.stringify(parsedValue)
       if (json.length <= 40) return json
       return `${json.slice(0, 37)}...`
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/workflow-block/workflow-blockx] Non-critical:', err);
       return '-'
     }
   }
@@ -756,7 +758,8 @@ const SubBlockRow = memo(function SubBlockRow({
         const jsonStr = JSON.stringify(parsedValue, null, 0)
         if (jsonStr.length <= 35) return jsonStr
         return `${jsonStr.slice(0, 32)}...`
-      } catch {
+      } catch (err) {
+        console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/workflow-block/workflow-blockx] Non-critical:', err);
         return null
       }
     }

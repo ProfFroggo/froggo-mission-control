@@ -22,7 +22,8 @@ export default function LibrarySkillsTab() {
     try {
       const result = await libraryApi.getSkills();
       setSkills(result?.skills || []);
-    } catch {
+    } catch (err) {
+      console.warn('[LibrarySkillsTab] Non-critical:', err);
       // silent
     } finally {
       setLoading(false);

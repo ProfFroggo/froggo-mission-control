@@ -247,7 +247,8 @@ export function UserInput({
         try {
           const resource = JSON.parse(resourceJson) as MothershipResource
           handleResourceSelect(resource)
-        } catch {
+        } catch (err) {
+          console.warn('[ws/app/workspace/[workspaceId]/home/components/user-input/user-inputx] Non-critical:', err);
           // Invalid JSON — ignore
         }
         return
@@ -316,7 +317,8 @@ export function UserInput({
         prefixRef.current = valueRef.current
         try {
           recognition.start()
-        } catch {
+        } catch (err) {
+          console.warn('[ws/app/workspace/[workspaceId]/home/components/user-input/user-inputx] Non-critical:', err);
           recognitionRef.current = null
           setIsListening(false)
         }
@@ -335,7 +337,8 @@ export function UserInput({
     try {
       recognition.start()
       return true
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/home/components/user-input/user-inputx] Non-critical:', err);
       recognitionRef.current = null
       return false
     }

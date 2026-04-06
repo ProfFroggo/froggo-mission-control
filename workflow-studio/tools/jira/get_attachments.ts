@@ -101,7 +101,7 @@ export const jiraGetAttachmentsTool: ToolConfig<
         try {
           const err = await attachmentsResponse.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/get_attachments] Non-critical:', _e); }
         throw new Error(message)
       }
 
@@ -119,7 +119,7 @@ export const jiraGetAttachmentsTool: ToolConfig<
         try {
           const err = await response.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/get_attachments] Non-critical:', _e); }
         throw new Error(message)
       }
       data = await response.json()

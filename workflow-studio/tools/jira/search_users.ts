@@ -98,7 +98,7 @@ export const jiraSearchUsersTool: ToolConfig<JiraSearchUsersParams, JiraSearchUs
         try {
           const err = await usersResponse.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/search_users] Non-critical:', _e); }
         throw new Error(message)
       }
 
@@ -116,7 +116,7 @@ export const jiraSearchUsersTool: ToolConfig<JiraSearchUsersParams, JiraSearchUs
         try {
           const err = await response.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/search_users] Non-critical:', _e); }
         throw new Error(message)
       }
       data = await response.json()

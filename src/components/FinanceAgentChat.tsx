@@ -156,7 +156,7 @@ export default function FinanceAgentChat({ isOpen = true, onClose, prefillMessag
             setMessages(prev => prev.map(m =>
               m.id === agentMsgId ? { ...m, content: accumulated } : m
             ));
-          } catch { /* skip malformed */ }
+          } catch (err) { console.warn('[FinanceAgentChat] Non-critical: skip malformed:', err); }
         }
       }
 

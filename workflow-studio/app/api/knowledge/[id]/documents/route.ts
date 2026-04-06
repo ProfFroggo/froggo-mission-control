@@ -142,7 +142,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             (f: TagFilterCondition) => f.tagSlot && f.operator && f.value !== undefined
           )
         }
-      } catch {
+      } catch (err) {
+        console.warn('[knowledge/[id]/documents] Non-critical:', err);
         logger.warn(`[${requestId}] Invalid tagFilters param`)
       }
     }

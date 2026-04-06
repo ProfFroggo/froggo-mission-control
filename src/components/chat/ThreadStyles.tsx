@@ -7,7 +7,7 @@ import {
   ActionBarPrimitive,
   BranchPickerPrimitive,
   useMessage,
-  useComposer,
+  useComposerRuntime,
 } from "@assistant-ui/react";
 import {
   Send,
@@ -169,8 +169,31 @@ export function ensureCSS() {
     }
     .aui-composer-icon-btn:disabled { opacity: 0.35; pointer-events: none; }
     .aui-composer-icon-btn-active {
-      background: color-mix(in srgb, var(--mission-control-accent) 12%, transparent);
-      color: var(--mission-control-accent);
+      background: color-mix(in srgb, var(--color-error, #ef4444) 15%, transparent);
+      color: var(--color-error, #ef4444);
+      animation: aui-mic-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes aui-mic-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    /* Listening state: red border + glow on composer root */
+    .aui-composer-root.aui-listening {
+      border-color: var(--color-error, #ef4444);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error, #ef4444) 20%, transparent);
+    }
+    .aui-listening-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 16px; font-size: 12px; font-weight: 500;
+      color: var(--color-error, #ef4444);
+      background: color-mix(in srgb, var(--color-error, #ef4444) 8%, transparent);
+      border-bottom: 1px solid color-mix(in srgb, var(--color-error, #ef4444) 15%, transparent);
+      animation: aui-mic-pulse 1.5s ease-in-out infinite;
+    }
+    .aui-listening-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--color-error, #ef4444);
+      animation: aui-mic-pulse 1s ease-in-out infinite;
     }
     .aui-send-btn {
       display: inline-flex; align-items: center; justify-content: center;
@@ -357,7 +380,7 @@ function AssistantStreamState() {
 function getToolDisplayName(name: string, inputStr?: string): string {
   let input: Record<string, any> = {};
   if (inputStr) {
-    try { input = JSON.parse(inputStr); } catch { /* not JSON */ }
+    try { input = JSON.parse(inputStr); } catch (err) { console.warn('[ThreadStyles] Non-critical: not JSON:', err); }
   }
 
   // ── MCP tools: "mcp_server_tool-name" ─────────────────────────
@@ -754,15 +777,16 @@ function AssistantActionBar() {
 }
 
 function UserActionBar() {
+  // ExternalStoreRuntime does not support message editing — only show copy.
   return (
     <div className="aui-action-bar flex items-center justify-end mt-1 min-h-[26px]">
-      <ActionBarPrimitive.Edit
+      <ActionBarPrimitive.Copy
         className="aui-action-btn"
-        title="Edit message"
-        aria-label="Edit message"
+        title="Copy message"
+        aria-label="Copy message"
       >
-        <Edit3 size={12} />
-      </ActionBarPrimitive.Edit>
+        <Copy size={12} />
+      </ActionBarPrimitive.Copy>
     </div>
   );
 }
@@ -824,7 +848,7 @@ export function parseMessageContent(text: string): { items: ParsedItem[]; isPars
         return { items, isParsed: true };
       }
     }
-  } catch { /* fall through */ }
+  } catch (err) { console.warn('[ThreadStyles] Non-critical: fall through:', err); }
 
   return { items: [{ kind: 'text', text }], isParsed: false };
 }
@@ -1095,17 +1119,33 @@ export function MissionControlComposer({
 }: ComposerProps) {
   ensureCSS();
   const isRunning = loading;
+  const composerRuntime = useComposerRuntime();
 
   return (
-    <ComposerPrimitive.Root className="aui-composer-root">
+    <ComposerPrimitive.Root className={`aui-composer-root ${isListening ? 'aui-listening' : ''}`}>
+      {/* Recording indicator bar — visible when mic is active */}
+      {isListening && (
+        <div className="aui-listening-bar">
+          <span className="aui-listening-dot" />
+          Recording — speak now, click mic to stop
+        </div>
+      )}
       {/* Textarea — always enabled so users can type queued messages while agent streams */}
       <ComposerPrimitive.Input
         className="aui-composer-input min-h-[22px] max-h-[160px] overflow-auto"
-        placeholder={isRunning ? "Type to queue next message…" : (placeholder ?? "Message… (Enter to send, Shift+Enter for newline)")}
+        placeholder={isListening ? "Listening… speak or click mic to stop" : isRunning ? "Type to queue next message…" : (placeholder ?? "Message… (Enter to send, Shift+Enter for newline)")}
         submitMode="enter"
         disabled={disabled && !isRunning}
         rows={1}
         autoFocus
+        onKeyDown={(e) => {
+          // ComposerPrimitive.Input blocks Enter submit during isRunning.
+          // Intercept Enter to manually trigger queue send.
+          if (isRunning && e.key === 'Enter' && !e.shiftKey && composerRuntime.getState().text.trim()) {
+            e.preventDefault();
+            composerRuntime.send();
+          }
+        }}
       />
 
       {/* Footer row with icons + send */}
@@ -1137,9 +1177,9 @@ export function MissionControlComposer({
           )}
         </div>
 
-        {/* Right: stop or send */}
+        {/* Right: stop + send/queue */}
         <div className="flex items-center gap-1.5">
-          {isRunning ? (
+          {isRunning && (
             <button
               type="button"
               onClick={onStop}
@@ -1148,6 +1188,20 @@ export function MissionControlComposer({
               className="aui-stop-btn"
             >
               <Square size={14} fill="currentColor" />
+            </button>
+          )}
+          {isRunning ? (
+            /* Manual queue button — ComposerPrimitive.Send disables itself during isRunning,
+               so we bypass it and call composerRuntime.send() directly to trigger the queue path. */
+            <button
+              type="button"
+              onClick={() => { if (composerRuntime.getState().text.trim()) composerRuntime.send(); }}
+              disabled={disabled}
+              aria-label="Queue message"
+              title="Queue (Enter)"
+              className="aui-send-btn"
+            >
+              <Send size={15} />
             </button>
           ) : (
             <ComposerPrimitive.Send asChild>

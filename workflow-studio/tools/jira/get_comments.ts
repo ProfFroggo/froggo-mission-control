@@ -117,7 +117,7 @@ export const jiraGetCommentsTool: ToolConfig<JiraGetCommentsParams, JiraGetComme
         try {
           const err = await commentsResponse.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/get_comments] Non-critical:', _e); }
         throw new Error(message)
       }
 
@@ -135,7 +135,7 @@ export const jiraGetCommentsTool: ToolConfig<JiraGetCommentsParams, JiraGetComme
         try {
           const err = await response.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/get_comments] Non-critical:', _e); }
         throw new Error(message)
       }
       data = await response.json()

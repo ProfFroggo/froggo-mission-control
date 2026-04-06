@@ -560,7 +560,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         const n = parseInt(saved, 10);
         if (!isNaN(n) && n >= 0 && n < TOTAL_STEPS) return n;
       }
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingFlow] Non-critical:', err);
       // Ignore
     }
     return 0;
@@ -593,7 +594,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   useEffect(() => {
     try {
       localStorage.setItem(STEP_KEY, String(step));
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingFlow] Non-critical:', err);
       // Ignore
     }
   }, [step]);
@@ -642,7 +644,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 'platform.name': platformData.platformName.trim() }),
-      }).catch(() => {});
+      }).catch(err => console.warn('[OnboardingFlow] Non-critical:', err));
     }
     advance();
   }, [platformData, advance]);
@@ -660,7 +662,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           body: JSON.stringify({ status: 'idle' }),
         });
         created++;
-      } catch {
+      } catch (err) {
+        console.warn('[OnboardingFlow] Non-critical:', err);
         // Non-blocking
       }
     }
@@ -683,7 +686,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         }),
       });
       setTaskCreated(true);
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingFlow] Non-critical:', err);
       setTaskCreated(true);
     } finally {
       setCreatingTask(false);
@@ -703,13 +707,15 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 'onboarding.completed': true }),
       });
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingFlow] Non-critical:', err);
       // Non-blocking
     }
     try {
       localStorage.setItem(ONBOARDING_KEY, 'true');
       localStorage.removeItem(STEP_KEY);
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingFlow] Non-critical:', err);
       // Ignore
     }
     setLaunching(false);
@@ -720,7 +726,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     try {
       localStorage.setItem(ONBOARDING_KEY, 'true');
       localStorage.removeItem(STEP_KEY);
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingFlow] Non-critical:', err);
       // Ignore
     }
     onComplete();
@@ -923,7 +930,8 @@ export function QuickTips({ onDone }: QuickTipsProps) {
     } else {
       try {
         localStorage.setItem(TIPS_KEY, 'true');
-      } catch {
+      } catch (err) {
+        console.warn('[OnboardingFlow] Non-critical:', err);
         // Ignore
       }
       onDone();
@@ -933,7 +941,8 @@ export function QuickTips({ onDone }: QuickTipsProps) {
   const handleSkip = () => {
     try {
       localStorage.setItem(TIPS_KEY, 'true');
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingFlow] Non-critical:', err);
       // Ignore
     }
     onDone();
@@ -1021,7 +1030,8 @@ export function useOnboardingFlow() {
       if (!done) {
         setShowFlow(true);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingFlow] Non-critical:', err);
       // Ignore
     }
   }, []);
@@ -1034,7 +1044,8 @@ export function useOnboardingFlow() {
         if (!tipsSeen) {
           setShowTips(true);
         }
-      } catch {
+      } catch (err) {
+        console.warn('[OnboardingFlow] Non-critical:', err);
         // Ignore
       }
     }, 600);
@@ -1049,7 +1060,8 @@ export function useOnboardingFlow() {
       localStorage.removeItem(ONBOARDING_KEY);
       localStorage.removeItem(TIPS_KEY);
       localStorage.removeItem(STEP_KEY);
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingFlow] Non-critical:', err);
       // Ignore
     }
     setShowFlow(true);

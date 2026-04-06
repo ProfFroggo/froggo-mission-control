@@ -133,7 +133,8 @@ export function parseWizardPlan(response: string): WizardPlan | null {
   try {
     const parsed = JSON.parse(jsonStr);
     return wizardPlanSchema.parse(parsed);
-  } catch {
+  } catch (err) {
+    console.warn('[wizardPrompts] Non-critical:', err);
     return null;
   }
 }

@@ -49,11 +49,13 @@ export class JsonYamlChunker {
     try {
       JSON.parse(content)
       return true
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/chunkers/json-yaml-chunker] Non-critical:', err);
       try {
         yaml.load(content)
         return true
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/chunkers/json-yaml-chunker] Non-critical:', err);
         return false
       }
     }
@@ -67,7 +69,8 @@ export class JsonYamlChunker {
       let data: JsonValue
       try {
         data = JSON.parse(content) as JsonValue
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/chunkers/json-yaml-chunker] Non-critical:', err);
         data = yaml.load(content) as JsonValue
       }
       const chunks = this.chunkStructuredData(data)

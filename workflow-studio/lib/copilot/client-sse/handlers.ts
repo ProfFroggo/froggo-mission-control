@@ -648,7 +648,7 @@ export const sseHandlers: Record<string, SSEHandler> = {
                         baselineWorkflow,
                         skipPersist: true,
                       })
-                      .catch(() => {})
+                      .catch(err => console.warn('[ws/lib/copilot/client-sse/handlers] Non-critical:', err))
                   }
                 })
             }

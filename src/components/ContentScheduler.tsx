@@ -150,7 +150,8 @@ export default function ContentScheduler() {
       if (result?.items) {
         setItems((result.items || []) as ScheduledItem[]);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ContentScheduler] Non-critical:', err);
       // ignore
     } finally {
       setLoading(false);

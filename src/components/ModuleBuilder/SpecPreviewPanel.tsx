@@ -44,7 +44,7 @@ export default function SpecPreviewPanel({
   try {
     const plan = generateTaskPlan(spec as ModuleSpec);
     complexity = plan.priority === 'p0' ? 'complex' : plan.priority === 'p1' ? 'medium' : 'simple';
-  } catch { /* spec incomplete */ }
+  } catch (err) { console.warn('[SpecPreviewPanel] Non-critical: spec incomplete:', err); }
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode; badge?: number; action?: React.ReactNode }[] = [
     { id: 'spec', label: 'Spec', icon: <Package size={14} /> },

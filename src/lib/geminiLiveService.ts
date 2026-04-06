@@ -240,7 +240,7 @@ export class GeminiLiveService {
       this.ws.onclose = null;
       this.ws.onerror = null;
       this.ws.onmessage = null;
-      try { this.ws.close(); } catch { /* ignore close errors */ }
+      try { this.ws.close(); } catch (err) { console.warn('[geminiLiveService] Non-critical: ignore close errors:', err); }
       this.ws = null;
     }
     this._connected = false;
@@ -842,7 +842,7 @@ export class GeminiLiveService {
       await new Promise<void>((resolve) => {
         this.videoElement!.onloadedmetadata = () => resolve();
       });
-      await this.videoElement.play().catch(() => {});
+      await this.videoElement.play().catch(err => console.warn('[geminiLiveService] Non-critical:', err));
 
       // Canvas for frame capture
       this.videoCanvas = document.createElement('canvas');
@@ -966,7 +966,8 @@ export class GeminiLiveService {
         // Ensure response is a plain object - stringify and re-parse to strip non-serializable values
         try {
           resp = JSON.parse(JSON.stringify(resp ?? { result: 'ok' }));
-        } catch {
+        } catch (err) {
+          console.warn('[geminiLiveService] Non-critical:', err);
           resp = { result: String(resp) };
         }
         return {

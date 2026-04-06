@@ -118,7 +118,9 @@ export class RouterBlockHandler implements BlockHandler {
           if (errorData.error) {
             errorMessage = errorData.error
           }
-        } catch (_e) {}
+        } catch (_e) {
+          console.warn('[router-handler] Failed to parse provider error response:', _e)
+        }
         throw new Error(errorMessage)
       }
 
@@ -267,7 +269,9 @@ export class RouterBlockHandler implements BlockHandler {
           if (errorData.error) {
             errorMessage = errorData.error
           }
-        } catch (_e) {}
+        } catch (_e) {
+          console.warn('[router-handler] Failed to parse provider error response:', _e)
+        }
         throw new Error(errorMessage)
       }
 

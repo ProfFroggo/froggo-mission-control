@@ -38,7 +38,8 @@ const parseEventData = (data: unknown): EventDataObject => {
       return parsed as EventDataObject
     }
     return undefined
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/copilot/orchestrator/sse/utils] Non-critical:', err);
     return undefined
   }
 }

@@ -28,7 +28,8 @@ function getDb() {
         )
       );
       db = new Database(DB_PATH, { readonly: true, fileMustExist: true });
-    } catch {
+    } catch (err) {
+      console.warn('[precompact-hook] Non-critical: DB init failed:', err);
       return null;
     }
   }
@@ -62,7 +63,7 @@ async function main() {
           }
         }
       }
-    } catch { /* ignore parse errors */ }
+    } catch (err) { console.warn('[tools/precompact-hook] Non-critical: ignore parse errors:', err); }
   }
 
   if (!agentId) {
@@ -125,7 +126,8 @@ async function main() {
     );
 
     process.stdout.write(lines.join('\n'));
-  } catch {
+  } catch (err) {
+    console.warn('[precompact-hook] Non-critical: failed to build context:', err);
     process.stdout.write('');
   }
 }

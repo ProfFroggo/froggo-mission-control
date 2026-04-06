@@ -10,7 +10,7 @@ async function getSetting(key: string): Promise<string> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet(key);
     if (val) return val;
-  } catch {}
+  } catch (err) { console.warn('[x/verify] Non-critical:', err); }
   try {
     const row = getDb().prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
     return row?.value || '';
@@ -78,7 +78,7 @@ export async function POST() {
         if (profile.id && profile.username) {
           return NextResponse.json({ success: true, user: profile, checks });
         }
-      } catch { /* invalid cache */ }
+      } catch (err) { console.warn('[x/verify] Non-critical: invalid cache:', err); }
     }
 
     // 3. Try bearer token with username lookup (if we know the username)

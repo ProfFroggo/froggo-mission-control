@@ -31,7 +31,7 @@ process.stdin.on('end', () => {
             : null;
           if (textBlock) { lastAssistantContent = textBlock.text.slice(0, 1000); break; }
         }
-      } catch { /* skip non-JSON lines */ }
+      } catch (err) { console.warn('[tools/memory-capture] Non-critical: skip non-JSON lines:', err); }
     }
 
     if (!lastAssistantContent) process.exit(0); // Nothing to capture

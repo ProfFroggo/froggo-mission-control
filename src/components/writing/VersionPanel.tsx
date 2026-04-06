@@ -89,7 +89,8 @@ export default function VersionPanel({ onClose }: VersionPanelProps) {
   const formatTime = (isoString: string): string => {
     try {
       return new Date(isoString).toLocaleString();
-    } catch {
+    } catch (err) {
+      console.warn('[VersionPanel] Non-critical:', err);
       return isoString;
     }
   };

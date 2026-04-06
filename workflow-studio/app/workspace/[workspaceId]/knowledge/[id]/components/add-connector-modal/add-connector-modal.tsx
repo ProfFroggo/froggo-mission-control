@@ -284,7 +284,8 @@ export function AddConnectorModal({ open, onOpenChange, knowledgeBaseId }: AddCo
         setError('Failed to prepare credential. Please try again.')
         return
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/knowledge/[id]/components/add-connector-modal/add-connector-modalx] Non-critical:', err);
       setError('Failed to prepare credential. Please try again.')
       return
     }

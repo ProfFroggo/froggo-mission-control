@@ -13,7 +13,7 @@ export async function fetchPersonalEnvironment(
   const response = await fetch(API_ENDPOINTS.ENVIRONMENT, { signal })
 
   if (!response.ok) {
-    await response.text().catch(() => {})
+    await response.text().catch(err => console.warn('[ws/lib/environment/api] Non-critical:', err))
     throw new Error(`Failed to load environment variables: ${response.statusText}`)
   }
 
@@ -33,7 +33,7 @@ export async function fetchWorkspaceEnvironment(
   const response = await fetch(API_ENDPOINTS.WORKSPACE_ENVIRONMENT(workspaceId), { signal })
 
   if (!response.ok) {
-    await response.text().catch(() => {})
+    await response.text().catch(err => console.warn('[ws/lib/environment/api] Non-critical:', err))
     throw new Error(`Failed to load workspace environment: ${response.statusText}`)
   }
 

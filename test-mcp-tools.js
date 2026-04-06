@@ -24,7 +24,9 @@ proc.stdout.on('data', d => {
         // Initialized, now request tools list
         proc.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }) + '\n');
       }
-    } catch(e) {}
+    } catch(e) {
+      console.warn('[test-mcp-tools] Failed to parse MCP response line:', e);
+    }
   }
 });
 proc.stderr.on('data', d => process.stderr.write(d));

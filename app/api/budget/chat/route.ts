@@ -15,7 +15,9 @@ async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val;
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.warn('[budget/chat] Keychain lookup for gemini_api_key failed:', err);
+  }
   const db = getDb();
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get('gemini_api_key') as { value: string } | undefined;
   return row?.value || process.env.GEMINI_API_KEY || null;
@@ -95,7 +97,8 @@ async function geminiChat(
       }
       const data = await res.json();
       return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
-    } catch {
+    } catch (err) {
+      console.warn('[budget/chat] Non-critical:', err);
       if (model === GEMINI_MODEL) continue;
       return null;
     }
@@ -109,9 +112,9 @@ export async function GET() {
     const messages = db.prepare(
       `SELECT id, role, content, created_at FROM budget_chat_messages ORDER BY created_at ASC LIMIT 200`
     ).all();
-    return NextResponse.json({ ok: true, messages });
+    return NextResponse.json({ success: true, messages });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -171,10 +174,10 @@ export async function POST(req: NextRequest) {
     db.prepare(`INSERT INTO budget_chat_messages (role, content, created_at) VALUES (?, ?, ?)`).run('user', message, now);
     db.prepare(`INSERT INTO budget_chat_messages (role, content, created_at) VALUES (?, ?, ?)`).run('assistant', reply, now + 1);
 
-    return NextResponse.json({ ok: true, reply });
+    return NextResponse.json({ success: true, reply });
   } catch (err) {
     console.error('[budget/chat]', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -182,8 +185,8 @@ export async function DELETE() {
   try {
     const db = getDb();
     db.prepare(`DELETE FROM budget_chat_messages`).run();
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

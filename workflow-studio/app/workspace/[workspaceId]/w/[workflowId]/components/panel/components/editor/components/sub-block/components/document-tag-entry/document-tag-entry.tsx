@@ -103,7 +103,8 @@ export function DocumentTagEntry({
         fieldType: t.fieldType || 'text',
         collapsed: t.collapsed ?? false,
       }))
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/components/document-tag-entry/document-tag-entryx] Non-critical:', err);
       return []
     }
   }

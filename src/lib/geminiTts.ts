@@ -46,7 +46,9 @@ export async function geminiTts(
   try {
     const { authHeaders } = await import('./api');
     headers = { ...headers, ...authHeaders() };
-  } catch { /* auth module unavailable */ }
+  } catch (err) {
+    console.warn('[geminiTts] Non-critical: auth module unavailable:', err);
+  }
 
   let response: Response;
   try {
@@ -56,7 +58,8 @@ export async function geminiTts(
       body: JSON.stringify({ text, voiceName }),
       signal,
     });
-  } catch {
+  } catch (err) {
+    console.warn('[geminiTts] Non-critical:', err);
     // Fetch failed or aborted — resolve silently
     return;
   }
@@ -66,7 +69,8 @@ export async function geminiTts(
   let data: any;
   try {
     data = await response.json();
-  } catch {
+  } catch (err) {
+    console.warn('[geminiTts] Non-critical:', err);
     return;
   }
 
@@ -82,7 +86,8 @@ export async function geminiTts(
     const binary = atob(part.data);
     bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  } catch {
+  } catch (err) {
+    console.warn('[geminiTts] Non-critical:', err);
     return;
   }
 
@@ -92,9 +97,10 @@ export async function geminiTts(
   try {
     ctx = new AudioContext({ sampleRate });
     if (sinkId && typeof (ctx as any).setSinkId === 'function') {
-      await (ctx as any).setSinkId(sinkId).catch(() => {});
+      await (ctx as any).setSinkId(sinkId).catch(err => console.warn('[geminiTts] Non-critical:', err));
     }
-  } catch {
+  } catch (err) {
+    console.warn('[geminiTts] Non-critical:', err);
     return;
   }
 
@@ -110,7 +116,7 @@ export async function geminiTts(
   }
 
   return new Promise((resolve) => {
-    if (signal?.aborted) { ctx.close().catch(() => {}); resolve(); return; }
+    if (signal?.aborted) { ctx.close().catch(err => console.warn('[geminiTts] Non-critical:', err)); resolve(); return; }
 
     const gainNode = ctx.createGain();
     gainNode.gain.value = Math.min(1, Math.max(0, volume));
@@ -121,8 +127,8 @@ export async function geminiTts(
     source.connect(gainNode);
 
     const onAbort = () => {
-      try { source.stop(); } catch { /* already stopped */ }
-      ctx.close().catch(() => {});
+      try { source.stop(); } catch (err) { console.warn('[geminiTts] Non-critical: audio source already stopped:', err); }
+      ctx.close().catch(err => console.warn('[geminiTts] Non-critical: AudioContext close failed:', err));
       resolve();
     };
 
@@ -130,7 +136,7 @@ export async function geminiTts(
 
     source.onended = () => {
       signal?.removeEventListener('abort', onAbort);
-      ctx.close().catch(() => {});
+      ctx.close().catch(err => console.warn('[geminiTts] Non-critical: AudioContext close failed:', err));
       resolve();
     };
 

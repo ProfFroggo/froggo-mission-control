@@ -303,7 +303,8 @@ const getPresignedData = async (
       let errorDetails: any = null
       try {
         errorDetails = await presignedResponse.json()
-      } catch {
+      } catch (err) {
+        console.warn('[ws/app/workspace/[workspaceId]/knowledge/hooks/use-knowledge-upload] Non-critical:', err);
         errorDetails = null
       }
 
@@ -793,7 +794,8 @@ export function useKnowledgeUpload(options: UseKnowledgeUploadOptions = {}) {
         let errorData: any = null
         try {
           errorData = await uploadResponse.json()
-        } catch {
+        } catch (err) {
+          console.warn('[ws/app/workspace/[workspaceId]/knowledge/hooks/use-knowledge-upload] Non-critical:', err);
           errorData = null
         }
 
@@ -1032,7 +1034,8 @@ export function useKnowledgeUpload(options: UseKnowledgeUploadOptions = {}) {
         let errorData: any = null
         try {
           errorData = await processResponse.json()
-        } catch {
+        } catch (err) {
+          console.warn('[ws/app/workspace/[workspaceId]/knowledge/hooks/use-knowledge-upload] Non-critical:', err);
           errorData = null
         }
 

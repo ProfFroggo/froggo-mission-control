@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({
-      ok: true,
+      success: true,
       tweets: results.data.data ?? [],
       includes: results.data.includes ?? {},
     });

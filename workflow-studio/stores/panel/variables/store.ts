@@ -48,7 +48,8 @@ function validateVariable(variable: Variable): string | undefined {
           if (!Array.isArray(parsed)) {
             return 'Not a valid array'
           }
-        } catch {
+        } catch (err) {
+          console.warn('[ws/stores/panel/variables/store] Non-critical:', err);
           return 'Invalid array syntax'
         }
         break

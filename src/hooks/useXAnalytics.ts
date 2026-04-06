@@ -38,7 +38,7 @@ export interface XTweet {
 }
 
 export interface XAnalyticsData {
-  ok: boolean;
+  success: boolean;
   profile?: XProfile;
   tweets?: XTweet[];
 }
@@ -69,13 +69,13 @@ export async function fetchXAnalytics(): Promise<XAnalyticsData> {
   inflightPromise = (async () => {
     try {
       const res = await fetch('/api/x/analytics');
-      if (!res.ok) return { ok: false };
+      if (!res.ok) return { success: false };
       const data = (await res.json()) as XAnalyticsData;
       cachedData = data;
       cachedAt = Date.now();
       return data;
     } catch {
-      return { ok: false };
+      return { success: false };
     } finally {
       inflightPromise = null;
     }

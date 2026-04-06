@@ -27,7 +27,8 @@ export default function RunsTab() {
     try {
       const execs = await wsClient.listExecutions(workflowId);
       setExecutions(execs);
-    } catch {
+    } catch (err) {
+      console.warn('[RunsTab] Non-critical:', err);
       setExecutions([]);
     } finally {
       setLoading(false);

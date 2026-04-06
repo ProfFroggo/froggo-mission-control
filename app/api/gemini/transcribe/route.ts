@@ -52,20 +52,27 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await audioFile.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString('base64');
 
+    // Strip codec params from MIME type (Gemini wants just "audio/webm" not "audio/webm;codecs=opus")
+    const cleanMime = mimeType.split(';')[0].trim() || 'audio/webm';
+
+    // Use gemini-2.0-flash which has native audio understanding
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{
             parts: [
-              { inlineData: { mimeType, data: base64 } },
+              { inlineData: { mimeType: cleanMime, data: base64 } },
               {
-                text: 'Transcribe this audio accurately. Include speaker labels if multiple speakers are detected. Format as a clean transcript with timestamps where possible.',
+                text: 'Transcribe this audio exactly as spoken. Output only the spoken words, nothing else. If the audio is silent or inaudible, respond with an empty string.',
               },
             ],
           }],
+          generationConfig: {
+            temperature: 0,
+          },
         }),
       }
     );
@@ -80,7 +87,13 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
-    const transcript = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    let transcript = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    // Filter out non-transcription responses (model refusing or describing silence)
+    const refusalPatterns = /unable to (process|transcribe)|cannot transcribe|no (speech|audio|spoken)|silence|inaudible/i;
+    if (refusalPatterns.test(transcript)) {
+      transcript = '';
+    }
 
     return NextResponse.json({ transcript });
   } catch (err) {

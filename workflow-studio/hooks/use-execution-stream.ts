@@ -273,7 +273,8 @@ export function useExecutionStream() {
         let errorResponse: any
         try {
           errorResponse = await response.json()
-        } catch {
+        } catch (err) {
+          console.warn('[ws/hooks/use-execution-stream] Non-critical:', err);
           const error = new Error(`Server error (${response.status}): ${response.statusText}`)
           Object.assign(error, { httpStatus: response.status })
           throw error

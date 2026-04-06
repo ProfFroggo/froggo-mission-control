@@ -137,7 +137,8 @@ export function MessagesInput({
           }))
         return validMessages.length > 0 ? validMessages : null
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/components/messages-input/messages-inputx] Non-critical:', err);
       // Parsing failed
     }
     return null

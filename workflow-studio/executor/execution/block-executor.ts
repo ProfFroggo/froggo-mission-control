@@ -427,7 +427,8 @@ export class BlockExecutor {
       if (typeof value === 'string' && isJSONString(value)) {
         try {
           result[key] = JSON.parse(value.trim())
-        } catch {
+        } catch (err) {
+          console.warn('[ws/executor/execution/block-executor] Non-critical:', err);
           // Not valid JSON, keep original string
           result[key] = value
         }
@@ -554,7 +555,8 @@ export class BlockExecutor {
         apiUrl: buildResumeApiUrl(baseUrl, workflowId, executionId, contextId),
         uiUrl: buildResumeUiUrl(baseUrl, workflowId, executionId),
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ws/executor/execution/block-executor] Non-critical:', err);
       resumeLinks = {
         apiUrl: buildResumeApiUrl(undefined, workflowId, executionId, contextId),
         uiUrl: buildResumeUiUrl(undefined, workflowId, executionId),
@@ -635,7 +637,7 @@ export class BlockExecutor {
       } catch (error) {
         logger.error('Error in onStream callback', { blockId, error })
         // Cancel the client stream to release the tee'd buffer
-        await processedClientStream.cancel().catch(() => {})
+        await processedClientStream.cancel().catch(err => console.warn('[block-executor] Failed to cancel client stream:', err))
       }
     })()
 
@@ -664,7 +666,7 @@ export class BlockExecutor {
       })
     } catch (error) {
       logger.error('Error in onStream callback', { blockId, error })
-      await processedStream.cancel().catch(() => {})
+      await processedStream.cancel().catch(err => console.warn('[block-executor] Failed to cancel processed stream:', err))
     }
   }
 
@@ -690,8 +692,10 @@ export class BlockExecutor {
       logger.error('Error reading executor stream for block', { blockId, error })
     } finally {
       try {
-        await reader.cancel().catch(() => {})
-      } catch {}
+        await reader.cancel().catch(err => console.warn('[block-executor] Failed to cancel reader:', err))
+      } catch (err) {
+        console.warn('[block-executor] Failed to clean up stream reader:', err);
+      }
     }
 
     const fullContent = chunks.join('')

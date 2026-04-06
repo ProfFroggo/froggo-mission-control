@@ -38,7 +38,7 @@ async function loadApiKey(): Promise<string> {
       const data = await res.json();
       return data.apiKey || '';
     }
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[VoiceChatPanel] Non-critical:', err); }
   return '';
 }
 
@@ -69,7 +69,8 @@ async function loadVoiceHistory(agentId: string): Promise<VoiceChatMessage[]> {
         content: m.content,
         timestamp: m.timestamp,
       }));
-  } catch {
+  } catch (err) {
+    console.warn('[VoiceChatPanel] Non-critical:', err);
     return [];
   }
 }
@@ -170,10 +171,10 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
               stream.getTracks().forEach(t => t.stop());
               enumerate();
             })
-            .catch(() => {});
+            .catch(err => console.warn('[VoiceChatPanel] Non-critical:', err));
         }
       });
-    }).catch(() => {});
+    }).catch(err => console.warn('[VoiceChatPanel] Non-critical:', err));
   }, [showSettings]);
 
   // Sync agentId prop
@@ -533,7 +534,7 @@ export default function VoiceChatPanel({ agentId, sessionKey: _externalSessionKe
   
   const clearHistory = () => {
     setMessages([]);
-    import('../lib/api').then(({ chatApi }) => chatApi.deleteSession(`voice:${selectedAgent.id}`)).catch(() => {});
+    import('../lib/api').then(({ chatApi }) => chatApi.deleteSession(`voice:${selectedAgent.id}`)).catch(err => console.warn('[VoiceChatPanel] Non-critical:', err));
   };
   
   const handleAgentSwitch = async (agent: ChatAgent) => {
@@ -1206,7 +1207,7 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
         await fetch(`/api/agents/${args.agent_id}/spawn`, { method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: args.message }),
-        }).catch(() => {});
+        }).catch(err => console.warn('[VoiceChatPanel] Non-critical:', err));
         invalidateAgentContext(args.agent_id);
         return { success: true, agent_spawned: args.agent_id };
       }
@@ -1258,7 +1259,8 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
           let data;
           try {
             data = JSON.parse(r.stdout);
-          } catch {
+          } catch (err) {
+            console.warn('[VoiceChatPanel] Non-critical:', err);
             return { output: 'Search failed - invalid response format' };
           }
           
@@ -1320,7 +1322,7 @@ async function executeToolCall(fnName: string, args: Record<string, any>, curren
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: `memory-${today}.md`, content: `\n## ${time}\n${args.note || ''}`, agentId: args.agent_id || 'voice' }),
-        }).catch(() => {});
+        }).catch(err => console.warn('[VoiceChatPanel] Non-critical:', err));
         return { success: true, message: `Note saved` };
       }
       case 'send_whatsapp': {

@@ -41,7 +41,8 @@ export async function POST() {
       let catalogJson: Record<string, unknown>;
       try {
         catalogJson = JSON.parse(readFileSync(catalogJsonPath, 'utf-8'));
-      } catch {
+      } catch (err) {
+        console.warn('[agents/seed-presets] Non-critical:', err);
         continue;
       }
 
@@ -92,7 +93,7 @@ export async function POST() {
     }
 
     return NextResponse.json({
-      ok: true,
+      success: true,
       agents: results.length,
       results,
     });

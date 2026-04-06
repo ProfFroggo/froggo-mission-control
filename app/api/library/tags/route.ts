@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
             if (typeof t === 'string' && t.trim()) tagSet.add(t.trim().toLowerCase());
           }
         }
-      } catch {
+      } catch (err) {
+        console.warn('[library/tags] Non-critical:', err);
         // Malformed tags JSON — skip
       }
     }

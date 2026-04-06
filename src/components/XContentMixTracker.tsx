@@ -57,7 +57,7 @@ export const XContentMixTracker: React.FC = () => {
     try {
       // Use shared fetch with in-flight deduplication + caching
       const data = await fetchXAnalytics();
-      if (!data.ok) {
+      if (!data.success) {
         throw new Error('API returned error');
       }
       const tweets: any[] = data.tweets ?? [];

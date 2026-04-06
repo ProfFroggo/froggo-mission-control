@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: `Unknown report type: ${type}` }, { status: 400 });
   } catch (err) {
     console.error('GET /api/reports error:', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 

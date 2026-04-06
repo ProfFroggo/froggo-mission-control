@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
 
   try {
     let body: { text?: string; reply_to?: string };
-    try { body = await req.json(); } catch {
+    try { body = await req.json(); } catch (err) {
+      console.warn('[x/tweet] Non-critical:', err);
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
     const { text, reply_to } = body;
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
     if (reply_to) params.reply = { in_reply_to_tweet_id: String(reply_to) };
 
     const result = await client.v2.tweet(params);
-    return NextResponse.json({ ok: true, id: result.data.id, text: result.data.text });
+    return NextResponse.json({ success: true, id: result.data.id, text: result.data.text });
   } catch (err: any) {
     const msg = err?.message || String(err);
     const detail = err?.data?.detail || err?.data?.errors?.[0]?.message || err?.errors?.[0]?.message || '';

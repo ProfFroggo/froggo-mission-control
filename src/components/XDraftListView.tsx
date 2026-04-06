@@ -56,7 +56,8 @@ export default function XDraftListView() {
       const drafts = (Array.isArray(allItems) ? allItems : [])
         .filter((item: any) => item.type === 'draft' || item.type === 'idea');
       setDrafts(drafts as Draft[]);
-    } catch {
+    } catch (err) {
+      console.warn('[XDraftListView] Non-critical:', err);
       setDrafts([]);
     } finally {
       setLoading(false);
@@ -87,7 +88,8 @@ export default function XDraftListView() {
     try {
       const parsed = JSON.parse(content);
       return parsed.tweets || [];
-    } catch {
+    } catch (err) {
+      console.warn('[XDraftListView] Non-critical:', err);
       return [content];
     }
   };
@@ -107,7 +109,8 @@ export default function XDraftListView() {
       await approvalApi.respond(id, 'approve');
       await loadDrafts();
       showToast('success', 'Draft approved');
-    } catch {
+    } catch (err) {
+      console.warn('[XDraftListView] Non-critical:', err);
       showToast('error', 'Failed to approve draft');
     } finally {
       setActionLoadingId(null);
@@ -120,7 +123,8 @@ export default function XDraftListView() {
       await approvalApi.respond(id, 'reject');
       await loadDrafts();
       showToast('success', 'Draft rejected');
-    } catch {
+    } catch (err) {
+      console.warn('[XDraftListView] Non-critical:', err);
       showToast('error', 'Failed to reject draft');
     } finally {
       setActionLoadingId(null);
@@ -135,7 +139,8 @@ export default function XDraftListView() {
       try {
         await approvalApi.respond(draft.id, 'approve');
         approved++;
-      } catch {
+      } catch (err) {
+        console.warn('[XDraftListView] Non-critical:', err);
         // continue on individual failures
       }
     }

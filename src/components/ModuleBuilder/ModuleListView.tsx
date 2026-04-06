@@ -40,7 +40,7 @@ function MiniProgress({ moduleId, taskIds, onBuild }: MiniProgressProps) {
           setTotal(data.total);
         }
       })
-      .catch(() => {});
+      .catch(err => console.warn('[ModuleListView] Non-critical:', err));
   }, [moduleId, taskIds]);
 
   if (!taskIds || taskIds.length === 0) {

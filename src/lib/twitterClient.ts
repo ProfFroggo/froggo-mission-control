@@ -29,7 +29,9 @@ export async function getTwitterClient(): Promise<TwitterApi | null> {
     const { keychainGet } = await import('./keychain');
     accessToken = await keychainGet('twitter_access_token') ?? '';
     accessSecret = await keychainGet('twitter_access_token_secret') ?? '';
-  } catch {}
+  } catch (err) {
+    console.warn('[twitterClient] Non-critical: keychain lookup for twitter tokens failed:', err);
+  }
 
   // DB fallback
   if (!accessToken || !accessSecret) {
@@ -39,7 +41,9 @@ export async function getTwitterClient(): Promise<TwitterApi | null> {
       const getVal = (key: string) => (db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined)?.value || '';
       if (!accessToken) accessToken = getVal('twitter_access_token');
       if (!accessSecret) accessSecret = getVal('twitter_access_token_secret');
-    } catch {}
+    } catch (err) {
+      console.warn('[twitterClient] Non-critical: DB fallback for twitter tokens failed:', err);
+    }
   }
 
   // Fallback to env

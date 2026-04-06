@@ -93,7 +93,7 @@ export const jiraAssignIssueTool: ToolConfig<JiraAssignIssueParams, JiraAssignIs
         try {
           const err = await assignResponse.json()
           message = err?.errorMessages?.join(', ') || err?.message || message
-        } catch (_e) {}
+        } catch (_e) { console.warn('[ws/jira/assign_issue] Non-critical:', _e); }
         throw new Error(message)
       }
 
@@ -113,7 +113,7 @@ export const jiraAssignIssueTool: ToolConfig<JiraAssignIssueParams, JiraAssignIs
       try {
         const err = await response.json()
         message = err?.errorMessages?.join(', ') || err?.message || message
-      } catch (_e) {}
+      } catch (_e) { console.warn('[ws/jira/assign_issue] Non-critical:', _e); }
       throw new Error(message)
     }
 

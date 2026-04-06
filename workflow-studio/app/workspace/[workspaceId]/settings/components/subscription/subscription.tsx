@@ -1032,7 +1032,8 @@ export function Subscription() {
                       if (value && value !== billedAccountUserId) {
                         try {
                           await updateWorkspaceSettings({ billedAccountUserId: value })
-                        } catch {
+                        } catch (err) {
+                          console.warn('[ws/app/workspace/[workspaceId]/settings/components/subscription/subscriptionx] Non-critical:', err);
                           /* logged above */
                         }
                       }

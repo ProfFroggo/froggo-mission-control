@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     )
   } finally {
     if (lockValue) {
-      await releaseLock(LOCK_KEY, lockValue).catch(() => {})
+      await releaseLock(LOCK_KEY, lockValue).catch(err => console.warn('[webhooks/poll/imap] Non-critical:', err))
     }
   }
 }

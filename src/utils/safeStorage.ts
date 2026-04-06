@@ -15,7 +15,8 @@ export const safeStorage = {
   getItem(key: string): string | null {
     try {
       return localStorage.getItem(key);
-    } catch {
+    } catch (err) {
+      console.warn('[safeStorage] Non-critical:', err);
       return null;
     }
   },
@@ -27,8 +28,8 @@ export const safeStorage = {
     } catch (e) {
       if (e instanceof DOMException && e.name === 'QuotaExceededError') {
         // Evict the stale key and retry once with the new (smaller) value
-        try { localStorage.removeItem(key); } catch {}
-        try { localStorage.setItem(key, value); return true; } catch {}
+        try { localStorage.removeItem(key); } catch (err2) { console.warn('[safeStorage] Failed to evict key:', err2); }
+        try { localStorage.setItem(key, value); return true; } catch (err3) { console.warn('[safeStorage] Failed to re-set after eviction:', err3); }
       }
       return false;
     }
@@ -38,7 +39,8 @@ export const safeStorage = {
     try {
       localStorage.removeItem(key);
       return true;
-    } catch {
+    } catch (err) {
+      console.warn('[safeStorage] Non-critical:', err);
       return false;
     }
   },
@@ -47,7 +49,8 @@ export const safeStorage = {
     try {
       const item = localStorage.getItem(key);
       return item ? (JSON.parse(item) as T) : defaultValue;
-    } catch {
+    } catch (err) {
+      console.warn('[safeStorage] Non-critical:', err);
       return defaultValue;
     }
   },

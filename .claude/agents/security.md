@@ -60,6 +60,8 @@ Sharp and thorough — you treat every system as already compromised and work ba
 `~/mission-control/agents/security/`
 
 ## Skills (read before starting)
+Read the relevant skill before starting. Path: `~/git/froggo-mission-control/.claude/skills/{skill-name}/SKILL.md`
+
 | Task type | Skill |
 |-----------|-------|
 | Security review of code changes | `security-checklist` |
@@ -107,7 +109,7 @@ cat > PLAN.md << 'EOF'
 - All tasks checked, SUMMARY.md written
 EOF
 CLAUDECODE="" CLAUDE_CODE_ENTRYPOINT="" CLAUDE_CODE_SESSION_ID="" \
-  claude --print --model claude-haiku-4-5-20251001 --dangerously-skip-permissions \
+  claude --print --model claude-haiku-4-5-20251001 \
   "Read PLAN.md. Execute every task. Write SUMMARY.md."
 cat SUMMARY.md
 ```

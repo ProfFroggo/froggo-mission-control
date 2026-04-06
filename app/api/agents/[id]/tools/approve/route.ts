@@ -36,7 +36,7 @@ export async function POST(
       // Permanently add to agent's granted tools in settings
       const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(`agent.${id}.grantedTools`) as { value: string } | undefined;
       let current: string[] = [];
-      if (row?.value) { try { current = JSON.parse(row.value); } catch { /* ignore */ } }
+      if (row?.value) { try { current = JSON.parse(row.value); } catch (err) { console.warn('[agents/[id]/tools/approve] Non-critical:', err); } }
       if (!current.includes(toolName)) {
         current.push(toolName);
         db.prepare(`INSERT INTO settings (key, value) VALUES (?, ?)
@@ -53,25 +53,25 @@ export async function POST(
     // Update approval record to approved
     const existingApproval = db.prepare('SELECT metadata FROM approvals WHERE id = ?').get(approvalId) as { metadata: string } | undefined;
     let meta: Record<string, unknown> = {};
-    try { meta = JSON.parse(existingApproval?.metadata ?? '{}'); } catch { /* ignore */ }
+    try { meta = JSON.parse(existingApproval?.metadata ?? '{}'); } catch (err) { console.warn('[agents/[id]/tools/approve] Non-critical:', err); }
     meta.resolvedAt = Date.now(); meta.resolvedBy = 'user'; meta.action = action;
     db.prepare(`UPDATE approvals SET status = 'approved', metadata = ? WHERE id = ?`)
       .run(JSON.stringify(meta), approvalId);
 
     emitSSEEvent('tool.granted', { agentId: id, toolName, scope: action === 'grant' ? 'permanent' : 'session', approvalId });
-    return NextResponse.json({ ok: true, granted: true, scope: action === 'grant' ? 'permanent' : 'session' });
+    return NextResponse.json({ success: true, granted: true, scope: action === 'grant' ? 'permanent' : 'session' });
   }
 
   if (action === 'reject' || action === 'reject_reason') {
     const existingRej = db.prepare('SELECT metadata FROM approvals WHERE id = ?').get(approvalId) as { metadata: string } | undefined;
     let rejMeta: Record<string, unknown> = {};
-    try { rejMeta = JSON.parse(existingRej?.metadata ?? '{}'); } catch { /* ignore */ }
+    try { rejMeta = JSON.parse(existingRej?.metadata ?? '{}'); } catch (err) { console.warn('[agents/[id]/tools/approve] Non-critical:', err); }
     rejMeta.resolvedAt = Date.now(); rejMeta.resolvedBy = 'user'; rejMeta.action = action; rejMeta.reason = reason ?? null;
     db.prepare(`UPDATE approvals SET status = 'rejected', metadata = ? WHERE id = ?`)
       .run(JSON.stringify(rejMeta), approvalId);
 
     emitSSEEvent('tool.rejected', { agentId: id, toolName, approvalId, reason: reason ?? null });
-    return NextResponse.json({ ok: true, granted: false });
+    return NextResponse.json({ success: true, granted: false });
   }
 
   return NextResponse.json({ error: 'Unknown action' }, { status: 400 });

@@ -40,7 +40,7 @@ async function main() {
     if (!agentId && parsed.env) {
       agentId = parsed.env.CLAUDE_AGENT_ID || parsed.env.AGENT_ID || null;
     }
-  } catch { /* non-JSON stdin is fine */ }
+  } catch (err) { console.warn('[tools/pre-compact-summary] Non-critical: non-JSON stdin is fine:', err); }
 
   // Write compaction log entry (non-critical — never block)
   try {
@@ -56,7 +56,7 @@ async function main() {
     });
 
     fs.appendFileSync(LOG_FILE, entry + '\n', 'utf-8');
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[tools/pre-compact-summary] Non-critical:', err); }
 
   // Output nothing — context injection is handled by precompact-hook.js
   process.stdout.write('');

@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
         `SELECT * FROM budget_quarters ORDER BY year DESC, quarter DESC`
       ).all() as any[];
       const enriched = quarters.map(q => ({ ...q, ...quarterStats(db, q.id) }));
-      return NextResponse.json({ ok: true, quarters: enriched });
+      return NextResponse.json({ success: true, quarters: enriched });
     }
 
     if (resource === 'categories') {
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
         tags: (() => { try { return JSON.parse(c.tags || '[]'); } catch { return []; } })(),
         ...categoryStats(db, c.id),
       }));
-      return NextResponse.json({ ok: true, categories: enriched });
+      return NextResponse.json({ success: true, categories: enriched });
     }
 
     if (resource === 'invoices') {
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
          ${where}
          ORDER BY i.date DESC LIMIT ?`
       ).all(...vals, limit);
-      return NextResponse.json({ ok: true, invoices });
+      return NextResponse.json({ success: true, invoices });
     }
 
     if (resource === 'overall') {
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
         FROM budget_quarters q
         LEFT JOIN budget_invoices i ON i.quarter_id = q.id
       `).get() as any;
-      return NextResponse.json({ ok: true, totals });
+      return NextResponse.json({ success: true, totals });
     }
 
     if (resource === 'summary') {
@@ -121,13 +121,13 @@ export async function GET(req: NextRequest) {
         };
       });
 
-      return NextResponse.json({ ok: true, summary: qSummary, invoice_count: invoices.length, invoices });
+      return NextResponse.json({ success: true, summary: qSummary, invoice_count: invoices.length, invoices });
     }
 
     return NextResponse.json({ error: 'Unknown resource' }, { status: 400 });
   } catch (err) {
     console.error('[budget GET]', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(id, name, year, quarter, start_date, end_date, total_budget || 0, currency, status, notes || null);
       const row = db.prepare(`SELECT * FROM budget_quarters WHERE id = ?`).get(id);
-      return NextResponse.json({ ok: true, quarter: row }, { status: 201 });
+      return NextResponse.json({ success: true, quarter: row }, { status: 201 });
     }
 
     if (resource === 'category') {
@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).run(id, quarter_id, name, planned || 0, color, notes || null, cac || 0, tagsJson);
       const row = db.prepare(`SELECT * FROM budget_categories WHERE id = ?`).get(id) as any;
-      return NextResponse.json({ ok: true, category: { ...row, tags: tags || [], ...categoryStats(db, id) } }, { status: 201 });
+      return NextResponse.json({ success: true, category: { ...row, tags: tags || [], ...categoryStats(db, id) } }, { status: 201 });
     }
 
     if (resource === 'invoice') {
@@ -200,7 +200,7 @@ export async function POST(req: NextRequest) {
         SELECT i.*, c.name as category_name, c.color as category_color
         FROM budget_invoices i LEFT JOIN budget_categories c ON c.id = i.category_id
         WHERE i.id = ?`).get(id);
-      return NextResponse.json({ ok: true, invoice: row }, { status: 201 });
+      return NextResponse.json({ success: true, invoice: row }, { status: 201 });
     }
 
     // Bulk invoice operations
@@ -214,16 +214,16 @@ export async function POST(req: NextRequest) {
         const rows = db.prepare(`SELECT file_path FROM budget_invoices WHERE id IN (${placeholders})`).all(...ids) as any[];
         for (const row of rows) {
           if (row?.file_path) {
-            try { require('fs').unlinkSync(row.file_path); } catch { /* non-fatal */ }
+            try { require('fs').unlinkSync(row.file_path); } catch (err) { console.warn('[budget] Non-critical: failed to delete invoice file:', err); }
           }
         }
         db.prepare(`DELETE FROM budget_invoices WHERE id IN (${placeholders})`).run(...ids);
-        return NextResponse.json({ ok: true, deleted: ids.length });
+        return NextResponse.json({ success: true, deleted: ids.length });
       }
 
       if (action === 'status' && newStatus) {
         db.prepare(`UPDATE budget_invoices SET status = ?, updated_at = ? WHERE id IN (${placeholders})`).run(newStatus, Date.now(), ...ids);
-        return NextResponse.json({ ok: true, updated: ids.length });
+        return NextResponse.json({ success: true, updated: ids.length });
       }
 
       return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
@@ -232,7 +232,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unknown resource' }, { status: 400 });
   } catch (err) {
     console.error('[budget POST]', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -254,7 +254,7 @@ export async function PATCH(req: NextRequest) {
       if (!sets.length) return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
       db.prepare(`UPDATE budget_quarters SET ${sets.join(', ')}, updated_at = ? WHERE id = ?`).run(...vals, now, id);
       const row = db.prepare(`SELECT * FROM budget_quarters WHERE id = ?`).get(id) as any;
-      return NextResponse.json({ ok: true, quarter: { ...row, ...quarterStats(db, id) } });
+      return NextResponse.json({ success: true, quarter: { ...row, ...quarterStats(db, id) } });
     }
 
     if (resource === 'category') {
@@ -271,7 +271,7 @@ export async function PATCH(req: NextRequest) {
       db.prepare(`UPDATE budget_categories SET ${sets.join(', ')}, updated_at = ? WHERE id = ?`).run(...vals, now, id);
       const row = db.prepare(`SELECT * FROM budget_categories WHERE id = ?`).get(id) as any;
       const parsedTags = (() => { try { return JSON.parse(row.tags || '[]'); } catch { return []; } })();
-      return NextResponse.json({ ok: true, category: { ...row, tags: parsedTags, ...categoryStats(db, id) } });
+      return NextResponse.json({ success: true, category: { ...row, tags: parsedTags, ...categoryStats(db, id) } });
     }
 
     if (resource === 'invoice') {
@@ -284,13 +284,13 @@ export async function PATCH(req: NextRequest) {
         SELECT i.*, c.name as category_name, c.color as category_color
         FROM budget_invoices i LEFT JOIN budget_categories c ON c.id = i.category_id
         WHERE i.id = ?`).get(id);
-      return NextResponse.json({ ok: true, invoice: row });
+      return NextResponse.json({ success: true, invoice: row });
     }
 
     return NextResponse.json({ error: 'Unknown resource' }, { status: 400 });
   } catch (err) {
     console.error('[budget PATCH]', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -311,16 +311,16 @@ export async function DELETE(req: NextRequest) {
     } else if (resource === 'invoice') {
       const inv = db.prepare(`SELECT file_path FROM budget_invoices WHERE id = ?`).get(id) as any;
       if (inv?.file_path) {
-        try { require('fs').unlinkSync(inv.file_path); } catch { /* non-fatal */ }
+        try { require('fs').unlinkSync(inv.file_path); } catch (err) { console.warn('[budget] Non-critical: failed to delete invoice file:', err); }
       }
       db.prepare(`DELETE FROM budget_invoices WHERE id = ?`).run(id);
     } else {
       return NextResponse.json({ error: 'Unknown resource' }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[budget DELETE]', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

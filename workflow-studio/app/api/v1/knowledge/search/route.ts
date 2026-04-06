@@ -219,7 +219,8 @@ export async function POST(request: NextRequest) {
             map[def.tagSlot] = def.displayName
           })
           return { kbId, map }
-        } catch {
+        } catch (err) {
+          console.warn('[v1/knowledge/search] Non-critical:', err);
           return { kbId, map: {} as Record<string, string> }
         }
       })

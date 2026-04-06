@@ -10,6 +10,8 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/database';
 
+const INTERNAL_BASE = `http://127.0.0.1:${process.env.PORT || 3000}`;
+
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
@@ -27,17 +29,18 @@ export async function GET() {
     tasks = getDb()
       .prepare(`SELECT id, title FROM tasks WHERE status = 'review' AND (reviewStatus IS NULL OR reviewStatus NOT IN ('in-review', 'approved'))`)
       .all() as { id: string; title: string }[];
-  } catch {
+  } catch (err) {
+    console.warn('[cron/clara-review] Non-critical:', err);
     return NextResponse.json({ error: 'DB unavailable' }, { status: 500 });
   }
 
   // Fire off reviews asynchronously (don't await)
   for (const task of tasks) {
-    fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/agents/clara/review`, {
+    fetch(`${INTERNAL_BASE}/api/agents/clara/review`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ taskId: task.id }),
-    }).catch(() => {});
+    }).catch(err => console.warn('[cron/clara-review] Non-critical: review request failed:', err));
   }
 
   return NextResponse.json({

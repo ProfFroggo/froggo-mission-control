@@ -368,7 +368,8 @@ try {
       }
 
       return { isValid: true, error: null }
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/components/tool-input/components/custom-tool-modal/custom-tool-modalx] Non-critical:', err);
       return { isValid: false, error: 'Invalid JSON format' }
     }
   }
@@ -386,7 +387,8 @@ try {
         description: properties[key].description || '',
         required: parsed?.function?.parameters?.required?.includes(key) || false,
       }))
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/w/[workflowId]/components/panel/components/editor/components/sub-block/components/tool-input/components/custom-tool-modal/custom-tool-modalx] Non-critical:', err);
       return []
     }
   }, [jsonSchema])

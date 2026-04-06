@@ -197,7 +197,8 @@ function normalizeUrlForHashing(url: string): string {
     const parsed = new URL(url)
     const normalized = `${parsed.origin}${parsed.pathname}`.toLowerCase().replace(/\/+$/, '')
     return normalized
-  } catch {
+  } catch (err) {
+    console.warn('[ws/lib/mcp/utils] Non-critical:', err);
     return url.toLowerCase().trim().replace(/\/+$/, '')
   }
 }

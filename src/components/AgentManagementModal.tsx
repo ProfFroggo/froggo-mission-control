@@ -417,7 +417,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
     fetch(`/api/agents/${agentId}/metrics`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setMetrics(data); })
-      .catch(() => {})
+      .catch(err => console.warn('[AgentManagementModal] Non-critical:', err))
       .finally(() => setMetricsLoading(false));
   }, [tab, section, isOpen, agentId, metrics]);
 
@@ -472,7 +472,7 @@ export default function AgentManagementModal({ isOpen, onClose, agentId, agentNa
             } else if (evt.type === 'error') {
               setChatMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, content: evt.error || 'Error', streaming: false } : m));
             }
-          } catch {}
+          } catch (err) { console.warn('[AgentManagementModal] Non-critical:', err); }
         }
       }
       setChatMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, streaming: false } : m));

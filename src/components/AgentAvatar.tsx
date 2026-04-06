@@ -14,12 +14,12 @@ interface AgentAvatarProps {
 }
 
 const sizeMap = {
-  xs:  { container: 'w-5 h-5',   text: 'text-[9px]',  ring: 'ring-1' },
-  sm:  { container: 'w-7 h-7',   text: 'text-xs',      ring: 'ring-1' },
-  md:  { container: 'w-9 h-9',   text: 'text-sm',      ring: 'ring-2' },
-  lg:  { container: 'w-12 h-12', text: 'text-lg',      ring: 'ring-2' },
-  xl:  { container: 'w-16 h-16', text: 'text-xl',      ring: 'ring-2' },
-  '2xl': { container: 'w-20 h-20', text: 'text-3xl',   ring: 'ring-3' },
+  xs:  { container: 'w-5 h-5',   text: 'text-[9px]',  ring: 'ring-1', px: 20 },
+  sm:  { container: 'w-7 h-7',   text: 'text-xs',      ring: 'ring-1', px: 28 },
+  md:  { container: 'w-9 h-9',   text: 'text-sm',      ring: 'ring-2', px: 36 },
+  lg:  { container: 'w-12 h-12', text: 'text-lg',      ring: 'ring-2', px: 48 },
+  xl:  { container: 'w-16 h-16', text: 'text-xl',      ring: 'ring-2', px: 64 },
+  '2xl': { container: 'w-20 h-20', text: 'text-3xl',   ring: 'ring-3', px: 80 },
 };
 
 // Retry delays (ms) after a 404 — covers the window where the agent was
@@ -85,6 +85,10 @@ const AgentAvatar = memo(function AgentAvatar({ agentId, agentName, fallbackEmoj
           alt={`${agentName || agentId} avatar`}
           className="w-full h-full object-cover"
           onError={handleImgError}
+          loading="lazy"
+          decoding="async"
+          width={s.px}
+          height={s.px}
         />
       ) : (
         <span

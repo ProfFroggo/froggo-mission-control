@@ -6,6 +6,11 @@ import { randomBytes, createHash } from 'crypto';
 
 const SCOPES = ['tweet.read', 'tweet.write', 'users.read', 'offline.access', 'like.read', 'follows.read'];
 
+function getOAuthRedirectUri(request: NextRequest): string {
+  const origin = request.nextUrl?.origin || process.env.NEXT_PUBLIC_APP_URL || `http://localhost:${process.env.PORT || 3000}`;
+  return `${origin}/api/x/oauth`;
+}
+
 function getSetting(key: string): string {
   try {
     const row = getDb().prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
@@ -36,7 +41,7 @@ export async function GET(request: NextRequest) {
         </body></html>`, { headers: { 'Content-Type': 'text/html' }, status: 403 });
       }
       // Clear used state token
-      try { getDb().prepare(`DELETE FROM settings WHERE key = 'twitter_oauth_state'`).run(); } catch { /* non-critical */ }
+      try { getDb().prepare(`DELETE FROM settings WHERE key = 'twitter_oauth_state'`).run(); } catch (err) { console.warn('[x/oauth] Non-critical:', err); }
 
       // Load PKCE verifier
       const verifier = getSetting('twitter_pkce_verifier');
@@ -48,7 +53,7 @@ export async function GET(request: NextRequest) {
           code,
           grant_type: 'authorization_code',
           client_id: clientId,
-          redirect_uri: `http://localhost:${process.env.PORT || 3000}/api/x/oauth`,
+          redirect_uri: getOAuthRedirectUri(request),
           code_verifier: verifier,
         }),
       });
@@ -114,7 +119,7 @@ export async function GET(request: NextRequest) {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: clientId,
-    redirect_uri: `http://localhost:${process.env.PORT || 3000}/api/x/oauth`,
+    redirect_uri: getOAuthRedirectUri(request),
     scope: SCOPES.join(' '),
     state: stateToken,
     code_challenge: challenge,

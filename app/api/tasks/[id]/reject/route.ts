@@ -61,7 +61,7 @@ export async function POST(
         INSERT INTO clara_review_log (id, taskId, decision, reason, reviewedAt, timeInReviewMinutes)
         VALUES (?, ?, 'rejected', ?, datetime('now'), ?)
       `).run(logId, id, reason, timeInReviewMinutes);
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[tasks/[id]/reject] Non-critical:', err); }
 
     const updatedTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as Record<string, unknown>;
 

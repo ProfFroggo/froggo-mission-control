@@ -34,7 +34,8 @@ export function MessageActions({ content, requestId }: MessageActionsProps) {
         window.clearTimeout(resetTimeoutRef.current)
       }
       resetTimeoutRef.current = window.setTimeout(() => setCopied(null), 1500)
-    } catch {
+    } catch (err) {
+      console.warn('[ws/app/workspace/[workspaceId]/components/message-actions/message-actionsx] Non-critical:', err);
       return
     }
   }, [])

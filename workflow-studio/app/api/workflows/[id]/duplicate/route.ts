@@ -56,7 +56,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         newWorkflowId: result.id,
         workspaceId,
       })
-    } catch {
+    } catch (err) {
+      console.warn('[workflows/[id]/duplicate] Non-critical:', err);
       // Telemetry should not fail the operation
     }
 

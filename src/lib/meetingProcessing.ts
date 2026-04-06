@@ -15,7 +15,9 @@ export async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('./keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val;
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.warn('[meetingProcessing] Non-critical: keychain lookup for gemini_api_key failed:', err);
+  }
   return process.env.GEMINI_API_KEY ?? null;
 }
 
@@ -156,7 +158,9 @@ export async function loadOrgContext(): Promise<string> {
       sections.push('\n## Agent Memory (recent learnings)\n');
       sections.push(...memoryNotes.slice(0, 15));
     }
-  } catch { /* non-critical */ }
+  } catch (err) {
+    console.warn('[meetingProcessing] Non-critical: failed to build meeting context:', err);
+  }
 
   return sections.join('\n');
 }

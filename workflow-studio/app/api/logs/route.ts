@@ -474,7 +474,7 @@ export async function GET(request: NextRequest) {
           try {
             const fo = (log.executionData as any)?.finalOutput
             if (fo !== undefined) finalOutput = fo
-          } catch {}
+          } catch (err) { console.warn('[logs] Non-critical:', err); }
         }
 
         const workflowSummary = log.workflowId

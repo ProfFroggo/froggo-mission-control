@@ -12,7 +12,9 @@ async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val;
-  } catch { /* keychain unavailable */ }
+  } catch (err) {
+    console.warn('[ai-builder] Keychain lookup for gemini_api_key failed:', err);
+  }
   return process.env.GEMINI_API_KEY ?? null;
 }
 
@@ -21,7 +23,9 @@ async function getAnthropicKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('anthropic_api_key');
     if (val) return val;
-  } catch { /* keychain unavailable */ }
+  } catch (err) {
+    console.warn('[ai-builder] Keychain lookup for anthropic_api_key failed:', err);
+  }
   return process.env.ANTHROPIC_API_KEY ?? null;
 }
 

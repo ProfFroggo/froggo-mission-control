@@ -385,7 +385,8 @@ async function registerSSOProvider(): Promise<boolean> {
 
     try {
       new URL(ssoConfig.issuer)
-    } catch {
+    } catch (err) {
+      console.warn('[ws/_db/scripts/register-sso-provider] Non-critical:', err);
       logger.error('Invalid issuer. Must be a valid URL:', ssoConfig.issuer)
       return false
     }
@@ -585,7 +586,7 @@ async function registerSSOProvider(): Promise<boolean> {
   } finally {
     try {
       await postgresClient.end({ timeout: 5 })
-    } catch {}
+    } catch (err) { console.warn('[ws/_db/scripts/register-sso-provider] Non-critical:', err); }
   }
 }
 

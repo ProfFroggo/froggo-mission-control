@@ -62,6 +62,15 @@
       "color": "#EC4899",
       "profilePath": "./designer.json",
       "imagePath": "./designer.svg"
+    },
+    {
+      "id": "atlas",
+      "name": "Atlas",
+      "emoji": "\ud83d\uddfa\ufe0f",
+      "role": "VP Growth & Strategic Operations",
+      "color": "#7C3AED",
+      "profilePath": "./atlas.json",
+      "imagePath": "./atlas.svg"
     }
   ],
   "version": "1.0.0",

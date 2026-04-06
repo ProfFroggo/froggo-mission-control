@@ -269,6 +269,29 @@
 }
 
 /* ============================================
+   LIGHT MODE OVERRIDES
+   Applied when :root has the .light class
+   (set by themeToggle.ts on appearance change)
+   ============================================ */
+
+:root.light {
+  /* Accent contrast fix: green-500 (#22c55e) on white = 3.9:1 (fails WCAG AA).
+     green-600 (#16a34a) on white = 4.8:1 (passes WCAG AA 4.5:1 minimum).
+     Dark mode accent (#22c55e on #0a0a0a) passes at 7.0:1 — leave unchanged. */
+  --mission-control-accent: #16a34a;
+
+  /* T9 (DL1 root cause): Semantic color light-mode overrides.
+     Dark-mode defaults pass on #0a0a0a but fail WCAG AA on white.
+     These overrides ensure ≥4.5:1 contrast on light backgrounds.
+     Fixes downstream contrast failures: DL1, DL2, DL3 (audit task-1775175371438). */
+  --color-success: #16a34a; /* green-600:  4.8:1 on white  (dark default #22c55e = 2.3:1) */
+  --color-warning: #b45309; /* amber-700:  4.9:1 on white  (dark default #f59e0b = 2.9:1) */
+  --color-review:  #7c3aed; /* violet-700: 5.2:1 on white  (dark default #a855f7 = 3.2:1) */
+  --color-error:   #dc2626; /* red-600:    4.6:1 on white  (dark default #ef4444 = 4.0:1) */
+  --color-info:    #2563eb; /* blue-600:   4.7:1 on white  (dark default #3b82f6 = 3.6:1) */
+}
+
+/* ============================================
    SEMANTIC UTILITY CLASSES
    ============================================ */
 

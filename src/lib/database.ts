@@ -30,6 +30,7 @@ export function getDb(): Database.Database {
     _db = new Database(DB_PATH);
     _db.pragma('journal_mode = WAL');
     _db.pragma('foreign_keys = ON');
+    _db.pragma('busy_timeout = 5000'); // Wait up to 5s on SQLITE_BUSY instead of failing immediately
 
     // ── DB integrity check on startup ──────────────────────────────────────
     // Auto-repair orphan indexes and corruption before schema init
@@ -99,12 +100,20 @@ function recoverDatabase(dbPath: string): boolean {
     });
 
     // Remove corrupt DB and rebuild from recovery SQL
+    // Write recovery SQL to a temp file instead of heredoc to avoid command injection
+    // (corrupt DB content could contain the heredoc terminator)
+    const tmpRecoveryFile = `${dbPath}.recovery.sql`;
+    fs.writeFileSync(tmpRecoveryFile, recoverySQL, 'utf-8');
     fs.unlinkSync(dbPath);
-    execSync(`sqlite3 "${dbPath}" <<'RECOVERY_EOF'\n${recoverySQL}\nRECOVERY_EOF`, {
-      encoding: 'utf-8',
-      timeout: 30000,
-      shell: '/bin/bash',
-    });
+    try {
+      execSync(`sqlite3 "${dbPath}" < "${tmpRecoveryFile}"`, {
+        encoding: 'utf-8',
+        timeout: 30000,
+        shell: '/bin/bash',
+      });
+    } finally {
+      try { fs.unlinkSync(tmpRecoveryFile); } catch { /* cleanup best-effort */ }
+    }
 
     console.log(`[database] Recovery complete — ${recoverySQL.split('\n').length} lines recovered`);
     return true;
@@ -1193,7 +1202,13 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE x_automations ADD COLUMN ai_engine TEXT DEFAULT 'gemini'`,
   ];
   for (const sql of columnMigrations) {
-    try { db.exec(sql); } catch { /* column already exists */ }
+    try { db.exec(sql); } catch (err: unknown) {
+      // Only suppress "duplicate column" — surface real errors
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes('duplicate column')) {
+        console.error(`[database] Column migration failed: ${msg} — SQL: ${sql.slice(0, 80)}`);
+      }
+    }
   }
 
   // Clara review log table — tracks approve/reject decisions with SLA timing
@@ -1241,7 +1256,11 @@ function initSchema(db: Database.Database) {
   try {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_automations_trigger_status_next ON automations(trigger_type, status, next_run)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_task_activity_taskId_action ON task_activity(taskId, action, timestamp DESC)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_task_activity_action ON task_activity(action, timestamp DESC)`);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_sessions_cleanup ON sessions(createdAt, lastActivity)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_task_attachments_taskId ON task_attachments(taskId)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_scheduled_items_scheduledFor ON scheduled_items(scheduledFor)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_library_files_folder_id ON library_files(folder_id)`);
   } catch { /* non-critical — indexes may already exist */ }
 
   // Knowledge Base: FTS virtual table + triggers

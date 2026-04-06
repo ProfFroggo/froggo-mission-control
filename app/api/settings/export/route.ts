@@ -17,7 +17,8 @@ export async function GET() {
     for (const row of rows) {
       try {
         settings[row.key] = JSON.parse(row.value);
-      } catch {
+      } catch (err) {
+        console.warn('[settings/export] Non-critical:', err);
         settings[row.key] = row.value;
       }
     }

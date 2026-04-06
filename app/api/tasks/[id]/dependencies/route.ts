@@ -16,7 +16,8 @@ function parseTask(row: Record<string, unknown>) {
     if (typeof parsed[field] === 'string') {
       try {
         parsed[field] = JSON.parse(parsed[field] as string);
-      } catch {
+      } catch (err) {
+        console.warn('[tasks/[id]/dependencies] Non-critical:', err);
         parsed[field] = field === 'recurrence' ? null : [];
       }
     }

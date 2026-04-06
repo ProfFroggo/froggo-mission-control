@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       const result = await runDriveSync();
       return NextResponse.json(result);
     } catch (err) {
-      return NextResponse.json({ error: String(err) }, { status: 500 });
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
   }
 
@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
       try {
         const meta = JSON.parse(row.metadata);
         if (meta.driveFileId) importedIds.add(meta.driveFileId);
-      } catch { /* skip */ }
+      } catch (err) { console.warn('[meetings/drive-sync] Non-critical: skip:', err); }
     }
 
     return NextResponse.json({
@@ -108,7 +108,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     fileId = body.fileId;
     fileName = body.fileName;
-  } catch {
+  } catch (err) {
+    console.warn('[meetings/drive-sync] Non-critical:', err);
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
@@ -182,7 +183,8 @@ export async function POST(req: NextRequest) {
         meetingDate = result.meetingDate;
         if (result.title) meetingTitle = result.title;
         summarySource = 'gemini';
-      } catch {
+      } catch (err) {
+        console.warn('[meetings/drive-sync] Non-critical:', err);
         summary = extractiveSummary(content);
       }
     } else {
@@ -198,7 +200,7 @@ export async function POST(req: NextRequest) {
     if (apiKey) {
       try {
         taskProposals = await extractTaskProposals(content, apiKey);
-      } catch { /* non-critical */ }
+      } catch (err) { console.warn('[meetings/drive-sync] Non-critical:', err); }
     }
 
     // ── Save meeting record ───────────────────────────────────────────────────

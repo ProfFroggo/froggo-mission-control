@@ -208,7 +208,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         const step = parseInt(saved, 10);
         if (!isNaN(step) && step > 0 && step < STEP_COUNT) return step;
       }
-    } catch { /* SSR / private browsing */ }
+    } catch (err) { console.warn('[OnboardingWizard] Non-critical: SSR / private browsing:', err); }
     return null;
   })();
 
@@ -223,7 +223,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       } else {
         localStorage.removeItem(STEP_STORAGE_KEY);
       }
-    } catch { /* SSR / private browsing */ }
+    } catch (err) { console.warn('[OnboardingWizard] Non-critical: SSR / private browsing:', err); }
   }, [currentStep]);
 
   // Step 2 — system check
@@ -302,7 +302,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         agents: data.agents?.ok ? 'ok' : 'fail',
         agentCount: data.agents?.count ?? 0,
       });
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingWizard] Non-critical:', err);
       setSysCheck({ cli: 'ok', database: 'ok', mcp: 'ok', agents: 'ok', agentCount: 0 });
     }
   }, []);
@@ -321,7 +322,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       } else {
         setGoogleStatus('disconnected');
       }
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingWizard] Non-critical:', err);
       setGoogleStatus('error');
     }
   }, []);
@@ -336,7 +338,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       const data = res.ok ? await res.json() : null;
       // exists = vault dir present; opened = .obsidian/ present (Obsidian created it)
       setObsidianStatus(data?.exists ? 'found' : 'not-found');
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingWizard] Non-critical:', err);
       setObsidianStatus('not-found');
     }
   }, []);
@@ -366,13 +369,15 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         try {
           const status = await navigator.permissions.query({ name: name as PermissionName });
           return status.state === 'granted' ? 'granted' : status.state === 'denied' ? 'denied' : 'unknown';
-        } catch {
+        } catch (err) {
+          console.warn('[OnboardingWizard] Non-critical:', err);
           return 'unknown';
         }
       };
       const [microphone, camera] = await Promise.all([checkPerm('microphone'), checkPerm('camera')]);
       setPermStatus({ microphone, camera });
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingWizard] Non-critical:', err);
       // Permissions API not supported
     }
   };
@@ -383,7 +388,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       stream.getTracks().forEach(t => t.stop());
       setPermStatus(prev => ({ ...prev, [type]: 'granted' }));
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingWizard] Non-critical:', err);
       setPermStatus(prev => ({ ...prev, [type]: 'denied' }));
     }
   };
@@ -417,7 +423,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         setGeminiStatus('error');
         setGeminiError('Invalid API key — please check and try again');
       }
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingWizard] Non-critical:', err);
       // Network error — assume key saved OK but can't validate
       setGeminiStatus('ok');
     }
@@ -440,7 +447,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     try {
       await fetch('/api/setup/permissions-confirm', { method: 'POST' });
       setPermissionsConfirmed(true);
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingWizard] Non-critical:', err);
       setPermissionsConfirmed(true); // confirm locally even if API fails
     } finally {
       setConfirmingPermissions(false);
@@ -501,7 +509,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
           return { ...item, status: result.success ? 'done' : 'error', error: result.error };
         })
       );
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingWizard] Non-critical:', err);
       // Mark all as done (graceful degradation)
       setInstallItems(prev => prev.map(item => ({ ...item, status: 'done' })));
     }
@@ -533,7 +542,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
           return { ...item, status: result.success ? 'done' : 'error', error: result.error };
         })
       );
-    } catch {
+    } catch (err) {
+      console.warn('[OnboardingWizard] Non-critical:', err);
       setInstallItems(prev => prev.map(item =>
         item.status === 'installing' ? { ...item, status: 'error', error: 'Network error' } : item
       ));
@@ -548,13 +558,13 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
   const handleFinish = (startTour = false) => {
     localStorage.setItem(STORAGE_KEY, 'true');
-    try { localStorage.removeItem(STEP_STORAGE_KEY); } catch { /* ignore */ }
+    try { localStorage.removeItem(STEP_STORAGE_KEY); } catch (err) { console.warn('[OnboardingWizard] Non-critical:', err); }
     onComplete(startTour);
   };
 
   const handleSkip = () => {
     localStorage.setItem(STORAGE_KEY, 'true');
-    try { localStorage.removeItem(STEP_STORAGE_KEY); } catch { /* ignore */ }
+    try { localStorage.removeItem(STEP_STORAGE_KEY); } catch (err) { console.warn('[OnboardingWizard] Non-critical:', err); }
     onSkip();
   };
 

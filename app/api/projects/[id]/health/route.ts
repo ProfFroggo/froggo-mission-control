@@ -65,7 +65,8 @@ export async function GET(_req: NextRequest, { params }: Params) {
         WHERE t.project_id = ? AND ta.createdAt > ?
       `).get(id, Date.now() - 7 * 24 * 60 * 60 * 1000) as { activeMembers: number } | undefined;
       activeMembers = activeRow?.activeMembers ?? 0;
-    } catch {
+    } catch (err) {
+      console.warn('[projects/[id]/health] Non-critical:', err);
       // task_activity table may not have agentId — fall back gracefully
       activeMembers = memberCount > 0 ? Math.ceil(memberCount / 2) : 0;
     }

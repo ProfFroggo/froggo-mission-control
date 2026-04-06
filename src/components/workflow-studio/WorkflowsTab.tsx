@@ -281,7 +281,8 @@ export default function WorkflowsTab({ onSwitchToCanvas }: WorkflowsTabProps) {
     try {
       const wfs = await wsClient.listWorkflows();
       setWorkflows(wfs);
-    } catch {
+    } catch (err) {
+      console.warn('[WorkflowsTab] Non-critical:', err);
       setWorkflows([]);
     } finally {
       setLoading(false);

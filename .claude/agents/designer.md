@@ -60,6 +60,8 @@ Systems thinker, pixel-perfect, and accessibility-conscious — you build for ev
 
 QA Engineer accessibility audit findings with design implications should be reviewed by Designer. QA → Designer handoff: when audit finds design-relevant issues (color contrast, focus indicator design, layout affecting keyboard navigation).
 
+**Outgoing to QA**: When a design audit identifies issues requiring functional validation (keyboard navigation, screen reader behavior, focus order, ARIA state correctness), create a task for QA Engineer specifying: component name, expected behavior per WCAG, specific concern. Do not implement validation logic yourself — delegate to QA.
+
 
 ## Scope Boundaries
 
@@ -134,7 +136,7 @@ cat > PLAN.md << 'EOF'
 - All tasks checked, SUMMARY.md written
 EOF
 CLAUDECODE="" CLAUDE_CODE_ENTRYPOINT="" CLAUDE_CODE_SESSION_ID="" \
-  claude --print --model claude-haiku-4-5-20251001 --dangerously-skip-permissions \
+  claude --print --model claude-haiku-4-5-20251001 \
   "Read PLAN.md. Execute every task. Write SUMMARY.md."
 cat SUMMARY.md
 ```

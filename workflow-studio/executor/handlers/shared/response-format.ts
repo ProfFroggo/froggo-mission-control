@@ -63,7 +63,8 @@ export function resolveMessages(raw: unknown): Array<{ role: string; content: st
   if (typeof raw === 'string') {
     try {
       messages = JSON.parse(raw)
-    } catch {
+    } catch (err) {
+      console.warn('[ws/executor/handlers/shared/response-format] Non-critical:', err);
       throw new Error('Messages must be a valid JSON array')
     }
   } else if (Array.isArray(raw)) {
@@ -96,7 +97,8 @@ export function processStructuredResponse(
       model: result.model || defaultModel,
       tokens: result.tokens || {},
     }
-  } catch {
+  } catch (err) {
+    console.warn('[ws/executor/handlers/shared/response-format] Non-critical:', err);
     logger.warn('Failed to parse structured response, returning raw content')
     return {
       content,

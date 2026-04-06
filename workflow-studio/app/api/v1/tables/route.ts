@@ -165,7 +165,8 @@ export async function POST(request: NextRequest) {
     let body: unknown
     try {
       body = await request.json()
-    } catch {
+    } catch (err) {
+      console.warn('[v1/tables] Non-critical:', err);
       return NextResponse.json({ error: 'Request body must be valid JSON' }, { status: 400 })
     }
 

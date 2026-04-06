@@ -126,7 +126,8 @@ const formatObject = (obj: unknown, isDev: boolean): string => {
       return JSON.stringify(errorObj, null, isDev ? 2 : 0)
     }
     return JSON.stringify(obj, null, isDev ? 2 : 0)
-  } catch {
+  } catch (err) {
+    console.warn('[ws/_logger/src/index] Non-critical:', err);
     return '[Circular or Non-Serializable Object]'
   }
 }

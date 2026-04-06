@@ -104,7 +104,8 @@ export async function readExecutionEvents(
       .map((entry) => {
         try {
           return JSON.parse(entry) as ExecutionEventEntry
-        } catch {
+        } catch (err) {
+          console.warn('[ws/lib/execution/event-buffer] Non-critical:', err);
           return null
         }
       })

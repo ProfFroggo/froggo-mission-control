@@ -102,7 +102,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       const { mkdirSync } = await import('fs');
       mkdirSync(archiveDir, { recursive: true });
       const archivePath = join(archiveDir, `${id}-${Date.now()}`);
-      try { renameSync(workspaceDir, archivePath); } catch { /* workspace may be in use */ }
+      try { renameSync(workspaceDir, archivePath); } catch (err) { console.warn('[catalog/agents/[id]] Non-critical: workspace may be in use:', err); }
     }
 
     return NextResponse.json({ id, uninstalled: true });

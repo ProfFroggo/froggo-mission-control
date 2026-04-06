@@ -330,7 +330,7 @@ export class WorkflowBlockHandler implements BlockHandler {
     const response = await fetch(url.toString(), { headers })
 
     if (!response.ok) {
-      await response.text().catch(() => {})
+      await response.text().catch(err => console.warn('[workflow-handler] Failed to drain response body:', err))
       if (response.status === HTTP.STATUS.NOT_FOUND) {
         logger.warn(`Child workflow ${workflowId} not found`)
         return null

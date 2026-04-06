@@ -95,7 +95,8 @@ export async function runStreamLoop(
           message =
             "You've reached your usage limit for this billing period. Please increase your usage limit to continue."
         }
-      } catch {
+      } catch (err) {
+        console.warn('[ws/lib/copilot/orchestrator/stream/core] Non-critical:', err);
         // Fall back to upgrade_plan if we can't determine the plan
       }
 
@@ -113,7 +114,8 @@ export async function runStreamLoop(
       for (const event of syntheticEvents) {
         try {
           await options.onEvent?.(event)
-        } catch {
+        } catch (err) {
+          console.warn('[ws/lib/copilot/orchestrator/stream/core] Non-critical:', err);
           // best-effort forwarding
         }
 
@@ -141,14 +143,14 @@ export async function runStreamLoop(
   const timeoutId = setTimeout(() => {
     context.errors.push('Request timed out')
     context.streamComplete = true
-    reader.cancel().catch(() => {})
+    reader.cancel().catch(err => console.warn('[ws/lib/copilot/orchestrator/stream/core] Non-critical:', err))
   }, timeout)
 
   try {
     for await (const event of parseSSEStream(reader, decoder, abortSignal)) {
       if (abortSignal?.aborted) {
         context.wasAborted = true
-        await reader.cancel().catch(() => {})
+        await reader.cancel().catch(err => console.warn('[ws/lib/copilot/orchestrator/stream/core] Non-critical:', err))
         break
       }
 
@@ -238,7 +240,7 @@ export async function runStreamLoop(
   } finally {
     if (abortSignal?.aborted) {
       context.wasAborted = true
-      await reader.cancel().catch(() => {})
+      await reader.cancel().catch(err => console.warn('[ws/lib/copilot/orchestrator/stream/core] Non-critical:', err))
     }
     clearTimeout(timeoutId)
   }

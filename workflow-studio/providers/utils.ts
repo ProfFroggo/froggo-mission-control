@@ -75,7 +75,7 @@ async function fetchWorkflowMetadata(
 
     const response = await fetch(url.toString(), { headers })
     if (!response.ok) {
-      await response.text().catch(() => {})
+      await response.text().catch(err => console.warn('[ws/providers/utils] Non-critical:', err))
       logger.warn(`Failed to fetch workflow metadata for ${workflowId}`)
       return null
     }
@@ -567,7 +567,8 @@ export async function transformBlockTool(
               if (inputType === 'json' || inputType === 'array') {
                 try {
                   result[key] = JSON.parse(value.trim())
-                } catch {
+                } catch (err) {
+                  console.warn('[ws/providers/utils] Non-critical:', err);
                   // Not valid JSON — keep as string
                 }
               }

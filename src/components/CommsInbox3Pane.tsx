@@ -162,12 +162,12 @@ function loadTemplates(): string[] {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[CommsInbox3Pane] Non-critical:', err); }
   return DEFAULT_TEMPLATES;
 }
 
 function saveTemplates(templates: string[]) {
-  try { localStorage.setItem('inbox.reply-templates', JSON.stringify(templates)); } catch { /* ignore */ }
+  try { localStorage.setItem('inbox.reply-templates', JSON.stringify(templates)); } catch (err) { console.warn('[CommsInbox3Pane] Non-critical:', err); }
 }
 
 // ─── localStorage helpers for item state ──────────────────────────────────────
@@ -176,24 +176,24 @@ function loadItemState(key: string): Set<string> {
   try {
     const raw = localStorage.getItem(`inbox.${key}`);
     if (raw) return new Set(JSON.parse(raw));
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[CommsInbox3Pane] Non-critical:', err); }
   return new Set();
 }
 
 function saveItemState(key: string, set: Set<string>) {
-  try { localStorage.setItem(`inbox.${key}`, JSON.stringify(Array.from(set))); } catch { /* ignore */ }
+  try { localStorage.setItem(`inbox.${key}`, JSON.stringify(Array.from(set))); } catch (err) { console.warn('[CommsInbox3Pane] Non-critical:', err); }
 }
 
 function loadSnoozeMap(): Record<string, number> {
   try {
     const raw = localStorage.getItem('inbox.snoozed');
     if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[CommsInbox3Pane] Non-critical:', err); }
   return {};
 }
 
 function saveSnoozeMap(map: Record<string, number>) {
-  try { localStorage.setItem('inbox.snoozed', JSON.stringify(map)); } catch { /* ignore */ }
+  try { localStorage.setItem('inbox.snoozed', JSON.stringify(map)); } catch (err) { console.warn('[CommsInbox3Pane] Non-critical:', err); }
 }
 
 // ─── Filter pill types ────────────────────────────────────────────────────────
@@ -289,7 +289,7 @@ function EmailBodyRenderer({ body, metadata }: { body: string; metadata: EmailMe
         if (doc?.body) {
           iframe.style.height = `${doc.body.scrollHeight + 20}px`;
         }
-      } catch { /* cross-origin, ignore */ }
+      } catch (err) { console.warn('[CommsInbox3Pane] Non-critical: cross-origin, ignore:', err); }
     };
     iframe.addEventListener('load', handleLoad);
     return () => iframe.removeEventListener('load', handleLoad);
@@ -1870,7 +1870,7 @@ export default function CommsInbox3Pane() {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ read: true }),
-        }).catch(() => {});
+        }).catch(err => console.warn('[CommsInbox3Pane] Non-critical:', err));
       }
       setAllMessages(prev => prev.map(m =>
         m.id === selectedConversation.id ? { ...m, is_read: true } : m
@@ -2010,7 +2010,7 @@ export default function CommsInbox3Pane() {
   const handleArchive = async (conv: ConversationItem) => {
     const sessionKey = `${conv.platform}:${conv.from || conv.name || ''}`;
     try {
-      await fetch(`/api/inbox/${conv.id}/archive`, { method: 'POST' }).catch(() => {});
+      await fetch(`/api/inbox/${conv.id}/archive`, { method: 'POST' }).catch(err => console.warn('[CommsInbox3Pane] Non-critical:', err));
       setAllMessages(prev => prev.filter(m => m.id !== conv.id));
       if (selectedConversation?.id === conv.id) {
         setSelectedConversation(null);
@@ -2036,7 +2036,7 @@ export default function CommsInbox3Pane() {
             }))
         );
       } else {
-        await fetch('/api/inbox/mark-all-read', { method: 'PATCH' }).catch(() => {});
+        await fetch('/api/inbox/mark-all-read', { method: 'PATCH' }).catch(err => console.warn('[CommsInbox3Pane] Non-critical:', err));
       }
       setAllMessages(prev => prev.map(m => ({ ...m, is_read: true })));
       showToast('success', 'All marked as read');

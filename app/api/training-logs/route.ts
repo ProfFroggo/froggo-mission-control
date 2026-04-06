@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
   // Ensure directories exist
   for (const dir of [TRAINING_DIR, REPORTS_DIR]) {
     if (!fs.existsSync(dir)) {
-      try { fs.mkdirSync(dir, { recursive: true }); } catch { /* */ }
+      try { fs.mkdirSync(dir, { recursive: true }); } catch (err) { console.warn('[training-logs] Non-critical: failed to create directory:', err); }
     }
   }
 
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       if (fs.existsSync(filePath)) {
         try {
           return NextResponse.json({ name: file, content: fs.readFileSync(filePath, 'utf-8') });
-        } catch { /* try next */ }
+        } catch (err) { console.warn('[training-logs] Non-critical: try next:', err); }
       }
     }
     return NextResponse.json({ error: 'File not found.' }, { status: 404 });
@@ -71,9 +71,9 @@ export async function GET(request: NextRequest) {
             modifiedAt: stat.mtime.toISOString(),
             type: fileType,
           });
-        } catch { /* skip */ }
+        } catch (err) { console.warn('[training-logs] Non-critical: skip:', err); }
       }
-    } catch { /* skip */ }
+    } catch (err) { console.warn('[training-logs] Non-critical: skip:', err); }
   };
 
   if (!typeFilter || typeFilter === 'training') scanDir(TRAINING_DIR, 'training-log');

@@ -114,7 +114,8 @@ export default function AgentTokenDetailModal({
     try {
       const data = await analyticsApi.getTokenUsage({ agent, limit: '50' });
       setSessionLog((data?.entries || []) as TokenLogEntry[]);
-    } catch {
+    } catch (err) {
+      console.warn('[AgentTokenDetailModal] Non-critical:', err);
       setSessionLog([]);
     } finally {
       setLoading(false);
@@ -129,7 +130,8 @@ export default function AgentTokenDetailModal({
         const d = await res.json() as { byDay: DayUsage[] };
         setByDay30(d.byDay ?? []);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[AgentTokenDetailModal] Non-critical:', err);
       setByDay30([]);
     }
   }, [agent]);
@@ -144,7 +146,8 @@ export default function AgentTokenDetailModal({
         const totalCost = d.byAgent?.reduce((s: number, a: AgentUsage) => s + a.cost, 0) ?? 0;
         setTeamAvgCostPerDay(totalCost / agentCount / totalDays);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[AgentTokenDetailModal] Non-critical:', err);
       // silent
     }
   }, []);

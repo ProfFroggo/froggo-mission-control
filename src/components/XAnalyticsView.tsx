@@ -42,7 +42,7 @@ export function XAnalyticsView() {
     try {
       // Use shared fetch with in-flight deduplication + caching
       const data = await fetchXAnalytics();
-      if (!data.ok) { setSummary(null); setTopContent([]); return; }
+      if (!data.success) { setSummary(null); setTopContent([]); return; }
       const tweets: any[] = data.tweets ?? [];
       const metrics = data.profile?.public_metrics ?? {} as Partial<{ followers_count: number; following_count: number; tweet_count: number; like_count: number }>;
       setSummary({
@@ -66,7 +66,8 @@ export function XAnalyticsView() {
         retweets: t.public_metrics?.retweet_count ?? 0,
         impressions: t.public_metrics?.impression_count ?? 0,
       })));
-    } catch {
+    } catch (err) {
+      console.warn('[XAnalyticsView] Non-critical:', err);
       setSummary(null);
     } finally {
       setLoading(false);

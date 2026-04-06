@@ -39,7 +39,7 @@ export async function GET() {
     return NextResponse.json(budgets);
   } catch (err) {
     console.error('GET /api/budgets error:', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -96,6 +96,6 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
   } catch (err) {
     console.error('POST /api/budgets error:', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -383,7 +383,8 @@ export default function IntegrationWizard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ value: value }),
       });
-    } catch {
+    } catch (err) {
+      console.warn('[IntegrationWizard] Non-critical:', err);
       // Non-fatal — wizard still advances even if persistence fails
     }
 

@@ -127,7 +127,9 @@ export function loadAgentIdentity(agentId: string): string {
       if (row.description) parts.push(row.description);
       return parts.join('\n');
     }
-  } catch { /* DB not available */ }
+  } catch (err) {
+    console.warn('[sessionService] Non-critical: DB query for agent system prompt failed:', err);
+  }
 
   return `You are ${agentId}.`;
 }
@@ -256,7 +258,7 @@ export function loadKnowledgeBase(
     // Parse tags and score relevance
     const scored = rows.map(row => {
       let parsedTags: string[] = [];
-      try { parsedTags = JSON.parse(row.tags || '[]'); } catch { /* */ }
+      try { parsedTags = JSON.parse(row.tags || '[]'); } catch (err) { console.warn('[sessionService] Failed to parse memory tags:', err); }
 
       let score = 0;
 
@@ -396,7 +398,8 @@ export function loadConversationHistory(
       history: truncated,
       tokenEstimate: estimateTokens(truncated),
     };
-  } catch {
+  } catch (err) {
+    console.warn('[sessionService] Non-critical:', err);
     return { history: '', tokenEstimate: 0 };
   }
 }
@@ -439,7 +442,9 @@ async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val;
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.warn('[sessionService] Non-critical: keychain lookup for gemini_api_key failed:', err);
+  }
   return process.env.GEMINI_API_KEY ?? null;
 }
 
@@ -463,7 +468,8 @@ async function geminiGenerate(prompt: string, apiKey: string): Promise<string | 
       }
       const data = await res.json();
       return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
-    } catch {
+    } catch (err) {
+      console.warn('[sessionService] Non-critical:', err);
       if (model === GEMINI_MODEL) continue;
       return null;
     }
@@ -695,7 +701,9 @@ export function getSessionStats(sessionKey: string): SessionStats | null {
       if (existsSync(agentDir)) {
         memoryFileCount = readdirSync(agentDir).filter(f => f.endsWith('.md')).length;
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[sessionService] Non-critical: failed to count memory files:', err);
+    }
 
     // Count KB articles visible to agent
     let kbArticleCount = 0;
@@ -704,7 +712,9 @@ export function getSessionStats(sessionKey: string): SessionStats | null {
         `SELECT COUNT(*) as c FROM knowledge_base WHERE scope IN ('agents', 'all')`
       ).get() as { c: number };
       kbArticleCount = row.c;
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.warn('[sessionService] Non-critical: failed to count knowledge base articles:', err);
+    }
 
     // Estimate token usage
     const { tokenEstimate: historyTokens } = loadConversationHistory(sessionKey);
@@ -952,7 +962,8 @@ function getMemoryMetadata(agentId: string): MemoryMetadata {
       totalChars,
       lastUpdated: latestMtime > 0 ? new Date(latestMtime) : null,
     };
-  } catch {
+  } catch (err) {
+    console.warn('[sessionService] Non-critical:', err);
     return { fileCount: 0, totalChars: 0, lastUpdated: null };
   }
 }
@@ -1042,7 +1053,8 @@ export function loadProjectGsdContext(projectId: string): string {
     }
 
     return parts.join('\n');
-  } catch {
+  } catch (err) {
+    console.warn('[sessionService] Non-critical:', err);
     return '';
   }
 }
@@ -1223,7 +1235,9 @@ export function loadSocialContext(tab: string): string {
       if (kb.length > 0) {
         sections.push(`BRAND KNOWLEDGE:\n${kb.map(a => `- ${a.title}: ${a.s}`).join('\n')}`);
       }
-    } catch { /* non-critical — summary column may not exist */ }
+    } catch (err) {
+      console.warn('[sessionService] Non-critical: brand knowledge query failed (summary column may not exist):', err);
+    }
 
     if (sections.length === 0) return '';
     const result = `--- LIVE DATA (from Mission Control) ---\n${sections.join('\n\n')}`;
@@ -1257,7 +1271,7 @@ export function loadRoomContext(roomId: string): string {
 
     // Parse agents list
     let agentList: string[] = [];
-    try { agentList = JSON.parse(room.agents || '[]'); } catch { /* */ }
+    try { agentList = JSON.parse(room.agents || '[]'); } catch (err) { console.warn('[sessionService] Failed to parse room agents list:', err); }
     if (agentList.length > 0) {
       parts.push(`**Agents**: ${agentList.join(', ')}`);
     }
@@ -1455,7 +1469,9 @@ export function invokeAgent(
   try {
     const agentRow = db.prepare('SELECT trust_tier FROM agents WHERE id = ?').get(config.agentId) as { trust_tier: string } | undefined;
     if (agentRow?.trust_tier) trustTier = agentRow.trust_tier;
-  } catch { /* use default */ }
+  } catch (err) {
+    console.warn('[sessionService] Non-critical: failed to fetch agent trust tier:', err);
+  }
 
   const allowedTools = TIER_TOOLS[trustTier] ?? TIER_TOOLS['worker'];
   const disallowed = loadDisallowedTools(config.agentId);

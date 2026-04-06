@@ -64,7 +64,8 @@ export default function AgentUtilizationChart() {
     setLoading(true);
     try {
       setData(await getAgentUtilization());
-    } catch {
+    } catch (err) {
+      console.warn('[AgentUtilizationChart] Non-critical:', err);
       // non-critical
     } finally {
       setLoading(false);

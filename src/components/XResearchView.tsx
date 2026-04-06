@@ -43,7 +43,8 @@ export function XResearchView() {
     if (saved) {
       try {
         setSavedItems(JSON.parse(saved));
-      } catch {
+      } catch (err) {
+        console.warn('[XResearchView] Non-critical:', err);
         // ignore
       }
     }
@@ -147,7 +148,8 @@ export function XResearchView() {
         metadata: JSON.stringify({ source: result.url, author: result.username, savedFrom: 'research' }),
       });
       showToast('success', 'Saved as idea');
-    } catch {
+    } catch (err) {
+      console.warn('[XResearchView] Non-critical:', err);
       showToast('error', 'Failed to save idea');
     }
   };

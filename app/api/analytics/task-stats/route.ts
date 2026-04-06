@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
       FROM tasks
       GROUP BY project
       ORDER BY total DESC
+      LIMIT 50
     `).all() as { project: string; total: number; completed: number; completion_rate: number }[];
 
     // Per-agent breakdown (for AnalyticsOverview agent chart)
@@ -61,6 +62,7 @@ export async function GET(request: NextRequest) {
       WHERE assignedTo IS NOT NULL
       GROUP BY assignedTo
       ORDER BY total DESC
+      LIMIT 50
     `).all() as { agent: string; total: number; completed: number }[];
 
     return NextResponse.json({ success: true, byStatus, total, completions, created, projects, agents });

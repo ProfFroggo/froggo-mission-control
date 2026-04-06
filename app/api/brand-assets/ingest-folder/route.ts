@@ -42,7 +42,7 @@ async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val;
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[brand-assets/ingest-folder] Non-critical:', err); }
   return process.env.GEMINI_API_KEY ?? null;
 }
 

@@ -19,13 +19,13 @@ async function getGeminiKey(): Promise<string | null> {
     const { keychainGet } = await import('@/lib/keychain');
     const val = await keychainGet('gemini_api_key');
     if (val) return val.trim();
-  } catch { /* keytar unavailable */ }
+  } catch (err) { console.warn('[generate-image] Non-critical: keytar unavailable:', err); }
   if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY.trim();
   try {
     const db = getDb();
     const row = db.prepare(`SELECT value FROM settings WHERE key = 'gemini_api_key'`).get() as { value: string } | undefined;
     if (row?.value) return row.value.trim();
-  } catch { /* ignore */ }
+  } catch (err) { console.warn('[generate-image] Non-critical:', err); }
   return null;
 }
 
@@ -59,7 +59,8 @@ async function resolveReferenceImage(ref: string): Promise<{ data: string; mimeT
     };
     const mimeType = mimeMap[ext] ?? 'image/png';
     return { data: buf.toString('base64'), mimeType };
-  } catch {
+  } catch (err) {
+    console.warn('[generate-image] Non-critical:', err);
     return null;
   }
 }
@@ -145,7 +146,7 @@ export async function POST(req: NextRequest) {
       db.prepare(
         `INSERT OR IGNORE INTO library_files (id, name, path, category, createdAt) VALUES (?, ?, ?, ?, ?)`
       ).run(fileId, fname, absPath, 'image', Date.now());
-    } catch { /* non-critical — file is saved regardless */ }
+    } catch (err) { console.warn('[generate-image] Non-critical: file is saved regardless', err); }
 
     // URL agents can embed: /api/library?action=raw&id=<base64url_relative_path>
     const encodedId = Buffer.from(relPath).toString('base64url');

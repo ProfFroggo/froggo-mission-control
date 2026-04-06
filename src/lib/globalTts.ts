@@ -59,7 +59,8 @@ export async function speak(
       options.sinkId,
       controller.signal,
     );
-  } catch {
+  } catch (err) {
+    console.warn('[globalTts] Non-critical:', err);
     // Swallow — geminiTts already resolves on error, but guard edge cases
   } finally {
     if (activeController === controller) {
@@ -78,5 +79,5 @@ export function stopSpeaking(): void {
     activeController = null;
   }
   // Safety net: cancel any lingering Web Speech API speech from legacy code paths
-  try { window.speechSynthesis?.cancel(); } catch { /* SSR or unsupported */ }
+  try { window.speechSynthesis?.cancel(); } catch (err) { console.warn('[globalTts] Non-critical: Web Speech API cancel failed (SSR or unsupported):', err); }
 }

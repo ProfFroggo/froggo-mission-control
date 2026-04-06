@@ -195,7 +195,8 @@ export default function TokenUsageWidget({ days = 30 }: { days?: number }) {
         const json = await res.json();
         setData(json as TokenData);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[TokenUsageWidget] Non-critical:', err);
       // silently fail — widget shows empty state
     } finally {
       setLoading(false);
@@ -210,7 +211,8 @@ export default function TokenUsageWidget({ days = 30 }: { days?: number }) {
         const raw = settings['token_budget_usd'];
         if (raw) setBudgetUsd(parseFloat(raw) || 0);
       }
-    } catch {
+    } catch (err) {
+      console.warn('[TokenUsageWidget] Non-critical:', err);
       // no budget configured
     }
   };

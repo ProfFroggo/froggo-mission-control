@@ -145,7 +145,8 @@ export function prepareBlockState(options: PrepareBlockStateOptions): BlockState
       if (typeof subBlock.value === 'function') {
         try {
           initialValue = subBlock.value({})
-        } catch {
+        } catch (err) {
+          console.warn('[ws/stores/workflows/utils] Non-critical:', err);
           initialValue = null
         }
       } else if (subBlock.defaultValue !== undefined) {
@@ -447,7 +448,8 @@ export function remapConditionIds(
         subBlock.value = newValue
         subBlockValues[subBlockId] = newValue
       }
-    } catch {
+    } catch (err) {
+      console.warn('[ws/stores/workflows/utils] Non-critical:', err);
       // Not valid JSON, skip
     }
   }

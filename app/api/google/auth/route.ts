@@ -42,7 +42,7 @@ function saveTokens(tokens: Record<string, unknown>) {
       accounts: { kevin: { email: 'authorized' } },
       credentialsPath: join(homedir(), '.google-mcp', 'credentials.json'),
     }, null, 2), 'utf-8');
-  } catch { /* non-critical */ }
+  } catch (err) { console.warn('[google/auth] Non-critical:', err); }
 }
 
 export async function GET(request: NextRequest) {
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
           }
         }
       }
-    } catch { /* fall through */ }
+    } catch (err) { console.warn('[google/auth] Non-critical: fall through:', err); }
     return NextResponse.json({ authenticated: false });
   }
 
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
   if (action === 'disconnect') {
     try {
       if (existsSync(TOKENS_PATH)) writeFileSync(TOKENS_PATH, '{}', 'utf-8');
-    } catch { /* ignore */ }
+    } catch (err) { console.warn('[google/auth] Non-critical:', err); }
     return NextResponse.json({ success: true });
   }
 
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
         const profile = await profileRes.json();
         if (profile.emailAddress) tokens.email = profile.emailAddress;
       }
-    } catch { /* non-critical */ }
+    } catch (err) { console.warn('[google/auth] Non-critical:', err); }
 
     saveTokens(tokens);
     return new NextResponse(successHtml(`Google connected as ${tokens.email || 'authorized'}`), { headers: { 'Content-Type': 'text/html' } });
@@ -152,8 +152,9 @@ export async function GET(request: NextRequest) {
   }
 
   // Start OAuth flow — redirect to Google via geminicli.com proxy
+  const origin = request.nextUrl?.origin || process.env.NEXT_PUBLIC_APP_URL || `http://localhost:${process.env.PORT || 3000}`;
   const state = Buffer.from(JSON.stringify({
-    uri: `http://localhost:3000/api/google/auth`,
+    uri: `${origin}/api/google/auth`,
     manual: false,
     csrf: randomBytes(16).toString('hex'),
   })).toString('base64');
@@ -206,7 +207,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'Missing code or refresh_token' }, { status: 400 });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -224,7 +225,7 @@ async function refreshAccessToken(refreshToken: string): Promise<{ access_token:
       saveTokens({ ...existing, ...tokens });
       return tokens;
     }
-  } catch { /* fall through */ }
+  } catch (err) { console.warn('[google/auth] Non-critical: fall through:', err); }
   return null;
 }
 

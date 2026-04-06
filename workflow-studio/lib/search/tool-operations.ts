@@ -97,7 +97,8 @@ function resolveToolId(block: BlockConfig, operationId: string): string | null {
   if (block.tools.config?.tool) {
     try {
       return block.tools.config.tool({ operation: operationId })
-    } catch {
+    } catch (err) {
+      console.warn('[ws/lib/search/tool-operations] Non-critical:', err);
       return null
     }
   }

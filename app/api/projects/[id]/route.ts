@@ -144,11 +144,12 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       const memDir = join(homedir(), 'mission-control', 'memory', 'knowledge');
       mkdirSync(memDir, { recursive: true });
       writeFileSync(join(memDir, `project-${safeName}-summary.md`), summary, 'utf-8');
-    } catch {
+    } catch (err) {
+      console.warn('[projects/[id]] Non-critical:', err);
       // non-critical — summary write failure should not fail the archive
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('DELETE /api/projects/:id error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
