@@ -49,7 +49,7 @@ export async function GET() {
     return NextResponse.json({ enabled, brief, autoApprove });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -78,6 +78,6 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ enabled, brief, autoApprove });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

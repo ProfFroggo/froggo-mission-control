@@ -1,9 +1,9 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 // POST /api/files/reveal — reveal a file in Finder/Explorer
 import { NextRequest, NextResponse } from 'next/server';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { existsSync } from 'fs';
-import { join, normalize, resolve } from 'path';
+import { dirname, join, normalize, resolve } from 'path';
 
 export const runtime = 'nodejs';
 
@@ -36,13 +36,16 @@ export async function POST(request: NextRequest) {
     }
 
     // macOS: open -R reveals in Finder; Linux: xdg-open directory
-    const cmd = process.platform === 'darwin'
-      ? `open -R "${normalized}"`
-      : `xdg-open "${normalized.split('/').slice(0, -1).join('/')}"`;
-
-    exec(cmd, (err) => {
-      if (err) console.error('[files/reveal] exec error:', err);
-    });
+    // Use execFile with array args to prevent shell injection
+    if (process.platform === 'darwin') {
+      execFile('open', ['-R', normalized], (err) => {
+        if (err) console.error('[files/reveal] exec error:', err);
+      });
+    } else {
+      execFile('xdg-open', [dirname(normalized)], (err) => {
+        if (err) console.error('[files/reveal] exec error:', err);
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

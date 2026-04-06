@@ -106,7 +106,7 @@ export async function POST() {
     return NextResponse.json({ success: true, ...result });
   } catch (error) {
     console.error('[x/automations/execute]', error);
-    return NextResponse.json({ success: false, ...result, error: String(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
 

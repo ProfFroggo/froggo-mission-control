@@ -36,6 +36,6 @@ export async function POST(req: NextRequest) {
     const detail = err?.data?.detail || err?.data?.errors?.[0]?.message || err?.errors?.[0]?.message || '';
     const code = err?.code || err?.data?.status || 500;
     console.error('[x/tweet] Error:', msg, detail ? `Detail: ${detail}` : '', err?.data ? JSON.stringify(err.data) : '');
-    return NextResponse.json({ error: msg, detail, apiCode: code }, { status: 500 });
+    return NextResponse.json({ error: 'Tweet post failed' }, { status: 500 });
   }
 }

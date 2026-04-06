@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 
 export const runtime = 'nodejs';
 
@@ -15,16 +15,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'code required' }, { status: 400 });
     }
 
-    // Write to temp file
-    const ext = lang || 'txt';
+    // Sanitize both filename AND extension to prevent shell injection
+    const safeExt = (lang || 'txt').replace(/[^a-zA-Z0-9]/g, '');
     const safeName = (filename || 'artifact').replace(/[^a-zA-Z0-9_\-]/g, '_');
     const tmpDir = join(tmpdir(), 'froggo-artifacts');
     mkdirSync(tmpDir, { recursive: true });
-    const filePath = join(tmpDir, `${safeName}.${ext}`);
+    const filePath = join(tmpDir, `${safeName}.${safeExt}`);
     writeFileSync(filePath, code, 'utf-8');
 
-    // Open in VS Code
-    exec(`code "${filePath}"`, (err) => {
+    // Open in VS Code — use execFile to avoid shell interpretation
+    execFile('code', [filePath], (err) => {
       if (err) console.error('[artifacts/open-in-editor] exec error:', err);
     });
 

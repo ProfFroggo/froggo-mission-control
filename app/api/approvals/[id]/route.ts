@@ -240,7 +240,7 @@ export async function PATCH(
             const replyData = await replyRes.json().catch(() => ({}));
             if (replyData.id) replyTo = replyData.id;
           }
-          console.log(`[approvals] Tweet posted: ${firstData.id} (${tweets.length} tweet${tweets.length > 1 ? 's' : ''})`);
+          console.error(`[approvals] Tweet posted: ${firstData.id} (${tweets.length} tweet${tweets.length > 1 ? 's' : ''})`);
         } else {
           console.error(`[approvals] Tweet post failed:`, firstData.error);
         }
@@ -265,7 +265,7 @@ export async function PATCH(
           const replyData = await replyRes.json().catch(() => ({}));
 
           if (replyData.success || replyData.id) {
-            console.log(`[approvals] Reply posted to tweet ${tweetId}: ${replyData.id}`);
+            console.error(`[approvals] Reply posted to tweet ${tweetId}: ${replyData.id}`);
             // Update x_mentions status to 'replied'
             if (meta.mentionId) {
               try {

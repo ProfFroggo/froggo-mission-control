@@ -143,6 +143,6 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[mixpanel/metrics]', msg);
-    return NextResponse.json({ configured: true, error: msg }, { status: 500 });
+    return NextResponse.json({ configured: true, error: 'Internal server error' }, { status: 500 });
   }
 }

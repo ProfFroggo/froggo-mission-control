@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, assets: parsed });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ success: false, error: msg }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -88,6 +88,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, id });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ success: false, error: msg }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
