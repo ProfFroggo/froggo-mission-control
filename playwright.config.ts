@@ -29,6 +29,11 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 720 },
+        // Use system Chrome for stability on macOS; falls back to downloaded Chromium if absent.
+        channel: 'chrome',
+        launchOptions: {
+          args: ['--disable-gpu', '--disable-dev-shm-usage'],
+        },
       },
     },
   ],
