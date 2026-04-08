@@ -221,8 +221,9 @@ export function useArtifactExtraction(
   ]);
 
   // ── Filesystem scan: poll for new files every 10s while chat is active ────
-  // Doesn't depend on message streaming state, IDs, or timing.
-  // Just scans ~/mission-control/ for files created since the session started.
+  // Only runs in 1-on-1 agent chats (where agentId is known).
+  // Disabled for chat rooms — rooms have multiple agents and the scan would
+  // pull in unrelated files (training logs, task outputs) from all agents.
   const sessionStartRef = useRef<number>(Date.now());
   if (prevSessionId.current !== sessionId) {
     sessionStartRef.current = Date.now();
@@ -231,6 +232,7 @@ export function useArtifactExtraction(
   useEffect(() => {
     if (!autoExtract) return;
     if (!sessionId) return;
+    if (!agentId) return; // Skip filesystem scan in chat rooms (no single agent)
 
     // Find the latest assistant message to attach artifacts to
     const getLatestAssistantMsg = () => {
