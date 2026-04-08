@@ -26,6 +26,17 @@ export const MC_PATH_RE = new RegExp(
 );
 
 /**
+ * Regex matching relative library file paths like `library/filename.ext`.
+ * Agents often reference files with short paths instead of absolute ones.
+ *
+ * IMPORTANT: reset .lastIndex before each use (global flag).
+ */
+export const LIBRARY_REL_PATH_RE = new RegExp(
+  `(?:^|\\s|\\()library\\/\\S+\\.(?:${extPattern})`,
+  'gi'
+);
+
+/**
  * Returns true if a path is inside the mission-control directory.
  * Used by the serve API for security checks.
  */

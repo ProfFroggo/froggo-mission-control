@@ -1,6 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import type { ArtifactType, ArtifactMetadata } from '../store/artifactStore';
-import { MC_PATH_RE as LIBRARY_PATH_RE, IMAGE_EXTS, PREVIEWABLE_EXTS } from '../lib/missionControlPaths';
+import { MC_PATH_RE as LIBRARY_PATH_RE, LIBRARY_REL_PATH_RE, IMAGE_EXTS, PREVIEWABLE_EXTS } from '../lib/missionControlPaths';
 
 export interface ExtractedArtifact {
   type: ArtifactType;
@@ -72,9 +72,11 @@ export function containsArtifacts(content: string): boolean {
   if (/https?:\/\/[^\s]+\.(?:png|jpg|jpeg|gif|webp|svg)/i.test(content)) return true;
   if (/\/api\/library\?action=raw&id=[A-Za-z0-9_=-]+/.test(content)) return true;
 
-  // Library file paths (agent output files)
+  // Library file paths (agent output files) — absolute and relative
   LIBRARY_PATH_RE.lastIndex = 0;
   if (LIBRARY_PATH_RE.test(content)) return true;
+  LIBRARY_REL_PATH_RE.lastIndex = 0;
+  if (LIBRARY_REL_PATH_RE.test(content)) return true;
 
   // Structured document: plain markdown response that looks like a deliverable
   if (isStructuredDocument(content)) return true;
@@ -182,17 +184,18 @@ export function extractAllArtifacts(content: string): ExtractedArtifact[] {
   // Skip internal agent logs — only surface intentional deliverables.
   const INTERNAL_LOG_RE = /training[_-]log|activity[_-]summary|status[_-]report|session[_-]log|daily[_-]log/i;
   const seenPaths = new Set<string>();
-  LIBRARY_PATH_RE.lastIndex = 0;
-  while ((match = LIBRARY_PATH_RE.exec(content)) !== null) {
-    const filePath = match[0];
-    if (seenPaths.has(filePath)) continue;
+
+  const processLibraryPath = (filePath: string) => {
+    // Trim leading whitespace/parens from relative path matches
+    filePath = filePath.replace(/^[\s(]+/, '');
+    if (seenPaths.has(filePath)) return;
     seenPaths.add(filePath);
 
     const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
     const filename = filePath.split('/').pop() ?? filePath;
 
     // Skip training logs and other internal agent artifacts
-    if (INTERNAL_LOG_RE.test(filename)) continue;
+    if (INTERNAL_LOG_RE.test(filename)) return;
 
     if (IMAGE_EXTS.has(ext)) {
       artifacts.push({ type: 'image', content: filePath, metadata: { filename, filePath } });
@@ -201,6 +204,18 @@ export function extractAllArtifacts(content: string): ExtractedArtifact[] {
     } else {
       artifacts.push({ type: 'file', content: filePath, metadata: { filename, filePath, language: ext } });
     }
+  };
+
+  // Absolute paths: ~/mission-control/library/file.ext
+  LIBRARY_PATH_RE.lastIndex = 0;
+  while ((match = LIBRARY_PATH_RE.exec(content)) !== null) {
+    processLibraryPath(match[0]);
+  }
+
+  // Relative paths: library/file.ext (common in agent text responses)
+  LIBRARY_REL_PATH_RE.lastIndex = 0;
+  while ((match = LIBRARY_REL_PATH_RE.exec(content)) !== null) {
+    processLibraryPath(match[0]);
   }
 
   // ── Structured document (whole response is the artifact) ───────────────────
