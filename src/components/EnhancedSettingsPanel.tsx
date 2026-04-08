@@ -9,7 +9,7 @@ import {
 import SearchInput from './SearchInput';
 import { useStore } from '../store/store';
 import { useUserSettings } from '../store/userSettings';
-import { settingsApi } from '../lib/api';
+import { settingsApi, authHeaders } from '../lib/api';
 import { showToast } from './Toast';
 import { safeStorage } from '../utils/safeStorage';
 import SecuritySettings from './SecuritySettings';
@@ -1118,19 +1118,21 @@ const API_KEY_PROVIDERS = [
 
 function MixpanelOAuthButton() {
   const [status, setStatus] = useState<'idle' | 'checking' | 'connected' | 'disconnected' | 'connecting'>('idle');
+  const headers = authHeaders();
 
   useEffect(() => {
     setStatus('checking');
-    fetch('/api/mixpanel/oauth?action=status')
+    fetch('/api/mixpanel/oauth?action=status', { headers })
       .then(r => r.json())
       .then(data => setStatus(data.connected ? 'connected' : 'disconnected'))
       .catch(() => setStatus('disconnected'));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleConnect = async () => {
     setStatus('connecting');
     try {
-      const res = await fetch('/api/mixpanel/oauth?action=start');
+      const res = await fetch('/api/mixpanel/oauth?action=start', { headers });
       const data = await res.json();
       if (data.authUrl) {
         const popup = window.open(data.authUrl, 'mixpanel-oauth', 'width=600,height=700,popup=yes');
@@ -1151,7 +1153,7 @@ function MixpanelOAuthButton() {
         const pollInterval = setInterval(() => {
           if (popup?.closed) {
             clearInterval(pollInterval);
-            fetch('/api/mixpanel/oauth?action=status')
+            fetch('/api/mixpanel/oauth?action=status', { headers })
               .then(r => r.json())
               .then(d => {
                 setStatus(d.connected ? 'connected' : 'disconnected');
@@ -1174,7 +1176,7 @@ function MixpanelOAuthButton() {
   const handleRefresh = async () => {
     setStatus('checking');
     try {
-      const res = await fetch('/api/mixpanel/oauth?action=refresh', { method: 'POST' });
+      const res = await fetch('/api/mixpanel/oauth?action=refresh', { method: 'POST', headers });
       const data = await res.json();
       if (data.success) {
         setStatus('connected');
