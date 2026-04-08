@@ -124,16 +124,36 @@ async function readClientInfo(): Promise<Record<string, unknown> | null> {
   return null;
 }
 
-// ── In-memory state for pending OAuth flow ────────────────────────────────────
+// ── Pending OAuth state (file-backed to survive HMR / module reloads) ─────────
 
-// Simple in-memory store for the pending OAuth flow (one at a time is fine)
-let pendingOAuth: {
+interface PendingOAuth {
   codeVerifier: string;
   clientId: string;
   clientInfo: Record<string, unknown>;
   state: string;
   redirectUri: string;
-} | null = null;
+  ts: number;
+}
+
+const PENDING_FILE = path.join(os.tmpdir(), 'mc-mixpanel-pending-oauth.json');
+const PENDING_MAX_AGE = 5 * 60 * 1000; // 5 min — stale flows are invalid
+
+async function savePendingOAuth(data: Omit<PendingOAuth, 'ts'>): Promise<void> {
+  await fs.writeFile(PENDING_FILE, JSON.stringify({ ...data, ts: Date.now() }), { mode: 0o600 });
+}
+
+async function loadPendingOAuth(): Promise<PendingOAuth | null> {
+  try {
+    const raw = await fs.readFile(PENDING_FILE, 'utf-8');
+    const data: PendingOAuth = JSON.parse(raw);
+    if (Date.now() - data.ts > PENDING_MAX_AGE) return null; // expired
+    return data;
+  } catch { return null; }
+}
+
+async function clearPendingOAuth(): Promise<void> {
+  try { await fs.unlink(PENDING_FILE); } catch { /* already gone */ }
+}
 
 // ── Route handlers ────────────────────────────────────────────────────────────
 
@@ -218,14 +238,14 @@ async function handleStart(req: NextRequest): Promise<NextResponse> {
     const codeChallenge = await generateCodeChallenge(codeVerifier);
     const state = crypto.randomUUID();
 
-    // Store pending OAuth state
-    pendingOAuth = {
+    // Persist pending OAuth state to disk (survives HMR)
+    await savePendingOAuth({
       codeVerifier,
       clientId: clientInfo.client_id,
       clientInfo,
       state,
       redirectUri,
-    };
+    });
 
     // Build authorization URL
     const authUrl = new URL(AUTHORIZATION_ENDPOINT);
@@ -268,6 +288,7 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
       return htmlResponse('<h2>Missing authorization code</h2>', 400);
     }
 
+    const pendingOAuth = await loadPendingOAuth();
     if (!pendingOAuth) {
       return htmlResponse('<h2>No pending OAuth flow — start again from Settings</h2>', 400);
     }
@@ -307,8 +328,7 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
     await writeTokenFiles(tokens, pendingOAuth.clientInfo, pendingOAuth.codeVerifier);
 
     // Clear pending state
-    const clientId = pendingOAuth.clientId;
-    pendingOAuth = null;
+    await clearPendingOAuth();
 
     console.error('[mixpanel/oauth] Successfully connected! Tokens cached for mcp-remote.');
 
