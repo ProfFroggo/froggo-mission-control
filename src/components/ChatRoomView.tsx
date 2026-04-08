@@ -422,6 +422,7 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
     const lastUserMsg = [...freshRoom.messages].reverse().find(m => m.role === 'user');
     if (!lastUserMsg) return;
     setStopped(false);
+    abortRef.current = false;
     setLoading(true);
     const mentioned = extractMentions(lastUserMsg.content, freshRoom.agents);
     const targets = mentioned.length > 0 ? mentioned : (freshRoom.agents.includes('mission-control') ? ['mission-control'] : freshRoom.agents);
@@ -739,6 +740,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
     const targets = mentioned.length > 0 ? mentioned : (room.agents.includes('mission-control') ? ['mission-control'] : room.agents);
 
     setStopped(false);
+    abortRef.current = false;
     setLoading(true);
     turnResponseCountRef.current = 0;
     await routeToAgents(targets, fullContent);
@@ -765,6 +767,7 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         };
         addMessage(roomId, userMsg);
         setStopped(false);
+        abortRef.current = false;
         setLoading(true);
         turnResponseCountRef.current = 0;
         routeToAgents(targets, queued);
