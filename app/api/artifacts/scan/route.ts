@@ -28,7 +28,10 @@ interface ScannedFile {
   size: number;
 }
 
-function scanDir(dir: string, since: number, results: ScannedFile[], depth = 0): void {
+// Internal agent logs that should never surface as artifacts
+const INTERNAL_LOG_RE = /training[_-]log|activity[_-]summary|status[_-]report|session[_-]log|daily[_-]log/i;
+
+function scanDir(dir: string, since: number, results: ScannedFile[], depth = 0, skipInternalLogs = false): void {
   if (depth > 5) return; // prevent runaway recursion
   try {
     const entries = readdirSync(dir, { withFileTypes: true });
@@ -37,10 +40,12 @@ function scanDir(dir: string, since: number, results: ScannedFile[], depth = 0):
       if (entry.isDirectory()) {
         // Skip heavy/irrelevant dirs
         if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'data') continue;
-        scanDir(full, since, results, depth + 1);
+        scanDir(full, since, results, depth + 1, skipInternalLogs);
       } else if (entry.isFile()) {
         const ext = extname(entry.name).toLowerCase();
         if (!EXT_SET.has(ext)) continue;
+        // Filter internal agent logs when scanning library
+        if (skipInternalLogs && INTERNAL_LOG_RE.test(entry.name)) continue;
         try {
           const stat = statSync(full);
           if (stat.mtimeMs >= since) {
@@ -70,9 +75,11 @@ export async function GET(request: NextRequest) {
 
   const results: ScannedFile[] = [];
 
-  // Scan specific agent workspace(s) — never the shared library.
-  // Training logs and other agent outputs land in library/ and would pollute
-  // unrelated chat sessions if we scanned it globally.
+  // Always scan library/ — it's where agents write deliverables.
+  // skipInternalLogs=true filters out training logs, activity summaries, etc.
+  scanDir(join(MC_BASE, 'library'), since, results, 0, true);
+
+  // Also scan agent-specific workspace(s) for files not in library
   if (agentId) {
     scanDir(join(MC_BASE, 'agents', agentId), since, results);
   } else if (agentsCsv) {

@@ -56,6 +56,21 @@ Escalate to Senior Coder when ANY of these conditions is met:
 - Attempts summary (T3 only)
 - Specific question or decision needed from Senior Coder
 
+## Reverse Handoff — Acknowledgment (R4)
+
+When Senior Coder resolves your escalation and posts a reverse handoff (architecture decision, implementation path, scope boundary), you **must** explicitly acknowledge before Senior Coder can disengage. This is Senior Coder's R4 criterion — the handoff is not complete until you confirm.
+
+**Required steps:**
+1. Read Senior Coder's guidance in the task activity log
+2. Post an acknowledgment via `chat_post` to Senior Coder confirming:
+   - You have read and understood the architecture decision (R1)
+   - The implementation path is clear and unambiguous (R2)
+   - You understand the scope boundary — what you own vs. what needs another check-in (R3)
+   - You are taking ownership and will proceed independently
+3. If anything is unclear, ask clarifying questions via `chat_post` first — do not post a blanket acknowledgment
+
+**Do not begin implementation until you have posted this acknowledgment.** Senior Coder stays engaged until it is received.
+
 ## Responsibilities
 - Implement features and fix bugs
 - Write tests
