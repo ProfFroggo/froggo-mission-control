@@ -64,10 +64,21 @@ function extractTextForArtifacts(content: string): string {
     if (content.startsWith('[')) {
       const blocks = JSON.parse(content);
       if (Array.isArray(blocks) && blocks[0]?.type) {
-        return blocks
-          .filter((b: any) => b.type === 'text' && b.text)
-          .map((b: any) => b.text)
-          .join('\n');
+        const parts: string[] = [];
+        for (const b of blocks) {
+          if (b.type === 'text' && b.text) {
+            parts.push(b.text);
+          } else if (b.type === 'tool_result' && b.content) {
+            // Tool results often contain file paths and code output from agents
+            if (typeof b.content === 'string') parts.push(b.content);
+            else if (Array.isArray(b.content)) {
+              for (const c of b.content) {
+                if (c.type === 'text' && c.text) parts.push(c.text);
+              }
+            }
+          }
+        }
+        return parts.join('\n');
       }
     }
   } catch { /* not JSON, use as-is */ }
