@@ -1116,6 +1116,105 @@ const API_KEY_PROVIDERS = [
   { id: 'replicate_api_key',     label: 'Replicate',           placeholder: 'r8_...',       group: 'AI' },
 ] as const;
 
+function MixpanelOAuthButton() {
+  const [status, setStatus] = useState<'idle' | 'checking' | 'connected' | 'disconnected' | 'connecting'>('idle');
+
+  useEffect(() => {
+    setStatus('checking');
+    fetch('/api/mixpanel/oauth?action=status')
+      .then(r => r.json())
+      .then(data => setStatus(data.connected ? 'connected' : 'disconnected'))
+      .catch(() => setStatus('disconnected'));
+  }, []);
+
+  const handleConnect = async () => {
+    setStatus('connecting');
+    try {
+      const res = await fetch('/api/mixpanel/oauth?action=start');
+      const data = await res.json();
+      if (data.authUrl) {
+        const popup = window.open(data.authUrl, 'mixpanel-oauth', 'width=600,height=700,popup=yes');
+        // Listen for success/error from the popup
+        const handler = (e: MessageEvent) => {
+          if (e.data?.type === 'mixpanel-oauth-success') {
+            setStatus('connected');
+            showToast('success', 'Mixpanel connected');
+            window.removeEventListener('message', handler);
+          } else if (e.data?.type === 'mixpanel-oauth-error') {
+            setStatus('disconnected');
+            showToast('error', `Mixpanel: ${e.data.error}`);
+            window.removeEventListener('message', handler);
+          }
+        };
+        window.addEventListener('message', handler);
+        // Fallback: check after popup closes
+        const pollInterval = setInterval(() => {
+          if (popup?.closed) {
+            clearInterval(pollInterval);
+            fetch('/api/mixpanel/oauth?action=status')
+              .then(r => r.json())
+              .then(d => {
+                setStatus(d.connected ? 'connected' : 'disconnected');
+                if (d.connected) showToast('success', 'Mixpanel connected');
+              })
+              .catch(() => setStatus('disconnected'));
+            window.removeEventListener('message', handler);
+          }
+        }, 1000);
+      } else {
+        setStatus('disconnected');
+        showToast('error', data.error || 'Failed to start OAuth flow');
+      }
+    } catch {
+      setStatus('disconnected');
+      showToast('error', 'Failed to start Mixpanel OAuth');
+    }
+  };
+
+  const handleRefresh = async () => {
+    setStatus('checking');
+    try {
+      const res = await fetch('/api/mixpanel/oauth?action=refresh', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setStatus('connected');
+        showToast('success', 'Mixpanel tokens refreshed');
+      } else {
+        setStatus('disconnected');
+        showToast('error', data.error || 'Refresh failed — reconnect needed');
+      }
+    } catch {
+      setStatus('disconnected');
+    }
+  };
+
+  return (
+    <Flex align="center" gap="2" className="mt-2 pt-2 border-t border-mission-control-border">
+      <Box className="w-28 flex-shrink-0">
+        <span className="text-sm text-mission-control-text">Mixpanel MCP</span>
+      </Box>
+      <Flex align="center" gap="2" className="flex-1">
+        {status === 'checking' && <Loader2 size={14} className="animate-spin text-mission-control-text-dim" />}
+        {status === 'connected' && <CheckCircle size={14} className="text-success" />}
+        {status === 'disconnected' && <AlertCircle size={14} className="text-warning" />}
+        <span className="text-xs text-mission-control-text-dim">
+          {status === 'checking' ? 'Checking...' : status === 'connected' ? 'Connected (OAuth)' : status === 'connecting' ? 'Waiting for auth...' : 'Not connected'}
+        </span>
+      </Flex>
+      {status === 'connected' ? (
+        <Button onClick={handleRefresh} variant="soft" size="1">
+          <RefreshCw size={12} /> Refresh
+        </Button>
+      ) : (
+        <Button onClick={handleConnect} disabled={status === 'connecting' || status === 'checking'} variant="solid" size="1">
+          {status === 'connecting' ? <Loader2 size={12} className="animate-spin" /> : <ExternalLink size={12} />}
+          {status === 'connecting' ? 'Waiting...' : 'Connect'}
+        </Button>
+      )}
+    </Flex>
+  );
+}
+
 function ApiKeysSection() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [showKeys, setShowKeys] = useState(false);
@@ -1180,6 +1279,7 @@ function ApiKeysSection() {
           return (
             <div key={group}>
               <h4 className="text-[10px] font-bold uppercase tracking-wider text-mission-control-text-dim mb-3 mt-6 first:mt-0">{group}</h4>
+              {group === 'Analytics' && <MixpanelOAuthButton />}
               <div className="space-y-2">
                 {providers.map(p => {
                   const hasValue = !!values[p.id]?.trim();
