@@ -64,12 +64,21 @@ function extractTextForArtifacts(content: string): string {
     if (content.startsWith('[')) {
       const blocks = JSON.parse(content);
       if (Array.isArray(blocks) && blocks[0]?.type) {
-        // Only extract from text blocks — the agent's actual response.
-        // tool_result blocks are operational (reads, edits, commands) not deliverables.
-        return blocks
-          .filter((b: any) => b.type === 'text' && b.text)
-          .map((b: any) => b.text)
-          .join('\n');
+        const parts: string[] = [];
+        for (const b of blocks) {
+          if (b.type === 'text' && b.text) {
+            parts.push(b.text);
+          } else if (b.type === 'tool_use' && b.input) {
+            // Extract file paths from write/edit tool operations — these are deliverables.
+            // Read operations are just agent research, not output.
+            const name = (b.name || '').toLowerCase();
+            if (name === 'write' || name === 'edit' || name.includes('fs_write') || name.includes('fs_create')) {
+              const path = b.input.file_path || b.input.path || '';
+              if (path) parts.push(path);
+            }
+          }
+        }
+        return parts.join('\n');
       }
     }
   } catch { /* not JSON, use as-is */ }
