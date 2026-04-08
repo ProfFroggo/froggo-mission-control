@@ -45,9 +45,10 @@ function resolveUpstreamUrl(request: NextRequest): string | null {
   const wsPath = request.nextUrl.searchParams.get('path');
   if (!wsPath) return null;
 
-  // Ensure the path starts with /api/ to prevent open-redirect abuse
+  // Restrict to specific API prefixes to prevent SSRF abuse
   const normalized = wsPath.startsWith('/') ? wsPath : `/${wsPath}`;
-  if (!normalized.startsWith('/api/')) return null;
+  const ALLOWED_WS_PREFIXES = ['/api/v1/', '/api/workflows/', '/api/executions/', '/api/credentials/'];
+  if (!ALLOWED_WS_PREFIXES.some(prefix => normalized.startsWith(prefix))) return null;
 
   // Forward any additional query params (strip our own `path` param)
   const upstream = new URL(normalized, WS_BASE_URL);
@@ -117,7 +118,7 @@ async function proxyRequest(request: NextRequest): Promise<NextResponse> {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[workflow-studio-proxy] upstream error:', message);
     return NextResponse.json(
-      { error: 'Workflow Studio is unreachable', detail: message },
+      { error: 'Workflow Studio is unreachable' },
       { status: 502 },
     );
   } finally {

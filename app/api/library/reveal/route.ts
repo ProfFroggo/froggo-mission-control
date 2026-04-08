@@ -8,7 +8,7 @@ import { NextResponse } from 'next/server';
 import { ENV } from '@/lib/env';
 import * as path from 'path';
 import * as fs from 'fs';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 
 export async function POST(req: Request) {
   let rawPath: string;
@@ -43,18 +43,20 @@ export async function POST(req: Request) {
 
   return new Promise<NextResponse>((resolve) => {
     // `open -R` reveals the file in Finder (macOS); falls back gracefully on other platforms
-    const cmd = process.platform === 'darwin'
-      ? `open -R "${filePath.replace(/"/g, '\\"')}"`
-      : process.platform === 'win32'
-        ? `explorer /select,"${filePath.replace(/"/g, '\\"')}"`
-        : `xdg-open "${path.dirname(filePath).replace(/"/g, '\\"')}"`;
-
-    exec(cmd, (err) => {
+    const callback = (err: Error | null) => {
       if (err) {
         resolve(NextResponse.json({ error: 'Failed to reveal file' }, { status: 500 }));
       } else {
         resolve(NextResponse.json({ success: true }));
       }
-    });
+    };
+
+    if (process.platform === 'darwin') {
+      execFile('open', ['-R', filePath], callback);
+    } else if (process.platform === 'win32') {
+      execFile('explorer', ['/select,' + filePath], callback);
+    } else {
+      execFile('xdg-open', [path.dirname(filePath)], callback);
+    }
   });
 }

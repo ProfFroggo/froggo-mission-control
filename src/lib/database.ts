@@ -84,7 +84,7 @@ export function getDb(): Database.Database {
  */
 function recoverDatabase(dbPath: string): boolean {
   try {
-    const { execSync } = require('child_process');
+    const { execFileSync } = require('child_process');
     const timestamp = Date.now();
     const backupPath = `${dbPath}.corrupt.${timestamp}`;
 
@@ -93,7 +93,7 @@ function recoverDatabase(dbPath: string): boolean {
     console.log(`[database] Corrupt DB backed up to ${backupPath}`);
 
     // Use sqlite3 CLI to recover (handles more corruption than better-sqlite3)
-    const recoverySQL = execSync(`sqlite3 "${dbPath}" ".recover"`, {
+    const recoverySQL = execFileSync('sqlite3', [dbPath, '.recover'], {
       encoding: 'utf-8',
       timeout: 30000,
       maxBuffer: 50 * 1024 * 1024, // 50MB
@@ -106,10 +106,10 @@ function recoverDatabase(dbPath: string): boolean {
     fs.writeFileSync(tmpRecoveryFile, recoverySQL, 'utf-8');
     fs.unlinkSync(dbPath);
     try {
-      execSync(`sqlite3 "${dbPath}" < "${tmpRecoveryFile}"`, {
+      execFileSync('sqlite3', [dbPath], {
         encoding: 'utf-8',
         timeout: 30000,
-        shell: '/bin/bash',
+        input: fs.readFileSync(tmpRecoveryFile, 'utf-8'),
       });
     } finally {
       try { fs.unlinkSync(tmpRecoveryFile); } catch { /* cleanup best-effort */ }

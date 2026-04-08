@@ -2,8 +2,8 @@
 // Catch-all: GET /api/projects/[id]/images/hero.png → serves from project dir
 // This enables relative paths in HTML files (e.g., <img src="images/hero.png">)
 import { NextRequest, NextResponse } from 'next/server';
-import { existsSync, readFileSync, statSync } from 'fs';
-import { join, extname } from 'path';
+import { existsSync, readFileSync, statSync, realpathSync } from 'fs';
+import { join, extname, sep } from 'path';
 import { homedir } from 'os';
 
 const MIME_MAP: Record<string, string> = {
@@ -34,6 +34,13 @@ export async function GET(
 
   if (!filePath.startsWith(projectDir) || !existsSync(filePath)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  // Resolve symlinks to prevent symlink-based path traversal
+  const realPath = realpathSync(filePath);
+  const realProjectDir = realpathSync(projectDir);
+  if (!realPath.startsWith(realProjectDir + sep) && realPath !== realProjectDir) {
+    return NextResponse.json({ error: 'Access denied' }, { status: 403 });
   }
 
   const stat = statSync(filePath);

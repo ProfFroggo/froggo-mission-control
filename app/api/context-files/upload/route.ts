@@ -188,6 +188,12 @@ export async function POST(req: NextRequest) {
     const entityId = formData.get('entityId') as string | null;
 
     if (!file) return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 });
+
+    // Enforce file size limit to prevent disk exhaustion
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ success: false, error: `File exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit` }, { status: 413 });
+    }
     if (!entityType || !['project', 'campaign'].includes(entityType)) {
       return NextResponse.json({ success: false, error: 'entityType must be project or campaign' }, { status: 400 });
     }

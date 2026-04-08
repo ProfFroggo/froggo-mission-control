@@ -3,15 +3,29 @@
 // Manual mic capture → PCM16 → base64 → WebSocket (bypasses SDK AudioWorklet).
 // Falls back to Gemini batch transcription if ElevenLabs is unavailable.
 
-import {
-  Scribe,
-  AudioFormat,
-  CommitStrategy,
-  RealtimeEvents,
-  type RealtimeConnection,
-} from '@elevenlabs/client';
+// ElevenLabs imports are loaded dynamically in start() so the module still works
+// if the SDK is broken or missing — the Gemini fallback path must always be available.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RealtimeConnection = { on: (event: string, cb: (...args: any[]) => void) => void; send: (data: unknown) => void; close: () => void };
 
-export { RealtimeEvents };
+let _elevenLabsModule: {
+  Scribe: { connect: (opts: Record<string, unknown>) => RealtimeConnection };
+  AudioFormat: Record<string, unknown>;
+  CommitStrategy: Record<string, unknown>;
+  RealtimeEvents: Record<string, string>;
+} | null = null;
+
+async function getElevenLabs() {
+  if (_elevenLabsModule) return _elevenLabsModule;
+  try {
+    const mod = await import('@elevenlabs/client');
+    _elevenLabsModule = mod as unknown as typeof _elevenLabsModule;
+    return _elevenLabsModule;
+  } catch (err) {
+    console.warn('[globalStt] ElevenLabs SDK unavailable:', err);
+    return null;
+  }
+}
 
 let authHeadersFn: (() => Record<string, string>) | null = null;
 
@@ -86,6 +100,9 @@ export class GeminiStt {
 
     try {
       // Try ElevenLabs real-time first
+      const elMod = await getElevenLabs();
+      if (!elMod) throw new Error('ElevenLabs SDK unavailable');
+
       const headers = await getAuthHeaders();
       const tokenRes = await fetch('/api/stt/token', { headers });
 
@@ -101,6 +118,7 @@ export class GeminiStt {
       }
 
       this.usingFallback = false;
+      const { Scribe, AudioFormat, CommitStrategy, RealtimeEvents } = elMod;
 
       // Connect to ElevenLabs with manual audio mode (no SDK mic handling)
       this.connection = Scribe.connect({

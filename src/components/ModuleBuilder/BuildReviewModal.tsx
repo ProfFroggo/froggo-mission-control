@@ -4,6 +4,7 @@ import { X, ChevronDown, ChevronRight, User, LayoutGrid, CheckCircle2 } from 'lu
 import { Button, Select, Flex } from '@radix-ui/themes';
 import type { ModuleSpec } from './types';
 import { generateTasksForModule, type GeneratedTask } from './TaskGenerator';
+import { sanitizeHtml } from '../../utils/sanitize';
 
 interface Props {
   spec: ModuleSpec;
@@ -73,7 +74,7 @@ export default function BuildReviewModal({ spec, moduleId, wireframe, onConfirm,
               <div className="bg-mission-control-bg border border-mission-control-border rounded-xl p-4 max-h-[140px] overflow-hidden relative">
                 <div
                   style={{ transform: 'scale(0.55)', transformOrigin: 'top left', width: '181%', pointerEvents: 'none' }}
-                  dangerouslySetInnerHTML={{ __html: wireframe }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(wireframe) }}
                 />
               </div>
             </div>

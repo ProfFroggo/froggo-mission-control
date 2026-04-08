@@ -11,8 +11,14 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Skip auth for setup routes (needed during onboarding before token is set)
-  const skipAuthRoutes = ['/api/setup/system-check', '/api/health'];
+  // Skip auth for setup/health routes (needed during onboarding before token is set)
+  const skipAuthRoutes = [
+    '/api/setup/system-check',
+    '/api/setup/vault-check',
+    '/api/setup/permissions-confirm',
+    '/api/health',
+    '/api/google/auth/callback',
+  ];
   if (skipAuthRoutes.some(route => request.nextUrl.pathname.startsWith(route))) {
     return NextResponse.next();
   }
@@ -33,7 +39,10 @@ export function proxy(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
   const bearerToken = authHeader?.replace('Bearer ', '');
 
-  if (bearerToken !== token) {
+  // Also accept token as query param for SSE/EventSource (no custom headers)
+  const queryToken = request.nextUrl.searchParams.get('token');
+
+  if (bearerToken !== token && queryToken !== token) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

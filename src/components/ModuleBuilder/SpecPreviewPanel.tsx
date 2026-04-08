@@ -7,6 +7,7 @@ import { Button, Flex, IconButton } from '@radix-ui/themes';
 import type { ModuleSpec, SectionProgress } from './types';
 import type { LiveTask } from './useConversationFlow';
 import { generateTaskPlan } from './TaskGenerator';
+import { sanitizeHtml } from '../../utils/sanitize';
 
 type Tab = 'spec' | 'wireframe' | 'tasks';
 
@@ -345,7 +346,7 @@ function WireframeTab({ wireframe, spec, onRegenerate }: { wireframe: string; sp
       >
         <div
           className="wireframe-canvas"
-          dangerouslySetInnerHTML={{ __html: wireframe }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(wireframe) }}
         />
       </div>
       <p className="text-[10px] text-mission-control-text-dim">

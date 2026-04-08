@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Button, IconButton, TextField, TextArea, Flex } from '@radix-ui/themes';
-import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, FileCode2, Image, File, Search, Settings, Pin, Reply, ChevronDown, MessageCircle, PanelRight, Network, Database } from 'lucide-react';
+import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, FileCode2, Image, File, Search, Settings, Pin, Reply, ChevronDown, MessageCircle, PanelRight, Network, Database, Mic, MicOff } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import MentionText from './MentionText';
 import TeamVoiceMeeting from './TeamVoiceMeeting';
 import ArtifactPanel from './ArtifactPanel';
 import { getAgentTheme } from '../utils/agentThemes';
+import { GeminiStt } from '../lib/globalStt';
 import { useChatRoomStore, type RoomMessage } from '../store/chatRoomStore';
 import { useStore } from '../store/store';
 import ConfirmDialog, { useConfirmDialog } from './ConfirmDialog';
@@ -192,6 +193,8 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
   const [voiceMode, setVoiceMode] = useState(false);
   const [showManageMembers, setShowManageMembers] = useState(false);
   const [attachments, setAttachments] = useState<AttachedFile[]>([]);
+  const [listening, setListening] = useState(false);
+  const sttRef = useRef<GeminiStt | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -780,6 +783,29 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         setMentionFilter('');
       }
     }
+  };
+
+  // Cleanup STT on unmount
+  useEffect(() => {
+    return () => { sttRef.current?.stop(); };
+  }, []);
+
+  const toggleVoice = () => {
+    if (listening && sttRef.current) {
+      sttRef.current.stop();
+      setListening(false);
+      return;
+    }
+    const stt = new GeminiStt({
+      continuous: false,
+      chunkDurationMs: 10000,
+      onTranscript: (text) => { setInput(prev => prev ? `${prev} ${text}` : text); },
+      onError: (err) => { console.warn('[ChatRoomView STT]', err); },
+      onEnd: () => { setListening(false); },
+    });
+    sttRef.current = stt;
+    stt.start();
+    setListening(true);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -1460,13 +1486,19 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           </div>
         )}
 
-        <div className="aui-composer-root">
+        <div className={`aui-composer-root ${listening ? 'aui-listening' : ''}`}>
+          {listening && (
+            <div className="aui-listening-bar">
+              <span className="aui-listening-dot" />
+              Recording — speak now, click mic to stop
+            </div>
+          )}
           <textarea
             ref={inputRef}
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={loading ? "Type to queue next message…" : "Message the room… (@name to mention)"}
+            placeholder={listening ? "Listening… speak or click mic to stop" : loading ? "Type to queue next message…" : "Message the room… (@name to mention)"}
             rows={1}
             className="aui-composer-input min-h-[22px] max-h-[160px] overflow-auto"
             style={{ resize: 'none' }}
@@ -1488,6 +1520,16 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
                 className={`aui-composer-icon-btn ${showMentions ? 'aui-composer-icon-btn-active' : ''}`}
               >
                 <AtSign size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={toggleVoice}
+                title={listening ? "Stop voice input" : "Start voice input"}
+                aria-label={listening ? "Stop voice input" : "Start voice input"}
+                aria-pressed={listening}
+                className={`aui-composer-icon-btn ${listening ? 'aui-composer-icon-btn-active' : ''}`}
+              >
+                {listening ? <MicOff size={15} /> : <Mic size={15} />}
               </button>
             </div>
             <div className="flex items-center gap-1.5">
