@@ -4,7 +4,7 @@ import {
   Settings, Wifi, Volume2, Bell, Moon, Sun, Palette, Save, RotateCcw, Check, Trash2, RefreshCw, AlertTriangle, Shield,
   Link as LinkIcon, Download, Upload, Type, Keyboard, Monitor,
   ChevronDown, ChevronRight, Info, Zap, Code, Eye, HardDrive, Cpu, Play, Archive, Bot, Package, Terminal, ExternalLink,
-  Key, TestTube, EyeOff, AlertCircle, CircleOff, FileJson, Coins, CheckCircle, MessageSquare, Loader2,
+  Key, TestTube, EyeOff, AlertCircle, CircleOff, FileJson, Coins, CheckCircle, MessageSquare, Loader2, Plug, Circle,
 } from 'lucide-react';
 import SearchInput from './SearchInput';
 import { useStore } from '../store/store';
@@ -231,7 +231,7 @@ function applyTheme(theme: 'dark' | 'light' | 'system', _accentColor: string, fo
   window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme: actualTheme } }));
 }
 
-type Tab = 'general' | 'appearance' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'accounts' | 'config' | 'logs' | 'performance' | 'data' | 'accessibility' | 'developer' | 'platform' | 'sessions';
+type Tab = 'general' | 'appearance' | 'notifications' | 'shortcuts' | 'security' | 'automation' | 'integrations' | 'config' | 'logs' | 'performance' | 'data' | 'accessibility' | 'developer' | 'platform' | 'sessions';
 
 // Collapsible section component
 interface SectionProps {
@@ -1092,6 +1092,81 @@ function TokenBudgetSection() {
   );
 }
 
+// ─── MCP Servers Status Section ────────────────────────────────────────────────
+
+interface McpServerInfo {
+  name: string;
+  command: string;
+  description: string;
+}
+
+const MCP_SERVER_LABELS: Record<string, string> = {
+  'mission-control-db': 'Mission Control DB',
+  'memory': 'Memory Vault',
+  'cron': 'Scheduler',
+  'google-workspace': 'Google Workspace',
+  'mixpanel': 'Mixpanel',
+};
+
+function McpServersSection() {
+  const [servers, setServers] = useState<McpServerInfo[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/settings/mcp-status', { headers: authHeaders() })
+      .then(r => r.ok ? r.json() : { servers: [] })
+      .then(data => setServers(data.servers || []))
+      .catch(() => setServers([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Fallback: read known servers from config if API doesn't exist
+  useEffect(() => {
+    if (!loading && servers.length === 0) {
+      // Show hardcoded known servers as fallback
+      setServers([
+        { name: 'mission-control-db', command: 'node', description: 'Database, tasks, agents, settings' },
+        { name: 'memory', command: 'node', description: 'Agent memory vault read/write' },
+        { name: 'cron', command: 'node', description: 'Scheduled task execution' },
+        { name: 'google-workspace', command: 'npx', description: 'Gmail, Calendar, Drive, Chat' },
+        { name: 'mixpanel', command: 'mcp-remote', description: 'Analytics queries and dashboards' },
+      ]);
+    }
+  }, [loading, servers.length]);
+
+  return (
+    <CollapsibleSection title="MCP Servers" icon={<Plug size={16} />} description="Model Context Protocol tool servers" defaultOpen>
+      <div className="space-y-2">
+        {servers.map(s => (
+          <Flex key={s.name} align="center" gap="3" className="px-3 py-2.5 rounded-lg border border-mission-control-border bg-mission-control-bg">
+            <Circle size={8} className="text-success fill-success flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-mission-control-text">{MCP_SERVER_LABELS[s.name] || s.name}</div>
+              <div className="text-xs text-mission-control-text-dim">{s.description}</div>
+            </div>
+            <span className="text-[10px] font-mono text-mission-control-text-dim bg-mission-control-surface px-2 py-0.5 rounded">{s.name}</span>
+          </Flex>
+        ))}
+      </div>
+    </CollapsibleSection>
+  );
+}
+
+// ─── Integrations Tab ─────────────────────────────────────────────────────────
+
+function IntegrationsTab() {
+  return (
+    <div className="space-y-6">
+      <McpServersSection />
+      <CollapsibleSection title="Connected Accounts" icon={<LinkIcon size={16} />} description="OAuth connections for external services" defaultOpen>
+        <ConnectedAccountsPanel />
+        <MixpanelOAuthButton />
+      </CollapsibleSection>
+      <ApiKeysSection />
+    </div>
+  );
+}
+
 // ─── API Keys Section ──────────────────────────────────────────────────────────
 
 const API_KEY_PROVIDERS = [
@@ -1736,7 +1811,7 @@ export default function EnhancedSettingsPanel() {
     { id: 'accessibility', label: 'Accessibility', icon: Eye },
     { id: 'developer', label: 'Developer', icon: Code },
     { id: 'automation', label: 'Automation', icon: Zap },
-    { id: 'accounts', label: 'Accounts', icon: LinkIcon },
+    { id: 'integrations', label: 'Integrations', icon: Plug },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'platform', label: 'Platform', icon: Package },
     { id: 'sessions', label: 'Sessions', icon: Terminal },
@@ -1803,7 +1878,7 @@ export default function EnhancedSettingsPanel() {
         <div className="p-4 max-w-2xl mx-auto">
 
         {/* Tab Content */}
-        {activeTab === 'accounts' && !searchQuery && <ConnectedAccountsPanel />}
+        {activeTab === 'integrations' && !searchQuery && <IntegrationsTab />}
         {activeTab === 'security' && !searchQuery && <SecuritySettings />}
         {activeTab === 'config' && !searchQuery && <ConfigTab />}
         {activeTab === 'logs' && !searchQuery && <LogsTab />}
@@ -2005,10 +2080,7 @@ export default function EnhancedSettingsPanel() {
               <AgentPlatformSection />
             )}
 
-            {/* ── API Keys Section ── */}
-            {settingsMatch('api key anthropic gemini secret token test') && (
-              <ApiKeysSection />
-            )}
+            {/* API Keys moved to Integrations tab */}
 
             {/* ── Danger Zone Section ── */}
             {settingsMatch('danger zone clear completed tasks reset circuits export data json') && (
