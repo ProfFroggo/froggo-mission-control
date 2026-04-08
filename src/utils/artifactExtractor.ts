@@ -179,6 +179,8 @@ export function extractAllArtifacts(content: string): ExtractedArtifact[] {
   }
 
   // ── Library file paths (agent output files) ────────────────────────────────
+  // Skip internal agent logs — only surface intentional deliverables.
+  const INTERNAL_LOG_RE = /training[_-]log|activity[_-]summary|status[_-]report|session[_-]log|daily[_-]log/i;
   const seenPaths = new Set<string>();
   LIBRARY_PATH_RE.lastIndex = 0;
   while ((match = LIBRARY_PATH_RE.exec(content)) !== null) {
@@ -188,6 +190,9 @@ export function extractAllArtifacts(content: string): ExtractedArtifact[] {
 
     const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
     const filename = filePath.split('/').pop() ?? filePath;
+
+    // Skip training logs and other internal agent artifacts
+    if (INTERNAL_LOG_RE.test(filename)) continue;
 
     if (IMAGE_EXTS.has(ext)) {
       artifacts.push({ type: 'image', content: filePath, metadata: { filename, filePath } });
@@ -199,11 +204,14 @@ export function extractAllArtifacts(content: string): ExtractedArtifact[] {
   }
 
   // ── Structured document (whole response is the artifact) ───────────────────
-  // Only if nothing else was extracted — avoids doubling when a doc also has code blocks
+  // Only if nothing else was extracted — avoids doubling when a doc also has code blocks.
+  // Skip internal agent artifacts: training logs, activity summaries, status reports.
   if (artifacts.length === 0 && isStructuredDocument(content)) {
-    // Extract H1 as title hint
-    const h1 = content.match(/^#\s+(.+)/m)?.[1]?.trim();
-    artifacts.push({ type: 'text', content, metadata: { language: 'markdown', titleHint: h1 } });
+    const h1 = content.match(/^#\s+(.+)/m)?.[1]?.trim() ?? '';
+    const isInternalLog = /training.log|activity.summary|status.report|session.log|daily.log/i.test(h1);
+    if (!isInternalLog) {
+      artifacts.push({ type: 'text', content, metadata: { language: 'markdown', titleHint: h1 || undefined } });
+    }
   }
 
   return artifacts;

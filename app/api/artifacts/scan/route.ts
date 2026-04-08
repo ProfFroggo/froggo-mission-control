@@ -67,14 +67,11 @@ export async function GET(request: NextRequest) {
 
   const results: ScannedFile[] = [];
 
-  // Scan library
-  scanDir(join(MC_BASE, 'library'), since, results);
-
-  // Scan specific agent workspace if provided, otherwise scan all agent workspaces
+  // Only scan the specific agent's workspace — not the shared library.
+  // Training logs and other agent outputs land in library/ and would pollute
+  // unrelated chat sessions if we scanned it globally.
   if (agentId) {
     scanDir(join(MC_BASE, 'agents', agentId), since, results);
-  } else {
-    scanDir(join(MC_BASE, 'agents'), since, results);
   }
 
   // Sort newest first, cap at 50
