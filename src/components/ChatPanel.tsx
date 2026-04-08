@@ -243,16 +243,18 @@ export default function ChatPanel() {
   }), [messages]);
   useArtifactExtraction(artifactMessages, currentSessionId, { agentId: selectedAgent?.id });
 
-  // Scope the artifact panel to the current agent's session; clear stale selection
+  // Scope the artifact panel to the current agent's session; clear stale selection.
+  // activeRoomId in deps so the filter re-fires when returning from a chat room
+  // (ChatRoomView sets filterBySession=null on unmount, this restores it).
   const { setFilterBySession, getSessionArtifacts, selectArtifact, toggleCollapse, isCollapsed } = useArtifactStore();
   useEffect(() => {
-    if (!currentSessionId) return;
+    if (!currentSessionId || activeRoomId) return;
     setFilterBySession(currentSessionId);
     // Auto-select most recent artifact for this session, or clear if none
     const sessionArtifacts = getSessionArtifacts(currentSessionId);
     const latest = sessionArtifacts.sort((a, b) => b.timestamp - a.timestamp)[0];
     selectArtifact(latest?.id ?? null);
-  }, [currentSessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentSessionId, activeRoomId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Artifact store — for wiring "Open Preview" cards in messages
   const handleArtifactOpen = useArtifactOpen();

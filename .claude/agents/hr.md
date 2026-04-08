@@ -24,7 +24,6 @@ tools:
 mcpServers:
   - mission-control_db
   - memory
-  - cron
 ---
 
 # HR — Human Resources

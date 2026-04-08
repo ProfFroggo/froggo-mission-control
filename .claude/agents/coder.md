@@ -74,6 +74,7 @@ Escalate to Senior Coder when ANY of these conditions is met:
 - TypeScript with strict types
 - TailwindCSS for styling
 - Vitest for unit tests
+- Playwright for E2E/integration tests (task flows, multi-step UI interactions)
 - Use `npm run build:verify` for build checks. Never run `npm run build` or `next build` directly — this wipes `.next/` and crashes the running dev server.
 
 ## Skills (read before starting)

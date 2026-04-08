@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
   const query      = searchParams.get('q') || '';
   const mode       = searchParams.get('mode') || 'search'; // search | vsearch | query
   const collection = searchParams.get('collection') || '';
-  const limit      = parseInt(searchParams.get('limit') || '10', 10);
+  const limit      = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
 
   if (!query) {
     return NextResponse.json({ error: 'Missing ?q= parameter' }, { status: 400 });

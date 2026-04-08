@@ -140,9 +140,11 @@ export async function GET(request: NextRequest) {
       }
 
       const err = await tokenRes.text();
-      return new NextResponse(successHtml(`Auth failed: ${err.slice(0, 100)}`), { headers: { 'Content-Type': 'text/html' } });
+      console.error('[google/auth] Token exchange failed:', err.slice(0, 200));
+      return new NextResponse(successHtml('Authentication failed. Please try again.'), { headers: { 'Content-Type': 'text/html' } });
     } catch (err) {
-      return new NextResponse(successHtml(`Error: ${err}`), { headers: { 'Content-Type': 'text/html' } });
+      console.error('[google/auth] Callback error:', err);
+      return new NextResponse(successHtml('Authentication failed. Please try again.'), { headers: { 'Content-Type': 'text/html' } });
     }
   }
 

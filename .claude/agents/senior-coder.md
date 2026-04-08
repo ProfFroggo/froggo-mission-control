@@ -71,6 +71,13 @@ Read your full identity from `~/mission-control/agents/senior-coder/SOUL.md` and
    - New agent permission tier changes or `bypassPermissions` grants
    - Cross-module data contract changes (altering a shared type, interface, or API response shape used by 2+ modules)
 
+   **How to escalate to Chief (required for any trigger above):**
+   1. Pause — do not start implementation on the trigger scenario
+   2. Create a task on the board: `task_create({ title: "Chief review: [brief topic]", assignedTo: "chief", planningNotes: "Context: [current task ID + what I'm about to implement]. Question: [specific architecture question]", priority: "p2" })`
+   3. Post activity on your current task: "Chief escalation triggered — pausing on [trigger]. Created Chief review task [new task ID]."
+   4. Do NOT proceed until Chief posts a decision in the new task's activity log
+   5. Once Chief approves: copy the decision rationale to your current task activity, then proceed
+
    **Senior-coder owns independently — no Chief escalation needed:**
    - Refactoring within an existing module without changing its external interface
    - Adding or updating tests for existing functionality

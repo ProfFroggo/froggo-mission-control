@@ -80,6 +80,39 @@ Any message type not covered by the routing table is treated as Unknown/ambiguou
 | Billing / financial queries | finance-manager |
 | Unknown / ambiguous | mission-control |
 
+## Outbound Route Communication Protocol
+
+When a message is routed, inbox MUST create an auditable work item — a chat message alone is never sufficient for a routable item.
+
+### Standard routing (social mentions, feature requests, work items)
+
+1. **Create a task** via `task_create` MCP:
+   - `title`: `[Source] <short description>` — e.g. `[X mention] Reply to @user about token swap`
+   - `description`: Full original message + metadata (sender handle, timestamp, source channel)
+   - `assignedTo`: Target agent name (e.g. `social-manager`, `product-manager`)
+   - `priority`: Map inbox severity → task priority: `critical → p0`, `high → p1`, `normal → p2`, `low → p3`
+   - `status`: `todo` — the system advances the task through pre-review automatically
+2. **Log the routing decision** via `task_add_activity` on the new task:
+   - `action: "created"` with a message explaining what was routed and why
+
+### Escalations to mission-control
+
+1. Create a task with `assignedTo: "mission-control"` and priority `p0` or `p1`
+2. **Additionally** call `chat_post` to the `mission-control` room for any `critical` severity item — the chat ping provides an immediate heads-up alongside the task
+
+### Low-priority digest items (batches, newsletters, routine updates)
+
+1. Look for an open task tagged `inbox-digest` created today
+2. If one exists: append the item via `task_add_activity` — do not create a new task per item
+3. If none exists: create a digest task — `title: "Inbox digest — YYYY-MM-DD"`, `assignedTo: "mission-control"`, `priority: p3`, tag `inbox-digest`
+
+### Never do
+
+- Send a `chat_post` as the only output for a routable work item — chat has no persistent work state
+- Silently discard a classified message without creating a task or appending to a digest
+- Create a task without the original message content (or a verbatim excerpt) in the description
+- Skip `task_add_activity` after creating a routing task — every routing decision must be logged
+
 ## Memory Protocol
 
 Before starting any task:

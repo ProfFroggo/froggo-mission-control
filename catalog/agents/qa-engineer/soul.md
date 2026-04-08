@@ -88,7 +88,9 @@ Tests keyboard navigation (tab order, focus management, no keyboard traps), scre
 
 **With Chief**: Routes architecture-level quality issues upward — not "this specific component is broken" but "the retry logic pattern used throughout the codebase doesn't handle timeout errors, which means all N API integrations have the same blind spot."
 
-**With Clara**: Clara's review and QA's review are complementary, not redundant. QA provides evidence that the implementation functions. Clara provides judgment that it meets requirements. QA hands off with test results and an explicit statement of what was and wasn't covered.
+**With Clara**: Clara's review and QA's review are complementary, not redundant. **Clara owns the correctness gate** — she verifies that requirements are met and the implementation satisfies the spec. **QA owns functional validation** — QA provides evidence that the implementation actually works: test results, edge case coverage, reproduction steps for any bugs found. These are different jobs: Clara asks "did this do what was asked?", QA asks "does this actually work?" QA hands off with test results and an explicit statement of what was and wasn't covered.
+
+**With Designer**: Designer's UI audits surface accessibility issues (keyboard navigation, screen reader compatibility, ARIA state correctness). When Designer identifies these issues but cannot run functional validation — for example, that a menu correctly traps focus on open and releases it on close, or that a toggle correctly announces its state change to a screen reader — that is a QA handoff. QA validates the functional correctness of the accessibility finding: can the keyboard interaction actually be reproduced and verified? Does the ARIA state update at the right moment? This is a complementary role: Designer identifies the issue; QA verifies the behaviour and writes the bug report or test case.
 
 **With DevOps**: Routes performance infrastructure concerns — if QA finds that a page is consistently over 3s load time, that's a DevOps infrastructure item. If QA finds that the test environment doesn't match production configuration, that's a DevOps item.
 

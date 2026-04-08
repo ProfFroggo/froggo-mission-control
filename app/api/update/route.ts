@@ -1,6 +1,6 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { NextResponse } from 'next/server';
-import { exec, execSync } from 'child_process';
+import { execFile, execFileSync } from 'child_process';
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { ENV } from '@/lib/env';
@@ -21,7 +21,7 @@ function findNpm(): string {
   const found = candidates.find(p => existsSync(p));
   if (found) return found;
   // Last resort: try which
-  try { return execSync('which npm', { encoding: 'utf-8', timeout: 3000 }).trim(); } catch (err) { console.warn('[update] Non-critical:', err); }
+  try { return execFileSync('which', ['npm'], { encoding: 'utf-8', timeout: 3000 }).trim(); } catch (err) { console.warn('[update] Non-critical:', err); }
   return 'npm';
 }
 
@@ -142,10 +142,9 @@ export async function POST() {
         .join(':');
 
       // Run npm install -g to update
-      const updateCmd = `"${npmBin}" install -g ${PACKAGE_NAME}@latest --prefer-online 2>&1`;
       send(`Running: npm install -g ${PACKAGE_NAME}@latest --prefer-online`);
 
-      const child = exec(updateCmd, {
+      const child = execFile(npmBin, ['install', '-g', PACKAGE_NAME + '@latest', '--prefer-online'], {
         env: { ...process.env, FORCE_COLOR: '0', PATH: augmentedPath, SKIP_MC_POSTINSTALL: '1' },
         timeout: 300000,
       });
@@ -170,7 +169,7 @@ export async function POST() {
         // Find the new install directory via npm root -g
         let newInstallDir = process.cwd();
         try {
-          const npmRoot = execSync(`"${npmBin}" root -g`, {
+          const npmRoot = execFileSync(npmBin, ['root', '-g'], {
             encoding: 'utf-8',
             timeout: 15000,
             env: { ...process.env, PATH: augmentedPath },
@@ -182,9 +181,8 @@ export async function POST() {
         send(`Building in ${newInstallDir}...`);
 
         const nextBin = join(newInstallDir, 'node_modules', '.bin', 'next');
-        const buildCmd = `"${nodeBin}" "${nextBin}" build`;
 
-        const buildChild = exec(buildCmd, {
+        const buildChild = execFile(nodeBin, [nextBin, 'build'], {
           cwd: newInstallDir,
           env: { ...process.env, FORCE_COLOR: '0', PATH: augmentedPath },
           timeout: 300000,
@@ -208,9 +206,9 @@ export async function POST() {
 
           // Restart via LaunchAgent (macOS) or PM2
           if (isMac && existsSync(launchAgent)) {
-            exec(`/bin/launchctl stop com.mission-control.app`, () => {
+            execFile('/bin/launchctl', ['stop', 'com.mission-control.app'], () => {
               setTimeout(() => {
-                exec(`/bin/launchctl start com.mission-control.app`, (restartErr) => {
+                execFile('/bin/launchctl', ['start', 'com.mission-control.app'], (restartErr) => {
                   if (restartErr) {
                     done(true, 'Updated. Restart failed — run: mission-control restart');
                   } else {
@@ -220,10 +218,10 @@ export async function POST() {
               }, 2000);
             });
           } else {
-            exec('pm2 id mission-control-dashboard 2>/dev/null', (pmErr, pmOut) => {
+            execFile('pm2', ['id', 'mission-control-dashboard'], (pmErr, pmOut) => {
               const hasPm2 = !pmErr && pmOut.trim() !== '' && pmOut.trim() !== '[]';
               if (hasPm2) {
-                exec('pm2 restart mission-control-dashboard', (restartErr) => {
+                execFile('pm2', ['restart', 'mission-control-dashboard'], (restartErr) => {
                   if (restartErr) {
                     done(true, 'Updated. PM2 restart failed — run: pm2 restart mission-control-dashboard');
                   } else {
