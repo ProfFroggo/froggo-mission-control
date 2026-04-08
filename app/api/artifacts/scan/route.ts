@@ -1,10 +1,12 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 /**
- * GET /api/artifacts/scan?since=<epoch_ms>&agent=<agent_id>
+ * GET /api/artifacts/scan?since=<epoch_ms>&agent=<agent_id>&agents=<id1,id2,...>
  *
  * Scans ~/mission-control/ for files created/modified since `since` timestamp.
  * Returns file metadata so the frontend can auto-create artifact entries.
  * This is the reliable fallback — doesn't depend on agents mentioning paths in chat.
+ *
+ * Use `agent` for a single agent (1-1 chats) or `agents` for multiple (chat rooms).
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { readdirSync, statSync } from 'fs';
@@ -60,6 +62,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const since = parseInt(searchParams.get('since') ?? '0', 10);
   const agentId = searchParams.get('agent');
+  const agentsCsv = searchParams.get('agents'); // comma-separated for rooms
 
   if (!since || since < 1) {
     return NextResponse.json({ error: 'since (epoch ms) is required' }, { status: 400 });
@@ -67,11 +70,16 @@ export async function GET(request: NextRequest) {
 
   const results: ScannedFile[] = [];
 
-  // Only scan the specific agent's workspace — not the shared library.
+  // Scan specific agent workspace(s) — never the shared library.
   // Training logs and other agent outputs land in library/ and would pollute
   // unrelated chat sessions if we scanned it globally.
   if (agentId) {
     scanDir(join(MC_BASE, 'agents', agentId), since, results);
+  } else if (agentsCsv) {
+    const ids = agentsCsv.split(',').map(s => s.trim()).filter(Boolean);
+    for (const id of ids) {
+      scanDir(join(MC_BASE, 'agents', id), since, results);
+    }
   }
 
   // Sort newest first, cap at 50

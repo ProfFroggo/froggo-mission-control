@@ -171,6 +171,7 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
       extractFromAssistant: true,
       extractFromUser: false,
       projectId,
+      agentIds: room?.agents,
     }
   );
 

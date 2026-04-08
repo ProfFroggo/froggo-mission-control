@@ -77,10 +77,12 @@ interface ScannedFile {
 async function scanForNewFiles(
   sinceMs: number,
   agentId?: string,
+  agentIds?: string[],
 ): Promise<ScannedFile[]> {
   try {
     const params = new URLSearchParams({ since: String(sinceMs) });
     if (agentId) params.set('agent', agentId);
+    else if (agentIds?.length) params.set('agents', agentIds.join(','));
     const res = await fetch(`/api/artifacts/scan?${params}`);
     if (!res.ok) return [];
     const { files } = await res.json();
@@ -109,6 +111,7 @@ export function useArtifactExtraction(
     extractFromAssistant?: boolean;
     projectId?: string;
     agentId?: string;
+    agentIds?: string[]; // for chat rooms with multiple agents
   } = {}
 ) {
   const { addArtifact, addVersion, artifacts } = useArtifactStore();
@@ -127,6 +130,7 @@ export function useArtifactExtraction(
     extractFromAssistant = true,
     projectId,
     agentId,
+    agentIds,
   } = options;
 
   // Stable callback for creating artifacts from scanned files
@@ -221,18 +225,20 @@ export function useArtifactExtraction(
   ]);
 
   // ── Filesystem scan: poll for new files every 10s while chat is active ────
-  // Only runs in 1-on-1 agent chats (where agentId is known).
-  // Disabled for chat rooms — rooms have multiple agents and the scan would
-  // pull in unrelated files (training logs, task outputs) from all agents.
+  // Works for both 1-on-1 chats (single agentId) and rooms (agentIds array).
+  // Requires at least one agent ID — skips scan if neither is provided.
   const sessionStartRef = useRef<number>(Date.now());
   if (prevSessionId.current !== sessionId) {
     sessionStartRef.current = Date.now();
   }
 
+  // Stable key for agentIds array to avoid effect re-fires on every render
+  const agentIdsKey = agentIds?.join(',') ?? '';
+
   useEffect(() => {
     if (!autoExtract) return;
     if (!sessionId) return;
-    if (!agentId) return; // Skip filesystem scan in chat rooms (no single agent)
+    if (!agentId && !agentIds?.length) return; // Need at least one agent to scan
 
     // Find the latest assistant message to attach artifacts to
     const getLatestAssistantMsg = () => {
@@ -244,7 +250,7 @@ export function useArtifactExtraction(
 
     const runScan = () => {
       const sinceMs = sessionStartRef.current - 5000; // small buffer
-      scanForNewFiles(sinceMs, agentId).then(files => {
+      scanForNewFiles(sinceMs, agentId, agentIds).then(files => {
         const msg = getLatestAssistantMsg();
         for (const file of files) {
           if (file.size < 100) continue;
@@ -267,7 +273,7 @@ export function useArtifactExtraction(
       clearInterval(interval);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, autoExtract, agentId, createArtifactFromFile]);
+  }, [sessionId, autoExtract, agentId, agentIdsKey, createArtifactFromFile]);
 
   return {
     extractManually: (messageId: string) => {
