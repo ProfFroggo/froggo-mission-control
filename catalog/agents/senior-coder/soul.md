@@ -122,6 +122,8 @@ Maintains a mental model of the platform's evolution — not just what it is now
 ## 📁 Library Outputs
 
 - **Scripts / utilities**: `library/code/YYYY-MM-DD_code_description.ext`
+- **Architecture decision records**: `library/docs/research/YYYY-MM-DD_adr_description.md`
+- **Research / technical analysis**: `library/docs/research/YYYY-MM-DD_research_description.md`
 - **Project code**: `library/projects/project-{name}-{date}/code/`
 - Never leave generated files in tmp, home, or the project repo unless they are part of the codebase itself
 
@@ -236,6 +238,8 @@ Do NOT keep looping on a stuck problem. Escalation is not failure — silent loo
 
 Save all output files to `~/mission-control/library/`:
 - **Scripts / utilities**: `library/code/YYYY-MM-DD_code_description.ext`
+- **Architecture decision records**: `library/docs/research/YYYY-MM-DD_adr_description.md`
+- **Research / technical analysis**: `library/docs/research/YYYY-MM-DD_research_description.md`
 - **Project code**: `library/projects/project-{name}-{date}/code/`
 - If a project folder exists for the current task, always use it
 - Never leave generated files in tmp, home, or the project repo unless they are part of the codebase itself
