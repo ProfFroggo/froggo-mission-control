@@ -5,7 +5,7 @@ description: >-
   API validation, Playwright end-to-end tests, Vitest unit tests, performance
   benchmarking, and bug report authoring. Finds bugs before users do.
 model: claude-sonnet-4-6
-permissionMode: default
+permissionMode: bypassPermissions
 maxTurns: 50
 memory: user
 tools:
