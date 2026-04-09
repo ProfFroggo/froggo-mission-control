@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Button, IconButton, TextField, TextArea, Flex } from '@radix-ui/themes';
-import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, FileCode2, Image, File, Search, Settings, Pin, Reply, ChevronDown, MessageCircle, PanelRight, Network, Database, Mic, MicOff } from 'lucide-react';
+import { Send, ArrowLeft, Users, Trash2, AtSign, UsersRound, Phone, Square, UserPlus, Paperclip, X, FileText, FileCode2, Image, File, Search, Settings, Pin, Reply, ChevronDown, MessageCircle, PanelRight, Network, Database, Mic, MicOff, Zap } from 'lucide-react';
 import AgentAvatar from './AgentAvatar';
 import MarkdownMessage from './MarkdownMessage';
 import MentionText from './MentionText';
@@ -17,6 +17,7 @@ import { useArtifactStore } from '../store/artifactStore';
 import ToolPermissionCard, { type ToolPermissionRequest } from './ToolPermissionCard';
 import MessageReactions from './MessageReactions';
 import RoomSettingsPanel, { useRoomNotifSetting } from './RoomSettingsPanel';
+import RoomCompactWizard from './RoomCompactWizard';
 import {
   MissionControlComposer,
   ensureCSS,
@@ -230,13 +231,14 @@ export default function ChatRoomView({ roomId, onBack, hideDelete = false, hideH
   const [replyToMsg, setReplyToMsg] = useState<RoomMessage | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [,] = useRoomNotifSetting(roomId);
+  const [showCompactWizard, setShowCompactWizard] = useState(false);
 
   // Load message history from DB when opening a room (only if empty)
   useEffect(() => {
     if (room && room.messages.length === 0) {
       loadMessages(roomId);
     }
-  }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [roomId, !!room]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Presence: join on mount, leave on unmount
   useEffect(() => {
@@ -983,6 +985,15 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
           >
             <Search size={16} />
           </button>
+          {/* Compact — summarize context */}
+          <button
+            onClick={() => setShowCompactWizard(true)}
+            disabled={room.messages.length < 5}
+            title="Compact — summarize context"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Zap size={16} />
+          </button>
           {/* Settings */}
           <button
             onClick={() => setShowSettings(true)}
@@ -1642,6 +1653,13 @@ Respond as ${agentName(forAgent)}${allowTools ? '' : ' (text only, no tools)'}:`
         confirmLabel={config.confirmLabel}
         cancelLabel={config.cancelLabel}
         type={config.type}
+      />
+
+      {/* Compact Wizard */}
+      <RoomCompactWizard
+        roomId={roomId}
+        open={showCompactWizard}
+        onClose={() => setShowCompactWizard(false)}
       />
 
       {/* Room Settings Panel */}

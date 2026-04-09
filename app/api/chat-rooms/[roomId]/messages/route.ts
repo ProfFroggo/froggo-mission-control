@@ -12,15 +12,17 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const since = searchParams.get('since');
 
-    let sql = 'SELECT * FROM chat_room_messages WHERE roomId = ?';
+    let sql: string;
     const values: unknown[] = [roomId];
 
     if (since) {
-      sql += ' AND timestamp > ?';
+      // Incremental fetch — get everything after the given timestamp
+      sql = 'SELECT * FROM chat_room_messages WHERE roomId = ? AND timestamp > ? ORDER BY timestamp ASC';
       values.push(Number(since));
+    } else {
+      // Initial load — get the latest 500 messages (subquery to reverse order)
+      sql = 'SELECT * FROM (SELECT * FROM chat_room_messages WHERE roomId = ? ORDER BY timestamp DESC LIMIT 500) ORDER BY timestamp ASC';
     }
-
-    sql += ' ORDER BY timestamp ASC LIMIT 500';
 
     const messages = db.prepare(sql).all(...values);
     return NextResponse.json(messages);

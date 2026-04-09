@@ -1200,6 +1200,9 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE sessions ADD COLUMN last_compact_at INTEGER`,
     // Automation builder: per-automation AI engine selector (gemini | claude)
     `ALTER TABLE x_automations ADD COLUMN ai_engine TEXT DEFAULT 'gemini'`,
+    // Chat rooms: compact summary for context restoration after compaction
+    `ALTER TABLE chat_rooms ADD COLUMN compact_summary TEXT`,
+    `ALTER TABLE chat_rooms ADD COLUMN last_compact_at INTEGER`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch (err: unknown) {

@@ -287,13 +287,20 @@ export const useChatRoomStore = create<ChatRoomState>()(
     },
 
     setSessionKey: (roomId: string, agentId: string, sessionKey: string) => {
+      const newKeys = { ...get().rooms.find(r => r.id === roomId)?.sessionKeys, [agentId]: sessionKey };
       set(state => ({
         rooms: state.rooms.map(r =>
           r.id === roomId
-            ? { ...r, sessionKeys: { ...r.sessionKeys, [agentId]: sessionKey } }
+            ? { ...r, sessionKeys: newKeys }
             : r
         ),
       }));
+      // Persist session keys to DB
+      fetch(`/api/chat-rooms/${roomId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionKeys: newKeys }),
+      }).catch(e => console.warn('[chatRoomStore] Failed to save session keys to DB:', e));
     },
 
     updateRoomAgents: (roomId: string, agents: string[]) => {
@@ -302,6 +309,12 @@ export const useChatRoomStore = create<ChatRoomState>()(
           r.id === roomId ? { ...r, agents, updatedAt: Date.now() } : r
         ),
       }));
+      // Persist agents to DB
+      fetch(`/api/chat-rooms/${roomId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agents }),
+      }).catch(e => console.warn('[chatRoomStore] Failed to save room agents to DB:', e));
     },
 
     updateRoom: (roomId: string, updates: Partial<Pick<ChatRoom, 'name' | 'description' | 'pinnedMessageId'>>) => {
