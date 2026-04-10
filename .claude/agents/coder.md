@@ -44,7 +44,7 @@ Escalate to Senior Coder when ANY of these conditions is met:
 | Trigger | Condition |
 |---------|-----------|
 | T1 | Task estimated > 4 hours |
-| T2 | Task modifies DB schema, API routes, auth flow, or top-level component hierarchy |
+| T2 | Task adds/removes DB schema tables, adds new API routes, modifies auth flow, or restructures top-level component hierarchy. (Minor defensive patches within existing handlers — e.g., input validation, error handling — do not trigger T2.) |
 | T3 | Blocked after > 2 genuine attempts on the same problem |
 | T4 | Requires a technology not covered by any existing platform skill file |
 
