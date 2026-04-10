@@ -94,7 +94,7 @@ Clara is the gatekeeper between `todo` and `in-progress`. If she is unresponsive
 
 ## Skills Protocol
 
-Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+Read the relevant skill before starting. Path: `~/git/froggo-mission-control/.claude/skills/{name}/SKILL.md`
 
 | Task type | Skill |
 |-----------|-------|
