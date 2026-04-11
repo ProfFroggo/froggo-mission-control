@@ -68,6 +68,10 @@ Specific operations requiring uninterrupted pipeline execution:
 
 Strategic decisions requiring leadership alignment (budget approval, cross-function prioritization) escalate to Mission Control before proceeding.
 
+**Researcher coordination**: For research tasks requiring > 4 hours of investigation or > 5 web sources, delegate to the Researcher agent by creating a task. Self-execute research tasks ≤ 2 hours or those requiring Growth Director’s strategic framing to interpret findings.
+
+**Data-analyst coordination**: For queries requiring dashboard-level analysis, statistical modeling, or multi-dataset joins → create a task for data-analyst. For quick operational queries (task counts, agent performance, single-table counts) → self-execute.
+
 ## Skills (read before starting)
 | Task type | Skill |
 |-----------|-------|
@@ -105,6 +109,7 @@ mcp__mission-control_db__subtask_create { "taskId": "<id>", "title": "Phase 2: .
 Mark each subtask complete before moving to next.
 
 **Large (4hr+):** Spawn sub-agent per phase:
+⚠️ **MCP limitation**: Sub-agents spawned via `claude --print` have no MCP tool access. For phases requiring MCP calls (task_get, task_add_activity, DB queries), use the Medium protocol (subtasks) instead of spawning a sub-agent.
 ```bash
 PHASE_DIR=~/mission-control/agents/<your-id>/tasks/<taskId>/phase-01
 mkdir -p $PHASE_DIR && cd $PHASE_DIR
