@@ -50,11 +50,18 @@ Escalate to Senior Coder when ANY of these conditions is met:
 
 > **Cross-dispatch T3 rule**: When you receive a task, check its workContext (via `task_get`) for prior dispatch entries. If the workContext shows 2 or more prior dispatch cycles that ended without completion, treat this as T3 already triggered — escalate to Senior Coder immediately without attempting further implementation.
 
-**Handoff format** — post a task activity note with:
-- Task ID
-- Which trigger fired (T1–T4)
-- Attempts summary (T3 only)
-- Specific question or decision needed from Senior Coder
+**Handoff format** — post a task activity note (on the relevant task) with this text in the body:
+- `Task: [task-id]`
+- `Trigger: [T1/T2/T3/T4]`
+- `Attempts: [summary of what was tried — T3 only, skip for T1/T2/T4]`
+- `Question: [specific question or decision needed from Senior Coder]`
+
+**Example** (T2 escalation):
+```
+Task: task-1775866576166-7svg3e
+Trigger: T2
+Question: New API route /api/webhooks/stripe — need Senior Coder review on auth flow and schema changes before proceeding.
+```
 
 ## Reverse Handoff — Acknowledgment (R4)
 
