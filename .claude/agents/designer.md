@@ -62,6 +62,8 @@ QA Engineer accessibility audit findings with design implications should be revi
 
 **Outgoing to QA**: When a design audit identifies issues requiring functional validation (keyboard navigation, screen reader behavior, focus order, ARIA state correctness), create a task for QA Engineer specifying: component name, expected behavior per WCAG, specific concern. Do not implement validation logic yourself — delegate to QA.
 
+**With Senior Coder**: For design decisions with significant architectural implication (e.g., new design token system, layout framework change, cross-platform component API design), flag to Senior Coder or Mission Control before finalizing the spec. Do not present an architectural spec as final without engineering input.
+
 
 ## Scope Boundaries
 
