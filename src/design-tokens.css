@@ -100,7 +100,8 @@
   --color-success-bg: color-mix(in srgb, var(--color-success) 10%, transparent);
   --color-success-border: color-mix(in srgb, var(--color-success) 30%, transparent);
   --color-success-hover: #16a34a;
-  
+  --color-success-foreground: #000000; /* B6: black on green-500 = 9.22:1, on green-600 = 6.37:1 */
+
   /* Error */
   --color-error: #ef4444;
   --color-error-bg: color-mix(in srgb, var(--color-error) 10%, transparent);
@@ -257,6 +258,11 @@
   /* Accent — always violet (Theme accentColor="violet") */
   --mission-control-accent:           var(--accent-9);
   --mission-control-accent-dim:       var(--accent-10);
+  --mission-control-accent-foreground: #ffffff; /* B6: white on violet-9 = 5.39:1 */
+  /* Accent opacity variants (bridged via tailwind.config.js color-mix) */
+  /* bg-mission-control-accent-subtle  → 10% accent */
+  /* bg-mission-control-accent-muted   → 5% accent  */
+  /* border-mission-control-accent-border → 30% accent */
 
   /* Aliases */
   --mission-control-bg-alt:           var(--color-surface);
@@ -279,6 +285,7 @@
      green-600 (#16a34a) on white = 4.8:1 (passes WCAG AA 4.5:1 minimum).
      Dark mode accent (#22c55e on #0a0a0a) passes at 7.0:1 — leave unchanged. */
   --mission-control-accent: #16a34a;
+  --mission-control-accent-foreground: #000000; /* B6: black on green-600 = 6.37:1 (dark default #fff on violet passes) */
 
   /* T9 (DL1 root cause): Semantic color light-mode overrides.
      Dark-mode defaults pass on #0a0a0a but fail WCAG AA on white.
@@ -289,6 +296,7 @@
   --color-review:  #7c3aed; /* violet-700: 5.2:1 on white  (dark default #a855f7 = 3.2:1) */
   --color-error:   #dc2626; /* red-600:    4.6:1 on white  (dark default #ef4444 = 4.0:1) */
   --color-info:    #2563eb; /* blue-600:   4.7:1 on white  (dark default #3b82f6 = 3.6:1) */
+  --color-danger:  #c2410c; /* orange-700: 5.9:1 on white  (dark default #f97316 = 2.8:1) */
 }
 
 /* ============================================
