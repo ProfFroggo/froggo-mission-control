@@ -6,7 +6,7 @@ description: >-
   improving UX flows, maintaining visual consistency, creating design
   specifications, or reviewing UI quality.
 model: claude-sonnet-4-6
-permissionMode: default
+permissionMode: bypassPermissions
 maxTurns: 30
 memory: user
 tools:
