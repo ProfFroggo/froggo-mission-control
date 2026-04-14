@@ -59,11 +59,22 @@ export function syncCatalogAgents(db: Database.Database): void {
         const manifest: AgentManifestFile = JSON.parse(
           readFileSync(file, 'utf-8')
         );
-        // Validate that soul.md exists alongside manifest.json
-        const soulPath = join(dirname(file), 'soul.md');
-        if (!existsSync(soulPath)) {
-          console.error(`[catalogSync] Agent ${manifest.id} is missing soul.md at ${soulPath} — skipping`);
-          continue;
+        // For package-style agents (manifest.json inside a directory), soul.md must be
+        // alongside the manifest. For legacy flat-file manifests, soul.md is optional
+        // (check the agent's subdirectory as a fallback, warn if absent but don't skip).
+        const isPackageStyle = file.endsWith(`${manifest.id}/manifest.json`);
+        if (isPackageStyle) {
+          const soulPath = join(dirname(file), 'soul.md');
+          if (!existsSync(soulPath)) {
+            console.error(`[catalogSync] Agent ${manifest.id} is missing soul.md at ${soulPath} — skipping`);
+            continue;
+          }
+        } else {
+          // Flat-file legacy agent — look for soul.md in the named subdirectory if present
+          const soulPath = join(agentsDir, manifest.id, 'soul.md');
+          if (!existsSync(soulPath)) {
+            console.warn(`[catalogSync] Agent ${manifest.id} has no soul.md — will sync without soul file`);
+          }
         }
         // Resolve avatar: workspace first (hired), then catalog package (pre-hire)
         const workspaceAvatar = join(HOME, 'mission-control', 'agents', manifest.id, 'assets', 'avatar.webp');

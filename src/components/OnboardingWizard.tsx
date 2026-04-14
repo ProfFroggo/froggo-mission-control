@@ -107,7 +107,6 @@ const FALLBACK_CORE_AGENTS: AgentEntry[] = [
 ];
 
 const FALLBACK_OPTIONAL_AGENTS: AgentEntry[] = [
-  { id: 'art', name: 'Art', description: 'Visual asset creation, image generation, and creative direction' },
   { id: 'atlas', name: 'Atlas', description: 'Strategic planning, goal tracking, and roadmap management' },
   { id: 'cfo', name: 'CFO', description: 'Financial oversight, budgeting, and treasury management' },
   { id: 'chief', name: 'Chief', description: 'Architecture decisions and senior technical guidance' },
@@ -116,7 +115,6 @@ const FALLBACK_OPTIONAL_AGENTS: AgentEntry[] = [
   { id: 'colosseum-reviewer', name: 'Colosseum Reviewer', description: 'Colosseum code review and quality assurance' },
   { id: 'colosseum-tester', name: 'Colosseum Tester', description: 'Colosseum test automation and QA coverage' },
   { id: 'content-strategist', name: 'Content Strategist', description: 'Content planning, SEO strategy, and editorial calendars' },
-  { id: 'cs-social', name: 'CS Social', description: 'Customer success via social channels and community support' },
   { id: 'customer-success', name: 'Customer Success', description: 'Customer onboarding, retention, and satisfaction' },
   { id: 'data-analyst', name: 'Data Analyst', description: 'Data analysis, reporting pipelines, and BI dashboards' },
   { id: 'designer', name: 'Designer', description: 'UI/UX design, component design, accessibility reviews' },
