@@ -19,6 +19,7 @@ import { useChatRoomStore } from '../../store/chatRoomStore';
 import ChatRoomView from '../ChatRoomView';
 import Kanban from '../Kanban';
 import CampaignDispatchModal from './CampaignDispatchModal';
+import ProjectGanttView from '../ProjectGanttView';
 import { CHANNEL_ICONS, CHANNEL_LABELS, ALL_CHANNELS } from './channelIcons';
 import { STATUS_CONFIG, TYPE_COLORS, TYPE_LABELS } from './CampaignCard';
 import CampaignROIDashboard from '../CampaignROIDashboard';
@@ -1775,7 +1776,7 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
         {activeTab === 'overview'    && <OverviewTab campaign={campaign} onUpdate={reload} />}
         {activeTab === 'chat'        && <ChatTab campaign={campaign} />}
         {activeTab === 'tasks'       && <Kanban projectId={campaign.id} projectName={campaign.name} onNewTask={() => setShowDispatch(true)} />}
-        {activeTab === 'timeline'    && <TimelineTabWrapper campaign={campaign} />}
+        {activeTab === 'timeline'    && <ProjectGanttView projectId={campaign.id} projectName={campaign.name} />}
         {activeTab === 'content'     && <ContentTab campaign={campaign} />}
         {activeTab === 'assets'      && <AssetsTab campaign={campaign} />}
         {activeTab === 'channels'    && <ChannelsTab campaign={campaign} onUpdate={reload} />}
