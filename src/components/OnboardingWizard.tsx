@@ -107,12 +107,30 @@ const FALLBACK_CORE_AGENTS: AgentEntry[] = [
 ];
 
 const FALLBACK_OPTIONAL_AGENTS: AgentEntry[] = [
+  { id: 'art', name: 'Art', description: 'Visual asset creation, image generation, and creative direction' },
+  { id: 'atlas', name: 'Atlas', description: 'Strategic planning, goal tracking, and roadmap management' },
+  { id: 'cfo', name: 'CFO', description: 'Financial oversight, budgeting, and treasury management' },
   { id: 'chief', name: 'Chief', description: 'Architecture decisions and senior technical guidance' },
+  { id: 'colosseum-implementer', name: 'Colosseum Implementer', description: 'Colosseum feature implementation and code delivery' },
+  { id: 'colosseum-migrator', name: 'Colosseum Migrator', description: 'Colosseum data migration and schema management' },
+  { id: 'colosseum-reviewer', name: 'Colosseum Reviewer', description: 'Colosseum code review and quality assurance' },
+  { id: 'colosseum-tester', name: 'Colosseum Tester', description: 'Colosseum test automation and QA coverage' },
+  { id: 'content-strategist', name: 'Content Strategist', description: 'Content planning, SEO strategy, and editorial calendars' },
+  { id: 'cs-social', name: 'CS Social', description: 'Customer success via social channels and community support' },
+  { id: 'customer-success', name: 'Customer Success', description: 'Customer onboarding, retention, and satisfaction' },
+  { id: 'data-analyst', name: 'Data Analyst', description: 'Data analysis, reporting pipelines, and BI dashboards' },
   { id: 'designer', name: 'Designer', description: 'UI/UX design, component design, accessibility reviews' },
+  { id: 'devops', name: 'DevOps', description: 'CI/CD pipelines, infrastructure, and deployment automation' },
   { id: 'discord-manager', name: 'Discord Manager', description: 'Community management, moderation, and engagement' },
   { id: 'finance-manager', name: 'Finance Manager', description: 'Financial tracking, reporting, and budget management' },
   { id: 'growth-director', name: 'Growth Director', description: 'Growth strategy, GTM planning, and marketing initiatives' },
+  { id: 'performance-marketer', name: 'Performance Marketer', description: 'Paid campaigns, attribution, and conversion optimization' },
+  { id: 'perps', name: 'Perps', description: 'Perpetuals trading research, analysis, and strategy' },
+  { id: 'product-manager', name: 'Product Manager', description: 'Product roadmap, specs, and cross-functional alignment' },
+  { id: 'project-manager', name: 'Project Manager', description: 'Project coordination, timelines, and delivery tracking' },
+  { id: 'qa-engineer', name: 'QA Engineer', description: 'Test strategy, QA automation, and release sign-off' },
   { id: 'researcher', name: 'Researcher', description: 'Deep research, competitive analysis, and technical investigation' },
+  { id: 'security', name: 'Security', description: 'Security audits, vulnerability assessment, and hardening' },
   { id: 'senior-coder', name: 'Senior Coder', description: 'Complex features, architecture implementation, mentoring' },
   { id: 'social-manager', name: 'Social Manager', description: 'X/Twitter strategy, content, and social engagement' },
   { id: 'voice', name: 'Voice', description: 'Text-to-speech, voice interaction, and audio processing' },
@@ -134,7 +152,7 @@ const FALLBACK_CORE_MODULES: ModuleEntry[] = [
 
 const FALLBACK_OPTIONAL_MODULES: ModuleEntry[] = [
   { id: 'analytics', name: 'Analytics', description: 'Platform metrics, agent performance, and reporting' },
-  { id: 'dev', name: 'Dev Tools', description: 'Developer utilities, DB inspection, and platform internals' },
+  { id: 'dev', name: 'Dev', description: 'Developer utilities, DB inspection, and platform internals' },
   { id: 'finance', name: 'Finance', description: 'Multi-account financial management with AI categorization' },
   { id: 'meetings', name: 'Meetings', description: 'Scheduling, agendas, notes, and action items' },
   { id: 'module-builder', name: 'Module Builder', description: 'Visual builder for creating new platform modules' },
@@ -402,26 +420,18 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     setGeminiStatus('validating');
     setGeminiError('');
     try {
-      // Save the key first
-      await fetch('/api/settings/gemini_api_key', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value: geminiKey.trim() }),
-      });
-      // Validate via server-side proxy (F-02: key never sent from browser)
-      const res = await fetch('/api/gemini/generate', {
+      // Use setup endpoint — no auth required during onboarding
+      const res = await fetch('/api/setup/validate-gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: 'Reply with OK' }] }],
-          generationConfig: { maxOutputTokens: 8 },
-        }),
+        body: JSON.stringify({ key: geminiKey.trim() }),
       });
       if (res.ok) {
         setGeminiStatus('ok');
       } else {
+        const data = await res.json().catch(() => ({}));
         setGeminiStatus('error');
-        setGeminiError('Invalid API key — please check and try again');
+        setGeminiError((data as { error?: string }).error || 'Invalid API key — please check and try again');
       }
     } catch (err) {
       console.warn('[OnboardingWizard] Non-critical:', err);
@@ -433,10 +443,25 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   // ─────────────────────────────────────────────
   // Google OAuth connect — full-page redirect, App.tsx handles ?code= on return
   // ─────────────────────────────────────────────
-  const connectGoogle = async () => {
+  const connectGoogle = () => {
     setGoogleConnecting(true);
-    // Redirect to our Gemini Workspace CLI OAuth flow
-    window.location.href = '/api/google/auth';
+    // Open in new tab — keeps the wizard open while OAuth completes
+    window.open('/api/google/auth', '_blank', 'noopener');
+    // Poll for auth completion so the wizard reflects the connected state
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch('/api/google/auth?action=status');
+        const data = res.ok ? await res.json() : null;
+        if (data?.authenticated) {
+          clearInterval(poll);
+          setGoogleStatus('connected');
+          setGoogleEmail(data.email ?? '');
+          setGoogleConnecting(false);
+        }
+      } catch { /* keep polling */ }
+    }, 2000);
+    // Stop polling after 5 minutes regardless
+    setTimeout(() => { clearInterval(poll); setGoogleConnecting(false); }, 5 * 60 * 1000);
   };
 
   // ─────────────────────────────────────────────
