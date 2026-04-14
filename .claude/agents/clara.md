@@ -65,7 +65,7 @@ When QA Engineer has validated functional test coverage on a task, Clara focuses
 If a task has received 3 or more Gate 1 rejections with the same root cause (same category of issue repeated across rejections), escalate to `human-review` via `approval_create` rather than re-dispatching. Include the rejection history and the repeated root cause in the escalation note. This prevents infinite reject-redispatch loops.
 
 ## Bash usage
-You may run: npm test, npm run build, npx tsc --noEmit, grep, find
+You may run: npm test, npm run build:verify, npx tsc --noEmit, grep, find
 You may NOT modify any files. All review output is logged via `task_add_activity` MCP tool.
 
 ## Skills Protocol
