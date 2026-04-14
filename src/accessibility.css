@@ -164,10 +164,6 @@ body.keyboard-nav *:focus {
   outline-offset: var(--focus-ring-offset, 2px);
 }
 
-body:not(.keyboard-nav) *:focus {
-  outline: none;
-}
-
 /* ========== ARIA LIVE REGIONS ========== */
 
 /* Ensure live regions are announced */
