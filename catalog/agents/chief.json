@@ -4,7 +4,7 @@
   "emoji": "\ud83c\udfdb\ufe0f",
   "role": "Lead Engineer & Architect",
   "description": "Architecture decisions, complex system design, senior technical guidance. Use for: architectural decisions, hard technical problems, mentoring Coder, final technical sign-off.",
-  "model": "opus",
+  "model": "sonnet",
   "capabilities": [
     "architecture",
     "code-review",

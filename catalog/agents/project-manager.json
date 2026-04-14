@@ -24,5 +24,12 @@
   "version": "1.0.0",
   "category": "management",
   "core": false,
-  "mcpTools": []
+  "mcpTools": [
+    "get_me", "get_teams",
+    "list_issues", "search_issues", "issue_read", "issue_write", "add_issue_comment",
+    "list_pull_requests", "search_pull_requests", "pull_request_read",
+    "list_notifications", "get_notification_details", "dismiss_notification",
+    "projects_list", "projects_get", "projects_write",
+    "actions_list", "actions_get", "get_job_logs"
+  ]
 }

@@ -1110,6 +1110,62 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_campaign_automations_campaignId ON campaign_automations(campaignId);
     CREATE INDEX IF NOT EXISTS idx_campaign_automations_automationId ON campaign_automations(automationId);
 
+    -- ══════════════════════════════════════════
+    -- CAMPAIGN PHASES
+    CREATE TABLE IF NOT EXISTS campaign_phases (
+      id TEXT PRIMARY KEY,
+      campaignId TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      startDate INTEGER,
+      endDate INTEGER,
+      color TEXT DEFAULT '#6366f1',
+      channels TEXT NOT NULL DEFAULT '[]',
+      owner TEXT,
+      milestones TEXT NOT NULL DEFAULT '[]',
+      sortOrder INTEGER DEFAULT 0,
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+    CREATE INDEX IF NOT EXISTS idx_campaign_phases_campaignId ON campaign_phases(campaignId, sortOrder);
+
+    -- ══════════════════════════════════════════
+    -- CAMPAIGN CONTENT ITEMS (content calendar)
+    CREATE TABLE IF NOT EXISTS campaign_content_items (
+      id TEXT PRIMARY KEY,
+      campaignId TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      phaseId TEXT REFERENCES campaign_phases(id) ON DELETE SET NULL,
+      scheduledDate INTEGER,
+      channels TEXT NOT NULL DEFAULT '[]',
+      description TEXT NOT NULL DEFAULT '',
+      angle TEXT DEFAULT '',
+      ownerType TEXT NOT NULL DEFAULT 'human',
+      ownerId TEXT DEFAULT '',
+      approverId TEXT DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'draft',
+      sortOrder INTEGER DEFAULT 0,
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+    CREATE INDEX IF NOT EXISTS idx_campaign_content_campaignId ON campaign_content_items(campaignId, scheduledDate);
+    CREATE INDEX IF NOT EXISTS idx_campaign_content_phaseId ON campaign_content_items(phaseId);
+    CREATE INDEX IF NOT EXISTS idx_campaign_content_status ON campaign_content_items(status);
+
+    -- ══════════════════════════════════════════
+    -- CAMPAIGN KPI WEEKLY (weekly performance matrix)
+    CREATE TABLE IF NOT EXISTS campaign_kpi_weekly (
+      id TEXT PRIMARY KEY,
+      campaignId TEXT NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      metric TEXT NOT NULL,
+      weekLabel TEXT NOT NULL,
+      weekStart INTEGER NOT NULL,
+      target REAL DEFAULT 0,
+      actual REAL,
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      UNIQUE(campaignId, metric, weekLabel)
+    );
+    CREATE INDEX IF NOT EXISTS idx_campaign_kpi_weekly_campaignId ON campaign_kpi_weekly(campaignId, weekStart);
+
     -- Indexes for task management v2 tables
     CREATE INDEX IF NOT EXISTS idx_task_templates_createdAt ON task_templates(createdAt DESC);
     CREATE INDEX IF NOT EXISTS idx_task_deps_taskId ON task_dependencies(taskId);
@@ -1454,6 +1510,80 @@ function initSchema(db: Database.Database) {
       updatedAt INTEGER NOT NULL
     )`);
   } catch { /* already exists */ }
+
+  // ══════════════════════════════════════════
+  // ARENA — Battles, paper positions, leaderboard, settlements
+  // ══════════════════════════════════════════
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS battles (
+      id TEXT PRIMARY KEY,
+      mode TEXT NOT NULL CHECK(mode IN ('1v1', 'tournament', 'free-for-all')),
+      status TEXT NOT NULL DEFAULT 'created' CHECK(status IN ('created','matching','active','settling','settled','disputed','resolved','cancelled')),
+      stakeAmount REAL NOT NULL DEFAULT 0,
+      stakeCurrency TEXT NOT NULL DEFAULT 'USDC',
+      duration INTEGER NOT NULL,
+      maxParticipants INTEGER NOT NULL DEFAULT 2,
+      createdBy TEXT NOT NULL,
+      participants TEXT DEFAULT '[]',
+      winnerId TEXT,
+      startedAt INTEGER,
+      endedAt INTEGER,
+      settledAt INTEGER,
+      metadata TEXT DEFAULT '{}',
+      createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
+    CREATE TABLE IF NOT EXISTS paper_positions (
+      id TEXT PRIMARY KEY,
+      battleId TEXT NOT NULL,
+      participantId TEXT NOT NULL,
+      tokenMint TEXT NOT NULL,
+      side TEXT NOT NULL CHECK(side IN ('long','short')),
+      quantity REAL NOT NULL,
+      entryPrice REAL NOT NULL,
+      exitPrice REAL,
+      pnl REAL,
+      status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','closed')),
+      openedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      closedAt INTEGER,
+      FOREIGN KEY (battleId) REFERENCES battles(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS leaderboard (
+      participantId TEXT PRIMARY KEY,
+      displayName TEXT,
+      totalBattles INTEGER DEFAULT 0,
+      wins INTEGER DEFAULT 0,
+      losses INTEGER DEFAULT 0,
+      draws INTEGER DEFAULT 0,
+      totalPnl REAL DEFAULT 0.0,
+      winStreak INTEGER DEFAULT 0,
+      bestStreak INTEGER DEFAULT 0,
+      maxDrawdown REAL DEFAULT 0.0,
+      rankScore REAL DEFAULT 0.0,
+      rank INTEGER,
+      updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+    );
+
+    CREATE TABLE IF NOT EXISTS arena_settlements (
+      id TEXT PRIMARY KEY,
+      battleId TEXT NOT NULL,
+      participantId TEXT NOT NULL,
+      finalPnl REAL NOT NULL,
+      payout REAL NOT NULL DEFAULT 0,
+      payoutStatus TEXT NOT NULL DEFAULT 'pending' CHECK(payoutStatus IN ('pending','paid','failed')),
+      settledAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+      FOREIGN KEY (battleId) REFERENCES battles(id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_battles_status ON battles(status);
+    CREATE INDEX IF NOT EXISTS idx_battles_mode ON battles(mode);
+    CREATE INDEX IF NOT EXISTS idx_paper_positions_battle ON paper_positions(battleId);
+    CREATE INDEX IF NOT EXISTS idx_paper_positions_participant ON paper_positions(participantId);
+    CREATE INDEX IF NOT EXISTS idx_leaderboard_rank ON leaderboard(rankScore DESC);
+    CREATE INDEX IF NOT EXISTS idx_settlements_battle ON arena_settlements(battleId);
+  `);
 
   syncCatalogAgents(db);
   syncCatalogModules(db);

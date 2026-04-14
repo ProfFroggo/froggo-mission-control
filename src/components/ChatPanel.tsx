@@ -1395,6 +1395,16 @@ export default function ChatPanel() {
     } catch (_err) { /* Non-fatal */ }
   };
 
+  const restartSession = async () => {
+    if (!selectedAgent) return;
+    try {
+      await fetch(`/api/agents/${selectedAgent.id}/session`, { method: 'DELETE' });
+      showToast('success', 'Session reset — next message starts fresh with new MCP connections');
+    } catch (_err) {
+      showToast('error', 'Failed to reset session');
+    }
+  };
+
   const reconnect = () => {
     setHistoryLoaded(false);
     forceReconnect();
@@ -1928,6 +1938,15 @@ export default function ChatPanel() {
                 {speakResponses ? <Volume2 size={15} /> : <VolumeX size={15} />}
               </button>
               <MicSelector value={micDeviceId} onChange={setMicDeviceId} compact />
+              <button
+                type="button"
+                onClick={restartSession}
+                title="Restart session (fresh MCP connections)"
+                aria-label="Restart agent session"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors"
+              >
+                <RefreshCw size={15} />
+              </button>
               <button
                 type="button"
                 onClick={clearChat}

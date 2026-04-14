@@ -12,7 +12,7 @@ You are operating inside **Froggo Mission Control** — a self-hosted AI agent p
 ## Boot Sequence
 1. Read `SOUL.md` — personality and principles
 2. Read `MEMORY.md` — long-term learnings
-3. Check queue: `mcp__mission-control_db__task_list { "assignedTo": "customer-success", "status": "todo" }`
+3. Check queue: `mcp__mission-control-db__task_list { "assignedTo": "customer-success", "status": "todo" }`
 
 ## Key Paths
 - **Database**: `~/mission-control/data/mission-control.db` (use MCP tools only)
@@ -20,7 +20,7 @@ You are operating inside **Froggo Mission Control** — a self-hosted AI agent p
 - **Library**: `~/mission-control/library/` — all output files go here
 
 ## MCP Tools
-- Database: `mcp__mission-control_db__*`
+- Database: `mcp__mission-control-db__*`
 - Memory: `mcp__memory__*`
 - Email: `mcp__google-workspace__gmail_*` — for customer email responses (if enabled)
 - Calendar: `mcp__google-workspace__calendar_*`
@@ -65,7 +65,7 @@ todo → internal-review → in-progress → review → done (with human-review 
 
 ## GSD Protocol
 **Small (< 1hr):** Execute directly. Log activity.
-**Medium (1-4hr):** Break into subtasks via `mcp__mission-control_db__subtask_create`
+**Medium (1-4hr):** Break into subtasks via `mcp__mission-control-db__subtask_create`
 **Large (4hr+):** Create PLAN.md, execute phase by phase, write SUMMARY.md per phase
 
 ## Memory Protocol

@@ -1,0 +1,30 @@
+{
+  "id": "colosseum-migrator",
+  "name": "Colosseum Migrator",
+  "emoji": "🗄️",
+  "role": "Schema & Migration Manager",
+  "description": "Manages Prisma schema changes, generates migrations, and propagates changes through domain entities, mappers, and repositories in the Colosseum Clean Architecture layers.",
+  "model": "sonnet",
+  "capabilities": [
+    "prisma-schema",
+    "database-migrations",
+    "domain-entities",
+    "repository-patterns",
+    "clean-architecture",
+    "seed-data"
+  ],
+  "requiredApis": [],
+  "requiredSkills": [
+    "prisma-sync",
+    "scaffold-entity",
+    "bootstrap",
+    "run-checks"
+  ],
+  "requiredTools": [
+    "node",
+    "pnpm",
+    "docker"
+  ],
+  "version": "1.0.0",
+  "category": "engineering"
+}

@@ -17,16 +17,66 @@ import { Button, Flex, IconButton, TextArea, TextField } from '@radix-ui/themes'
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const TYPE_OPTIONS = [
-  { value: 'paid',       label: 'Paid',       icon: DollarSign,  desc: 'Google Ads, Meta Ads, sponsored' },
-  { value: 'organic',    label: 'Organic',     icon: Leaf,        desc: 'Non-paid growth and reach' },
-  { value: 'social',     label: 'Social',      icon: Share2,      desc: 'Social media campaigns' },
-  { value: 'email',      label: 'Email / CLM', icon: Mail,        desc: 'Email, CRM, lifecycle' },
-  { value: 'clm',        label: 'CLM',         icon: Users,       desc: 'Customer lifecycle marketing' },
-  { value: 'content',    label: 'Content',     icon: FileText,    desc: 'Blog, video, content marketing' },
-  { value: 'pr',         label: 'PR',          icon: Megaphone,   desc: 'Press releases, media outreach' },
-  { value: 'influencer', label: 'Influencer',  icon: Star,        desc: 'Influencer & creator partnerships' },
-  { value: 'seo',        label: 'SEO',         icon: Search,      desc: 'Search engine optimization' },
-  { value: 'general',    label: 'General',     icon: Briefcase,   desc: 'Multi-channel or uncategorized' },
+  { value: 'launch',     label: 'Product Launch', icon: Rocket,    desc: 'Coordinate a product or feature launch' },
+  { value: 'paid',       label: 'Paid',           icon: DollarSign, desc: 'Google Ads, Meta Ads, sponsored' },
+  { value: 'organic',    label: 'Organic',         icon: Leaf,       desc: 'Non-paid growth and reach' },
+  { value: 'social',     label: 'Social',          icon: Share2,     desc: 'Social media campaigns' },
+  { value: 'email',      label: 'Email / CLM',     icon: Mail,       desc: 'Email, CRM, lifecycle' },
+  { value: 'clm',        label: 'CLM',             icon: Users,      desc: 'Customer lifecycle marketing' },
+  { value: 'content',    label: 'Content',          icon: FileText,   desc: 'Blog, video, content marketing' },
+  { value: 'pr',         label: 'PR',               icon: Megaphone,  desc: 'Press releases, media outreach' },
+  { value: 'influencer', label: 'Influencer',       icon: Star,       desc: 'Influencer & creator partnerships' },
+  { value: 'seo',        label: 'SEO',              icon: Search,     desc: 'Search engine optimization' },
+  { value: 'general',    label: 'General',          icon: Briefcase,  desc: 'Multi-channel or uncategorized' },
+];
+
+// Suggested agents per channel/type combination
+const CHANNEL_AGENT_MAP: Record<string, string[]> = {
+  x:          ['social-manager', 'writer', 'content-strategist'],
+  instagram:  ['designer', 'social-manager', 'writer'],
+  tiktok:     ['social-manager', 'writer'],
+  linkedin:   ['writer', 'content-strategist', 'growth-director'],
+  youtube:    ['writer', 'designer'],
+  email:      ['writer', 'growth-director', 'content-strategist'],
+  seo:        ['writer', 'researcher', 'content-strategist'],
+  google_ads: ['performance-marketer', 'growth-director'],
+  meta_ads:   ['performance-marketer', 'designer'],
+  whatsapp:   ['social-manager', 'writer'],
+  web:        ['designer', 'writer'],
+  discord:    ['social-manager', 'writer', 'discord-manager'],
+};
+const TYPE_AGENT_MAP: Record<string, string[]> = {
+  launch:     ['atlas', 'growth-director', 'designer', 'writer', 'researcher'],
+  paid:       ['performance-marketer', 'data-analyst', 'designer'],
+  organic:    ['content-strategist', 'writer', 'growth-director'],
+  social:     ['social-manager', 'writer', 'designer'],
+  email:      ['writer', 'growth-director'],
+  clm:        ['growth-director', 'data-analyst', 'writer'],
+  content:    ['content-strategist', 'writer', 'researcher'],
+  pr:         ['writer', 'growth-director'],
+  influencer: ['growth-director', 'researcher'],
+  seo:        ['writer', 'researcher', 'content-strategist'],
+  general:    ['growth-director'],
+};
+
+function suggestAgents(selectedChannels: string[], selectedTypes: string[]): string[] {
+  const suggestions = new Set<string>();
+  for (const ch of selectedChannels) {
+    for (const a of (CHANNEL_AGENT_MAP[ch] ?? [])) suggestions.add(a);
+  }
+  for (const t of selectedTypes) {
+    for (const a of (TYPE_AGENT_MAP[t] ?? [])) suggestions.add(a);
+  }
+  return Array.from(suggestions);
+}
+
+const KPI_METRIC_OPTIONS = [
+  { value: 'impressions', label: 'Impressions', placeholder: 'e.g. 500000' },
+  { value: 'clicks',      label: 'Whale accounts / clicks', placeholder: 'e.g. 15' },
+  { value: 'conversions', label: 'First-time depositors / conversions', placeholder: 'e.g. 200' },
+  { value: 'revenue',     label: 'Volume / revenue', placeholder: 'e.g. 2800000' },
+  { value: 'roas',        label: 'ROAS', placeholder: 'e.g. 3.5' },
+  { value: 'cac',         label: 'CAC ($)', placeholder: 'e.g. 25' },
 ];
 
 const GOAL_OPTIONS = [
@@ -45,6 +95,7 @@ type ConvStep =
   | 'name'
   | 'types'
   | 'goal'
+  | 'kpis'
   | 'channels'
   | 'audience'
   | 'budget'
@@ -93,6 +144,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [brief, setBrief] = useState('');
+  const [kpiTargets, setKpiTargets] = useState<Record<string, number>>({});
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
 
   // ── UI state ────────────────────────────────────────────────────────────────
@@ -207,6 +259,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
       name: { text: "Let's set up your campaign. What's it called?", block: 'name' },
       types: { text: '', block: 'types' },
       goal: { text: "What's the main goal?", block: 'goal' },
+      kpis: { text: 'Set your key targets — what does success look like? (optional)', block: 'kpis' },
       channels: { text: 'Which channels will you use?', block: 'channels' },
       audience: { text: 'Who\'s the target audience? (optional — skip to continue)', block: 'audience' },
       budget: { text: 'What\'s the budget in USD? (optional)', block: 'budget' },
@@ -316,6 +369,13 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
     setCreating(true);
     setCreationError(null);
     try {
+      // Build kpis object from kpiTargets (only include non-zero targets)
+      const kpisPayload = Object.fromEntries(
+        Object.entries(kpiTargets)
+          .filter(([, v]) => v > 0)
+          .map(([k, v]) => [k, { target: v, actual: 0 }])
+      );
+
       const result = await campaignsApi.create({
         name: name.trim(),
         types,
@@ -327,6 +387,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
         startDate: startDate ? new Date(startDate).getTime() : undefined,
         endDate: endDate ? new Date(endDate).getTime() : undefined,
         budget: budget ? parseFloat(budget) : undefined,
+        kpis: Object.keys(kpisPayload).length > 0 ? kpisPayload : undefined,
         color: '#6366f1',
         memberAgentIds: selectedAgents,
       }) as { success: boolean; id: string; campaign: Campaign };
@@ -433,7 +494,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
                   if (step !== 'goal') return;
                   setGoal(g.value);
                   setMessages(prev => [...prev, userMsg(g.label)]);
-                  advanceTo('channels');
+                  advanceTo('kpis');
                 }}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
                   sel ? 'bg-mission-control-accent/10 border-mission-control-accent/30 text-mission-control-accent' : 'border-mission-control-border text-mission-control-text-dim hover:text-mission-control-text'
@@ -446,6 +507,39 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           })}
         </div>
       );
+
+      case 'kpis': return step === 'kpis' ? (
+        <div className="mt-3 space-y-3">
+          <div className="space-y-2">
+            {KPI_METRIC_OPTIONS.map(({ value, label, placeholder }) => (
+              <div key={value} className="flex items-center gap-3">
+                <span className="text-xs text-mission-control-text-dim w-44 flex-shrink-0">{label}</span>
+                <input
+                  type="number"
+                  placeholder={placeholder}
+                  value={kpiTargets[value] ?? ''}
+                  onChange={e => {
+                    const v = parseFloat(e.target.value);
+                    setKpiTargets(prev => isNaN(v) ? { ...prev, [value]: 0 } : { ...prev, [value]: v });
+                  }}
+                  className="flex-1 px-2 py-1.5 bg-mission-control-surface border border-mission-control-border rounded-lg text-mission-control-text text-sm tabular-nums focus:outline-none focus:border-mission-control-accent"
+                />
+              </div>
+            ))}
+          </div>
+          <Flex gap="2">
+            <Button variant="solid" size="1" onClick={() => {
+              const set = Object.entries(kpiTargets).filter(([, v]) => v > 0);
+              const label = set.length > 0 ? set.map(([k, v]) => `${k}: ${v.toLocaleString()}`).join(' · ') : 'Skipped';
+              setMessages(prev => [...prev, userMsg(label)]);
+              advanceTo('channels');
+            }}>
+              <Check size={14} /> {Object.values(kpiTargets).some(v => v > 0) ? 'Set targets' : 'Skip for now'}
+            </Button>
+          </Flex>
+          <p className="text-[10px] text-mission-control-text-dim">You can fill in week-by-week targets in the Results tab after creation.</p>
+        </div>
+      ) : null;
 
       case 'channels': return (
         <div className="mt-3 space-y-3">
@@ -469,6 +563,9 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             <Button variant="solid" size="1" onClick={() => {
               const labels = channels.map(c => CHANNEL_LABELS[c] ?? c).join(', ');
               setMessages(prev => [...prev, userMsg(labels)]);
+              // Auto-pre-select suggested agents based on channels + types
+              const suggested = suggestAgents(channels, types);
+              setSelectedAgents(prev => Array.from(new Set([...prev, ...suggested])));
               advanceTo('audience');
             }}>
               <Check size={14} /> Confirm channels
@@ -587,31 +684,48 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
             <Flex justify="center" py="4">
               <Loader2 size={18} className="animate-spin text-mission-control-text-dim" />
             </Flex>
-          ) : (
-            <div className="space-y-1.5">
-              {agents.map(agent => {
-                const sel = selectedAgents.includes(agent.id);
-                return (
-                  <button key={agent.id} type="button" onClick={() => toggleAgent(agent.id)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${
-                      sel ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'
-                    }`}>
-                    <AgentAvatar agentId={agent.id} size="sm" fallbackEmoji={agent.emoji} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-mission-control-text">{agent.name}</div>
-                      {agent.role && <div className="text-xs text-mission-control-text-dim truncate">{agent.role}</div>}
-                    </div>
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${sel ? 'border-mission-control-accent bg-mission-control-accent' : 'border-mission-control-border'}`}>
-                      {sel && <Check size={9} className="text-white" />}
-                    </div>
-                  </button>
-                );
-              })}
-              {agents.length === 0 && (
-                <p className="text-sm text-mission-control-text-dim text-center py-4">No agents available. Create agents first.</p>
-              )}
-            </div>
-          )}
+          ) : (() => {
+            const suggested = suggestAgents(channels, types);
+            const suggestedAgents = agents.filter(a => suggested.includes(a.id));
+            const otherAgents = agents.filter(a => !suggested.includes(a.id) && !['mission-control','clara','hr','inbox','colosseum-implementer','colosseum-migrator','colosseum-reviewer','colosseum-tester'].includes(a.id));
+            function AgentRow({ agent }: { agent: AgentInfo }) {
+              const sel = selectedAgents.includes(agent.id);
+              return (
+                <button key={agent.id} type="button" onClick={() => toggleAgent(agent.id)}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${
+                    sel ? 'bg-mission-control-accent/10 border-mission-control-accent/40' : 'border-mission-control-border hover:border-mission-control-accent/30'
+                  }`}>
+                  <AgentAvatar agentId={agent.id} size="sm" fallbackEmoji={agent.emoji} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-mission-control-text">{agent.name}</div>
+                    {agent.role && <div className="text-xs text-mission-control-text-dim truncate">{agent.role}</div>}
+                  </div>
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${sel ? 'border-mission-control-accent bg-mission-control-accent' : 'border-mission-control-border'}`}>
+                    {sel && <Check size={9} className="text-white" />}
+                  </div>
+                </button>
+              );
+            }
+            return (
+              <div className="space-y-3">
+                {suggestedAgents.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-mission-control-accent uppercase tracking-wider mb-1.5">Suggested for your channels</p>
+                    <div className="space-y-1.5">{suggestedAgents.map(a => <AgentRow key={a.id} agent={a} />)}</div>
+                  </div>
+                )}
+                {otherAgents.length > 0 && (
+                  <div>
+                    {suggestedAgents.length > 0 && <p className="text-[10px] font-semibold text-mission-control-text-dim uppercase tracking-wider mb-1.5">Other agents</p>}
+                    <div className="space-y-1.5">{otherAgents.map(a => <AgentRow key={a.id} agent={a} />)}</div>
+                  </div>
+                )}
+                {agents.length === 0 && (
+                  <p className="text-sm text-mission-control-text-dim text-center py-4">No agents available. Create agents first.</p>
+                )}
+              </div>
+            );
+          })()}
           <Button variant="solid" size="1" onClick={() => {
             const agentNames = agents.filter(a => selectedAgents.includes(a.id)).map(a => a.name);
             const label = agentNames.length > 0 ? agentNames.join(', ') : 'No agents assigned';
@@ -620,6 +734,7 @@ export default function CampaignCreationWizard({ onClose, onCreated }: Props) {
           }}>
             <Check size={14} /> {selectedAgents.length > 0 ? `Assign ${selectedAgents.length} agent${selectedAgents.length > 1 ? 's' : ''}` : 'Continue without agents'}
           </Button>
+          <p className="text-[10px] text-mission-control-text-dim">After creation: use the Content tab to build your content calendar, Timeline to set phases, and Results to track weekly KPIs.</p>
         </div>
       ) : null;
 

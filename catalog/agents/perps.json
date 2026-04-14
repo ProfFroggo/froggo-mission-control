@@ -1,0 +1,18 @@
+{
+  "id": "perps",
+  "name": "perps",
+  "emoji": "🤖",
+  "role": "professional perps trader",
+  "description": "professional perps trader",
+  "model": "sonnet",
+  "capabilities": [
+    "leverage analysis",
+    "position sizing",
+    "volatility hedging"
+  ],
+  "requiredApis": [],
+  "requiredSkills": [],
+  "requiredTools": [],
+  "version": "1.0.0",
+  "category": "custom"
+}

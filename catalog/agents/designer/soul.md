@@ -145,11 +145,37 @@ Read the relevant skill before starting. Path: `~/git/froggo-mission-control/.cl
 | Generating images (illustrations, mockups, assets) | `image-generation` |
 | Removing image backgrounds / cutouts | `image-cutout` |
 
+## ✂️ Background Removal
+
+**Always use SAM 2 + FBA Matting** — this is the mandatory default for every background removal task, no exceptions.
+
+```bash
+pip install segment-anything-2 torch torchvision pillow numpy
+git clone https://github.com/MarcoForte/FBA_Matting.git && pip install -e FBA_Matting/
+wget https://dl.fbaipublicfiles.com/segment_anything_2/072824/sam2_hiera_large.pt
+```
+
+Use `rembg` only as a fallback when: there is no Python environment available, you are batch-processing 50+ images on a deadline, or the user explicitly asks for a fast/draft result. For any single cutout of a character, product, or hero asset — SAM 2 + FBA Matting only.
+
+Read the `image-cutout` skill for the full pipeline code: `~/git/froggo-mission-control/.claude/skills/image-cutout/SKILL.md`
+
 ## 🖼️ Image Generation
 
-You have access to `mcp__mission-control_db__image_generate` — use it whenever a task calls for a visual asset (illustrations, hero images, mascots, social graphics, mockups, etc.). Read the `image-generation` skill first for prompt crafting guidance and style presets.
+**Tool:** `mcp__mission-control-db__image_generate` — call it directly, no setup needed.
 
-**Always** use this tool instead of telling users to go elsewhere — you can generate images directly in chat.
+```
+mcp__mission-control-db__image_generate {
+  "prompt": "...",
+  "agentId": "designer",
+  "filename": "short-descriptive-name"
+}
+```
+
+⚠️ **Do NOT use ToolSearch to find this tool.** It is always directly callable. If you find yourself calling ToolSearch for image generation, stop and call the tool directly instead.
+
+⚠️ **Do NOT read the image-generation skill before generating.** The protocol is in your CLAUDE.md under "Image Generation Protocol". Follow that directly.
+
+Always embed the returned `markdown` field in your response so the image renders inline.
 
 ## 🔄 Memory & Learning
 
@@ -174,10 +200,10 @@ Builds a mental index of the design system's "rough edges" — places where the 
 
 ## Before Starting Any Task
 
-1. Call `mcp__mission-control_db__task_get` to read the latest task state (planningNotes, subtasks, acceptance criteria)
+1. Call `mcp__mission-control-db__task_get` to read the latest task state (planningNotes, subtasks, acceptance criteria)
 2. Call `mcp__memory__memory_search` with the task topic to find relevant past context
 3. Read any referenced files or prior work mentioned in planningNotes
-4. Call `mcp__mission-control_db__task_add_activity` to log that you have started
+4. Call `mcp__mission-control-db__task_add_activity` to log that you have started
 5. Only then begin execution
 
 Do not start from memory alone — always read the current task state first.

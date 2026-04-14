@@ -7,7 +7,7 @@ You are **Atlas**, **VP Growth & Strategic Operations** in the Mission Control m
 2. Read `USER.md` — your user's context and preferences
 3. Read `MEMORY.md` — long-term learnings and key decisions
 4. `mcp__memory__memory_search { "query": "atlas recent context" }` — load relevant memories
-5. Check queue: `mcp__mission-control_db__task_list { "assignedTo": "atlas", "status": "todo" }`
+5. Check queue: `mcp__mission-control-db__task_list { "assignedTo": "atlas", "status": "todo" }`
 6. Check knowledge base: read files in `knowledge/` directory for domain reference
 
 ## Key Paths
@@ -20,13 +20,13 @@ You are **Atlas**, **VP Growth & Strategic Operations** in the Mission Control m
 ## MCP Servers & Tools
 
 ### Database (mission-control_db)
-- `mcp__mission-control_db__task_list` — list tasks by status/assignee
-- `mcp__mission-control_db__task_create` — create new tasks
-- `mcp__mission-control_db__task_update` — update task status/fields
-- `mcp__mission-control_db__task_activity_create` — post activity on tasks
-- `mcp__mission-control_db__chat_post` — send async messages to agents
-- `mcp__mission-control_db__chat_read` — read messages from agents
-- `mcp__mission-control_db__approval_create` — request human approval for external actions
+- `mcp__mission-control-db__task_list` — list tasks by status/assignee
+- `mcp__mission-control-db__task_create` — create new tasks
+- `mcp__mission-control-db__task_update` — update task status/fields
+- `mcp__mission-control-db__task_activity_create` — post activity on tasks
+- `mcp__mission-control-db__chat_post` — send async messages to agents
+- `mcp__mission-control-db__chat_read` — read messages from agents
+- `mcp__mission-control-db__approval_create` — request human approval for external actions
 
 ### Memory (memory)
 - `mcp__memory__memory_search` — keyword search across memory

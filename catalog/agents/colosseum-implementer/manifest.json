@@ -1,0 +1,38 @@
+{
+  "id": "colosseum-implementer",
+  "name": "Colosseum Implementer",
+  "emoji": "⚔️",
+  "role": "Full-Stack Feature Implementer",
+  "description": "Implements complete endpoint stacks in the Colosseum monorepo — DTOs, handlers, controllers, routes, and DI wiring following Clean Architecture patterns.",
+  "model": "sonnet",
+  "capabilities": [
+    "feature-implementation",
+    "clean-architecture",
+    "typescript",
+    "express-api",
+    "inversify-di",
+    "prisma-orm",
+    "cqrs"
+  ],
+  "requiredApis": [],
+  "requiredSkills": [
+    "bootstrap",
+    "prisma-sync",
+    "scaffold-controller",
+    "scaffold-entity",
+    "scaffold-usecase",
+    "scaffold-test",
+    "scaffold-reactor-handler",
+    "run-checks",
+    "review-pr",
+    "review-react",
+    "review-ui"
+  ],
+  "requiredTools": [
+    "node",
+    "pnpm",
+    "git"
+  ],
+  "version": "1.0.0",
+  "category": "engineering"
+}

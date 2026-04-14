@@ -4,7 +4,7 @@
   "emoji": "\ud83c\udfae",
   "role": "Discord Community Manager",
   "description": "Discord community management, moderation, engagement, and announcements. Use for: community updates, moderating channels, managing server structure, engagement campaigns.",
-  "model": "haiku",
+  "model": "sonnet",
   "capabilities": [
     "discord",
     "community",

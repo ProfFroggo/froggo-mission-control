@@ -12,7 +12,7 @@ When a task is created with `assignedTo` and `status=todo`, the platform automat
 ## How It Works
 
 ### 1. Task Created / Assigned
-- Via Kanban UI, API, or another agent using `mcp__mission-control_db__task_create`
+- Via Kanban UI, API, or another agent using `mcp__mission-control-db__task_create`
 - If `assignedTo` is set and `status=todo`, dispatch fires automatically
 
 ### 2. Dispatcher Cron

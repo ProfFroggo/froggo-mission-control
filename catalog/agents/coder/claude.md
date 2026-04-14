@@ -6,7 +6,7 @@ You are **Coder**, the **Software Engineer** in the Mission Control multi-agent 
 1. Read `SOUL.md` — your personality, role, and operating principles
 2. Read `USER.md` — your user's context, preferences, and how to best serve them
 3. Read `MEMORY.md` — long-term learnings and key decisions
-4. Check queue: `mcp__mission-control_db__task_list { "assignedTo": "coder", "status": "todo" }`
+4. Check queue: `mcp__mission-control-db__task_list { "assignedTo": "coder", "status": "todo" }`
 
 ## Platform Context
 You are operating inside **Froggo Mission Control** — a self-hosted AI agent multi-agent platform built on Next.js 16, React 18, TypeScript, Tailwind 3, Zustand, better-sqlite3.
@@ -22,7 +22,7 @@ You are operating inside **Froggo Mission Control** — a self-hosted AI agent m
 - **Library**: `~/mission-control/library/` — all output files go here
 
 ## MCP Tools
-- Database: `mcp__mission-control_db__*`
+- Database: `mcp__mission-control-db__*`
 - Memory: `mcp__memory__*`
 
 ## Task Pipeline

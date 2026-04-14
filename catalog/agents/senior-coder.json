@@ -4,7 +4,7 @@
   "emoji": "\ud83e\uddd1\u200d\ud83d\udcbb",
   "role": "Lead Software Engineer",
   "description": "Senior-level engineering: complex features, architecture implementation, mentoring Coder. Use for: system-level TypeScript work, complex refactors, architectural implementation.",
-  "model": "opus",
+  "model": "sonnet",
   "capabilities": [
     "architecture",
     "code-review",
@@ -34,6 +34,22 @@
   "version": "1.0.0",
   "category": "engineering",
   "mcpTools": [
-    "image_generate"
+    "image_generate",
+    "get_me", "get_teams",
+    "list_issues", "search_issues", "issue_read", "issue_write", "add_issue_comment",
+    "sub_issue_write", "list_issue_types",
+    "list_pull_requests", "search_pull_requests", "pull_request_read",
+    "create_pull_request", "update_pull_request", "merge_pull_request",
+    "update_pull_request_branch", "pull_request_review_write",
+    "add_reply_to_pull_request_comment", "add_comment_to_pending_review",
+    "search_repositories", "search_code", "get_file_contents",
+    "create_or_update_file", "push_files", "create_branch", "list_branches",
+    "list_commits", "get_commit", "list_tags", "get_tag",
+    "list_releases", "get_latest_release", "get_release_by_tag",
+    "create_repository", "fork_repository", "delete_file", "get_repository_tree",
+    "actions_list", "actions_get", "actions_run_trigger", "get_job_logs",
+    "list_code_scanning_alerts", "get_code_scanning_alert",
+    "get_label", "label_write", "list_label",
+    "projects_list", "projects_get", "projects_write"
   ]
 }

@@ -692,6 +692,88 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['filename', 'content'],
       },
     },
+    // ── Arena tools ──────────────────────────────────────────────────────────
+    {
+      name: 'battle_create',
+      description: 'Create a new Arena battle. Returns the created battle record.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          mode: { type: 'string', description: 'Battle mode: 1v1 | tournament | free-for-all' },
+          stakeAmount: { type: 'number', description: 'Stake amount (default 0)' },
+          stakeCurrency: { type: 'string', description: 'Currency (default USDC)' },
+          duration: { type: 'number', description: 'Battle duration in seconds' },
+          maxParticipants: { type: 'number', description: 'Max participants (default 2 for 1v1, 8 otherwise)' },
+          createdBy: { type: 'string', description: 'Creator agent/user ID' },
+        },
+        required: ['mode', 'duration', 'createdBy'],
+      },
+    },
+    {
+      name: 'battle_get',
+      description: 'Get a battle by ID with participants and paper positions.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Battle ID' },
+        },
+        required: ['id'],
+      },
+    },
+    {
+      name: 'battle_list',
+      description: 'List battles with optional filters for status, mode, and participant.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', description: 'Filter by status: created | matching | active | settling | settled | disputed | resolved | cancelled' },
+          mode: { type: 'string', description: 'Filter by mode: 1v1 | tournament | free-for-all' },
+          limit: { type: 'number', description: 'Max results (default 20, max 50)' },
+        },
+      },
+    },
+    {
+      name: 'battle_update',
+      description: 'Update a battle status (validates state machine transitions). Can also set winnerId or add participants.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Battle ID' },
+          status: { type: 'string', description: 'New status (must be a valid transition from current)' },
+          winnerId: { type: 'string', description: 'Winner participant ID' },
+          addParticipantId: { type: 'string', description: 'Participant ID to add' },
+          addParticipantName: { type: 'string', description: 'Display name for the new participant' },
+        },
+        required: ['id'],
+      },
+    },
+    {
+      name: 'battle_match',
+      description: 'Find an existing battle to join or create a new one. Auto-transitions to active when full.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          mode: { type: 'string', description: 'Battle mode: 1v1 | tournament | free-for-all' },
+          participantId: { type: 'string', description: 'ID of the participant looking for a match' },
+          displayName: { type: 'string', description: 'Display name for the participant' },
+          stakeMin: { type: 'number', description: 'Minimum stake amount to match (default 0)' },
+          stakeMax: { type: 'number', description: 'Maximum stake amount to match (default unlimited)' },
+          duration: { type: 'number', description: 'Battle duration in seconds if creating new (default 300)' },
+        },
+        required: ['mode', 'participantId'],
+      },
+    },
+    {
+      name: 'leaderboard_get',
+      description: 'Get the Arena leaderboard ranked by score. Returns participantId, displayName, wins, losses, totalPnl, rankScore, rank.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', description: 'Max entries to return (default 20, max 100)' },
+          offset: { type: 'number', description: 'Offset for pagination (default 0)' },
+        },
+      },
+    },
   ],
 }));
 
@@ -2290,6 +2372,157 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir, { recursive: true });
         fs.writeFileSync(path.join(scratchDir, filename), content, 'utf-8');
         return { content: [{ type: 'text', text: `Written ${content.length} bytes to scratchpad/${filename}` }] };
+      }
+
+      // ── Arena: battle_create ──────────────────────────────────────────────
+      case 'battle_create': {
+        if (!args?.mode || !['1v1', 'tournament', 'free-for-all'].includes(args.mode as string))
+          return { content: [{ type: 'text', text: JSON.stringify({ error: 'mode is required: 1v1 | tournament | free-for-all' }) }], isError: true };
+        if (!args?.duration || typeof args.duration !== 'number')
+          return { content: [{ type: 'text', text: JSON.stringify({ error: 'duration is required (number, seconds)' }) }], isError: true };
+        if (!args?.createdBy)
+          return { content: [{ type: 'text', text: JSON.stringify({ error: 'createdBy is required' }) }], isError: true };
+
+        const bId = `battle-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const bNow = Date.now();
+        db.prepare(`INSERT INTO battles (id, mode, status, stakeAmount, stakeCurrency, duration, maxParticipants, createdBy, participants, metadata, createdAt, updatedAt) VALUES (?, ?, 'created', ?, ?, ?, ?, ?, '[]', '{}', ?, ?)`)
+          .run(bId, args.mode, args.stakeAmount ?? 0, args.stakeCurrency ?? 'USDC', args.duration, args.maxParticipants ?? (args.mode === '1v1' ? 2 : 8), args.createdBy, bNow, bNow);
+        const newBattle = db.prepare('SELECT * FROM battles WHERE id = ?').get(bId);
+        return { content: [{ type: 'text', text: JSON.stringify(newBattle, null, 2) }] };
+      }
+
+      // ── Arena: battle_get ────────────────────────────────────────────────
+      case 'battle_get': {
+        if (!args?.id) return { content: [{ type: 'text', text: JSON.stringify({ error: 'id is required' }) }], isError: true };
+        const battle = db.prepare('SELECT * FROM battles WHERE id = ?').get(args.id) as Record<string, any> | undefined;
+        if (!battle) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Battle not found' }) }], isError: true };
+        const positions = db.prepare('SELECT * FROM paper_positions WHERE battleId = ? ORDER BY openedAt DESC').all(args.id);
+        try { battle.participants = JSON.parse(battle.participants || '[]'); } catch { battle.participants = []; }
+        try { battle.metadata = JSON.parse(battle.metadata || '{}'); } catch { battle.metadata = {}; }
+        return { content: [{ type: 'text', text: JSON.stringify({ ...battle, positions }, null, 2) }] };
+      }
+
+      // ── Arena: battle_list ───────────────────────────────────────────────
+      case 'battle_list': {
+        const bLimit = Math.min(Number(args?.limit) || 20, 50);
+        let bQuery = 'SELECT * FROM battles WHERE 1=1';
+        const bParams: any[] = [];
+        if (args?.status) { bQuery += ' AND status = ?'; bParams.push(args.status); }
+        if (args?.mode) { bQuery += ' AND mode = ?'; bParams.push(args.mode); }
+        bQuery += ' ORDER BY createdAt DESC LIMIT ?';
+        bParams.push(bLimit);
+        const battles = db.prepare(bQuery).all(...bParams) as Record<string, any>[];
+        for (const b of battles) {
+          try { b.participants = JSON.parse(b.participants || '[]'); } catch { b.participants = []; }
+        }
+        return { content: [{ type: 'text', text: JSON.stringify(battles, null, 2) }] };
+      }
+
+      // ── Arena: battle_update ─────────────────────────────────────────────
+      case 'battle_update': {
+        if (!args?.id) return { content: [{ type: 'text', text: JSON.stringify({ error: 'id is required' }) }], isError: true };
+        const bRow = db.prepare('SELECT * FROM battles WHERE id = ?').get(args.id) as Record<string, any> | undefined;
+        if (!bRow) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Battle not found' }) }], isError: true };
+
+        const bUpdates: string[] = [];
+        const bVals: any[] = [];
+        const bNow2 = Date.now();
+
+        if (args.status) {
+          // Inline state machine validation
+          const validTransitions: Record<string, string[]> = {
+            created: ['matching'], matching: ['active', 'cancelled'], active: ['settling', 'cancelled'],
+            settling: ['settled', 'disputed'], settled: ['resolved'], disputed: ['resolved'],
+            resolved: [], cancelled: [],
+          };
+          const allowed = validTransitions[bRow.status] || [];
+          if (!allowed.includes(args.status as string)) {
+            return { content: [{ type: 'text', text: JSON.stringify({ error: `Invalid transition: ${bRow.status} → ${args.status}` }) }], isError: true };
+          }
+          bUpdates.push('status = ?'); bVals.push(args.status);
+          if (args.status === 'active') { bUpdates.push('startedAt = ?'); bVals.push(bNow2); }
+          if (args.status === 'settling') { bUpdates.push('endedAt = ?'); bVals.push(bNow2); }
+          if (args.status === 'settled' || args.status === 'resolved') { bUpdates.push('settledAt = ?'); bVals.push(bNow2); }
+        }
+
+        if (args.winnerId !== undefined) { bUpdates.push('winnerId = ?'); bVals.push(args.winnerId); }
+
+        if (args.addParticipantId) {
+          const curP = JSON.parse(bRow.participants || '[]') as Array<{ id: string; displayName: string; joinedAt: number }>;
+          if (curP.some((p: any) => p.id === args.addParticipantId))
+            return { content: [{ type: 'text', text: JSON.stringify({ error: 'Participant already in battle' }) }], isError: true };
+          if (curP.length >= bRow.maxParticipants)
+            return { content: [{ type: 'text', text: JSON.stringify({ error: 'Battle is full' }) }], isError: true };
+          curP.push({ id: args.addParticipantId as string, displayName: (args.addParticipantName as string) || (args.addParticipantId as string), joinedAt: bNow2 });
+          bUpdates.push('participants = ?'); bVals.push(JSON.stringify(curP));
+        }
+
+        if (bUpdates.length === 0)
+          return { content: [{ type: 'text', text: JSON.stringify({ error: 'No valid fields to update' }) }], isError: true };
+
+        bUpdates.push('updatedAt = ?'); bVals.push(bNow2);
+        bVals.push(args.id);
+        db.prepare(`UPDATE battles SET ${bUpdates.join(', ')} WHERE id = ?`).run(...bVals);
+        const updatedBattle = db.prepare('SELECT * FROM battles WHERE id = ?').get(args.id) as Record<string, any>;
+        try { updatedBattle.participants = JSON.parse(updatedBattle.participants || '[]'); } catch { updatedBattle.participants = []; }
+        return { content: [{ type: 'text', text: JSON.stringify(updatedBattle, null, 2) }] };
+      }
+
+      // ── Arena: battle_match ──────────────────────────────────────────────
+      case 'battle_match': {
+        if (!args?.mode || !['1v1', 'tournament', 'free-for-all'].includes(args.mode as string))
+          return { content: [{ type: 'text', text: JSON.stringify({ error: 'mode is required: 1v1 | tournament | free-for-all' }) }], isError: true };
+        if (!args?.participantId)
+          return { content: [{ type: 'text', text: JSON.stringify({ error: 'participantId is required' }) }], isError: true };
+
+        const mMin = Number(args.stakeMin) || 0;
+        const mMax = Number(args.stakeMax) || Number.MAX_SAFE_INTEGER;
+        const mNow = Date.now();
+
+        const candidates = db.prepare(
+          `SELECT * FROM battles WHERE status = 'matching' AND mode = ? AND stakeAmount >= ? AND stakeAmount <= ? ORDER BY createdAt ASC`
+        ).all(args.mode, mMin, mMax) as Record<string, any>[];
+
+        const matchRow = candidates.find((b: any) => {
+          const p = JSON.parse(b.participants || '[]');
+          return !p.some((x: any) => x.id === args!.participantId) && p.length < b.maxParticipants;
+        });
+
+        if (matchRow) {
+          const mParts = JSON.parse(matchRow.participants || '[]');
+          mParts.push({ id: args.participantId, displayName: args.displayName || args.participantId, joinedAt: mNow });
+          const isFull = mParts.length >= matchRow.maxParticipants;
+          if (isFull) {
+            db.prepare(`UPDATE battles SET participants = ?, status = 'active', startedAt = ?, updatedAt = ? WHERE id = ?`)
+              .run(JSON.stringify(mParts), mNow, mNow, matchRow.id);
+          } else {
+            db.prepare(`UPDATE battles SET participants = ?, updatedAt = ? WHERE id = ?`)
+              .run(JSON.stringify(mParts), mNow, matchRow.id);
+          }
+          const mResult = db.prepare('SELECT * FROM battles WHERE id = ?').get(matchRow.id) as Record<string, any>;
+          try { mResult.participants = JSON.parse(mResult.participants || '[]'); } catch { mResult.participants = []; }
+          return { content: [{ type: 'text', text: JSON.stringify({ matched: true, ...mResult }, null, 2) }] };
+        }
+
+        // No match — create new
+        const mId = `battle-${mNow}-${Math.random().toString(36).slice(2, 8)}`;
+        const mParticipants = [{ id: args.participantId, displayName: args.displayName || args.participantId, joinedAt: mNow }];
+        db.prepare(`INSERT INTO battles (id, mode, status, stakeAmount, stakeCurrency, duration, maxParticipants, createdBy, participants, metadata, createdAt, updatedAt) VALUES (?, ?, 'matching', ?, 'USDC', ?, ?, ?, ?, '{}', ?, ?)`)
+          .run(mId, args.mode, mMin, Number(args.duration) || 300, args.mode === '1v1' ? 2 : 8, args.participantId, JSON.stringify(mParticipants), mNow, mNow);
+        const mNew = db.prepare('SELECT * FROM battles WHERE id = ?').get(mId) as Record<string, any>;
+        try { mNew.participants = JSON.parse(mNew.participants || '[]'); } catch { mNew.participants = []; }
+        return { content: [{ type: 'text', text: JSON.stringify({ matched: false, ...mNew }, null, 2) }] };
+      }
+
+      // ── Arena: leaderboard_get ───────────────────────────────────────────
+      case 'leaderboard_get': {
+        const lLimit = Math.min(Number(args?.limit) || 20, 100);
+        const lOffset = Math.max(Number(args?.offset) || 0, 0);
+        const leaderboard = db.prepare(
+          `SELECT *, ROW_NUMBER() OVER (ORDER BY rankScore DESC) as rank FROM leaderboard ORDER BY rankScore DESC LIMIT ? OFFSET ?`
+        ).all(lLimit, lOffset);
+        const { count: lTotal } = db.prepare('SELECT COUNT(*) as count FROM leaderboard').get() as { count: number };
+        return { content: [{ type: 'text', text: JSON.stringify({ entries: leaderboard, total: lTotal }, null, 2) }] };
       }
 
       default:

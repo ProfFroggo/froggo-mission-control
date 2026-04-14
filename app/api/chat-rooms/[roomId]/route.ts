@@ -59,8 +59,9 @@ export async function DELETE(
   try {
     const { roomId } = await params;
     const db = getDb();
-    db.prepare('DELETE FROM chat_rooms WHERE id = ?').run(roomId);
+    // Must delete messages FIRST — FK constraint (roomId → chat_rooms.id) blocks parent deletion
     db.prepare('DELETE FROM chat_room_messages WHERE roomId = ?').run(roomId);
+    db.prepare('DELETE FROM chat_rooms WHERE id = ?').run(roomId);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('DELETE /api/chat-rooms/[roomId] error:', error);

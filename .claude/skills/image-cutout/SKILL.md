@@ -27,7 +27,7 @@ Always output **PNG with alpha channel**. Never output JPEG for cutouts.
 | **Paid API** | remove.bg / PhotoRoom API | Client deliverables where quality is non-negotiable |
 | **Browser/Edge** | `@imgly/background-removal` | Frontend / Node.js pipelines |
 
-**Default pick for most work**: `rembg` with `birefnet-hd` (high-res input) or `birefnet-general` (standard). Upgrade to SAM 2 + FBA Matting when hair, fur, or fine translucent detail matters.
+**Default pick for ALL work**: SAM 2 + FBA Matting. This is the mandatory default — always use it unless there is a specific reason not to (e.g. no Python environment, tight deadline, batch of 50+ images). Never default to `rembg` when doing a single cutout. `rembg` is a fallback, not a default.
 
 ---
 

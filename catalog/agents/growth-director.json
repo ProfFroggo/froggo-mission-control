@@ -4,7 +4,7 @@
   "emoji": "\ud83d\udcc8",
   "role": "Strategic Growth Lead",
   "description": "Growth strategy, GTM planning, marketing initiatives, and business development. Use for: growth experiments, go-to-market strategy, acquisition channels, funnel optimization.",
-  "model": "opus",
+  "model": "sonnet",
   "capabilities": [
     "strategy",
     "growth",

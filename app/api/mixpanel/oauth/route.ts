@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/apiAuth';
+import { getDb } from '@/lib/database';
 import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
@@ -124,7 +125,7 @@ async function readClientInfo(): Promise<Record<string, unknown> | null> {
   return null;
 }
 
-// ── Pending OAuth state (file-backed to survive HMR / module reloads) ─────────
+// ── Pending OAuth state (DB-backed — survives HMR, restarts, worker switches) ─
 
 interface PendingOAuth {
   codeVerifier: string;
@@ -135,24 +136,31 @@ interface PendingOAuth {
   ts: number;
 }
 
-const PENDING_FILE = path.join(os.tmpdir(), 'mc-mixpanel-pending-oauth.json');
-const PENDING_MAX_AGE = 5 * 60 * 1000; // 5 min — stale flows are invalid
+const PENDING_KEY = 'mixpanel.pending_oauth';
+const PENDING_MAX_AGE = 10 * 60 * 1000; // 10 min — generous window for slow auth flows
 
-async function savePendingOAuth(data: Omit<PendingOAuth, 'ts'>): Promise<void> {
-  await fs.writeFile(PENDING_FILE, JSON.stringify({ ...data, ts: Date.now() }), { mode: 0o600 });
+function savePendingOAuth(data: Omit<PendingOAuth, 'ts'>): void {
+  const db = getDb();
+  const value = JSON.stringify({ ...data, ts: Date.now() });
+  db.prepare(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value`).run(PENDING_KEY, value);
 }
 
-async function loadPendingOAuth(): Promise<PendingOAuth | null> {
+function loadPendingOAuth(): PendingOAuth | null {
   try {
-    const raw = await fs.readFile(PENDING_FILE, 'utf-8');
-    const data: PendingOAuth = JSON.parse(raw);
+    const db = getDb();
+    const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(PENDING_KEY) as { value: string } | undefined;
+    if (!row?.value) return null;
+    const data: PendingOAuth = JSON.parse(row.value);
     if (Date.now() - data.ts > PENDING_MAX_AGE) return null; // expired
     return data;
   } catch { return null; }
 }
 
-async function clearPendingOAuth(): Promise<void> {
-  try { await fs.unlink(PENDING_FILE); } catch { /* already gone */ }
+function clearPendingOAuth(): void {
+  try {
+    const db = getDb();
+    db.prepare('DELETE FROM settings WHERE key = ?').run(PENDING_KEY);
+  } catch { /* already gone */ }
 }
 
 // ── Route handlers ────────────────────────────────────────────────────────────
@@ -238,8 +246,8 @@ async function handleStart(req: NextRequest): Promise<NextResponse> {
     const codeChallenge = await generateCodeChallenge(codeVerifier);
     const state = crypto.randomUUID();
 
-    // Persist pending OAuth state to disk (survives HMR)
-    await savePendingOAuth({
+    // Persist pending OAuth state to DB (survives HMR, restarts, worker switches)
+    savePendingOAuth({
       codeVerifier,
       clientId: clientInfo.client_id,
       clientInfo,
@@ -288,7 +296,7 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
       return htmlResponse('<h2>Missing authorization code</h2>', 400);
     }
 
-    const pendingOAuth = await loadPendingOAuth();
+    const pendingOAuth = loadPendingOAuth();
     if (!pendingOAuth) {
       return htmlResponse('<h2>No pending OAuth flow — start again from Settings</h2>', 400);
     }
@@ -328,7 +336,7 @@ async function handleCallback(req: NextRequest): Promise<NextResponse> {
     await writeTokenFiles(tokens, pendingOAuth.clientInfo, pendingOAuth.codeVerifier);
 
     // Clear pending state
-    await clearPendingOAuth();
+    clearPendingOAuth();
 
     console.error('[mixpanel/oauth] Successfully connected! Tokens cached for mcp-remote.');
 

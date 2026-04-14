@@ -129,8 +129,8 @@ todo → internal-review → in-progress → agent-review → done
 2. Split the work into independent slices that each have a clear completion condition
 3. Assign one agent per slice
 4. Check dependencies between slices
-5. Create tasks via MCP: `mcp__mission-control_db__task_create`
-6. Create subtasks via MCP: `mcp__mission-control_db__subtask_create`
+5. Create tasks via MCP: `mcp__mission-control-db__task_create`
+6. Create subtasks via MCP: `mcp__mission-control-db__subtask_create`
 7. Link output artifacts to `~/mission-control/library/` in task description
 
 ---

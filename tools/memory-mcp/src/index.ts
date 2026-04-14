@@ -23,6 +23,27 @@ function ensureDir(p: string) {
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 }
 
+/** Truncate a string to `maxLen` without splitting surrogate pairs. */
+function safeTruncate(str: string, maxLen: number): string {
+  if (str.length <= maxLen) return str;
+  // Back up past any lone high surrogate at the cut point.
+  // charCodeAt(maxLen - 1) is the last char we'd keep.
+  // If it's a high surrogate (0xD800–0xDBFF) its low-surrogate partner
+  // would be at maxLen and gets dropped — leave it out entirely.
+  // If it's a low surrogate (0xDC00–0xDFFF) its high-surrogate partner
+  // is at maxLen - 2 — drop both so we don't leave an orphan high surrogate.
+  let end = maxLen;
+  const last = str.charCodeAt(end - 1);
+  if (last >= 0xD800 && last <= 0xDBFF) {
+    // high surrogate at boundary — drop it
+    end -= 1;
+  } else if (last >= 0xDC00 && last <= 0xDFFF) {
+    // low surrogate at boundary — drop both halves of the pair
+    end -= 2;
+  }
+  return str.slice(0, end);
+}
+
 // Category → vault subfolder routing (relative to VAULT_PATH = ~/mission-control)
 // Writes route into the correct subfolder of the wider vault.
 const CATEGORY_FOLDER: Record<string, string> = {
@@ -186,7 +207,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           const searchMs = Date.now() - searchStart;
           if (searchMs > 500) console.warn(`[memory-mcp] Slow search (grep+tfidf): ${searchMs}ms for query: ${query}`);
 
-          const results = scored.map(d => `## ${d.relPath}\n${d.content.slice(0, 400)}...`);
+          const results = scored.map(d => `## ${d.relPath}\n${safeTruncate(d.content, 400)}...`);
           return {
             content: [{
               type: 'text',
@@ -225,7 +246,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     const matches = !topic || content.toLowerCase().includes(topic.toLowerCase()) || entry.name.toLowerCase().includes(topic.toLowerCase());
                     if (matches) {
                       const relPath = path.relative(VAULT_PATH, fullPath);
-                      results.push(`## ${relPath} (modified ${stat.mtime.toISOString().slice(0, 10)})\n${content.slice(0, 600)}...`);
+                      results.push(`## ${relPath} (modified ${stat.mtime.toISOString().slice(0, 10)})\n${safeTruncate(content, 600)}...`);
                     }
                   }
                 } catch (err) { console.warn('[tools/index] Non-critical:', err); }

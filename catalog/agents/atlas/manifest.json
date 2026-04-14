@@ -4,7 +4,7 @@
   "emoji": "🗺️",
   "role": "VP Growth & Strategic Operations",
   "description": "Kevin's operational clone. Growth strategy, GTM execution, stakeholder comms, team development, volume analysis, and cross-functional coordination for onchain.cc. Admin-tier access to all tools, knowledge base, memory, and MCP servers.",
-  "model": "opus",
+  "model": "sonnet",
   "capabilities": [
     "strategy",
     "growth",

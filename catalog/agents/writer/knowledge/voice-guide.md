@@ -218,4 +218,4 @@ Run every piece of content through this checklist before marking it done.
 
 ### Approval
 - [ ] Is this saved with `_draft` suffix until approval is confirmed?
-- [ ] Has the approval request been submitted via `mcp__mission-control_db__approval_create`?
+- [ ] Has the approval request been submitted via `mcp__mission-control-db__approval_create`?
