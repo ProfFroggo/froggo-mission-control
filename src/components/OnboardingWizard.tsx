@@ -138,8 +138,8 @@ const FALLBACK_OPTIONAL_MODULES: ModuleEntry[] = [
   { id: 'finance', name: 'Finance', description: 'Multi-account financial management with AI categorization' },
   { id: 'meetings', name: 'Meetings', description: 'Scheduling, agendas, notes, and action items' },
   { id: 'module-builder', name: 'Module Builder', description: 'Visual builder for creating new platform modules' },
-  { id: 'social-media', name: 'Social Media', description: 'Social media command center — publish, plan, and research' },
-  { id: 'voice-chat', name: 'Voice Chat', description: 'Real-time voice interaction with agents via microphone' },
+  { id: 'twitter', name: 'Social Media', description: 'Social media command center — publish, plan, and research' },
+  { id: 'voice', name: 'Voice Chat', description: 'Real-time voice interaction with agents via microphone' },
   { id: 'writing', name: 'Writing', description: 'AI-assisted writing workspace for long-form content' },
 ];
 
@@ -500,19 +500,25 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: apiItems }),
       });
-      const data = res.ok ? await res.json() : null;
-
-      setInstallItems(prev =>
-        prev.map(item => {
-          const result = data?.results?.find((r: { kind: string; id: string; success: boolean; error?: string }) => r.kind === item.kind && r.id === item.id);
-          if (!result) return { ...item, status: 'done' };
-          return { ...item, status: result.success ? 'done' : 'error', error: result.error };
-        })
-      );
+      // 200 = all ok, 207 = partial success — both have a results array
+      if (res.ok) {
+        const data = await res.json();
+        setInstallItems(prev =>
+          prev.map(item => {
+            const result = data?.results?.find((r: { kind: string; id: string; success: boolean; error?: string }) => r.kind === item.kind && r.id === item.id);
+            if (!result) return { ...item, status: 'done' };
+            return { ...item, status: result.success ? 'done' : 'error', error: result.error };
+          })
+        );
+      } else {
+        // Server error — mark all as failed so the user can retry
+        const errData = await res.json().catch(() => ({}));
+        const errMsg = (errData as { error?: string }).error || `Server error (${res.status})`;
+        setInstallItems(prev => prev.map(item => ({ ...item, status: 'error', error: errMsg })));
+      }
     } catch (err) {
-      console.warn('[OnboardingWizard] Non-critical:', err);
-      // Mark all as done (graceful degradation)
-      setInstallItems(prev => prev.map(item => ({ ...item, status: 'done' })));
+      console.warn('[OnboardingWizard] Install network error:', err);
+      setInstallItems(prev => prev.map(item => ({ ...item, status: 'error', error: 'Network error — check server' })));
     }
 
     setInstallComplete(true);
@@ -532,20 +538,27 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: failedItems.map(i => ({ kind: i.kind, id: i.id })) }),
       });
-      const data = res.ok ? await res.json() : null;
-
-      setInstallItems(prev =>
-        prev.map(item => {
-          if (item.status !== 'installing') return item;
-          const result = data?.results?.find((r: { kind: string; id: string; success: boolean; error?: string }) => r.kind === item.kind && r.id === item.id);
-          if (!result) return { ...item, status: 'done' };
-          return { ...item, status: result.success ? 'done' : 'error', error: result.error };
-        })
-      );
+      if (res.ok) {
+        const data = await res.json();
+        setInstallItems(prev =>
+          prev.map(item => {
+            if (item.status !== 'installing') return item;
+            const result = data?.results?.find((r: { kind: string; id: string; success: boolean; error?: string }) => r.kind === item.kind && r.id === item.id);
+            if (!result) return { ...item, status: 'done' };
+            return { ...item, status: result.success ? 'done' : 'error', error: result.error };
+          })
+        );
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        const errMsg = (errData as { error?: string }).error || `Server error (${res.status})`;
+        setInstallItems(prev => prev.map(item =>
+          item.status === 'installing' ? { ...item, status: 'error', error: errMsg } : item
+        ));
+      }
     } catch (err) {
-      console.warn('[OnboardingWizard] Non-critical:', err);
+      console.warn('[OnboardingWizard] Retry network error:', err);
       setInstallItems(prev => prev.map(item =>
-        item.status === 'installing' ? { ...item, status: 'error', error: 'Network error' } : item
+        item.status === 'installing' ? { ...item, status: 'error', error: 'Network error — check server' } : item
       ));
     }
   };
