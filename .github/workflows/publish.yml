@@ -8,7 +8,7 @@ jobs:
   publish:
     name: Auto-bump, publish, release
     runs-on: ubuntu-latest
-    # Skip the bot's own version bump commits to prevent infinite loops
+    # Skip version-bump tag pushes to prevent infinite loops
     if: "!contains(github.event.head_commit.message, '[skip ci]') && !startsWith(github.event.head_commit.message, 'chore: bump version')"
     permissions:
       contents: write
@@ -47,23 +47,26 @@ jobs:
           fi
           echo "✓ .next/ not in package"
 
-      - name: Bump patch version
+      - name: Bump patch version (from registry, no git commit)
         id: bump
         run: |
-          NEW=$(npm version patch --no-git-tag-version)
-          echo "version=$NEW" >> $GITHUB_OUTPUT
-          echo "Bumped to $NEW"
-
-      - name: Commit version bump
-        run: |
-          git add package.json package-lock.json
-          git commit -m "chore: bump version ${{ steps.bump.outputs.version }} [skip ci]"
-          git push
+          # Read the latest published version from npm — never from package.json in git
+          # (package.json in git may lag behind if the bump commit can't push to protected main)
+          CURRENT=$(npm view froggo-mission-control version 2>/dev/null || echo "0.0.0")
+          NEW=$(node -e "const [a,b,c]='$CURRENT'.split('.'); process.stdout.write(a+'.'+b+'.'+(Number(c)+1))")
+          npm version $NEW --no-git-tag-version
+          echo "version=v$NEW" >> $GITHUB_OUTPUT
+          echo "Bumped to v$NEW (was $CURRENT)"
 
       - name: Publish to npm
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Tag release in git
+        run: |
+          git tag ${{ steps.bump.outputs.version }}
+          git push origin ${{ steps.bump.outputs.version }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
