@@ -3,9 +3,9 @@
 // (c) 2026 Froggo.pro. Licensed under the Apache License, Version 2.0.
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  ArrowLeft, MessageSquare, LayoutGrid, Image as ImageIcon, BarChart2, Radio, FileText,
+  ArrowLeft, MessageSquare, LayoutGrid, Image as ImageIcon, BarChart2, FileText,
   Users, Bot, Settings, Plus, X, ChevronDown, Edit3, Trash2, Check,
-  Upload, RefreshCw, TrendingUp, TrendingDown, Minus, Link, StickyNote,
+  Upload, RefreshCw, TrendingUp, TrendingDown, Minus,
   CalendarDays, CheckCircle2, CircleDot, Square, ClipboardList, BookOpen,
 } from 'lucide-react';
 import { Megaphone, Calendar, DollarSign, Copy, ListTodo, Zap, Activity } from 'lucide-react';
@@ -28,7 +28,7 @@ import ContextPanel from '../ContextPanel';
 import ContentTab from './ContentTab';
 import { Button, IconButton, Flex, TextField, Select, TextArea } from '@radix-ui/themes';
 
-type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'content' | 'assets' | 'channels' | 'results' | 'checklist' | 'context';
+type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'content' | 'assets' | 'results' | 'checklist' | 'context';
 
 const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'overview',    label: 'Overview',    icon: FileText },
@@ -37,7 +37,6 @@ const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'timeline',    label: 'Timeline',    icon: Calendar },
   { id: 'content',     label: 'Content',     icon: CalendarDays },
   { id: 'assets',      label: 'Assets',      icon: ImageIcon },
-  { id: 'channels',    label: 'Channels',    icon: Radio },
   { id: 'results',     label: 'Results',     icon: BarChart2 },
   { id: 'checklist',   label: 'Checklist',   icon: ClipboardList },
   { id: 'context',     label: 'Context',     icon: BookOpen },
@@ -188,90 +187,6 @@ function AssetsTab({ campaign }: { campaign: Campaign }) {
             ))}
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-// ── Channels Tab ──────────────────────────────────────────────────────────────
-function ChannelsTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () => void }) {
-  const [channelNotes, setChannelNotes] = useState<Record<string, string>>({});
-  const [channelLinks, setChannelLinks] = useState<Record<string, string>>({});
-  const activeChannels = campaign.channels ?? [];
-
-  const handleToggleChannel = async (ch: string) => {
-    const newChannels = activeChannels.includes(ch)
-      ? activeChannels.filter(c => c !== ch)
-      : [...activeChannels, ch];
-    try {
-      await campaignsApi.update(campaign.id, { channels: newChannels });
-      onUpdate();
-    } catch { showToast('Failed to update channels', 'error'); }
-  };
-
-  return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-4 space-y-3">
-        {activeChannels.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Radio size={24} className="text-mission-control-text-dim mb-2" />
-            <p className="text-sm text-mission-control-text-dim">No channels active. Add them below.</p>
-          </div>
-        ) : (
-          activeChannels.map(ch => {
-            const Icon = CHANNEL_ICONS[ch];
-            return (
-              <div key={ch} className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-3">
-                <Flex align="center" justify="between">
-                  <Flex align="center" gap="2">
-                    {Icon && <Icon size={16} className="text-mission-control-text" />}
-                    <span className="font-medium text-sm text-mission-control-text">{CHANNEL_LABELS[ch] ?? ch}</span>
-                  </Flex>
-                  <button type="button" onClick={() => handleToggleChannel(ch)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors">
-                    Remove
-                  </button>
-                </Flex>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-xs text-mission-control-text-dim mb-1 flex items-center gap-1"><Link size={10} /> Live URL</label>
-                    <TextField.Root
-                      type="url"
-                      placeholder="https://..."
-                      value={channelLinks[ch] ?? ''}
-                      onChange={e => setChannelLinks(prev => ({ ...prev, [ch]: e.target.value }))}
-                      size="1"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-mission-control-text-dim mb-1 flex items-center gap-1"><StickyNote size={10} /> Notes</label>
-                    <TextField.Root
-                      type="text"
-                      placeholder="Quick note..."
-                      value={channelNotes[ch] ?? ''}
-                      onChange={e => setChannelNotes(prev => ({ ...prev, [ch]: e.target.value }))}
-                      size="1"
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-        <div>
-          <p className="text-xs text-mission-control-text-dim mb-2">Add channels</p>
-          <div className="flex flex-wrap gap-1.5">
-            {ALL_CHANNELS.filter(ch => !activeChannels.includes(ch)).map(ch => {
-              const Icon = CHANNEL_ICONS[ch];
-              return (
-                <button key={ch} type="button" onClick={() => handleToggleChannel(ch)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-surface transition-colors">
-                  {Icon && <Icon size={11} />}
-                  {CHANNEL_LABELS[ch]}
-                  <Plus size={10} />
-                </button>
-              );
-            })}
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -679,7 +594,7 @@ function TimelineTabWrapper({ campaign }: { campaign: Campaign }) {
       </div>
 
       <div className="flex-1 overflow-hidden">
-        {view === 'timeline' && <TimelineTab campaign={campaign} />}
+        {view === 'timeline' && <ProjectGanttView projectId={campaign.id} projectName={campaign.name} />}
         {view === 'calendar' && <EpicCalendar externalEvents={campaignEvents} createButtonLabel="Add Campaign Event" />}
       </div>
     </div>
@@ -1776,10 +1691,9 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
         {activeTab === 'overview'    && <OverviewTab campaign={campaign} onUpdate={reload} />}
         {activeTab === 'chat'        && <ChatTab campaign={campaign} />}
         {activeTab === 'tasks'       && <Kanban projectId={campaign.id} projectName={campaign.name} onNewTask={() => setShowDispatch(true)} />}
-        {activeTab === 'timeline'    && <ProjectGanttView projectId={campaign.id} projectName={campaign.name} />}
+        {activeTab === 'timeline'    && <TimelineTabWrapper campaign={campaign} />}
         {activeTab === 'content'     && <ContentTab campaign={campaign} />}
         {activeTab === 'assets'      && <AssetsTab campaign={campaign} />}
-        {activeTab === 'channels'    && <ChannelsTab campaign={campaign} onUpdate={reload} />}
         {activeTab === 'results'     && (
           <div className="h-full overflow-y-auto">
             <PerformanceTab campaign={campaign} onUpdate={reload} />
