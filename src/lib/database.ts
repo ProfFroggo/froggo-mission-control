@@ -1259,6 +1259,13 @@ function initSchema(db: Database.Database) {
     // Chat rooms: compact summary for context restoration after compaction
     `ALTER TABLE chat_rooms ADD COLUMN compact_summary TEXT`,
     `ALTER TABLE chat_rooms ADD COLUMN last_compact_at INTEGER`,
+    // Campaign content items v2: content type + type-specific fields
+    `ALTER TABLE campaign_content_items ADD COLUMN contentType TEXT NOT NULL DEFAULT 'social'`,
+    `ALTER TABLE campaign_content_items ADD COLUMN notes TEXT DEFAULT ''`,
+    `ALTER TABLE campaign_content_items ADD COLUMN weekTheme TEXT DEFAULT ''`,
+    `ALTER TABLE campaign_content_items ADD COLUMN segment TEXT DEFAULT ''`,
+    `ALTER TABLE campaign_content_items ADD COLUMN audience TEXT DEFAULT ''`,
+    `ALTER TABLE campaign_content_items ADD COLUMN cadence TEXT DEFAULT ''`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch (err: unknown) {

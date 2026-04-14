@@ -38,8 +38,8 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     db.prepare(`
       INSERT INTO campaign_content_items
-        (id, campaignId, phaseId, scheduledDate, channels, description, angle, ownerType, ownerId, approverId, status, sortOrder, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, campaignId, phaseId, scheduledDate, channels, description, angle, ownerType, ownerId, approverId, status, sortOrder, contentType, notes, weekTheme, segment, audience, cadence, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       itemId,
       id,
@@ -53,6 +53,12 @@ export async function POST(req: NextRequest, { params }: Params) {
       body.approverId ?? '',
       body.status ?? 'draft',
       body.sortOrder ?? 0,
+      body.contentType ?? 'social',
+      body.notes ?? '',
+      body.weekTheme ?? '',
+      body.segment ?? '',
+      body.audience ?? '',
+      body.cadence ?? '',
       now,
       now,
     );
@@ -75,7 +81,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
     const fields: string[] = [];
     const vals: unknown[] = [];
-    const updatable = ['phaseId', 'scheduledDate', 'description', 'angle', 'ownerType', 'ownerId', 'approverId', 'status', 'sortOrder'] as const;
+    const updatable = ['phaseId', 'scheduledDate', 'description', 'angle', 'ownerType', 'ownerId', 'approverId', 'status', 'sortOrder', 'contentType', 'notes', 'weekTheme', 'segment', 'audience', 'cadence'] as const;
     for (const f of updatable) {
       if (body[f] !== undefined) { fields.push(`${f} = ?`); vals.push(body[f]); }
     }
