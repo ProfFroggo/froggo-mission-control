@@ -13,9 +13,8 @@ export function proxy(request: NextRequest) {
 
   // Skip auth for setup/health routes (needed during onboarding before token is set)
   const skipAuthRoutes = [
-    '/api/setup/system-check',
-    '/api/setup/vault-check',
-    '/api/setup/permissions-confirm',
+    '/api/setup/',
+    '/api/catalog/',
     '/api/health',
     '/api/google/auth/callback',
   ];
