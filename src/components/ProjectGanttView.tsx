@@ -186,11 +186,15 @@ export default function ProjectGanttView({ projectId, projectName, onTaskClick }
     setLoading(true);
     setError(null);
     try {
-      // Fetch tasks by project_id; if none, try by project name
+      // Fetch tasks by project_id; if none, try project name; if still none, try project=id
       let result = await taskApi.getAll({ project_id: projectId });
       let raw: GanttTask[] = Array.isArray(result) ? result : (result as any).tasks ?? [];
       if (raw.length === 0 && projectName) {
         result = await taskApi.getAll({ project: projectName });
+        raw = Array.isArray(result) ? result : (result as any).tasks ?? [];
+      }
+      if (raw.length === 0) {
+        result = await taskApi.getAll({ project: projectId });
         raw = Array.isArray(result) ? result : (result as any).tasks ?? [];
       }
       setTasks(raw);
