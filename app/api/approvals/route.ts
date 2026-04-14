@@ -91,6 +91,23 @@ export async function PATCH(request: NextRequest) {
     } catch (err) { console.warn('[approvals] Non-critical:', err); }
 
     emitSSEEvent('approval.updated', { ids: validIds, action, status: action === 'approve' ? 'approved' : 'rejected' });
+
+    // Content review side effects: update content item status when approval resolves
+    try {
+      const reviewApprovals = db.prepare(
+        `SELECT id, metadata, notes FROM approvals WHERE id IN (${updatePlaceholders})`
+      ).all(...validIds) as Array<{ id: string; metadata: string | null; notes: string | null }>;
+      for (const row of reviewApprovals) {
+        let meta: Record<string, string> = {};
+        try { meta = JSON.parse(row.metadata || '{}'); } catch { /* ignore */ }
+        if (meta.contentItemId && meta.campaignId) {
+          const newStatus = action === 'approve' ? 'scheduled' : 'draft';
+          db.prepare('UPDATE campaign_content_items SET status = ?, updatedAt = ? WHERE id = ? AND campaignId = ?')
+            .run(newStatus, Date.now(), meta.contentItemId, meta.campaignId);
+        }
+      }
+    } catch (err) { console.warn('[approvals] Non-critical content review side effect:', err); }
+
     return NextResponse.json({ updated: validIds.length });
   } catch (error) {
     console.error('PATCH /api/approvals error:', error);

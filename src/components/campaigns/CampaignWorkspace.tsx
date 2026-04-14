@@ -8,7 +8,7 @@ import {
   Upload, RefreshCw, TrendingUp, TrendingDown, Minus, Link, StickyNote,
   CalendarDays, CheckCircle2, CircleDot, Square, ClipboardList, BookOpen,
 } from 'lucide-react';
-import { Megaphone, Calendar, DollarSign, Copy, ListTodo, Zap } from 'lucide-react';
+import { Megaphone, Calendar, DollarSign, Copy, ListTodo, Zap, Activity } from 'lucide-react';
 import { campaignsApi, agentApi } from '../../lib/api';
 import EpicCalendar from '../EpicCalendar';
 import type { Campaign, CampaignMember, CampaignAsset } from '../../types/campaigns';
@@ -1206,6 +1206,48 @@ function OverviewTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: () 
   );
 }
 
+// ── Campaign Pulse ────────────────────────────────────────────────────────────
+function PulseSection({ campaignId }: { campaignId: string }) {
+  const [generating, setGenerating] = useState(false);
+  const [lastGenerated, setLastGenerated] = useState<number | null>(null);
+
+  async function handleGenerate() {
+    setGenerating(true);
+    try {
+      await campaignsApi.generatePulse(campaignId);
+      setLastGenerated(Date.now());
+      showToast('Pulse report generated — check Campaign Chat', 'success');
+    } catch { showToast('Failed to generate pulse', 'error'); }
+    finally { setGenerating(false); }
+  }
+
+  return (
+    <div className="bg-mission-control-surface border border-mission-control-border rounded-lg p-4 space-y-3">
+      <Flex align="center" justify="between">
+        <Flex align="center" gap="2">
+          <Activity size={14} className="text-mission-control-accent" />
+          <div>
+            <h4 className="text-sm font-medium text-mission-control-text">Campaign Pulse</h4>
+            <p className="text-xs text-mission-control-text-dim">
+              Weekly summary of content status, KPI actuals vs targets, and upcoming items.
+              Report is posted to Campaign Chat.
+            </p>
+          </div>
+        </Flex>
+        <Button variant="soft" size="1" onClick={handleGenerate} disabled={generating}>
+          {generating ? <Spinner size={12} /> : <Activity size={12} />}
+          {generating ? 'Generating…' : 'Generate Pulse'}
+        </Button>
+      </Flex>
+      {lastGenerated && (
+        <p className="text-[10px] text-mission-control-text-dim">
+          Last generated: {new Date(lastGenerated).toLocaleTimeString()} — see Chat tab for the full report.
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ── Link Automation Modal ──────────────────────────────────────────────────────
 const TRIGGER_OPTIONS = [
   { value: 'campaign-started',  label: 'Campaign started' },
@@ -1742,6 +1784,9 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
             <PerformanceTab campaign={campaign} onUpdate={reload} />
             <div className="border-t border-mission-control-border px-4 py-4">
               <KpiWeeklyGrid campaign={campaign} />
+            </div>
+            <div className="border-t border-mission-control-border p-4">
+              <PulseSection campaignId={campaign.id} />
             </div>
             <div className="border-t border-mission-control-border">
               <CampaignROIDashboard campaign={campaign} />

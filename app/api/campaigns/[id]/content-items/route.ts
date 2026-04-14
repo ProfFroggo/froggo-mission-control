@@ -90,6 +90,33 @@ export async function PUT(req: NextRequest, { params }: Params) {
     vals.push(body.itemId, id);
 
     db.prepare(`UPDATE campaign_content_items SET ${fields.join(', ')} WHERE id = ? AND campaignId = ?`).run(...vals);
+
+    // Auto-create approval when status moves to 'in-review' and approverId is set
+    if (body.status === 'in-review') {
+      const updatedItem = db.prepare('SELECT * FROM campaign_content_items WHERE id = ?').get(body.itemId) as Record<string, unknown>;
+      const approverId = updatedItem?.approverId as string | null;
+      if (approverId && approverId.trim()) {
+        const campaign = db.prepare('SELECT name, goal, briefContent FROM campaigns WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+        const phase = updatedItem.phaseId
+          ? db.prepare('SELECT name FROM campaign_phases WHERE id = ?').get(updatedItem.phaseId as string) as { name: string } | undefined
+          : undefined;
+        const contentPreview = `**Type:** ${updatedItem.contentType || 'social'}\n**Description:** ${updatedItem.description}\n**Angle:** ${updatedItem.angle || '—'}\n**Notes:** ${updatedItem.notes || '—'}\n**Phase:** ${phase?.name || 'Unphased'}\n**Scheduled:** ${updatedItem.scheduledDate ? new Date(updatedItem.scheduledDate as number).toLocaleDateString() : '—'}`;
+        const { randomUUID } = await import('crypto');
+        db.prepare(`
+          INSERT INTO approvals (id, type, title, content, context, metadata, status, requester, tier, category, createdAt)
+          VALUES (?, 'action', ?, ?, ?, ?, 'pending', ?, 2, 'content_review', ?)
+        `).run(
+          randomUUID(),
+          `Review: ${String(updatedItem.description).slice(0, 80)}`,
+          contentPreview,
+          campaign ? `Campaign: ${campaign.name} — ${campaign.goal ?? ''}` : `Campaign ID: ${id}`,
+          JSON.stringify({ contentItemId: body.itemId, campaignId: id, approverId, phaseId: updatedItem.phaseId }),
+          updatedItem.ownerId || null,
+          Date.now(),
+        );
+      }
+    }
+
     const item = db.prepare(`SELECT * FROM campaign_content_items WHERE id = ?`).get(body.itemId) as Record<string, unknown>;
     return NextResponse.json({ item: parseItem(item) });
   } catch (e) {

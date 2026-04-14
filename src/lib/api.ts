@@ -572,5 +572,10 @@ export const campaignsApi = {
   getKpiWeekly: (id: string) => apiCall(`/campaigns/${id}/kpi-weekly`),
   upsertKpiWeekly: (id: string, data: any) => apiCall(`/campaigns/${id}/kpi-weekly`, { method: 'PUT', body: data }),
   seedKpiWeekly: (id: string, data: any) => apiCall(`/campaigns/${id}/kpi-weekly`, { method: 'POST', body: data }),
+  // Agentic dispatch
+  dispatchContentItem: (campaignId: string, itemId: string) =>
+    apiCall(`/campaigns/${campaignId}/content-items/${itemId}/dispatch`, { method: 'POST' }),
+  generatePulse: (campaignId: string) =>
+    apiCall(`/campaigns/${campaignId}/pulse`, { method: 'POST' }),
 };
 

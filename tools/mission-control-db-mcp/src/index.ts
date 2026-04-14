@@ -472,6 +472,70 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       },
     },
     {
+      name: 'campaign_get_brief',
+      description: 'Get full campaign brief, goal, KPI targets, phases, and team context for a specific campaign. Call this at the start of any campaign work to understand the mission, success criteria, and your role. Essential context for all campaign execution.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          campaign_id: { type: 'string', description: 'Campaign ID (get from campaign_context)' },
+        },
+        required: ['campaign_id'],
+      },
+    },
+    {
+      name: 'campaign_list_my_content',
+      description: 'List all content items assigned to you (or a specific agent) in a campaign. Returns items with their status, scheduled date, phase, and linked task. Use this to find your pending work in a campaign.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          campaign_id: { type: 'string', description: 'Campaign ID' },
+          agent_id: { type: 'string', description: 'Agent ID to filter by. Defaults to your agent ID if not provided.' },
+          status: { type: 'string', description: 'Optional status filter (draft, in-review, scheduled, done, etc.)' },
+        },
+        required: ['campaign_id'],
+      },
+    },
+    {
+      name: 'campaign_update_content_item',
+      description: 'Update the status of a content item you own. Use this to progress work through the campaign workflow: draft → in-review → scheduled → done. When you move an item to in-review, an approval is automatically created for the approver if one is set.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          item_id: { type: 'string', description: 'Content item ID (from campaign_list_my_content)' },
+          status: { type: 'string', description: 'New status: draft | in-review | scheduled | done | active | ongoing | tbd' },
+          notes: { type: 'string', description: 'Optional notes about the work done, what was published, or feedback' },
+        },
+        required: ['item_id', 'status'],
+      },
+    },
+    {
+      name: 'campaign_record_metric',
+      description: 'Record an actual metric value for the campaign KPI weekly tracker. Use this after publishing content or gathering analytics to update the campaign dashboard with real results. Auto-detects the current campaign week if week_label is not provided.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          campaign_id: { type: 'string', description: 'Campaign ID' },
+          metric: { type: 'string', description: 'Metric name (e.g. impressions, clicks, conversions, revenue, roas, cac)' },
+          actual_value: { type: 'number', description: 'The actual value to record' },
+          week_label: { type: 'string', description: 'Week label like W1, W2, W3 — auto-detected from current date if not provided' },
+        },
+        required: ['campaign_id', 'metric', 'actual_value'],
+      },
+    },
+    {
+      name: 'campaign_complete_milestone',
+      description: 'Mark a phase milestone as completed. Call this when your work has contributed to achieving a campaign milestone. Updates the campaign phase and posts an achievement to the campaign chat.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          phase_id: { type: 'string', description: 'Phase ID (from campaign_get_brief)' },
+          milestone_text: { type: 'string', description: 'The milestone text to mark as completed (must match or closely match an existing milestone)' },
+          agent_id: { type: 'string', description: 'Your agent ID for attribution' },
+        },
+        required: ['phase_id', 'milestone_text'],
+      },
+    },
+    {
       name: 'knowledge_search',
       description: 'Search the knowledge base for brand guidelines, company context, writing style, design standards, and other workspace knowledge the human has curated. Call this at the start of any task involving brand, content, design, or company context. Returns matching articles with full content.',
       inputSchema: {
@@ -1757,6 +1821,214 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           return { ...c, channels, kpis, members, openTasks };
         });
         return { content: [{ type: 'text', text: JSON.stringify({ campaigns: result, hint: result.length === 0 ? 'No campaigns found. Create one via the Campaigns section in the dashboard.' : `Found ${result.length} campaign(s).` }, null, 2) }] };
+      }
+
+      // ── campaign_get_brief ────────────────────────────────────────────────────
+      case 'campaign_get_brief': {
+        const campaignId = String(args?.campaign_id ?? '').trim();
+        if (!campaignId) return { content: [{ type: 'text', text: JSON.stringify({ error: 'campaign_id required' }) }], isError: true };
+        const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(campaignId) as Record<string, unknown> | undefined;
+        if (!campaign) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Campaign not found' }) }], isError: true };
+
+        let channels: string[] = []; try { channels = JSON.parse(campaign.channels as string || '[]'); } catch { /* */ }
+        let kpis: Record<string, unknown> = {}; try { kpis = JSON.parse(campaign.kpis as string || '{}'); } catch { /* */ }
+
+        const members = db.prepare(`
+          SELECT cm.agentId, cm.role, a.name as agentName FROM campaign_members cm
+          LEFT JOIN agents a ON a.id = cm.agentId WHERE cm.campaignId = ?
+        `).all(campaignId) as Record<string, unknown>[];
+
+        const phases = db.prepare(
+          `SELECT id, name, startDate, endDate, color, milestones, completedMilestones, triggeredStart, triggeredEnd FROM campaign_phases WHERE campaignId = ? ORDER BY sortOrder ASC`
+        ).all(campaignId) as Record<string, unknown>[];
+
+        const parsedPhases = phases.map(p => {
+          let ms: string[] = []; try { ms = JSON.parse(p.milestones as string || '[]'); } catch { /* */ }
+          let cms: string[] = []; try { cms = JSON.parse(p.completedMilestones as string || '[]'); } catch { /* */ }
+          const now = Date.now();
+          const isActive = p.startDate && (p.startDate as number) <= now && (!p.endDate || (p.endDate as number) >= now);
+          return { ...p, milestones: ms, completedMilestones: cms, isActive };
+        });
+
+        const currentPhase = parsedPhases.find(p => p.isActive) ?? null;
+
+        // Current week KPI data
+        const kpiWeekly = db.prepare(
+          `SELECT metric, weekLabel, weekStart, target, actual FROM campaign_kpi_weekly WHERE campaignId = ? ORDER BY weekStart DESC LIMIT 30`
+        ).all(campaignId) as Record<string, unknown>[];
+
+        return { content: [{ type: 'text', text: JSON.stringify({
+          id: campaign.id, name: campaign.name, type: campaign.type, goal: campaign.goal,
+          status: campaign.status, targetAudience: campaign.targetAudience,
+          briefContent: campaign.briefContent,
+          startDate: campaign.startDate, endDate: campaign.endDate,
+          channels, kpis, members, phases: parsedPhases, currentPhase,
+          kpiWeekly,
+          hint: `You are part of this campaign. Check campaign_list_my_content to see your assignments.`,
+        }, null, 2) }] };
+      }
+
+      // ── campaign_list_my_content ──────────────────────────────────────────────
+      case 'campaign_list_my_content': {
+        const campaignId = String(args?.campaign_id ?? '').trim();
+        if (!campaignId) return { content: [{ type: 'text', text: JSON.stringify({ error: 'campaign_id required' }) }], isError: true };
+        const agentId = args?.agent_id as string | undefined;
+        const statusFilter = args?.status as string | undefined;
+
+        const conditions = ['ci.campaignId = ?'];
+        const vals: unknown[] = [campaignId];
+        if (agentId) { conditions.push('ci.ownerId = ?'); vals.push(agentId); }
+        if (statusFilter) { conditions.push('ci.status = ?'); vals.push(statusFilter); }
+
+        const items = db.prepare(`
+          SELECT ci.*, cp.name as phaseName, cp.startDate as phaseStart, cp.endDate as phaseEnd,
+                 t.status as taskStatus, t.title as taskTitle
+          FROM campaign_content_items ci
+          LEFT JOIN campaign_phases cp ON cp.id = ci.phaseId
+          LEFT JOIN tasks t ON t.id = ci.taskId
+          WHERE ${conditions.join(' AND ')}
+          ORDER BY ci.scheduledDate ASC, ci.createdAt ASC
+        `).all(...vals) as Record<string, unknown>[];
+
+        const parsed = items.map(i => {
+          let channels: string[] = []; try { channels = JSON.parse(i.channels as string || '[]'); } catch { /* */ }
+          return { ...i, channels };
+        });
+
+        return { content: [{ type: 'text', text: JSON.stringify({
+          items: parsed,
+          count: parsed.length,
+          hint: parsed.length === 0 ? 'No content items found for this agent/campaign.' : `Found ${parsed.length} content items. Use campaign_update_content_item to update status as you complete work.`,
+        }, null, 2) }] };
+      }
+
+      // ── campaign_update_content_item ──────────────────────────────────────────
+      case 'campaign_update_content_item': {
+        const itemId = String(args?.item_id ?? '').trim();
+        const newStatus = String(args?.status ?? '').trim();
+        const notes = args?.notes as string | undefined;
+        if (!itemId || !newStatus) return { content: [{ type: 'text', text: JSON.stringify({ error: 'item_id and status required' }) }], isError: true };
+
+        const validStatuses = ['draft', 'in-review', 'scheduled', 'done', 'active', 'ongoing', 'tbd'];
+        if (!validStatuses.includes(newStatus)) {
+          return { content: [{ type: 'text', text: JSON.stringify({ error: `Invalid status. Valid: ${validStatuses.join(', ')}` }) }], isError: true };
+        }
+
+        const item = db.prepare('SELECT * FROM campaign_content_items WHERE id = ?').get(itemId) as Record<string, unknown> | undefined;
+        if (!item) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Content item not found' }) }], isError: true };
+
+        const now = Date.now();
+        const fields: string[] = ['status = ?', 'updatedAt = ?'];
+        const vals: unknown[] = [newStatus, now];
+        if (notes !== undefined) { fields.push('notes = ?'); vals.push(notes); }
+        vals.push(itemId);
+        db.prepare(`UPDATE campaign_content_items SET ${fields.join(', ')} WHERE id = ?`).run(...vals);
+
+        // Auto-create approval when moving to in-review
+        if (newStatus === 'in-review' && item.approverId && String(item.approverId).trim()) {
+          const campaign = db.prepare('SELECT name, goal FROM campaigns WHERE id = ?').get(item.campaignId as string) as Record<string, unknown> | undefined;
+          const phase = item.phaseId ? db.prepare('SELECT name FROM campaign_phases WHERE id = ?').get(item.phaseId as string) as { name: string } | undefined : undefined;
+          const { randomUUID } = await import('crypto');
+          db.prepare(`
+            INSERT INTO approvals (id, type, title, content, context, metadata, status, requester, tier, category, createdAt)
+            VALUES (?, 'action', ?, ?, ?, ?, 'pending', ?, 2, 'content_review', ?)
+          `).run(
+            randomUUID(),
+            `Review: ${String(item.description).slice(0, 80)}`,
+            `Type: ${item.contentType}\nDescription: ${item.description}\nAngle: ${item.angle || '—'}\nNotes: ${notes || item.notes || '—'}\nPhase: ${phase?.name || 'Unphased'}`,
+            campaign ? `Campaign: ${campaign.name} — ${campaign.goal}` : `Campaign: ${item.campaignId}`,
+            JSON.stringify({ contentItemId: itemId, campaignId: item.campaignId, approverId: item.approverId }),
+            item.ownerId || null,
+            now,
+          );
+        }
+
+        const updated = db.prepare('SELECT * FROM campaign_content_items WHERE id = ?').get(itemId) as Record<string, unknown>;
+        let channels: string[] = []; try { channels = JSON.parse(updated.channels as string || '[]'); } catch { /* */ }
+        return { content: [{ type: 'text', text: JSON.stringify({ ok: true, item: { ...updated, channels }, message: `Content item status updated to "${newStatus}"` }, null, 2) }] };
+      }
+
+      // ── campaign_record_metric ────────────────────────────────────────────────
+      case 'campaign_record_metric': {
+        const campaignId = String(args?.campaign_id ?? '').trim();
+        const metric = String(args?.metric ?? '').trim().toLowerCase();
+        const actualValue = Number(args?.actual_value ?? 0);
+        let weekLabel = args?.week_label as string | undefined;
+
+        if (!campaignId || !metric) return { content: [{ type: 'text', text: JSON.stringify({ error: 'campaign_id and metric required' }) }], isError: true };
+        if (isNaN(actualValue)) return { content: [{ type: 'text', text: JSON.stringify({ error: 'actual_value must be a number' }) }], isError: true };
+
+        // Auto-detect week if not provided
+        if (!weekLabel) {
+          const campaign = db.prepare('SELECT startDate FROM campaigns WHERE id = ?').get(campaignId) as { startDate: number | null } | undefined;
+          if (campaign?.startDate) {
+            const weekNum = Math.ceil((Date.now() - campaign.startDate) / (7 * 86_400_000));
+            weekLabel = `W${Math.max(1, weekNum)}`;
+          } else {
+            weekLabel = 'W1';
+          }
+        }
+
+        // Find the row to get weekStart
+        const existing = db.prepare(
+          'SELECT * FROM campaign_kpi_weekly WHERE campaignId = ? AND metric = ? AND weekLabel = ?'
+        ).get(campaignId, metric, weekLabel) as Record<string, unknown> | undefined;
+
+        const now = Date.now();
+        if (existing) {
+          db.prepare('UPDATE campaign_kpi_weekly SET actual = ?, updatedAt = ? WHERE id = ?').run(actualValue, now, existing.id);
+        } else {
+          // Create new row
+          const campaign = db.prepare('SELECT startDate FROM campaigns WHERE id = ?').get(campaignId) as { startDate: number | null } | undefined;
+          const weekNum = parseInt(weekLabel.replace('W', '') || '1', 10);
+          const weekStart = campaign?.startDate ? campaign.startDate + (weekNum - 1) * 7 * 86_400_000 : now;
+          const rowId = `kpi-${now}-${Math.random().toString(36).slice(2, 5)}`;
+          db.prepare(`
+            INSERT INTO campaign_kpi_weekly (id, campaignId, metric, weekLabel, weekStart, target, actual, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
+          `).run(rowId, campaignId, metric, weekLabel, weekStart, actualValue, now, now);
+        }
+
+        const updated = db.prepare('SELECT * FROM campaign_kpi_weekly WHERE campaignId = ? AND metric = ? AND weekLabel = ?').get(campaignId, metric, weekLabel);
+        return { content: [{ type: 'text', text: JSON.stringify({ ok: true, row: updated, message: `Recorded ${actualValue.toLocaleString()} for ${metric} in ${weekLabel}` }, null, 2) }] };
+      }
+
+      // ── campaign_complete_milestone ───────────────────────────────────────────
+      case 'campaign_complete_milestone': {
+        const phaseId = String(args?.phase_id ?? '').trim();
+        const milestoneText = String(args?.milestone_text ?? '').trim();
+        const agentId = args?.agent_id as string | undefined;
+
+        if (!phaseId || !milestoneText) return { content: [{ type: 'text', text: JSON.stringify({ error: 'phase_id and milestone_text required' }) }], isError: true };
+
+        const phase = db.prepare('SELECT * FROM campaign_phases WHERE id = ?').get(phaseId) as Record<string, unknown> | undefined;
+        if (!phase) return { content: [{ type: 'text', text: JSON.stringify({ error: 'Phase not found' }) }], isError: true };
+
+        let completed: string[] = []; try { completed = JSON.parse(phase.completedMilestones as string || '[]'); } catch { /* */ }
+        let milestones: string[] = []; try { milestones = JSON.parse(phase.milestones as string || '[]'); } catch { /* */ }
+
+        if (!completed.includes(milestoneText)) {
+          completed.push(milestoneText);
+          db.prepare('UPDATE campaign_phases SET completedMilestones = ?, updatedAt = ? WHERE id = ?').run(JSON.stringify(completed), Date.now(), phaseId);
+        }
+
+        // Post achievement to campaign chat
+        const chatRoomId = `campaign-${phase.campaignId}`;
+        try {
+          const msg = `🎯 **Milestone achieved!** ${milestoneText}${agentId ? ` _(by ${agentId})_` : ''}\n*Phase: ${phase.name}*`;
+          db.prepare(`
+            INSERT INTO chat_room_messages (id, roomId, senderId, content, createdAt)
+            VALUES (?, ?, 'system', ?, ?)
+          `).run(`msg-milestone-${Date.now()}`, chatRoomId, msg, Date.now());
+        } catch { /* non-critical */ }
+
+        return { content: [{ type: 'text', text: JSON.stringify({
+          ok: true,
+          phase: { id: phase.id, name: phase.name },
+          completedMilestones: completed,
+          totalMilestones: milestones.length,
+          message: `Milestone "${milestoneText}" marked complete in phase "${phase.name}"`,
+        }, null, 2) }] };
       }
 
       // ── knowledge_search ────────────────────────────────────────────────────

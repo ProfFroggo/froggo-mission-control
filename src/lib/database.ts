@@ -1266,6 +1266,12 @@ function initSchema(db: Database.Database) {
     `ALTER TABLE campaign_content_items ADD COLUMN segment TEXT DEFAULT ''`,
     `ALTER TABLE campaign_content_items ADD COLUMN audience TEXT DEFAULT ''`,
     `ALTER TABLE campaign_content_items ADD COLUMN cadence TEXT DEFAULT ''`,
+    // Campaign content dispatch: link content items to agent tasks
+    `ALTER TABLE campaign_content_items ADD COLUMN taskId TEXT`,
+    // Campaign phase trigger tracking: completed milestones + cron fire timestamps
+    `ALTER TABLE campaign_phases ADD COLUMN completedMilestones TEXT NOT NULL DEFAULT '[]'`,
+    `ALTER TABLE campaign_phases ADD COLUMN triggeredStart INTEGER`,
+    `ALTER TABLE campaign_phases ADD COLUMN triggeredEnd INTEGER`,
   ];
   for (const sql of columnMigrations) {
     try { db.exec(sql); } catch (err: unknown) {

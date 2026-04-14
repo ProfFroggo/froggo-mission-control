@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Plus, Trash2, Edit3, Check, X, Bot, User,
   ChevronDown, ChevronRight, Calendar, Mail,
-  DollarSign, Zap, MessageSquare, Flag,
+  DollarSign, Zap, MessageSquare, Flag, Send, ListTodo,
 } from 'lucide-react';
 import { Button, IconButton, TextField, TextArea } from '@radix-ui/themes';
 import { campaignsApi } from '../../lib/api';
@@ -50,6 +50,7 @@ interface ContentItem {
   approverId: string;
   status: string;
   sortOrder: number;
+  taskId: string | null;
 }
 
 const STATUS_OPTIONS = ['draft', 'scheduled', 'active', 'ongoing', 'in-review', 'done', 'tbd'] as const;
@@ -296,6 +297,7 @@ interface FlatRowProps {
 function FlatRow({ item, contentType, campaignId, phases, onUpdated, onDeleted }: FlatRowProps) {
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [dispatching, setDispatching] = useState(false);
 
   if (editing) {
     return (
@@ -309,6 +311,16 @@ function FlatRow({ item, contentType, campaignId, phases, onUpdated, onDeleted }
         onCancel={() => setEditing(false)}
       />
     );
+  }
+
+  async function handleDispatch() {
+    setDispatching(true);
+    try {
+      const res = await campaignsApi.dispatchContentItem(campaignId, item.id) as { task?: { id: string }; item?: ContentItem };
+      if (res.item) onUpdated(res.item);
+      showToast('Dispatched to agent', 'success');
+    } catch { showToast('Dispatch failed', 'error'); }
+    finally { setDispatching(false); }
   }
 
   return (
@@ -367,10 +379,21 @@ function FlatRow({ item, contentType, campaignId, phases, onUpdated, onDeleted }
           {item.ownerType === 'ai' ? <Bot size={10} className="text-mission-control-accent" /> : <User size={10} />}
           <span className="truncate max-w-[72px]">{item.ownerId || 'unassigned'}</span>
         </div>
+        {item.taskId && (
+          <span className="flex items-center gap-0.5 text-[9px] text-mission-control-accent/70 bg-mission-control-accent/8 px-1.5 py-0.5 rounded">
+            <ListTodo size={8} /> task
+          </span>
+        )}
       </div>
 
       {/* Actions */}
       <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {item.ownerType === 'ai' && (
+          <IconButton size="1" variant="ghost" color="blue" onClick={handleDispatch} disabled={dispatching}
+            title={item.taskId ? 'Re-dispatch to agent' : 'Dispatch to agent'}>
+            {dispatching ? <Spinner size={12} /> : <Send size={12} />}
+          </IconButton>
+        )}
         <IconButton size="1" variant="ghost" color="gray" onClick={() => setEditing(true)}>
           <Edit3 size={12} />
         </IconButton>
@@ -404,6 +427,7 @@ interface SocialRowProps {
 function SocialRow({ item, campaignId, phases, onUpdated, onDeleted }: SocialRowProps) {
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [dispatching, setDispatching] = useState(false);
 
   if (editing) {
     return (
@@ -417,6 +441,16 @@ function SocialRow({ item, campaignId, phases, onUpdated, onDeleted }: SocialRow
         onCancel={() => setEditing(false)}
       />
     );
+  }
+
+  async function handleDispatch() {
+    setDispatching(true);
+    try {
+      const res = await campaignsApi.dispatchContentItem(campaignId, item.id) as { task?: { id: string }; item?: ContentItem };
+      if (res.item) onUpdated(res.item);
+      showToast('Dispatched to agent', 'success');
+    } catch { showToast('Dispatch failed', 'error'); }
+    finally { setDispatching(false); }
   }
 
   return (
@@ -452,10 +486,21 @@ function SocialRow({ item, campaignId, phases, onUpdated, onDeleted }: SocialRow
           {item.ownerType === 'ai' ? <Bot size={10} className="text-mission-control-accent" /> : <User size={10} />}
           <span className="truncate max-w-[72px]">{item.ownerId || 'unassigned'}</span>
         </div>
+        {item.taskId && (
+          <span className="flex items-center gap-0.5 text-[9px] text-mission-control-accent/70 bg-mission-control-accent/8 px-1.5 py-0.5 rounded">
+            <ListTodo size={8} /> task
+          </span>
+        )}
       </div>
 
       {/* Actions */}
       <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {item.ownerType === 'ai' && (
+          <IconButton size="1" variant="ghost" color="blue" onClick={handleDispatch} disabled={dispatching}
+            title={item.taskId ? 'Re-dispatch to agent' : 'Dispatch to agent'}>
+            {dispatching ? <Spinner size={12} /> : <Send size={12} />}
+          </IconButton>
+        )}
         <IconButton size="1" variant="ghost" color="gray" onClick={() => setEditing(true)}>
           <Edit3 size={12} />
         </IconButton>
