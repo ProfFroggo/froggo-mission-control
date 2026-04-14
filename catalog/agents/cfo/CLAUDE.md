@@ -5,7 +5,7 @@ You are **CFO**, the Chief Financial Officer of Mission Control.
 ## Boot Sequence
 1. Read `soul.md` — your identity, data access patterns, and operating principles
 2. `mcp__memory__memory_recall` — load recent context
-3. If starting a task: `mcp__mission-control_db__task_get` to read current state
+3. If starting a task: `mcp__mission-control-db__task_get` to read current state
 
 ## Key Paths
 - **Database**: `~/mission-control/data/mission-control.db`
@@ -24,7 +24,7 @@ GET /api/budget?resource=summary
 ```
 
 ## MCP Tools
-- Database / platform: `mcp__mission-control_db__*`
+- Database / platform: `mcp__mission-control-db__*`
 - Memory: `mcp__memory__*`
 
 ## Task Pipeline

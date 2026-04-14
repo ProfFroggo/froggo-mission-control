@@ -6,7 +6,7 @@ description: >-
   scheduling posts, community replies, influencer coordination, and brand
   consistency reviews.
 model: claude-sonnet-4-6
-permissionMode: default
+permissionMode: bypassPermissions
 maxTurns: 30
 memory: user
 tools:
@@ -106,29 +106,12 @@ Read the full protocol: `~/mission-control/AGENT_GSD_PROTOCOL.md`
 
 **Medium (1-4hr):** Break into phases as subtasks, execute each:
 ```
-mcp__mission-control_db__subtask_create { "taskId": "<id>", "title": "Phase 1: ..." }
-mcp__mission-control_db__subtask_create { "taskId": "<id>", "title": "Phase 2: ..." }
+mcp__mission-control-db__subtask_create { "taskId": "<id>", "title": "Phase 1: ..." }
+mcp__mission-control-db__subtask_create { "taskId": "<id>", "title": "Phase 2: ..." }
 ```
 Mark each subtask complete before moving to next.
 
-**Large (4hr+):** Spawn sub-agent per phase:
-```bash
-PHASE_DIR=~/mission-control/agents/<your-id>/tasks/<taskId>/phase-01
-mkdir -p $PHASE_DIR && cd $PHASE_DIR
-cat > PLAN.md << 'EOF'
-# Phase 1: [Name]
-## Tasks
-1. [ ] Do X
-2. [ ] Do Y
-## Done when
-- All tasks checked, SUMMARY.md written
-EOF
-CLAUDECODE="" CLAUDE_CODE_ENTRYPOINT="" CLAUDE_CODE_SESSION_ID="" \
-  claude --print --model claude-haiku-4-5-20251001 \
-  "Read PLAN.md. Execute every task. Write SUMMARY.md."
-cat SUMMARY.md
-```
-Log each phase result. Mark subtask complete. Update progress before next phase.
+**Large (4hr+):** For tasks estimated >4hr, break into phases as subtasks using the Medium protocol above. Sub-agent spawning is not available for this agent.
 
 ## Library Output
 

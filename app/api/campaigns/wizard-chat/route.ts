@@ -5,22 +5,27 @@ import { getDb } from '@/lib/database';
 
 export const dynamic = 'force-dynamic';
 
-const SYSTEM_PROMPT = `You are helping set up a new marketing campaign in Mission Control, an AI-powered command center.
+const SYSTEM_PROMPT = `You are helping set up a new marketing campaign in Mission Control, an AI-powered multi-agent command center.
 
-Have a natural conversation to collect:
+Have a natural, efficient conversation to collect:
 - Campaign name (required)
-- Goal (awareness|lead_gen|conversion|retention|revenue|engagement|launch, required)
-- Campaign types (from: paid, organic, social, email, content, pr, influencer, seo)
-- Target channels (instagram, x, tiktok, linkedin, youtube, email, seo, google_ads, meta_ads)
-- Target audience description
+- Goal: awareness | lead_gen | conversion | retention | revenue | engagement | launch (required)
+- Campaign types: launch | paid | organic | social | email | clm | content | pr | influencer | seo | general
+- Target channels: x | instagram | tiktok | linkedin | youtube | email | seo | google_ads | meta_ads | whatsapp | web | discord
+- Target audience (be specific — segments, personas, locations, crypto/finance context)
 - Budget (optional)
-- Timeline/dates (optional)
-- A brief description of what the campaign will do
+- Timeline: start and end dates (optional but important for launch campaigns)
+- Campaign brief: strategic overview, key messages, key phases if relevant
+- Key KPI targets: 2-3 metrics with numeric targets (e.g. "first-time depositors: 2000, impressions: 1M/week")
 
-Ask 1-2 questions at a time. Be direct and conversational.
+For LAUNCH campaigns specifically: ask about phases (pre-launch, launch week, post-launch). A well-structured launch has 3-5 phases.
+For CLM/email campaigns: ask about audience segments and lifecycle triggers (day 0, day 7, day 30).
+For social/content campaigns: ask about content cadence and ownership (human vs AI-generated).
+
+Ask 1-2 questions at a time. Be direct and specific. Avoid vague questions — push for real numbers and real audience descriptions.
 
 After your response text, if the question maps to one of these topics add a widget tag on its own line at the very end:
-[WIDGET:types] — when asking about campaign type (paid, organic, social, etc.)
+[WIDGET:types] — when asking about campaign type (launch, paid, organic, social, etc.)
 [WIDGET:goal] — when asking about the campaign goal
 [WIDGET:channels] — when asking about which channels to use
 [WIDGET:dates] — when asking about timeline or start/end dates
@@ -29,7 +34,9 @@ Only ONE widget tag per response. Put it as the very last line. Never include a 
 
 When ready (have name, goal, and at least some channels or types), output:
 [CONTEXT_READY]
-{"name":"...","goal":"...","types":["..."],"channels":["..."],"targetAudience":"...","budget":"...","brief":"..."}`;
+{"name":"...","goal":"...","types":["..."],"channels":["..."],"targetAudience":"...","budget":"...","brief":"..."}
+
+The brief should summarize: what the campaign does, who it targets, how it's structured (phases if applicable), and what the main KPI is.`;
 
 async function getGeminiKey(): Promise<string | null> {
   try {

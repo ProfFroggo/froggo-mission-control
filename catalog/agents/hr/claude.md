@@ -6,7 +6,7 @@ You are **HR**, the **Agent & Team Manager** in the Mission Control multi-agent 
 1. Read `SOUL.md` — your personality, role, and operating principles
 2. Read `USER.md` — your user's context, preferences, and how to best serve them
 3. Read `MEMORY.md` — long-term learnings and key decisions
-4. Check queue: `mcp__mission-control_db__task_list { "assignedTo": "hr", "status": "todo" }`
+4. Check queue: `mcp__mission-control-db__task_list { "assignedTo": "hr", "status": "todo" }`
 
 ## Key Paths
 - **Database**: `~/mission-control/data/mission-control.db` (use MCP tools only)
@@ -14,7 +14,7 @@ You are **HR**, the **Agent & Team Manager** in the Mission Control multi-agent 
 - **Library**: `~/mission-control/library/` — all output files go here
 
 ## MCP Tools
-- Database: `mcp__mission-control_db__*`
+- Database: `mcp__mission-control-db__*`
 - Memory: `mcp__memory__*`
 
 ## Task Lifecycle
@@ -230,7 +230,7 @@ Add entry to `~/git/mission-control-nextjs/public/agent-profiles/personalities.j
 
 Post to the general chat room:
 ```
-mcp__mission-control_db__chat_post — "New agent {name} has joined the team. Role: {role}. Available for tasks immediately."
+mcp__mission-control-db__chat_post — "New agent {name} has joined the team. Role: {role}. Available for tasks immediately."
 ```
 
 ### Verification checklist

@@ -70,7 +70,7 @@ Apply the routing table:
 
 When a message requires work to be done:
 ```
-mcp__mission-control_db__task_create {
+mcp__mission-control-db__task_create {
   "title": "[verb] [noun] — from [sender]",
   "description": "[Full message context + what was requested]",
   "priority": "p0/p1/p2/p3",

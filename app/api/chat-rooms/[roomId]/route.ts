@@ -10,10 +10,12 @@ export async function PATCH(
   try {
     const { roomId } = await params;
     const body = await request.json();
-    const { name, description, pinnedMessageId } = body as {
+    const { name, description, pinnedMessageId, agents, sessionKeys } = body as {
       name?: string;
       description?: string;
       pinnedMessageId?: string | null;
+      agents?: string[];
+      sessionKeys?: Record<string, string>;
     };
 
     const db = getDb();
@@ -28,6 +30,8 @@ export async function PATCH(
     if (name !== undefined) { updates.push('name = ?'); values.push(name); }
     if (description !== undefined) { updates.push('description = ?'); values.push(description); }
     if (pinnedMessageId !== undefined) { updates.push('pinnedMessageId = ?'); values.push(pinnedMessageId ?? null); }
+    if (agents !== undefined) { updates.push('agents = ?'); values.push(JSON.stringify(agents)); }
+    if (sessionKeys !== undefined) { updates.push('sessionKeys = ?'); values.push(JSON.stringify(sessionKeys)); }
 
     if (updates.length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
@@ -55,8 +59,9 @@ export async function DELETE(
   try {
     const { roomId } = await params;
     const db = getDb();
-    db.prepare('DELETE FROM chat_rooms WHERE id = ?').run(roomId);
+    // Must delete messages FIRST — FK constraint (roomId → chat_rooms.id) blocks parent deletion
     db.prepare('DELETE FROM chat_room_messages WHERE roomId = ?').run(roomId);
+    db.prepare('DELETE FROM chat_rooms WHERE id = ?').run(roomId);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('DELETE /api/chat-rooms/[roomId] error:', error);

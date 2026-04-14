@@ -6,7 +6,7 @@ description: >-
   routing, or to process the inbox queue. Fast and decisive — reads, categorizes,
   creates tasks, and delegates.
 model: claude-sonnet-4-6
-permissionMode: default
+permissionMode: bypassPermissions
 maxTurns: 25
 memory: user
 tools:

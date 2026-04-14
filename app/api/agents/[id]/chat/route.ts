@@ -275,6 +275,44 @@ const MCP_MIXPANEL_TOOLS = [
   'mcp__mixpanel__Duplicate-Dashboard', 'mcp__mixpanel__Delete-Dashboard',
   'mcp__mixpanel__Search-Entities',
 ];
+const MCP_GITHUB_TOOLS = [
+  // Context
+  'mcp__github__get_me', 'mcp__github__get_team_members', 'mcp__github__get_teams',
+  // Issues
+  'mcp__github__list_issues', 'mcp__github__search_issues', 'mcp__github__issue_read',
+  'mcp__github__issue_write', 'mcp__github__add_issue_comment', 'mcp__github__sub_issue_write',
+  'mcp__github__list_issue_types',
+  // Pull Requests
+  'mcp__github__list_pull_requests', 'mcp__github__search_pull_requests',
+  'mcp__github__pull_request_read', 'mcp__github__create_pull_request',
+  'mcp__github__update_pull_request', 'mcp__github__merge_pull_request',
+  'mcp__github__update_pull_request_branch', 'mcp__github__pull_request_review_write',
+  'mcp__github__add_reply_to_pull_request_comment', 'mcp__github__add_comment_to_pending_review',
+  // Repositories
+  'mcp__github__search_repositories', 'mcp__github__search_code',
+  'mcp__github__get_file_contents', 'mcp__github__create_or_update_file',
+  'mcp__github__push_files', 'mcp__github__create_branch', 'mcp__github__list_branches',
+  'mcp__github__list_commits', 'mcp__github__get_commit',
+  'mcp__github__list_tags', 'mcp__github__get_tag',
+  'mcp__github__list_releases', 'mcp__github__get_latest_release', 'mcp__github__get_release_by_tag',
+  'mcp__github__create_repository', 'mcp__github__fork_repository', 'mcp__github__delete_file',
+  'mcp__github__get_repository_tree',
+  // Actions
+  'mcp__github__actions_list', 'mcp__github__actions_get',
+  'mcp__github__actions_run_trigger', 'mcp__github__get_job_logs',
+  // Code Security
+  'mcp__github__list_code_scanning_alerts', 'mcp__github__get_code_scanning_alert',
+  // Users
+  'mcp__github__search_users',
+  // Labels
+  'mcp__github__get_label', 'mcp__github__label_write', 'mcp__github__list_label',
+  // Notifications
+  'mcp__github__list_notifications', 'mcp__github__get_notification_details',
+  'mcp__github__dismiss_notification', 'mcp__github__mark_all_notifications_read',
+  'mcp__github__manage_notification_subscription', 'mcp__github__manage_repository_notification_subscription',
+  // Projects
+  'mcp__github__projects_list', 'mcp__github__projects_get', 'mcp__github__projects_write',
+];
 const BASH_SAFE_TOOLS = [
   'Bash(npm run *)', 'Bash(npm test *)', 'Bash(npx vitest *)',
   'Bash(git status)', 'Bash(git diff *)', 'Bash(git add *)', 'Bash(git commit *)',
@@ -286,9 +324,9 @@ const BASH_SAFE_TOOLS = [
 const CHAT_TIER_TOOLS: Record<string, string[]> = {
   restricted:  ['Read', 'Glob', 'Grep', ...MCP_DB_TOOLS.filter(t => !t.endsWith('task_create')), 'mcp__memory__memory_search', 'mcp__memory__memory_recall', 'mcp__memory__memory_read'],
   apprentice:  ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS],
-  worker:      ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS],
-  trusted:     ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS],
-  admin:       ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS],
+  worker:      ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS, ...MCP_GITHUB_TOOLS],
+  trusted:     ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS, ...MCP_GITHUB_TOOLS],
+  admin:       ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS, ...MCP_GITHUB_TOOLS],
 };
 const CHAT_DEFAULT_DISALLOWED = [
   'Bash(rm -rf *)', 'Bash(sudo *)', 'Bash(curl *)', 'Bash(wget *)',
@@ -299,16 +337,20 @@ const CHAT_DEFAULT_DISALLOWED = [
 // Reverse map: short tool name → full MCP tool ID (for modal Tools tab integration)
 const SHORT_TO_FULL_MCP: Map<string, string> = (() => {
   const m = new Map<string, string>();
-  for (const full of [...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS]) {
+  for (const full of [...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS, ...MCP_GITHUB_TOOLS]) {
     const parts = full.split('__');
     if (parts.length >= 3) m.set(parts.slice(2).join('__'), full);
   }
   return m;
 })();
 
-function resolveAgentTools(agentId: string): { allowed: string[]; disallowed: string[] } {
+// Agents allowed to use the /slack-send skill. All others have it blocked.
+const SLACK_SEND_ALLOWED = new Set(['colosseum-implementer', 'atlas']);
+
+function resolveAgentTools(agentId: string): { allowed: string[]; disallowed: string[]; trustTier: string } {
   let trustTier = 'apprentice';
   let disallowed = [...CHAT_DEFAULT_DISALLOWED];
+  if (!SLACK_SEND_ALLOWED.has(agentId)) disallowed = [...disallowed, 'Skill(slack-send)'];
   let additionalAllowed: string[] = [];
   try {
     const db = getDb();
@@ -335,7 +377,7 @@ function resolveAgentTools(agentId: string): { allowed: string[]; disallowed: st
   } catch (err) { console.warn('[chat] Non-critical: failed to resolve agent tools, using defaults:', err); }
   const base = CHAT_TIER_TOOLS[trustTier] ?? CHAT_TIER_TOOLS['worker'];
   const allowed = additionalAllowed.length ? [...new Set([...base, ...additionalAllowed])] : base;
-  return { allowed, disallowed };
+  return { allowed, disallowed, trustTier };
 }
 
 // ── Route ────────────────────────────────────────────────────────────────────
@@ -558,7 +600,7 @@ SUMMARY:`;
           fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/mixpanel/oauth?action=refresh`, { method: 'POST', signal: AbortSignal.timeout(5000) }).catch(err => console.warn('[chat] Non-critical: Mixpanel OAuth refresh failed:', err));
         } catch (err) { console.warn('[chat] Non-critical: Mixpanel pre-spawn refresh failed:', err); }
 
-        const { allowed, disallowed } = resolveAgentTools(agentId);
+        const { allowed, disallowed, trustTier } = resolveAgentTools(agentId);
         const args = [
           '--print',
           '--output-format', 'stream-json',
@@ -567,6 +609,10 @@ SUMMARY:`;
           '--allowedTools', allowed.join(','),
           '--disallowedTools', disallowed.join(','),
         ];
+        // Admin and trusted agents bypass Claude CLI permission prompts
+        if (trustTier === 'admin' || trustTier === 'trusted') {
+          args.push('--dangerously-skip-permissions');
+        }
 
         if (resumeId) {
           args.push('--resume', resumeId);
@@ -843,6 +889,9 @@ SUMMARY:`;
               '--allowedTools', allowed.join(','),
               '--disallowedTools', disallowed.join(','),
             ];
+            if (trustTier === 'admin' || trustTier === 'trusted') {
+              freshArgs.push('--dangerously-skip-permissions');
+            }
             const sp = (buildSystemPrompt(agentId) ?? '') + historyContext;
             if (sp) freshArgs.push('--system-prompt', sp);
 

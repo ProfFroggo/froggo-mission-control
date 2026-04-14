@@ -22,6 +22,10 @@ export default {
           border: 'var(--mission-control-border, #2a2a2a)', /* Pure neutral gray */
           accent: 'var(--mission-control-accent, #22c55e)',
           'accent-dim': 'var(--mission-control-accent-dim, #16a34a)',
+          'accent-foreground': 'var(--mission-control-accent-foreground, #ffffff)',
+          'accent-subtle': 'color-mix(in srgb, var(--mission-control-accent, #22c55e) 10%, transparent)',
+          'accent-muted': 'color-mix(in srgb, var(--mission-control-accent, #22c55e) 5%, transparent)',
+          'accent-border': 'color-mix(in srgb, var(--mission-control-accent, #22c55e) 30%, transparent)',
           text: 'var(--mission-control-text, #fafafa)',
           'text-dim': 'var(--mission-control-text-dim, #a1a1aa)',
           muted: 'var(--mission-control-text-dim, #a1a1aa)',
@@ -38,6 +42,7 @@ export default {
           subtle: 'var(--color-success-bg, rgba(34, 197, 94, 0.1))',
           border: 'var(--color-success-border, rgba(34, 197, 94, 0.3))',
           hover: 'var(--color-success-hover, #16a34a)',
+          foreground: 'var(--color-success-foreground, #000000)',
         },
         'error': {
           DEFAULT: 'var(--color-error, #ef4444)',

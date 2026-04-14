@@ -1,4 +1,4 @@
-import { memo, lazy, Suspense, useState, type ComponentPropsWithoutRef, type CSSProperties } from 'react';
+import { memo, lazy, Suspense, useState, useSyncExternalStore, type ComponentPropsWithoutRef, type CSSProperties } from 'react';
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/cjs/prism-light';
 import javascript from 'react-syntax-highlighter/dist/cjs/languages/prism/javascript';
 import typescript from 'react-syntax-highlighter/dist/cjs/languages/prism/typescript';
@@ -49,6 +49,33 @@ import { detectToolUIType } from './tool-ui/detectToolUIType';
 const ToolUIRenderer = lazy(() =>
   import('./tool-ui/ToolUIRenderer').then(m => ({ default: m.ToolUIRenderer }))
 );
+
+/**
+ * Reactive dark-mode detection via useSyncExternalStore.
+ * Subscribes to the 'themeChange' custom event dispatched by themeToggle.ts
+ * and also reads the root element class as the source of truth.
+ */
+function subscribeTheme(cb: () => void) {
+  window.addEventListener('themeChange', cb);
+  // Also listen for class mutations on <html> as a fallback
+  const observer = new MutationObserver(cb);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  return () => {
+    window.removeEventListener('themeChange', cb);
+    observer.disconnect();
+  };
+}
+function getIsDark() {
+  return document.documentElement.classList.contains('dark');
+}
+function getIsDarkServer() {
+  return true; // SSR default: dark
+}
+
+/** Hook: returns `true` when the app is in dark mode, reactively. */
+function useIsDarkTheme(): boolean {
+  return useSyncExternalStore(subscribeTheme, getIsDark, getIsDarkServer);
+}
 
 interface MentionData {
   ids: string[];
@@ -195,7 +222,7 @@ const MarkdownMessage = memo(function MarkdownMessage({ content, mentions, onArt
 
 export default MarkdownMessage;
 
-const PREVIEWABLE_LANGS = new Set(['html', 'htm', 'svg', 'jsx', 'tsx', 'react']);
+const PREVIEWABLE_LANGS = new Set(['html', 'htm', 'svg', 'jsx', 'tsx', 'react', 'markdown', 'md']);
 
 function extractArtifactTitle(lang: string, code: string): string {
   const titleMatch = code.match(/<title[^>]*>([^<]+)<\/title>/i);
@@ -233,7 +260,7 @@ function ArtifactCard({ lang, code, onOpen }: { lang: string; code: string; onOp
         onClick={async () => { await navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
         title="Copy code"
         aria-label="Copy code"
-        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors opacity-0 group-hover:opacity-100"
+        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:text-mission-control-text"
       >
         {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
       </button>
@@ -251,10 +278,10 @@ function ArtifactCard({ lang, code, onOpen }: { lang: string; code: string; onOp
   );
 }
 
-// Mission Control syntax theme — maps Prism token types to CSS variables
-const MC_THEME: Record<string, CSSProperties> = {
-  'code[class*="language-"]': { color: 'var(--color-mission-control-text, #e2e8f0)', background: 'transparent', fontFamily: 'inherit', fontSize: 'inherit', lineHeight: '1.6', whiteSpace: 'pre' },
-  'pre[class*="language-"]': { color: 'var(--color-mission-control-text, #e2e8f0)', background: 'transparent', margin: 0, padding: 0, overflow: 'auto' },
+// Mission Control dark syntax theme — maps Prism token types to dark-mode colors
+const MC_THEME_DARK: Record<string, CSSProperties> = {
+  'code[class*="language-"]': { color: 'var(--mission-control-text, #e2e8f0)', background: 'transparent', fontFamily: 'inherit', fontSize: 'inherit', lineHeight: '1.6', whiteSpace: 'pre' },
+  'pre[class*="language-"]': { color: 'var(--mission-control-text, #e2e8f0)', background: 'transparent', margin: 0, padding: 0, overflow: 'auto' },
   'token.comment': { color: '#6b7a8d', fontStyle: 'italic' },
   'token.prolog': { color: '#6b7a8d' },
   'token.doctype': { color: '#6b7a8d' },
@@ -288,12 +315,51 @@ const MC_THEME: Record<string, CSSProperties> = {
   'token.italic': { fontStyle: 'italic' },
 };
 
+// Mission Control light syntax theme — WCAG AA (≥4.5:1 on white) for all token types
+const MC_THEME_LIGHT: Record<string, CSSProperties> = {
+  'code[class*="language-"]': { color: 'var(--mission-control-text, #1a1a2e)', background: 'transparent', fontFamily: 'inherit', fontSize: 'inherit', lineHeight: '1.6', whiteSpace: 'pre' },
+  'pre[class*="language-"]': { color: 'var(--mission-control-text, #1a1a2e)', background: 'transparent', margin: 0, padding: 0, overflow: 'auto' },
+  'token.comment': { color: '#6b7280', fontStyle: 'italic' },  /* gray-500: 5.0:1 on white */
+  'token.prolog': { color: '#6b7280' },
+  'token.doctype': { color: '#6b7280' },
+  'token.cdata': { color: '#6b7280' },
+  'token.punctuation': { color: '#4b5563' },                   /* gray-600: 7.0:1 on white */
+  'token.property': { color: '#0369a1' },                      /* sky-700:  5.9:1 on white */
+  'token.tag': { color: '#15803d' },                           /* green-700: 4.8:1 on white */
+  'token.boolean': { color: '#c2410c' },                       /* orange-700: 5.9:1 on white */
+  'token.number': { color: '#c2410c' },                        /* orange-700: 5.9:1 on white */
+  'token.constant': { color: '#c2410c' },
+  'token.symbol': { color: '#c2410c' },
+  'token.deleted': { color: '#b91c1c' },                       /* red-700: 5.6:1 on white */
+  'token.selector': { color: '#15803d' },
+  'token.attr-name': { color: '#0369a1' },
+  'token.string': { color: '#15803d' },
+  'token.char': { color: '#15803d' },
+  'token.builtin': { color: '#4338ca' },                       /* indigo-700: 7.8:1 on white */
+  'token.inserted': { color: '#15803d' },
+  'token.operator': { color: '#4b5563' },
+  'token.entity': { color: '#a16207', cursor: 'help' },        /* yellow-700: 5.0:1 on white */
+  'token.url': { color: '#0369a1', textDecoration: 'underline' },
+  'token.atrule': { color: '#7c3aed' },                        /* violet-600: 5.2:1 on white */
+  'token.attr-value': { color: '#15803d' },
+  'token.keyword': { color: '#7e22ce' },                       /* purple-700: 6.7:1 on white */
+  'token.function': { color: '#1d4ed8' },                      /* blue-700: 6.5:1 on white */
+  'token.class-name': { color: '#a16207' },                    /* yellow-700: 5.0:1 on white */
+  'token.regex': { color: '#c2410c' },
+  'token.important': { color: '#c2410c', fontWeight: 'bold' },
+  'token.variable': { color: '#1a1a2e' },
+  'token.bold': { fontWeight: 'bold' },
+  'token.italic': { fontStyle: 'italic' },
+};
+
 const KNOWN_LANGS = new Set(['javascript','js','typescript','ts','jsx','tsx','python','py','bash','sh','shell','json','css','markdown','md','sql','yaml','yml','rust','rs','go']);
 
 export function CodeBlock({ code, language }: { code: string; language: string }) {
   const [copied, setCopied] = useState(false);
+  const isDark = useIsDarkTheme();
   const lang = language || 'text';
   const useSyntax = KNOWN_LANGS.has(lang.toLowerCase());
+  const theme = isDark ? MC_THEME_DARK : MC_THEME_LIGHT;
 
   return (
     <div className="relative my-3 rounded-lg overflow-hidden bg-mission-control-bg border border-mission-control-border shadow-sm group/code">
@@ -307,7 +373,7 @@ export function CodeBlock({ code, language }: { code: string; language: string }
           onClick={async () => { const ok = await copyToClipboard(code); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000); } }}
           title="Copy code"
           aria-label="Copy code to clipboard"
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors opacity-0 group-hover/code:opacity-100"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] text-mission-control-text-dim hover:text-mission-control-text hover:bg-mission-control-border/40 transition-colors opacity-0 group-hover/code:opacity-100 focus-visible:opacity-100 focus-visible:text-mission-control-text"
         >
           {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
           <span>{copied ? 'Copied!' : 'Copy'}</span>
@@ -316,7 +382,7 @@ export function CodeBlock({ code, language }: { code: string; language: string }
       {useSyntax ? (
         <SyntaxHighlighter
           language={lang.toLowerCase()}
-          style={MC_THEME}
+          style={theme}
           customStyle={{ margin: 0, padding: '1rem', background: 'transparent', fontSize: '0.8125rem', lineHeight: '1.6' }}
           codeTagProps={{ style: { fontFamily: 'var(--font-mono, ui-monospace, monospace)', whiteSpace: 'pre' } }}
           wrapLongLines={false}

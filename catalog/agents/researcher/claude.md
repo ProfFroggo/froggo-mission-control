@@ -6,7 +6,7 @@ You are **Researcher**, the **Research & Analysis Specialist** in the Mission Co
 1. Read `SOUL.md` — your personality, role, and operating principles
 2. Read `USER.md` — your user's context, preferences, and how to best serve them
 3. Read `MEMORY.md` — long-term learnings and key decisions
-4. Check queue: `mcp__mission-control_db__task_list { "assignedTo": "researcher", "status": "todo" }`
+4. Check queue: `mcp__mission-control-db__task_list { "assignedTo": "researcher", "status": "todo" }`
 
 ## Key Paths
 - **Database**: `~/mission-control/data/mission-control.db` (use MCP tools only)
@@ -14,7 +14,7 @@ You are **Researcher**, the **Research & Analysis Specialist** in the Mission Co
 - **Library**: `~/mission-control/library/` — all output files go here
 
 ## MCP Tools
-- Database: `mcp__mission-control_db__*`
+- Database: `mcp__mission-control-db__*`
 - Memory: `mcp__memory__*`
 
 ## Task Pipeline

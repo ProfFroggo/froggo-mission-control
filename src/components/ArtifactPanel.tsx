@@ -399,6 +399,13 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
     >
       {/* Resize handle */}
       <div
+        role="separator"
+        aria-label="Resize artifact panel — use left/right arrow keys"
+        aria-orientation="vertical"
+        aria-valuenow={width}
+        aria-valuemin={MIN_WIDTH}
+        aria-valuemax={MAX_WIDTH}
+        tabIndex={0}
         onMouseDown={(e) => {
           e.preventDefault();
           dragging.current = true;
@@ -407,10 +414,34 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
           document.body.style.cursor = 'col-resize';
           document.body.style.userSelect = 'none';
         }}
-        className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-mission-control-accent/40 transition-colors z-10 group"
-        title="Drag to resize"
+        onKeyDown={(e) => {
+          const STEP = 10;
+          const LARGE_STEP = 50;
+          const step = e.shiftKey ? LARGE_STEP : STEP;
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            const next = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, width + step));
+            setWidth(next);
+            localStorage.setItem('artifact-panel-width', String(next));
+          } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            const next = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, width - step));
+            setWidth(next);
+            localStorage.setItem('artifact-panel-width', String(next));
+          } else if (e.key === 'Home') {
+            e.preventDefault();
+            setWidth(MAX_WIDTH);
+            localStorage.setItem('artifact-panel-width', String(MAX_WIDTH));
+          } else if (e.key === 'End') {
+            e.preventDefault();
+            setWidth(MIN_WIDTH);
+            localStorage.setItem('artifact-panel-width', String(MIN_WIDTH));
+          }
+        }}
+        className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-mission-control-accent/40 focus-visible:bg-mission-control-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent transition-colors z-10 group"
+        title="Drag or use arrow keys to resize"
       >
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full bg-mission-control-border group-hover:bg-mission-control-accent/60 transition-colors" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-full bg-mission-control-border group-hover:bg-mission-control-accent/60 group-focus-visible:bg-mission-control-accent/60 transition-colors" />
       </div>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-mission-control-border flex-shrink-0">
@@ -536,15 +567,35 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
           {/* Tab Bar — only for previewable artifacts (including library file paths) */}
           {(isPreviewable(selectedArtifact) || (selectedArtifact.type === 'file' && isFilePath(selectedArtifact.content))) && (
             <Flex align="center" className="border-b border-mission-control-border bg-mission-control-surface px-4">
-              <div className="flex flex-1">
+              <div className="flex flex-1" role="tablist" aria-label="Artifact view mode">
                 {(['preview', 'code', 'port'] as const).map(tab => {
                   const TabIcon = tab === 'preview' ? Monitor : tab === 'code' ? Code2 : Globe;
                   const label = tab === 'preview' ? 'Preview' : tab === 'code' ? 'Code' : 'Port';
                   return (
                     <button
+                      role="tab"
                       type="button"
                       key={tab}
+                      id={`artifact-tab-${tab}`}
+                      aria-selected={viewTab === tab}
+                      aria-controls={`artifact-tabpanel-${tab}`}
+                      tabIndex={viewTab === tab ? 0 : -1}
                       onClick={() => setViewTab(tab)}
+                      onKeyDown={(e) => {
+                        const tabs = ['preview', 'code', 'port'] as const;
+                        const currentIdx = tabs.indexOf(tab);
+                        if (e.key === 'ArrowRight') {
+                          e.preventDefault();
+                          const next = tabs[(currentIdx + 1) % tabs.length];
+                          setViewTab(next);
+                          document.getElementById(`artifact-tab-${next}`)?.focus();
+                        } else if (e.key === 'ArrowLeft') {
+                          e.preventDefault();
+                          const prev = tabs[(currentIdx - 1 + tabs.length) % tabs.length];
+                          setViewTab(prev);
+                          document.getElementById(`artifact-tab-${prev}`)?.focus();
+                        }
+                      }}
                       className={`flex items-center px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
                         viewTab === tab
                           ? 'border-mission-control-accent text-mission-control-accent'
@@ -596,16 +647,16 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
 
           {/* Artifact Content */}
           {(isPreviewable(selectedArtifact) || (selectedArtifact.type === 'file' && isFilePath(selectedArtifact.content))) && viewTab === 'preview' ? (
-            <div className="flex-1 overflow-hidden" style={{ minHeight: '400px' }}>
+            <div role="tabpanel" id="artifact-tabpanel-preview" aria-labelledby="artifact-tab-preview" className="flex-1 overflow-hidden" style={{ minHeight: '400px' }}>
               {(() => {
                 const lang = selectedArtifact.metadata?.language?.toLowerCase();
                 const isMd = lang === 'markdown' || lang === 'md';
 
-                // Mermaid diagram preview: render on light background for visibility
+                // Mermaid diagram preview: dark theme to match UI
                 if (selectedArtifact.type === 'diagram') {
                   return (
-                    <div className="h-full overflow-y-auto p-4 rounded-b-lg" style={{ background: '#ffffff' }}>
-                      <MermaidRenderer key={`mermaid-${selectedArtifact.id}-${reloadKey}`} code={selectedArtifact.content} />
+                    <div className="h-full overflow-y-auto p-4 rounded-b-lg bg-mission-control-bg">
+                      <MermaidRenderer key={`mermaid-${selectedArtifact.id}-${reloadKey}`} code={selectedArtifact.content} label={selectedArtifact.title || 'Diagram'} />
                     </div>
                   );
                 }
@@ -653,7 +704,7 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
               })()}
             </div>
           ) : (isPreviewable(selectedArtifact) || (selectedArtifact.type === 'file' && isFilePath(selectedArtifact.content))) && viewTab === 'port' ? (
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div role="tabpanel" id="artifact-tabpanel-port" aria-labelledby="artifact-tab-port" className="flex-1 flex flex-col overflow-hidden">
               <div className="p-4 border-b border-mission-control-border space-y-2">
                 <label className="block text-xs font-medium text-mission-control-text">
                   Local Dev Server URL
@@ -707,7 +758,14 @@ export default function ArtifactPanel({ sessionId, agentName }: ArtifactPanelPro
               )}
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto p-4">
+            <div
+              className="flex-1 overflow-y-auto p-4"
+              {...((isPreviewable(selectedArtifact) || (selectedArtifact.type === 'file' && isFilePath(selectedArtifact.content))) ? {
+                role: 'tabpanel' as const,
+                id: 'artifact-tabpanel-code',
+                'aria-labelledby': 'artifact-tab-code',
+              } : {})}
+            >
               {renderArtifactContent(selectedArtifact)}
             </div>
           )}

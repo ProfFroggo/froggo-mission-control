@@ -1,0 +1,29 @@
+{
+  "id": "colosseum-tester",
+  "name": "Colosseum Tester",
+  "emoji": "🧪",
+  "role": "Unit Test Specialist",
+  "description": "Writes comprehensive unit tests for the Colosseum monorepo using Vitest. Follows makeMockRepo pattern, covers happy paths, edge cases, null handling, and side effect verification.",
+  "model": "sonnet",
+  "capabilities": [
+    "unit-testing",
+    "vitest",
+    "mock-patterns",
+    "test-coverage",
+    "typescript",
+    "clean-architecture-testing"
+  ],
+  "requiredApis": [],
+  "requiredSkills": [
+    "scaffold-test",
+    "run-checks",
+    "review-pr"
+  ],
+  "requiredTools": [
+    "node",
+    "pnpm",
+    "vitest"
+  ],
+  "version": "1.0.0",
+  "category": "quality"
+}

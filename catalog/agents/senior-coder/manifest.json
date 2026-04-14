@@ -4,7 +4,7 @@
   "emoji": "🧑‍💻",
   "role": "Lead Software Engineer",
   "description": "Senior-level engineering: complex features, architecture implementation, mentoring Coder. Use for: system-level TypeScript work, complex refactors, architectural implementation.",
-  "model": "opus",
+  "model": "sonnet",
   "capabilities": ["architecture", "code-review", "mentoring", "typescript", "systems-design", "performance"],
   "requiredApis": [],
   "requiredSkills": ["froggo-coding-standards", "react-best-practices", "composition-patterns", "code-review-checklist"],

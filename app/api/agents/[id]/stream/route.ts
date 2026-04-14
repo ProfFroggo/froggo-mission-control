@@ -350,6 +350,44 @@ const MCP_MIXPANEL_TOOLS = [
   'mcp__mixpanel__Duplicate-Dashboard', 'mcp__mixpanel__Delete-Dashboard',
   'mcp__mixpanel__Search-Entities',
 ];
+const MCP_GITHUB_TOOLS = [
+  // Context
+  'mcp__github__get_me', 'mcp__github__get_team_members', 'mcp__github__get_teams',
+  // Issues
+  'mcp__github__list_issues', 'mcp__github__search_issues', 'mcp__github__issue_read',
+  'mcp__github__issue_write', 'mcp__github__add_issue_comment', 'mcp__github__sub_issue_write',
+  'mcp__github__list_issue_types',
+  // Pull Requests
+  'mcp__github__list_pull_requests', 'mcp__github__search_pull_requests',
+  'mcp__github__pull_request_read', 'mcp__github__create_pull_request',
+  'mcp__github__update_pull_request', 'mcp__github__merge_pull_request',
+  'mcp__github__update_pull_request_branch', 'mcp__github__pull_request_review_write',
+  'mcp__github__add_reply_to_pull_request_comment', 'mcp__github__add_comment_to_pending_review',
+  // Repositories
+  'mcp__github__search_repositories', 'mcp__github__search_code',
+  'mcp__github__get_file_contents', 'mcp__github__create_or_update_file',
+  'mcp__github__push_files', 'mcp__github__create_branch', 'mcp__github__list_branches',
+  'mcp__github__list_commits', 'mcp__github__get_commit',
+  'mcp__github__list_tags', 'mcp__github__get_tag',
+  'mcp__github__list_releases', 'mcp__github__get_latest_release', 'mcp__github__get_release_by_tag',
+  'mcp__github__create_repository', 'mcp__github__fork_repository', 'mcp__github__delete_file',
+  'mcp__github__get_repository_tree',
+  // Actions
+  'mcp__github__actions_list', 'mcp__github__actions_get',
+  'mcp__github__actions_run_trigger', 'mcp__github__get_job_logs',
+  // Code Security
+  'mcp__github__list_code_scanning_alerts', 'mcp__github__get_code_scanning_alert',
+  // Users
+  'mcp__github__search_users',
+  // Labels
+  'mcp__github__get_label', 'mcp__github__label_write', 'mcp__github__list_label',
+  // Notifications
+  'mcp__github__list_notifications', 'mcp__github__get_notification_details',
+  'mcp__github__dismiss_notification', 'mcp__github__mark_all_notifications_read',
+  'mcp__github__manage_notification_subscription', 'mcp__github__manage_repository_notification_subscription',
+  // Projects
+  'mcp__github__projects_list', 'mcp__github__projects_get', 'mcp__github__projects_write',
+];
 const MCP_GOOGLE_TOOLS = [
   'mcp__google-workspace__auth_clear', 'mcp__google-workspace__auth_refreshToken',
   'mcp__google-workspace__calendar_createEvent', 'mcp__google-workspace__calendar_deleteEvent',
@@ -391,16 +429,16 @@ const BASH_SAFE_TOOLS = [
 const CHAT_TIER_TOOLS: Record<string, string[]> = {
   restricted: ['Read', 'Glob', 'Grep', ...MCP_DB_TOOLS.filter(t => t !== 'mcp__mission-control_db__task_create'), 'mcp__memory__memory_search', 'mcp__memory__memory_recall', 'mcp__memory__memory_read'],
   apprentice:  ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS],
-  worker:      ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS],
-  trusted:     ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS],
-  admin:       ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS],
+  worker:      ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS, ...MCP_GITHUB_TOOLS],
+  trusted:     ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS, ...MCP_GITHUB_TOOLS],
+  admin:       ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Agent', 'NotebookEdit', ...BASH_SAFE_TOOLS, ...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS, ...MCP_GITHUB_TOOLS],
 };
 // Reverse map: short tool name → full MCP tool ID
 // Built from all known tool lists so modal Tool tab toggles feed into --allowedTools.
 // Modal saves short names (e.g. "image_generate"); stream needs full IDs.
 const SHORT_TO_FULL_MCP: Map<string, string> = (() => {
   const m = new Map<string, string>();
-  const allFull = [...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS];
+  const allFull = [...MCP_DB_TOOLS, ...MCP_MEMORY_TOOLS, ...MCP_GOOGLE_TOOLS, ...MCP_MIXPANEL_TOOLS, ...MCP_GITHUB_TOOLS];
   for (const full of allFull) {
     const parts = full.split('__');
     if (parts.length >= 3) m.set(parts.slice(2).join('__'), full);
@@ -414,9 +452,13 @@ const CHAT_DEFAULT_DISALLOWED = [
   'Bash(chmod *)', 'Bash(chown *)', 'Bash(kill *)', 'Bash(pkill *)',
 ];
 
+// Agents allowed to use the /slack-send skill. All others have it blocked.
+const SLACK_SEND_ALLOWED = new Set(['colosseum-implementer', 'atlas']);
+
 function resolveAgentTools(agentId: string, sessionKey?: string): { allowed: string[]; disallowed: string[] } {
   let trustTier = 'apprentice';
   let disallowed = [...CHAT_DEFAULT_DISALLOWED];
+  if (!SLACK_SEND_ALLOWED.has(agentId)) disallowed = [...disallowed, 'Skill(slack-send)'];
   let additionalAllowed: string[] = [];
   try {
     const db = getDb();

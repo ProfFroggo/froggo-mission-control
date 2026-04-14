@@ -4,7 +4,7 @@
   "emoji": "\ud83d\udce5",
   "role": "Message Triage Specialist",
   "description": "Monitors incoming messages, triages by urgency, routes to correct agents or queues. Best for: high-volume communication management, prioritization, keeping the team unblocked.",
-  "model": "haiku",
+  "model": "sonnet",
   "capabilities": [
     "triage",
     "routing",

@@ -112,21 +112,31 @@ interface ChatRoomState {
   setPanelWidth: (roomId: string, width: number) => void;
 }
 
-/** Fire-and-forget save of a completed message to the DB */
+/** Save a completed message to the DB with one retry on failure */
 function saveMessageToDb(roomId: string, message: RoomMessage) {
   if (!message.content) return; // skip empty — server rejects with 400
-  fetch(`/api/chat-rooms/${roomId}/messages`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      messageId: message.id,
-      agentId: message.role === 'user' ? 'user' : (message.agentId ?? 'agent'),
-      role: message.role,
-      content: message.content,
-      timestamp: message.timestamp,
-      mentionedAgents: message.mentionedAgents ?? [],
-    }),
-  }).catch(e => console.warn('[chatRoomStore] Failed to save message to DB:', e));
+  const body = JSON.stringify({
+    messageId: message.id,
+    agentId: message.role === 'user' ? 'user' : (message.agentId ?? 'agent'),
+    role: message.role,
+    content: message.content,
+    timestamp: message.timestamp,
+    mentionedAgents: message.mentionedAgents ?? [],
+  });
+  const doSave = () =>
+    fetch(`/api/chat-rooms/${roomId}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    });
+  doSave()
+    .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); })
+    .catch(() => {
+      // Retry once after 1s (handles DB busy / room not yet created race)
+      setTimeout(() => {
+        doSave().catch(e => console.warn('[chatRoomStore] Failed to save message to DB after retry:', e));
+      }, 1000);
+    });
 }
 
 export const useChatRoomStore = create<ChatRoomState>()(
@@ -232,7 +242,13 @@ export const useChatRoomStore = create<ChatRoomState>()(
         activeRoomId: state.activeRoomId === roomId ? null : state.activeRoomId,
       }));
       fetch(`/api/chat-rooms/${roomId}`, { method: 'DELETE' })
-        .catch(e => console.warn('[chatRoomStore] Failed to delete room from DB:', e));
+        .then(r => { if (!r.ok) return r.text().then(t => { throw new Error(t); }); })
+        .catch(e => {
+          console.error('[chatRoomStore] Failed to delete room from DB:', e);
+          // Retry once — FK order fix may not be hot-reloaded yet
+          fetch(`/api/chat-rooms/${roomId}`, { method: 'DELETE' })
+            .catch(e2 => console.error('[chatRoomStore] Retry also failed:', e2));
+        });
     },
 
     setActiveRoom: (roomId: string | null) => {
@@ -287,13 +303,20 @@ export const useChatRoomStore = create<ChatRoomState>()(
     },
 
     setSessionKey: (roomId: string, agentId: string, sessionKey: string) => {
+      const newKeys = { ...get().rooms.find(r => r.id === roomId)?.sessionKeys, [agentId]: sessionKey };
       set(state => ({
         rooms: state.rooms.map(r =>
           r.id === roomId
-            ? { ...r, sessionKeys: { ...r.sessionKeys, [agentId]: sessionKey } }
+            ? { ...r, sessionKeys: newKeys }
             : r
         ),
       }));
+      // Persist session keys to DB
+      fetch(`/api/chat-rooms/${roomId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionKeys: newKeys }),
+      }).catch(e => console.warn('[chatRoomStore] Failed to save session keys to DB:', e));
     },
 
     updateRoomAgents: (roomId: string, agents: string[]) => {
@@ -302,6 +325,12 @@ export const useChatRoomStore = create<ChatRoomState>()(
           r.id === roomId ? { ...r, agents, updatedAt: Date.now() } : r
         ),
       }));
+      // Persist agents to DB
+      fetch(`/api/chat-rooms/${roomId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agents }),
+      }).catch(e => console.warn('[chatRoomStore] Failed to save room agents to DB:', e));
     },
 
     updateRoom: (roomId: string, updates: Partial<Pick<ChatRoom, 'name' | 'description' | 'pinnedMessageId'>>) => {

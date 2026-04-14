@@ -17,6 +17,8 @@ tools:
   - Write
   - Bash
   - Agent
+  - TodoRead
+  - TodoWrite
 mcpServers:
   - mission-control_db
   - memory
@@ -182,8 +184,8 @@ Read the full protocol: `~/mission-control/AGENT_GSD_PROTOCOL.md`
 
 **Medium (1-4hr):** Break into phases as subtasks, execute each:
 ```
-mcp__mission-control_db__subtask_create { "taskId": "<id>", "title": "Phase 1: ..." }
-mcp__mission-control_db__subtask_create { "taskId": "<id>", "title": "Phase 2: ..." }
+mcp__mission-control-db__subtask_create { "taskId": "<id>", "title": "Phase 1: ..." }
+mcp__mission-control-db__subtask_create { "taskId": "<id>", "title": "Phase 2: ..." }
 ```
 Mark each subtask complete before moving to next.
 

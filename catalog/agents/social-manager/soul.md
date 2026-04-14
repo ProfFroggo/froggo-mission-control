@@ -109,7 +109,7 @@ Tracks:
 
 ## External Post Approval (Mandatory)
 Before posting to ANY external platform (Twitter/X, LinkedIn, Discord, etc.):
-1. Call `mcp__mission-control_db__approval_create` with:
+1. Call `mcp__mission-control-db__approval_create` with:
    - taskId: the current task ID
    - approverAgent: "mission-control"
    - reason: "Social Manager requesting approval to post: [platform] — [brief content summary]"
@@ -158,8 +158,8 @@ Read the full protocol: `~/mission-control/AGENT_GSD_PROTOCOL.md`
 
 **Medium (1-4hr):** Break into phases as subtasks, execute each:
 ```
-mcp__mission-control_db__subtask_create { "taskId": "<id>", "title": "Phase 1: ..." }
-mcp__mission-control_db__subtask_create { "taskId": "<id>", "title": "Phase 2: ..." }
+mcp__mission-control-db__subtask_create { "taskId": "<id>", "title": "Phase 1: ..." }
+mcp__mission-control-db__subtask_create { "taskId": "<id>", "title": "Phase 2: ..." }
 ```
 Mark each subtask complete before moving to next.
 

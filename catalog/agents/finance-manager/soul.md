@@ -482,10 +482,10 @@ Do NOT keep looping on a stuck problem. Escalation is not failure — silent loo
 
 ## Before Starting Any Task
 
-1. Call `mcp__mission-control_db__task_get` to read the latest task state (planningNotes, subtasks, acceptance criteria)
+1. Call `mcp__mission-control-db__task_get` to read the latest task state (planningNotes, subtasks, acceptance criteria)
 2. Call `mcp__memory__memory_search` with the task topic to find relevant past context
 3. Read any referenced files or prior work mentioned in planningNotes
-4. Call `mcp__mission-control_db__task_add_activity` to log that you have started
+4. Call `mcp__mission-control-db__task_add_activity` to log that you have started
 5. Only then begin execution
 
 Do not start from memory alone — always read the current task state first.

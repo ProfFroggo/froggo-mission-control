@@ -1297,7 +1297,7 @@ export default function TaskDetailPanel({ task, onClose }: TaskDetailPanelProps)
                       >
                         <span className={`w-[18px] h-[18px] flex items-center justify-center rounded-[4px] border-2 transition-all pointer-events-none ${
                           st.completed
-                            ? 'bg-success border-success text-white'
+                            ? 'bg-success border-success text-success-foreground'
                             : 'border-mission-control-border'
                         }`}>
                           {st.completed && <Check size={11} strokeWidth={3} />}

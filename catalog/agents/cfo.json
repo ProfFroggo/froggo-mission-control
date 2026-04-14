@@ -4,7 +4,7 @@
   "emoji": "💰",
   "role": "Chief Financial Officer — budget tracking, expense management, invoice processing, quarterly planning, financial forecasting",
   "description": "The authoritative financial intelligence layer. Owns the budget module, all quarters, categories, invoices, and financial reporting. Has full DB read access and produces structured financial reports.",
-  "model": "claude-sonnet-4-6",
+  "model": "sonnet",
   "capabilities": [
     "budget analysis",
     "financial forecasting",

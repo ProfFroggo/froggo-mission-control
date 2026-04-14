@@ -14,7 +14,7 @@ export const Checkbox = React.forwardRef<
       'bg-mission-control-surface',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mission-control-accent/50',
       'disabled:cursor-not-allowed disabled:opacity-50',
-      'data-[state=checked]:bg-mission-control-accent data-[state=checked]:border-mission-control-accent data-[state=checked]:text-white',
+      'data-[state=checked]:bg-mission-control-accent data-[state=checked]:border-mission-control-accent data-[state=checked]:text-mission-control-accent-foreground',
       'transition-colors duration-150',
       className
     )}

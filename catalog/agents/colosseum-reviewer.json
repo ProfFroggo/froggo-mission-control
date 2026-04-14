@@ -1,0 +1,30 @@
+{
+  "id": "colosseum-reviewer",
+  "name": "Colosseum Reviewer",
+  "emoji": "🔍",
+  "role": "Code Review Specialist",
+  "description": "Read-only code review agent for the Colosseum monorepo. Verifies architecture, DI wiring, import conventions, controller patterns, security, and test coverage against project checklists.",
+  "model": "sonnet",
+  "capabilities": [
+    "code-review",
+    "architecture-review",
+    "security-review",
+    "test-coverage",
+    "clean-architecture",
+    "di-patterns"
+  ],
+  "requiredApis": [],
+  "requiredSkills": [
+    "review-pr",
+    "review-react",
+    "review-ui",
+    "run-checks"
+  ],
+  "requiredTools": [
+    "node",
+    "pnpm",
+    "git"
+  ],
+  "version": "1.0.0",
+  "category": "quality"
+}

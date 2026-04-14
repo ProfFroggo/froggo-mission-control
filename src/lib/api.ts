@@ -558,5 +558,19 @@ export const campaignsApi = {
     apiCall(`/campaigns/${id}/automations`, { method: 'POST', body: { automationId, triggerType } }),
   unlinkAutomation: (id: string, automationId: string) =>
     apiCall(`/campaigns/${id}/automations?automationId=${encodeURIComponent(automationId)}`, { method: 'DELETE' }),
+  // Phases
+  listPhases: (id: string) => apiCall(`/campaigns/${id}/phases`),
+  createPhase: (id: string, data: any) => apiCall(`/campaigns/${id}/phases`, { method: 'POST', body: data }),
+  updatePhase: (id: string, phaseId: string, data: any) => apiCall(`/campaigns/${id}/phases`, { method: 'PUT', body: { phaseId, ...data } }),
+  deletePhase: (id: string, phaseId: string) => apiCall(`/campaigns/${id}/phases?phaseId=${encodeURIComponent(phaseId)}`, { method: 'DELETE' }),
+  // Content items
+  listContentItems: (id: string, phaseId?: string) => apiCall(`/campaigns/${id}/content-items${phaseId ? `?phaseId=${encodeURIComponent(phaseId)}` : ''}`),
+  createContentItem: (id: string, data: any) => apiCall(`/campaigns/${id}/content-items`, { method: 'POST', body: data }),
+  updateContentItem: (id: string, itemId: string, data: any) => apiCall(`/campaigns/${id}/content-items`, { method: 'PUT', body: { itemId, ...data } }),
+  deleteContentItem: (id: string, itemId: string) => apiCall(`/campaigns/${id}/content-items?itemId=${encodeURIComponent(itemId)}`, { method: 'DELETE' }),
+  // KPI weekly
+  getKpiWeekly: (id: string) => apiCall(`/campaigns/${id}/kpi-weekly`),
+  upsertKpiWeekly: (id: string, data: any) => apiCall(`/campaigns/${id}/kpi-weekly`, { method: 'PUT', body: data }),
+  seedKpiWeekly: (id: string, data: any) => apiCall(`/campaigns/${id}/kpi-weekly`, { method: 'POST', body: data }),
 };
 

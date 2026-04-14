@@ -24,7 +24,7 @@ Load this skill when:
 For each agent under review:
 1. Read their CLAUDE.md / soul file in `.claude/agents/<name>.md`
 2. Read their memory file at `~/mission-control/agents/<name>/MEMORY.md` if it exists
-3. Check task history via `mcp__mission-control_db__task_list { "assignedTo": "<agent-name>" }`
+3. Check task history via `mcp__mission-control-db__task_list { "assignedTo": "<agent-name>" }`
 4. Note: assigned skills, role description, tool access, and output paths
 
 ### Step 2 — Evaluate Definition Quality

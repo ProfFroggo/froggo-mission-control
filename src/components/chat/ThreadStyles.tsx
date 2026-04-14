@@ -49,6 +49,8 @@ import { useState, useCallback, useRef, useEffect, useMemo, createContext, useCo
 import MarkdownMessage from "../MarkdownMessage";
 import { useArtifactStore, type Artifact, type ArtifactType } from "../../store/artifactStore";
 import { useArtifactOpen } from "../../hooks/useArtifactOpen";
+import { approvalApi } from "../../lib/api";
+import { getApprovalTypeConfig } from "../../lib/approvalTypes";
 
 // Context so MarkdownMessage inside assistant-ui thread gets artifact support
 const ArtifactOpenContext = createContext<((lang: string, code: string) => void) | undefined>(undefined);
@@ -535,6 +537,123 @@ function getFileChip(name: string, inputStr?: string): string | null {
   return null;
 }
 
+// ── Inline Approval Card ───────────────────────────────────────
+// Detects approval_create tool results and renders approve/reject buttons inline
+
+function isApprovalTool(name: string): boolean {
+  const n = name.toLowerCase();
+  return n === 'approval_create' || n.endsWith('approval_create');
+}
+
+function parseApprovalResult(result?: string): { id: string } | null {
+  if (!result) return null;
+  try {
+    const parsed = JSON.parse(result);
+    if (parsed?.success && parsed?.id) return { id: parsed.id };
+  } catch { /* not JSON */ }
+  return null;
+}
+
+function parseApprovalInput(input?: string): { type: string; title: string; content: string; context?: string } | null {
+  if (!input) return null;
+  try {
+    const parsed = JSON.parse(input);
+    if (parsed?.type && parsed?.title && parsed?.content) return parsed;
+  } catch { /* not JSON */ }
+  return null;
+}
+
+function InlineApprovalCard({ tool }: { tool: ToolItem }) {
+  const approval = parseApprovalResult(tool.result);
+  const details = parseApprovalInput(tool.input);
+  const [status, setStatus] = useState<'pending' | 'approved' | 'rejected'>('pending');
+  const [loading, setLoading] = useState(false);
+
+  if (!approval || !details) return null;
+
+  const config = getApprovalTypeConfig(details.type);
+
+  const handleAction = async (action: 'approved' | 'rejected') => {
+    setLoading(true);
+    try {
+      await approvalApi.respond(approval.id, action);
+      setStatus(action);
+    } catch (err) {
+      console.warn('[InlineApprovalCard] Failed to respond:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      className="my-2 rounded-xl border border-[var(--mission-control-border)] bg-[var(--mission-control-surface)] overflow-hidden"
+      style={{ animation: 'aui-fade-in 0.2s ease-out both' }}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--mission-control-border)]">
+        <ListChecks size={14} className="text-[var(--mission-control-accent)] flex-shrink-0" />
+        <span className="text-[12px] font-semibold text-[var(--mission-control-text)] flex-1 truncate">
+          {details.title}
+        </span>
+        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${config.className}`}>
+          {config.label}
+        </span>
+      </div>
+
+      {/* Content preview */}
+      <div className="px-3 py-2">
+        <p className="text-[12px] text-[var(--mission-control-text-dim)] line-clamp-3 whitespace-pre-wrap">
+          {details.content.slice(0, 300)}{details.content.length > 300 ? '...' : ''}
+        </p>
+        {details.context && (
+          <p className="text-[11px] text-[var(--mission-control-text-dim)] mt-1 opacity-70 italic truncate">
+            {details.context}
+          </p>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 px-3 py-2 border-t border-[var(--mission-control-border)]">
+        {status === 'pending' ? (
+          <>
+            <button
+              type="button"
+              onClick={() => handleAction('approved')}
+              disabled={loading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20 hover:bg-[var(--color-success)]/20 transition-colors disabled:opacity-50"
+            >
+              <CheckCircle2 size={13} />
+              Approve
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAction('rejected')}
+              disabled={loading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-[var(--color-error)]/10 text-[var(--color-error)] border border-[var(--color-error)]/20 hover:bg-[var(--color-error)]/20 transition-colors disabled:opacity-50"
+            >
+              <XCircle size={13} />
+              Reject
+            </button>
+            {loading && <Loader2 size={13} className="animate-spin text-[var(--mission-control-text-dim)]" />}
+          </>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            {status === 'approved' ? (
+              <CheckCircle2 size={14} className="text-[var(--color-success)]" />
+            ) : (
+              <XCircle size={14} className="text-[var(--color-error)]" />
+            )}
+            <span className={`text-[12px] font-medium ${status === 'approved' ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}`}>
+              {status === 'approved' ? 'Approved' : 'Rejected'}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── ToolGroupBlock ──────────────────────────────────────────────
 
 export function ToolGroupBlock({ tools, hasRunning }: { tools: ToolItem[]; hasRunning: boolean }) {
@@ -582,6 +701,11 @@ export function ToolGroupBlock({ tools, hasRunning }: { tools: ToolItem[]; hasRu
       {expanded && (
         <div className="aui-tool-group-body">
           {tools.map((tool, i) => {
+            // Render inline approval card for approval_create tools with successful result
+            if (isApprovalTool(tool.name) && parseApprovalResult(tool.result)) {
+              return <InlineApprovalCard key={i} tool={tool} />;
+            }
+
             const Icon = getToolIcon(tool.name);
             const label = getToolDisplayName(tool.name, tool.input);
             const chip = getFileChip(tool.name, tool.input);

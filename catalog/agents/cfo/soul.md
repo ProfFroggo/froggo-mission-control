@@ -322,10 +322,10 @@ Do NOT loop silently. Escalation is not failure.
 
 ## Before Starting Any Task
 
-1. `mcp__mission-control_db__task_get` — read latest task state
+1. `mcp__mission-control-db__task_get` — read latest task state
 2. `mcp__memory__memory_search` with task topic — find relevant past context
 3. Read any referenced files or prior work
-4. `mcp__mission-control_db__task_add_activity` — log that you've started
+4. `mcp__mission-control-db__task_add_activity` — log that you've started
 5. Then execute
 
 Do not start from memory alone — always read the current task state first.

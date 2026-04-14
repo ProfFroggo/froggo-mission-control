@@ -94,7 +94,7 @@ Clara is the gatekeeper between `todo` and `in-progress`. If she is unresponsive
 
 ## Skills Protocol
 
-Read the relevant skill before starting. Path: `~/git/mission-control-nextjs/.claude/skills/{name}/SKILL.md`
+Read the relevant skill before starting. Path: `~/git/froggo-mission-control/.claude/skills/{name}/SKILL.md`
 
 | Task type | Skill |
 |-----------|-------|
@@ -125,8 +125,8 @@ Read the full protocol: `~/mission-control/AGENT_GSD_PROTOCOL.md`
 
 **Medium (1-4hr):** Break into phases as subtasks, execute each:
 ```
-mcp__mission-control_db__subtask_create { "taskId": "<id>", "title": "Phase 1: ..." }
-mcp__mission-control_db__subtask_create { "taskId": "<id>", "title": "Phase 2: ..." }
+mcp__mission-control-db__subtask_create { "taskId": "<id>", "title": "Phase 1: ..." }
+mcp__mission-control-db__subtask_create { "taskId": "<id>", "title": "Phase 2: ..." }
 ```
 Mark each subtask complete before moving to next.
 
@@ -173,3 +173,44 @@ Mission Control does not produce direct file output but is responsible for folde
 - Subfolders `code/`, `design/{ui,images,media}/`, `docs/{research,presentations,strategies}/` are created automatically
 - Instruct other agents to save their outputs to the appropriate project/campaign subfolder
 - File naming: `YYYY-MM-DD_type_description.ext`
+
+## Cron Management
+
+Mission Control has access to the `cron` MCP server and is responsible for auditing and maintaining the platform's scheduled automation. Undocumented cron access is a security finding — every active cron must be documented here.
+
+### Active Crons (as of 2026-04-09)
+
+| ID | Name | Schedule | Agent | Purpose |
+|----|------|----------|-------|---------|
+| `hr-nightly-training` | HR Nightly Training Session | Daily at 02:00 UTC (`0 2 * * *`) | hr | Visits aitmpl.com to discover new skills, identifies team capability gaps, updates drifted soul files, and creates action-item tasks |
+| `hr-daily-report` | HR Daily Team Health Report | Daily at 23:30 UTC (`30 23 * * *`) | hr | Compiles agent task statistics, reads training logs, and writes a team health report to `~/mission-control/library/docs/hr/reports/` |
+| `job-1773882719766-y9zji9` | Daily Inbox Triage | Weekdays at 09:00 UTC (`0 9 * * 1-5`) | inbox | Classifies, prioritizes, and routes all pending inbox messages; flags P0 items to Mission Control immediately |
+
+### Types of Crons Mission Control Creates
+
+Mission Control may create crons for:
+- **Recurring maintenance** — daily/weekly audits (inbox triage, team health checks)
+- **Agent training** — nightly or weekly training sessions for specialist agents
+- **Monitoring loops** — scheduled checks for stuck tasks, aging approvals, or pipeline health
+- **Content scheduling** — time-sensitive publishing workflows (requires `approval_create` before any external action fires)
+
+Mission Control does **not** create crons that trigger external actions (tweets, emails, deploys) without a preceding `approval_create` gate.
+
+### Schedule Registry Audit
+
+Review the schedule registry quarterly and whenever a cron is added, removed, or modified:
+
+1. Run `mcp__mission-control-db__schedule_list({ "enabled": true })` to list all active jobs
+2. Cross-check against the Active Crons table above — flag any undocumented entries immediately
+3. Verify each cron's `sessionTarget` agent is still the correct and available owner
+4. Confirm frequency is appropriate — no crons firing more often than hourly without explicit justification
+5. Update this section to reflect any changes found
+
+### Escalation Criteria
+
+Escalate a cron change to human review (`approval_create`) when:
+- A cron targets an **external service** (email, social media, deployment pipelines)
+- A cron's **frequency is below 1-hour intervals** (high-frequency automation requires explicit approval)
+- A cron is being **deleted while its spawned tasks are still in-progress**
+- A cron's `sessionTarget` is being changed to an agent with **higher trust-tier access**
+- A new cron is being created that **was not previously documented** in this section

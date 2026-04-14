@@ -24,15 +24,17 @@ import { STATUS_CONFIG, TYPE_COLORS, TYPE_LABELS } from './CampaignCard';
 import CampaignROIDashboard from '../CampaignROIDashboard';
 import ReactMarkdown from 'react-markdown';
 import ContextPanel from '../ContextPanel';
+import ContentTab from './ContentTab';
 import { Button, IconButton, Flex, TextField, Select, TextArea } from '@radix-ui/themes';
 
-type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'assets' | 'channels' | 'results' | 'checklist' | 'context';
+type TabId = 'overview' | 'chat' | 'tasks' | 'timeline' | 'content' | 'assets' | 'channels' | 'results' | 'checklist' | 'context';
 
 const TABS: { id: TabId; label: string; icon: typeof MessageSquare }[] = [
   { id: 'overview',    label: 'Overview',    icon: FileText },
   { id: 'chat',        label: 'Chat',        icon: MessageSquare },
   { id: 'tasks',       label: 'Tasks',       icon: LayoutGrid },
-  { id: 'timeline',    label: 'Timeline / Schedule', icon: Calendar },
+  { id: 'timeline',    label: 'Timeline',    icon: Calendar },
+  { id: 'content',     label: 'Content',     icon: CalendarDays },
   { id: 'assets',      label: 'Assets',      icon: ImageIcon },
   { id: 'channels',    label: 'Channels',    icon: Radio },
   { id: 'results',     label: 'Results',     icon: BarChart2 },
@@ -432,6 +434,253 @@ function PerformanceTab({ campaign, onUpdate }: { campaign: Campaign; onUpdate: 
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── KPI Weekly Grid ────────────────────────────────────────────────────────────
+interface KpiWeeklyRow {
+  id: string;
+  campaignId: string;
+  metric: string;
+  weekLabel: string;
+  weekStart: number;
+  target: number | null;
+  actual: number | null;
+}
+
+function buildCampaignWeeks(startDate: number | null | undefined, endDate: number | null | undefined): { label: string; weekStart: number }[] {
+  if (!startDate) return [];
+  const end = endDate ?? (startDate + 8 * 7 * 86_400_000); // default 8 weeks
+  const weeks: { label: string; weekStart: number }[] = [];
+  let cursor = new Date(startDate);
+  // Snap to Monday
+  cursor.setDate(cursor.getDate() - ((cursor.getDay() + 6) % 7));
+  let i = 1;
+  while (cursor.getTime() <= end && weeks.length < 26) {
+    weeks.push({ label: `W${i}`, weekStart: cursor.getTime() });
+    cursor = new Date(cursor.getTime() + 7 * 86_400_000);
+    i++;
+  }
+  return weeks;
+}
+
+function KpiWeeklyGrid({ campaign }: { campaign: Campaign }) {
+  const [rows, setRows] = useState<KpiWeeklyRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
+  const [editing, setEditing] = useState<{ metric: string; weekLabel: string; field: 'target' | 'actual'; value: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const weeks = buildCampaignWeeks(campaign.startDate, campaign.endDate);
+  const metrics = Object.keys(KPI_LABELS).filter(k => campaign.kpis && campaign.kpis[k]?.target > 0 || true);
+  const activeMetrics = Object.keys(KPI_LABELS);
+
+  useEffect(() => {
+    import('../../lib/api').then(({ campaignsApi: api }) =>
+      api.getKpiWeekly(campaign.id)
+        .then((d: { rows?: KpiWeeklyRow[] }) => setRows(d.rows ?? []))
+        .catch(() => {})
+        .finally(() => setLoading(false))
+    );
+  }, [campaign.id]);
+
+  const cellKey = (metric: string, weekLabel: string) => `${metric}::${weekLabel}`;
+  const byKey: Record<string, KpiWeeklyRow> = {};
+  for (const r of rows) byKey[cellKey(r.metric, r.weekLabel)] = r;
+
+  async function handleSeedWeeks() {
+    if (!weeks.length) return;
+    setSeeding(true);
+    try {
+      const res = await import('../../lib/api').then(({ campaignsApi: api }) =>
+        api.seedKpiWeekly(campaign.id, { metrics: activeMetrics, weeks })
+      );
+      setRows((res as { rows: KpiWeeklyRow[] }).rows ?? rows);
+      showToast('Weekly grid seeded', 'success');
+    } catch { showToast('Failed to seed weeks', 'error'); }
+    finally { setSeeding(false); }
+  }
+
+  async function handleCellSave() {
+    if (!editing) return;
+    setSaving(true);
+    try {
+      const week = weeks.find(w => w.label === editing.weekLabel);
+      const existing = byKey[cellKey(editing.metric, editing.weekLabel)];
+      const payload: Record<string, unknown> = {
+        metric: editing.metric,
+        weekLabel: editing.weekLabel,
+        weekStart: week?.weekStart ?? Date.now(),
+        target: existing?.target ?? null,
+        actual: existing?.actual ?? null,
+        [editing.field]: parseFloat(editing.value) || 0,
+      };
+      const res = await import('../../lib/api').then(({ campaignsApi: api }) =>
+        api.upsertKpiWeekly(campaign.id, payload)
+      );
+      const updated = (res as { row: KpiWeeklyRow }).row;
+      setRows(prev => {
+        const idx = prev.findIndex(r => r.metric === editing.metric && r.weekLabel === editing.weekLabel);
+        if (idx >= 0) { const next = [...prev]; next[idx] = updated; return next; }
+        return [...prev, updated];
+      });
+      setEditing(null);
+    } catch { showToast('Failed to save', 'error'); }
+    finally { setSaving(false); }
+  }
+
+  if (loading) return <div className="flex items-center justify-center py-8"><Spinner size={20} /></div>;
+  if (!weeks.length) return (
+    <div className="text-center py-8 text-sm text-mission-control-text-dim">
+      Set campaign start date to enable the weekly KPI grid.
+    </div>
+  );
+
+  const hasData = rows.length > 0;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-medium text-mission-control-text">Weekly KPI Matrix</h4>
+        {!hasData && (
+          <Button variant="soft" size="1" onClick={handleSeedWeeks} disabled={seeding}>
+            {seeding ? <Spinner size={12} /> : null}
+            Initialize {weeks.length} weeks
+          </Button>
+        )}
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs border-collapse">
+          <thead>
+            <tr>
+              <th className="text-left text-mission-control-text-dim font-medium py-2 pr-3 sticky left-0 bg-mission-control-bg min-w-[90px]">Metric</th>
+              <th className="text-mission-control-text-dim font-medium py-2 pr-3 min-w-[48px]">Type</th>
+              {weeks.map(w => (
+                <th key={w.label} className="text-center text-mission-control-text-dim font-medium py-2 px-2 min-w-[72px]">
+                  <div>{w.label}</div>
+                  <div className="text-[9px] font-normal opacity-60">
+                    {new Date(w.weekStart).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {activeMetrics.map(metric => (
+              ['target', 'actual'].map(field => (
+                <tr key={`${metric}-${field}`} className={field === 'target' ? 'border-t border-mission-control-border/40' : ''}>
+                  {field === 'target' ? (
+                    <td rowSpan={2} className="text-mission-control-text font-medium py-2 pr-3 sticky left-0 bg-mission-control-bg align-middle">
+                      {KPI_LABELS[metric]}
+                    </td>
+                  ) : null}
+                  <td className={`py-1 pr-3 ${field === 'target' ? 'text-mission-control-text-dim' : 'text-mission-control-text font-medium'}`}>
+                    {field === 'target' ? 'Target' : 'Actual'}
+                  </td>
+                  {weeks.map(w => {
+                    const cell = byKey[cellKey(metric, w.label)];
+                    const val = cell?.[field as 'target' | 'actual'];
+                    const isEditing = editing?.metric === metric && editing.weekLabel === w.label && editing.field === field;
+                    return (
+                      <td key={w.label} className="text-center px-2 py-1">
+                        {isEditing ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              className="w-14 bg-mission-control-surface border border-mission-control-accent rounded px-1 py-0.5 text-xs text-mission-control-text text-right tabular-nums"
+                              value={editing.value}
+                              onChange={e => setEditing(prev => prev ? { ...prev, value: e.target.value } : prev)}
+                              onKeyDown={e => { if (e.key === 'Enter') handleCellSave(); if (e.key === 'Escape') setEditing(null); }}
+                              autoFocus
+                            />
+                            <button onClick={handleCellSave} disabled={saving} className="text-success hover:opacity-80"><Check size={11} /></button>
+                            <button onClick={() => setEditing(null)} className="text-mission-control-text-dim hover:opacity-80"><X size={11} /></button>
+                          </div>
+                        ) : (
+                          <button
+                            className={`tabular-nums px-1.5 py-0.5 rounded hover:bg-mission-control-border/60 transition-colors w-full text-center ${val != null ? (field === 'actual' ? 'text-mission-control-text font-semibold' : 'text-mission-control-text-dim') : 'text-mission-control-text-dim/30'}`}
+                            onClick={() => setEditing({ metric, weekLabel: w.label, field: field as 'target' | 'actual', value: val != null ? String(val) : '' })}
+                          >
+                            {val != null ? val.toLocaleString() : '—'}
+                          </button>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Timeline Tab Wrapper (toggle between milestone list & full calendar) ───────
+type TimelineView = 'timeline' | 'calendar';
+
+function TimelineTabWrapper({ campaign }: { campaign: Campaign }) {
+  const [view, setView] = useState<TimelineView>('timeline');
+
+  // Build calendar events from campaign dates
+  const campaignEvents: CalendarEvent[] = [];
+  if (campaign.startDate) {
+    campaignEvents.push({
+      id: `campaign-${campaign.id}-start`,
+      summary: `${campaign.name} — Start`,
+      description: campaign.description || '',
+      source: 'mission-control',
+      start: { date: new Date(campaign.startDate).toISOString().slice(0, 10) },
+      end: { date: new Date(campaign.startDate).toISOString().slice(0, 10) },
+    });
+  }
+  if (campaign.endDate) {
+    campaignEvents.push({
+      id: `campaign-${campaign.id}-end`,
+      summary: `${campaign.name} — End`,
+      description: campaign.description || '',
+      source: 'mission-control',
+      start: { date: new Date(campaign.endDate).toISOString().slice(0, 10) },
+      end: { date: new Date(campaign.endDate).toISOString().slice(0, 10) },
+    });
+  }
+  if (campaign.startDate && campaign.endDate && campaign.endDate > campaign.startDate) {
+    campaignEvents.push({
+      id: `campaign-${campaign.id}-span`,
+      summary: campaign.name,
+      description: campaign.description || '',
+      source: 'mission-control',
+      start: { date: new Date(campaign.startDate).toISOString().slice(0, 10) },
+      end: { date: new Date(campaign.endDate).toISOString().slice(0, 10) },
+    });
+  }
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* View toggle */}
+      <div className="flex items-center gap-1 px-5 pt-4 pb-2 border-b border-mission-control-border flex-shrink-0">
+        <div className="flex bg-mission-control-border/40 rounded-lg p-0.5 gap-0.5">
+          <button
+            onClick={() => setView('timeline')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${view === 'timeline' ? 'bg-mission-control-surface text-mission-control-text shadow-sm' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+          >
+            <CircleDot size={12} /> Timeline
+          </button>
+          <button
+            onClick={() => setView('calendar')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${view === 'calendar' ? 'bg-mission-control-surface text-mission-control-text shadow-sm' : 'text-mission-control-text-dim hover:text-mission-control-text'}`}
+          >
+            <CalendarDays size={12} /> Calendar
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-hidden">
+        {view === 'timeline' && <TimelineTab campaign={campaign} />}
+        {view === 'calendar' && <EpicCalendar externalEvents={campaignEvents} createButtonLabel="Add Campaign Event" />}
+      </div>
     </div>
   );
 }
@@ -1484,47 +1733,19 @@ export default function CampaignWorkspace({ campaign: initialCampaign, onBack, o
         {activeTab === 'overview'    && <OverviewTab campaign={campaign} onUpdate={reload} />}
         {activeTab === 'chat'        && <ChatTab campaign={campaign} />}
         {activeTab === 'tasks'       && <Kanban projectId={campaign.id} projectName={campaign.name} onNewTask={() => setShowDispatch(true)} />}
-        {activeTab === 'timeline'    && (() => {
-          // Build campaign events for the calendar
-          const campaignEvents: CalendarEvent[] = [];
-          if (campaign.startDate) {
-            campaignEvents.push({
-              id: `campaign-${campaign.id}-start`,
-              summary: `${campaign.name} — Start`,
-              description: campaign.description || '',
-              source: 'mission-control',
-              start: { date: new Date(campaign.startDate).toISOString().slice(0, 10) },
-              end: { date: new Date(campaign.startDate).toISOString().slice(0, 10) },
-            });
-          }
-          if (campaign.endDate) {
-            campaignEvents.push({
-              id: `campaign-${campaign.id}-end`,
-              summary: `${campaign.name} — End`,
-              description: campaign.description || '',
-              source: 'mission-control',
-              start: { date: new Date(campaign.endDate).toISOString().slice(0, 10) },
-              end: { date: new Date(campaign.endDate).toISOString().slice(0, 10) },
-            });
-          }
-          if (campaign.startDate && campaign.endDate && campaign.endDate > campaign.startDate) {
-            campaignEvents.push({
-              id: `campaign-${campaign.id}-span`,
-              summary: campaign.name,
-              description: campaign.description || '',
-              source: 'mission-control',
-              start: { date: new Date(campaign.startDate).toISOString().slice(0, 10) },
-              end: { date: new Date(campaign.endDate).toISOString().slice(0, 10) },
-            });
-          }
-          return <EpicCalendar externalEvents={campaignEvents} createButtonLabel="Add Campaign Event" />;
-        })()}
+        {activeTab === 'timeline'    && <TimelineTabWrapper campaign={campaign} />}
+        {activeTab === 'content'     && <ContentTab campaign={campaign} />}
         {activeTab === 'assets'      && <AssetsTab campaign={campaign} />}
         {activeTab === 'channels'    && <ChannelsTab campaign={campaign} onUpdate={reload} />}
         {activeTab === 'results'     && (
-          <div className="h-full overflow-y-auto divide-y divide-mission-control-border">
+          <div className="h-full overflow-y-auto">
             <PerformanceTab campaign={campaign} onUpdate={reload} />
-            <CampaignROIDashboard campaign={campaign} />
+            <div className="border-t border-mission-control-border px-4 py-4">
+              <KpiWeeklyGrid campaign={campaign} />
+            </div>
+            <div className="border-t border-mission-control-border">
+              <CampaignROIDashboard campaign={campaign} />
+            </div>
           </div>
         )}
         {activeTab === 'checklist'   && (

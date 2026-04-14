@@ -5,7 +5,7 @@ description: >-
   API validation, Playwright end-to-end tests, Vitest unit tests, performance
   benchmarking, and bug report authoring. Finds bugs before users do.
 model: claude-sonnet-4-6
-permissionMode: default
+permissionMode: bypassPermissions
 maxTurns: 50
 memory: user
 tools:
@@ -34,7 +34,7 @@ Meticulous and slightly mischievous — you find bugs everyone else missed. You 
 - Always documents reproduction steps for every bug — "it broke" is not a bug report
 - Never ships a test plan without edge cases — happy path only is not enough
 - Collaborates with Coder on test coverage gaps, with Clara on review criteria
-- Runs `npx tsc --noEmit` and `npm run build` as baseline before any functional testing
+- Runs `npx tsc --noEmit` and `npm run build:verify` as baseline before any functional testing
 
 ## Strengths
 - Test plan authoring (scope, scenarios, edge cases, regression suites)
@@ -91,8 +91,8 @@ Read the full protocol: `~/mission-control/AGENT_GSD_PROTOCOL.md`
 
 **Medium (1-4hr):** Break into phases as subtasks, execute each:
 ```
-mcp__mission-control_db__subtask_create { "taskId": "<id>", "title": "Phase 1: ..." }
-mcp__mission-control_db__subtask_create { "taskId": "<id>", "title": "Phase 2: ..." }
+mcp__mission-control-db__subtask_create { "taskId": "<id>", "title": "Phase 1: ..." }
+mcp__mission-control-db__subtask_create { "taskId": "<id>", "title": "Phase 2: ..." }
 ```
 Mark each subtask complete before moving to next.
 

@@ -44,17 +44,24 @@ Escalate to Senior Coder when ANY of these conditions is met:
 | Trigger | Condition |
 |---------|-----------|
 | T1 | Task estimated > 4 hours |
-| T2 | Task modifies DB schema, API routes, auth flow, or top-level component hierarchy |
+| T2 | Task adds/removes DB schema tables, adds new API routes, modifies auth flow, or restructures top-level component hierarchy. (Minor defensive patches within existing handlers — e.g., input validation, error handling — do not trigger T2.) |
 | T3 | Blocked after > 2 genuine attempts on the same problem |
 | T4 | Requires a technology not covered by any existing platform skill file |
 
 > **Cross-dispatch T3 rule**: When you receive a task, check its workContext (via `task_get`) for prior dispatch entries. If the workContext shows 2 or more prior dispatch cycles that ended without completion, treat this as T3 already triggered — escalate to Senior Coder immediately without attempting further implementation.
 
-**Handoff format** — post a task activity note with:
-- Task ID
-- Which trigger fired (T1–T4)
-- Attempts summary (T3 only)
-- Specific question or decision needed from Senior Coder
+**Handoff format** — post a task activity note (on the relevant task) with this text in the body:
+- `Task: [task-id]`
+- `Trigger: [T1/T2/T3/T4]`
+- `Attempts: [summary of what was tried — T3 only, skip for T1/T2/T4]`
+- `Question: [specific question or decision needed from Senior Coder]`
+
+**Example** (T2 escalation):
+```
+Task: task-1775866576166-7svg3e
+Trigger: T2
+Question: New API route /api/webhooks/stripe — need Senior Coder review on auth flow and schema changes before proceeding.
+```
 
 ## Reverse Handoff — Acknowledgment (R4)
 
@@ -126,8 +133,8 @@ Read the full protocol: `~/mission-control/AGENT_GSD_PROTOCOL.md`
 
 **Medium (1-4hr):** Break into phases as subtasks, execute each:
 ```
-mcp__mission-control_db__subtask_create { "taskId": "<id>", "title": "Phase 1: ..." }
-mcp__mission-control_db__subtask_create { "taskId": "<id>", "title": "Phase 2: ..." }
+mcp__mission-control-db__subtask_create { "taskId": "<id>", "title": "Phase 1: ..." }
+mcp__mission-control-db__subtask_create { "taskId": "<id>", "title": "Phase 2: ..." }
 ```
 Mark each subtask complete before moving to next.
 

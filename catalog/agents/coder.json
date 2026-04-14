@@ -35,6 +35,17 @@
   "version": "1.0.0",
   "category": "engineering",
   "mcpTools": [
-    "image_generate"
+    "image_generate",
+    "get_me",
+    "list_issues", "search_issues", "issue_read", "issue_write", "add_issue_comment",
+    "list_pull_requests", "search_pull_requests", "pull_request_read",
+    "create_pull_request", "update_pull_request", "merge_pull_request",
+    "update_pull_request_branch", "pull_request_review_write",
+    "add_reply_to_pull_request_comment",
+    "search_code", "get_file_contents", "create_or_update_file", "push_files",
+    "create_branch", "list_branches", "list_commits", "get_commit",
+    "list_tags", "list_releases", "get_latest_release",
+    "actions_list", "actions_get", "get_job_logs",
+    "list_code_scanning_alerts", "get_code_scanning_alert"
   ]
 }
