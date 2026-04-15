@@ -61,14 +61,15 @@ jobs:
             const reg = semver('$REGISTRY');
             const pkg = semver('$PKG');
             if (gt(pkg, reg)) {
-              // package.json is intentionally ahead — use it as-is
               process.stdout.write('$PKG');
             } else {
-              // Normal push — patch-bump from registry
               process.stdout.write(reg[0]+'.'+reg[1]+'.'+(reg[2]+1));
             }
           ")
-          npm version $NEW --no-git-tag-version
+          # Only call npm version if we need to change from what's in package.json
+          if [ "$NEW" != "$PKG" ]; then
+            npm version $NEW --no-git-tag-version
+          fi
           echo "version=v$NEW" >> $GITHUB_OUTPUT
           echo "Publishing v$NEW (registry was $REGISTRY, package.json was $PKG)"
 
