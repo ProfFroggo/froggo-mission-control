@@ -47,16 +47,30 @@ jobs:
           fi
           echo "✓ .next/ not in package"
 
-      - name: Bump patch version (from registry, no git commit)
+      - name: Resolve publish version (no git commit)
         id: bump
         run: |
-          # Read the latest published version from npm — never from package.json in git
-          # (package.json in git may lag behind if the bump commit can't push to protected main)
-          CURRENT=$(npm view froggo-mission-control version 2>/dev/null || echo "0.0.0")
-          NEW=$(node -e "const [a,b,c]='$CURRENT'.split('.'); process.stdout.write(a+'.'+b+'.'+(Number(c)+1))")
+          # Compare package.json version vs latest npm registry version.
+          # If package.json is ahead (intentional major/minor bump), publish that version.
+          # Otherwise patch-bump from the registry (normal flow, avoids duplicate version error).
+          REGISTRY=$(npm view froggo-mission-control version 2>/dev/null || echo "0.0.0")
+          PKG=$(node -e "process.stdout.write(require('./package.json').version)")
+          NEW=$(node -e "
+            const semver = (v) => v.split('.').map(Number);
+            const gt = (a, b) => { for (let i=0; i<3; i++) { if (a[i]>b[i]) return true; if (a[i]<b[i]) return false; } return false; };
+            const reg = semver('$REGISTRY');
+            const pkg = semver('$PKG');
+            if (gt(pkg, reg)) {
+              // package.json is intentionally ahead — use it as-is
+              process.stdout.write('$PKG');
+            } else {
+              // Normal push — patch-bump from registry
+              process.stdout.write(reg[0]+'.'+reg[1]+'.'+(reg[2]+1));
+            }
+          ")
           npm version $NEW --no-git-tag-version
           echo "version=v$NEW" >> $GITHUB_OUTPUT
-          echo "Bumped to v$NEW (was $CURRENT)"
+          echo "Publishing v$NEW (registry was $REGISTRY, package.json was $PKG)"
 
       - name: Publish to npm
         run: npm publish --access public
